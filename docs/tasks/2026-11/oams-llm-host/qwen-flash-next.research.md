@@ -9,24 +9,23 @@ current llama.cpp issue threads.
 
 ## TL;DR
 
-- **The "active set fits in 12 GB VRAM" claim is TRUE for the compute graph but
-  IRRELEVANT on this host, because the weights do not fit in 64 GB at all.**
-  The *smallest* published quant is **66.4 GiB on disk (UD-IQ1_S)**, and every
-  quant is ≥ 66 GiB. Before any KV cache. oams has ~62 GiB of physical RAM, of
-  which realistically ~45–50 GiB is usable headless. **No quant of this model
-  fits in oams's RAM, at any context.** This is a hard wall, not a tuning problem.
-- **1M context is impossible on oams** — not because of VRAM, but because the KV
-  cache for 1M tokens alone is **12 GiB at Q8_0 / 24 GiB at F16**, and the weight
-  file already exceeds RAM.
-- **Even if the weights fit, oams decode would be ~the same as brys, not
-  faster.** Both are memory-bandwidth bound on the routed experts, which live in
-  **RAM** on both hosts, not in VRAM. oams (DDR4-3200 dual-channel, ~35–45 GB/s)
-  has bandwidth comparable to brys (DDR4, ~40 GB/s measured). ESTIMATE: ~15–21
-  tok/s bandwidth ceiling for the model at IQ3_XXS with *zero* KV, dropping
-  fast with context — versus brys's measured 2.36 tok/s at 1M competing.
-- **Verdict: NOT realistic on oams at any useful context.** Run `qwen3.5-35b-a3b`
-  (17.5 GB at IQ4_XS, fits with the full 256k context) instead. Disk cost of
-  `qwen3.8-flash-next` (66–94 GB) also violates a "keep disk usage low" rule.
+- **256K context is feasible on oams.** This report's first version wrongly
+  compared the GGUF file size to RAM; with `--lazy-mode auto` + `mmap` the
+  weights are file-backed page cache (brys serves the 93.7 GB file in **54.1 GiB
+  RSS**), so what must fit in RAM is the **KV cache**, not the weights. At 256K
+  that is **3.2 GB (q8_0) / 6.4 GB (F16)**, plus a small prompt cache and compute
+  buffers: ~7-10 GB anonymous, against 45-50 GiB usable. **It fits.**
+- **1M is the part that does not comfortably fit**, and 256K is the sensible
+  target; see §2.1 for the arithmetic.
+- **The "active set fits in 12 GB VRAM" claim is TRUE but nearly irrelevant to
+  decode speed.** Decode reads 10 of 512 routed experts chosen unpredictably
+  each token, from **RAM**, and VRAM residency of one active set does not remove
+  that bandwidth cost. What VRAM helps with is the attention + shared-expert +
+  KV path. So expect oams decode to be governed by RAM bandwidth, roughly in
+  brys's league, not 12x faster because of the bigger GPU.
+- **Disk cost is the real trade-off**: 82-94 GB for this model, affordable on
+  oams's 530 GB free but not "low". Run `qwen3.5-35b-a3b` (17.5 GB, full 256K) as
+  the everyday model and treat flash-next on oams as an experiment, not the default.
 
 ---
 
@@ -141,22 +140,47 @@ bandwidth cost — see §3.3.
 
 ## 2. Feasibility on 12 GB VRAM + 64 GB RAM
 
-### 2.1 RAM is the hard wall — VERIFIED + arithmetic
+### 2.1 CORRECTED 2026-11-05: the file size is not the RAM requirement
 
-oams physical RAM ≈ **62 GiB** (repo:
-"measured ~25 GiB of 62 GiB" — [hosts/oams/default.nix:125](hosts/oams/default.nix)).
-Headless usable ≈ **45–50 GiB**.
+The first version of this report compared the GGUF file size against RAM and
+concluded "does not fit". **That comparison was wrong**: llama.cpp serves this
+model with `--lazy-mode auto` + `mmap`, so the weights are **file-backed page
+cache**, not anonymous resident memory. The proof is on `brys` itself:
+
+> `brys` serves `qwen3.8-flash-next` from a **93.7 GB** file
+> (`UD-IQ4_XS` 43.8 + 49.8 GB + 4.1 GB MTP), and its measured RSS at **1M
+> context is 54.1 GiB** ([docs/local-llms.md:506](docs/local-llms.md)),
+> not 94 GB. The `--lazy-mode` lever is documented as freeing **~46 GB**
+> (`RssFile` 92.2 → 46.0 GB) precisely because the tensors are file-backed.
+
+So the binding constraint is the **anonymous** memory: KV cache, prompt cache
+(`--cache-ram`), and compute buffers. The weights cost SSD read bandwidth, not
+RAM residency.
+
+oams physical RAM ≈ **62 GiB**; headless usable ≈ **45–50 GiB**.
+oams storage: **1.8 TB NVMe (Corsair MP600 GS), measured 9.0 GB/s sequential
+read**, ZFS `primarycache=all` + `lz4` on the pool — faster than brys's storage.
 
 ```
-smallest quant  UD-IQ1_S            = 66.4 GiB  > 45 GiB usable  → DOES NOT FIT
-next smallest   UD-IQ1_M            = 68.0 GiB  > 45 GiB         → DOES NOT FIT
-... every larger quant                ≥ 70 GiB                 → DOES NOT FIT
+--- anonymous RAM at 256K (the question that matters) ---
+KV per token, F16: 24 KiB  (12 full-attn layers x 2 KV heads x 256 head_dim)
+  256K  F16 KV  =  6.4 GB     256K q8_0 KV = 3.2 GB
+  512K  F16 KV  = 12.9 GB     512K q8_0 KV = 6.4 GB
+    1M  F16 KV  = 25.8 GB       1M q8_0 KV = 12.9 GB
+
+oams @ 256K q8_0: KV 3.2 GB + cache-ram 1 GB (lower from the 37 GB brys uses)
+                  + compute/gen buffers ~2 GB  =  ~7-10 GB anonymous.
+                  Machine has 45-50 GiB usable.  FITS COMFORTABLY.
 ```
 
-**The weight file alone exceeds usable RAM even at the most aggressive quant, with
-zero KV cache and zero OS overhead.** This is not a tuning problem; it cannot be
-served resident. llama.cpp `mmap` would page ~20+ GiB from SSD on every forward
-pass — decode would collapse to disk speed (single-digit-0.x tok/s).
+**Verdict for 256K: feasible.** This is the configuration the user asked about,
+and it is the right one. 1M is *not* comfortable (12.9 GB KV + the 37 GB
+cache-ram brys uses must drop to ~4 GB, and prefill over 1M tokens at SSD-backed
+weights is very slow), but 256K is fine.
+
+The disk caveat stands and is the real cost: **93.7 GB** for `UD-IQ4_XS`
+(82 GB for `UD-IQ3_XXS`), which is a lot against "keep disk low" — but oams has
+530 GB free, so it is affordable, unlike on a small volume.
 
 Two theoretical escapes, neither good:
 
@@ -221,37 +245,48 @@ GPUs:
 
 So: **`--n-cpu-moe`/`--cpu-moe` is usable on Vulkan**, but the model you want is
 GDN-hybrid, so you hit the RDNA2 prefill regression and must babysit `-c` vs
-`--n-cpu-moe`. And on oams it is moot anyway — the model does not fit in RAM.
+`--n-cpu-moe`. On oams the weights are SSD-backed, so the relevant question is
+whether expert traffic from SSD keeps up — see the verdict in §4.
 
-### 2.3 Can 1M context fit? — No. Largest realistic context: none.
+### 2.3 Context sizing — 256K fits, 1M does not
 
 ```
-1M KV @ Q8_0 = 12 GiB    (see §1.2)
-1M KV @ F16  = 24 GiB
+KV cost (12 full-attn layers x 2 KV heads x 256 head_dim = 24 KiB/token F16):
+  256K:  6.4 GB F16   3.2 GB q8_0
+  512K: 12.9 GB F16   6.4 GB q8_0
+    1M: 25.8 GB F16  12.9 GB q8_0
 ```
-Plus the smallest weight file (66.4 GiB) → **78 GiB minimum for 1M**, against
-~62 GiB physical. **1M is impossible.** Even 256K (3 GiB Q8) needs 69+ GiB total.
-The largest context that *would* fit if the weights fit at all is a non-question —
-**they never fit.** For reference on brys (106 GiB usable) the repo runs 1M at
-54 GiB RSS because brys has 2× oams's RAM.
 
-### 2.4 RAM arithmetic for the full weight file — the crux
+The weights are **file-backed** (§2.1), so they do not compete with the KV cache
+for RAM. What must fit is KV + prompt cache + compute buffers:
 
-| Quant | File | + 256K KV Q8 (3 GiB) | ≤ 45 GiB usable? |
-| --- | ---: | ---: | --- |
-| IQ1_S | 66.4 | 69.4 | **NO (24 GiB over)** |
-| Q2_0 | 70.5 | 73.5 | **NO (28 GiB over)** |
-| IQ2_XS | 75.8 | 78.8 | **NO** |
-| IQ3_XXS | 83.6 | 86.6 | **NO** |
-| IQ4_XS | 93.7 | 96.7 | **NO** |
-| @ 1M Q8 KV (+12) | | +12 GiB | **NO by an even wider margin** |
+| config | anaonymous RAM | verdict on oams (45-50 GiB usable) |
+| --- | ---: | --- |
+| 256K, q8_0 KV, cache-ram 1 GB | ~7 GB | **comfortable** |
+| 256K, F16 KV, cache-ram 8 GB | ~15 GB | **comfortable** |
+| 512K, q8_0 KV, cache-ram 8 GB | ~16 GB | fits, less headroom |
+| 1M, q8_0 KV, cache-ram 37 GB (brys) | ~51 GB | **too tight** — must cut cache-ram |
+| 1M, q8_0 KV, cache-ram 2 GB | ~17 GB | fits RAM, but SSD-bound prefill is slow |
 
-**Conclusion: the model cannot be made resident on oams at any quant and any
-context.** Contrast: brys uses 54.1 GiB **RSS for the frontier alone at 1M** and
-needs 106 GiB total for frontier + 35B co-resident
-([local-llms.md:504-506, 684-694](docs/local-llms.md)).
+**256K is the sensible target**: it fits with wide margin whatever the KV type,
+and it is 4x the 64K working set most agent tasks need. 1M is possible only with a
+cut prompt cache and very slow first token.
 
----
+### 2.4 Why the earlier "file must fit in RAM" table was wrong
+
+The first version of this report tabulated GGUF file sizes against RAM:
+
+| Quant | File | naive verdict |
+| --- | ---: | --- |
+| IQ1_S | 66.4 | "NO" |
+| IQ4_XS | 93.7 | "NO" |
+
+That table is **invalid** and is kept only to record the mistake: it treats the
+file as resident. `brys` disproves it — it serves the **93.7 GB** IQ4_XS file at
+**54.1 GiB RSS with 1M context** ([docs/local-llms.md:506](docs/local-llms.md)),
+because `--lazy-mode auto` + `mmap` keep the tensors file-backed and reclaimable.
+The correct resource model is "SSD bandwidth for weights, RAM for KV", which is
+what §2.3 uses.
 
 ## 3. Expected performance
 
@@ -318,12 +353,13 @@ in VRAM — i.e. the whole model — which needs ~66–94 GB of VRAM. It does no
 | CPU | Ryzen 9 5950X (16C desktop) | Ryzen 9 5900HX (8C mobile) |
 | RAM | 128 GB DDR4, **~40 GB/s measured** | 62 GB DDR4-3200, **~32–36 GB/s** |
 | GPU | W6600 8 GB (weak) | RX 6800M 12 GB (2.8–3.4× brys's card, measured) |
-| Can hold the model? | **Yes** (54 GiB @1M) | **No** (66–94 GiB > 62 GiB) |
-| Decode, 1M ctx, alone | 9.3 tok/s | impossible (no fit) |
-| Decode, 1M ctx, competing | **2.36 tok/s** | impossible |
+| Can serve the model (SSD-backed weights)? | **Yes** (54 GiB RSS @1M) | **Yes at 256K**, no at 1M (KV + cache too big) |
+| Decode, 1M ctx, alone | 9.3 tok/s | not attempted (1M does not fit RAM headroom) |
+| Decode, 1M ctx, competing | **2.36 tok/s** | n/a |
+| Decode, 256K ctx | (not measured) | ESTIMATE ~ brys-alone or slower (RAM-bound experts) |
 
-**Would oams be faster?** In the hypothetical where it somehow held the model:
-**about the same or slightly slower than brys-alone**, because the bandwidth is
+**Would oams be faster at 256K?** No — **about the same or slightly slower than
+brys-alone**, because the expert read is RAM-bandwidth bound and the bandwidth is
 comparable (oams mobile DDR4 ~32–36 vs brys ~40 GB/s) and the routed-expert read
 is the bottleneck on both. The stronger 6800M only helps prefill/dense, not the
 RAM-bound expert read. Measured evidence: oams's **CPU-only** decode is *worse*
@@ -339,45 +375,51 @@ a 177B model never will here.
 
 ### 4.1 Is running `qwen3.8-flash-next` on oams realistic?
 
-**No.** Hard blockers, in order:
+**At 256K: yes, marginally — and worth one experiment. At 1M: no.**
 
-1. **Weights don't fit in RAM.** Smallest quant 66.4 GiB vs ~45–50 GiB usable
-   headless. Not a tuning issue.
-2. **1M context impossible.** KV alone is 12 GiB @Q8 at 1M; total needs ~78 GiB.
-3. **Even if it fit, decode ≈ brys, not faster** — RAM-bandwidth bound on routed
-   experts, and oams's mobile CPU/DDR4 is weaker than brys's desktop.
-4. **GDN-hybrid + RDNA2 Vulkan has a known ~45% prefill regression**, worsening
-   with context, plus `-c`/VRAM-spill and mask-overflow traps to babysit.
+1. **The weights fit on SSD, not in RAM** (corrected, §2.1): 93.7 GB file,
+   `--lazy-mode auto` + `mmap`, same as brys does at 54.1 GiB RSS. oams has
+   530 GB free and a 9.0 GB/s NVMe, faster than brys's storage.
+2. **256K KV fits comfortably**: 3.2 GB (q8_0) / 6.4 GB (F16) plus a small
+   prompt cache and compute buffers — ~7-15 GB anonymous against 45-50 GiB
+   usable.
+3. **1M does not**: 12.9 GB KV plus the 37 GB prompt cache brys sets leaves too
+   little headroom; it is possible only with a cut cache and very slow prefill.
+4. **Speed will be roughly brys-like, not faster.** Decode reads 10 of 512 routed
+   experts per token from RAM; the 12 GB card helps the attention and shared
+   path, not the expert traffic. oams is a laptop whose CPU-side decode is
+   already measured *worse* than brys's (gemma-4-e4b: 4.3 vs 13.9 t/s CPU).
+5. **GDN-hybrid on RDNA2 Vulkan has a known ~45% prefill regression**, so
+   first-token latency suffers, and 256K prefill over SSD-backed weights is slow
+   even before that.
 
-There is **no context limit and no quant** at which it runs usefully on oams.
+So the honest answer: it *runs* at 256K, but it is not obviously better than
+running it on brys, and the smaller 35B-A3B is far more sensible on this box.
 
 ### 4.2 What would be the point? (vs the 35B / 30B-A3B)
 
-**Essentially none, on oams.** The rationale for a frontier 1M model is the 1M
-window and the quality — neither survives on oams. Use the smaller MoE:
-
-| Model | Quant | File | Fits oams (45–50 GiB)? | Notes |
+| Model | Quant | File | Fits oams (45-50 GiB)? | Notes |
 | --- | --- | ---: | --- | --- |
-| `qwen3.5-35b-a3b` | UD-IQ4_XS | **17.5 GB** | **Yes**, + full 256K KV (5 GiB @Q8) | 256K native, near-frontier quality, 30.8 t/s-class possible on RDNA2 with `--cpu-moe` |
+| `qwen3.8-flash-next` | UD-IQ4_XS | 93.7 GB | SSD-backed, 256K yes / 1M no | the 1M quality tier; slow, big |
+| `qwen3.5-35b-a3b` | UD-IQ4_XS | **17.5 GB** | **Yes**, + full 256K KV | 256K native, near-frontier, ~30 tok/s class on RDNA2 `--cpu-moe` |
 | `qwen3.5-35b-a3b` | UD-Q4_K_XL | 22.2 GB | Yes | better quality, still fits |
-| `qwen3.5-35b-a3b` | Q8_0 | 36.9 GB | Yes (headless) | max quality, ~37 GiB + KV |
 
-`qwen3.5-35b-a3b` at IQ4_XS is the obvious pick: 17.5 GB file, 256K context,
-full-attention KV only 20 KiB/tok F16 (10 KiB Q8 → 2.5 GiB at 256K), and the
-RDNA2 `--cpu-moe` path already shows **~30 tok/s gen** on the near-identical
-RX 6900 XT. That is ~13× faster than brys's competing-flash-next 2.36 t/s, with
-a context that actually fits, at 1/4 the disk.
+`qwen3.5-35b-a3b` at IQ4_XS is the obvious everyday pick: 17.5 GB, 256K, and the
+RDNA2 `--cpu-moe` path already shows ~30 tok/s gen on a near-identical RX 6900 XT
+— ~13x brys's competing flash-next. **Recommendation: make the 35B-A3B the oams
+model; treat flash-next-on-oams as a one-off experiment if the 1M tier is ever
+needed closer to the client.**
 
-The only reason to run the big model anywhere is the 1M reasoning/agentic quality
-tier — which belongs on brys (106 GiB), not oams.
+The only reason to run the big model is the 1M reasoning/agentic tier, and that
+already lives on brys (106 GiB).
 
-### 4.3 Disk cost — violates "keep disk low"
+### 4.3 Disk cost — the real reason not to make it the default
 
-The GGUF is **66–94 GB depending on quant** (brys ships 93.7 GB IQ4_XS in 3
-shards). A "keep disk usage low" constraint is **flatly violated** — this single
-model dwarfs most laptop instalments. By contrast `qwen3.5-35b-a3b` IQ4_XS is
-**17.5 GB** (single file). If disk is a constraint, the big model is out on that
-ground alone.
+The GGUF is **82–94 GB** (brys ships 93.7 GB IQ4_XS in three shards). oams has
+530 GB free, so it is *affordable* here — unlike on a small volume — but it is
+1.6x the size of the entire remainder of the surveyed model set and far from
+"keep disk low". By contrast `qwen3.5-35b-a3b` IQ4_XS is **17.5 GB** in a single
+file. On disk grounds alone, the 35B is the right default for a laptop.
 
 ---
 
