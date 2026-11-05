@@ -207,7 +207,9 @@ in
         debug = true;
         # Only the models that fit in 12 GB are co-residency-tiered; the MoE
         # candidates go on a RAM tier once measured.
-        coResidentTiers = [ [ "gemma-4-e4b" "qwen3.5-2b" "qwen3.5-0.8b" "granite-4.2-3b" ] ];
+        # One Vulkan0 tier: the small fast models and the MoE winner are mutually
+        # exclusive on the card (llama-swap evicts between them).
+        coResidentTiers = [ [ "gemma-4-e4b" "qwen3.5-2b" "qwen3.5-0.8b" "granite-4.2-3b" "qwen3.5-35b-a3b" ] ];
         vulkanDeviceSelect = "1002:73df!";
       };
       profiles = {
@@ -1148,6 +1150,29 @@ in
           perf = {
             parallel = 1;
             threads = 8;
+          };
+        };
+      };
+      # oams: the measured winner (docs/tasks/2026-11/oams-llm-host/models-for-oams/).
+      # MoE with only 3B active: attention + shared expert on the 12 GB card, expert
+      # tensors of the first 24 layers in RAM. Measured 113 t/s prefill / 10.2 t/s
+      # decode, stable — where the dense 9B fully on the card faulted the GPU.
+      hosts.oams = {
+        set = "main";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-35b-a3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            nCpuMoe = 24;
+            parallel = 1;
+            threads = 12;
           };
         };
       };

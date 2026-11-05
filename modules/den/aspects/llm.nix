@@ -213,6 +213,9 @@
           ++ lib.optionals perf.cpuMoe [
             "cpu-moe = on"
           ]
+          ++ lib.optionals (perf.nCpuMoe != null) [
+            "n-cpu-moe = ${toString perf.nCpuMoe}"
+          ]
           ++ lib.optionals perf.noKvOffload [
             "no-kv-offload = on"
           ]
@@ -391,6 +394,10 @@
           (toString perf.nGpuLayers)
         ]
         ++ lib.optionals perf.cpuMoe [ "--cpu-moe" ]
+        ++ lib.optionals (perf.nCpuMoe != null) [
+          "--n-cpu-moe"
+          (toString perf.nCpuMoe)
+        ]
         ++ lib.optionals perf.noKvOffload [ "--no-kv-offload" ]
         ++ lib.optionals (perf.device != null) [
           "--device"
@@ -1187,6 +1194,19 @@
             Keep every MoE expert tensor on the CPU (`--cpu-moe`). Use it with `nGpuLayers` so the
             dense layers sit in VRAM and the large sparse expert set stays in system RAM. It emits
             `cpu-moe = on` only when true.
+          '';
+        };
+
+        options.perf.nCpuMoe = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Keep the MoE expert tensors of the FIRST N layers in RAM (`--n-cpu-moe N`), with the
+            attention and shared-expert path on the GPU (`nGpuLayers`). This is the granular form of
+            `cpuMoe`: instead of every expert on the CPU, only the first N layers' experts are, which
+            leaves the rest on the card. Measured on oams 2026-11-05: qwen3.5-35b-a3b at
+            `-ngl 99 -n-cpu-moe 24` ran 113 t/s prefill / 10.2 t/s decode, stable, whereas the
+            whole dense model on the 12 GB card faulted the GPU. `null` omits the key.
           '';
         };
 
