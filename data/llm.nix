@@ -131,21 +131,13 @@ in
         debug = true;
         coResidentTiers = [
           [
-            "gemma-4-e2b"
             "gemma-4-e4b"
             "granite-4.2-3b"
             "granite-4.2-8b"
-            "mimo-v2.6-qwen-9b"
-            "ministral-3-3b-instruct"
             "ministral-3-3b-reasoning"
-            "ministral-3-8b-instruct"
-            "ministral-3-8b-reasoning"
-            "olmo-3-7b-instruct"
             "qwen3.5-0.8b"
             "qwen3.5-2b"
             "qwen3.5-4b"
-            "tmax-2b"
-            "tmax-9b"
           ]
           [ "qwen3.5-35b-a3b" ]
         ];
@@ -155,6 +147,13 @@ in
 
       # Boot profiles: WHICH ROUTERS ARE SERVED. A model is served when its
       # `hosts.brys.set` is one of these names.
+      #
+      # `retired` is deliberately NOT listed in any profile. A model there keeps its full
+      # registration (file, download, perf, measurements) and is one word from being served
+      # again, but llama-swap never spawns it and no alias points at it. Everything moved
+      # there was measured during the 2026 survey and then superseded, usually because it was
+      # slower than the frontier or duplicated a tier. Keeping the block (rather than deleting
+      # it) is what makes the docs/local-llms.md measurements reproducible.
       profiles = {
         desktop = {
           sets = [
@@ -326,7 +325,7 @@ in
       gpu = false;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -346,7 +345,7 @@ in
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 8192;
         common = {
           download = {
@@ -366,7 +365,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -432,7 +431,7 @@ in
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 8192;
         common = {
           download = {
@@ -565,7 +564,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -587,7 +586,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -636,7 +635,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -658,7 +657,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -708,7 +707,7 @@ in
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 8192;
         common = {
           download = {
@@ -728,7 +727,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -938,7 +937,7 @@ in
       source = "qwen3.5-0.8b";
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -987,7 +986,7 @@ in
       source = "qwen3.5-2b";
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1032,7 +1031,7 @@ in
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 8192;
         common = {
           download = {
@@ -1052,7 +1051,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1076,7 +1075,7 @@ in
       source = "tmax-2b";
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1096,7 +1095,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
