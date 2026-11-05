@@ -48,6 +48,14 @@ in
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
     };
+    # The second local llama-swap host (a laptop, RX 6800M). Same OpenAI-compatible
+    # shape as `brys`; the shared API key file is mounted on the host too. Clients
+    # normally reach this through the LiteLLM gateway, but the direct URL stays valid.
+    oams = {
+      baseUrl = "http://oams.lan.etra.net.int.kdn.im:39700/v1";
+      api = "openai-completions";
+      apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
+    };
     # A remote router. Unlike `brys`, models here name `endpoint = "requesty"` and have no host
     # block, so they never appear in the local fleet catalog or the llama-swap serving set.
     requesty = {
@@ -168,6 +176,43 @@ in
             "grunt"
             "surveyed"
           ];
+        };
+      };
+    };
+
+    # The laptop host. It serves only SMALL models that fit the 12 GB RX 6800M
+    # (docs/tasks/2026-11/oams-llm-host/). No grunt/surveyed split: one `main`
+    # router plus a `swap` that lets llama-swap evict between the few models. The
+    # GPU device pin is 1002:73df (the 6800M), not brys' 1002:73e3.
+    oams = {
+      package = "llama-cpp-sessions-vulkan-noblas";
+      defaultThreads = 12;
+      modelsDir = "/var/lib/kdn/llms/models";
+      download = {
+        tokenFile = "/run/configs/llms/huggingface/token";
+        mode = "fast-polite";
+        xetConcurrency = 4;
+      };
+      apiKeyDir = "/run/configs/llms/llama-server/api-keys";
+      # The small models are stateless; no disk session cache on this host.
+      sessionStore = {
+        path = "/var/lib/kdn/llms/sessions";
+        group = "llama-cpp-sessions";
+        maxBytes = 4 * 1024 * 1024 * 1024;
+      };
+      routers = { };
+      swap = {
+        enable = true;
+        routerEngine = "matrix";
+        debug = true;
+        # Only the models that fit in 12 GB are co-residency-tiered; the MoE
+        # candidates go on a RAM tier once measured.
+        coResidentTiers = [ [ "gemma-4-e4b" "qwen3.5-2b" "qwen3.5-0.8b" "granite-4.2-3b" ] ];
+        vulkanDeviceSelect = "1002:73df!";
+      };
+      profiles = {
+        desktop = {
+          sets = [ "main" ];
         };
       };
     };
@@ -426,6 +471,32 @@ in
           };
         };
       };
+      # oams: the 12 GB RX 6800M runs this model 6-9x faster than the W6600. Same file and
+      # mmproj; more threads because the laptop CPU is weaker per core.
+      hosts.oams = {
+        set = "main";
+        servedContext = 32768;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "gemma-4-e4b.gguf";
+          hfRepo = "surveyed";
+          mmproj = {
+            enable = true;
+            hfFile = "mmproj-gemma-4-E4B-it-Q8_0.gguf";
+            hfRepo = "surveyed";
+          };
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 12;
+            imageMaxTokens = 1120;
+          };
+        };
+      };
     };
     "glm-4.7-flash" = {
       gpu = false;
@@ -473,6 +544,24 @@ in
             nGpuLayers = 99;
             parallel = 1;
             threads = 8;
+          };
+        };
+      };
+      hosts.oams = {
+        set = "main";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "granite-4.2-3b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 12;
           };
         };
       };
@@ -931,6 +1020,24 @@ in
           };
         };
       };
+      hosts.oams = {
+        set = "main";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-0.8b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 12;
+          };
+        };
+      };
     };
     "qwen3.5-0.8b-cpu" = {
       gpu = false;
@@ -977,6 +1084,24 @@ in
             nGpuLayers = 99;
             parallel = 4;
             threads = 8;
+          };
+        };
+      };
+      hosts.oams = {
+        set = "main";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          hfFile = "qwen3.5-2b.gguf";
+          hfRepo = "surveyed";
+          perf = {
+            device = "Vulkan0";
+            nGpuLayers = 99;
+            parallel = 1;
+            threads = 12;
           };
         };
       };

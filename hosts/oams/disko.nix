@@ -150,6 +150,16 @@ in
           ];
           "fs/var" = ds "/var" [ snapOn ];
           "fs/var/lib" = ds "/var/lib" [ ];
+          # Local LLM serving (task docs/tasks/2026-11/oams-llm-host/). The models
+          # directory is large and reproducible from the fleet data, so it is not
+          # snapshotted; the session cache is disposable. Same layout as brys, but
+          # brys gets these through `kdn.disks.persist` buckets and oams uses raw
+          # disko datasets, so they are declared here instead.
+          "fs/var/lib/kdn" = ds "/var/lib/kdn" [ ];
+          "fs/var/lib/kdn/llms" = ds "/var/lib/kdn/llms" [ ];
+          "fs/var/lib/kdn/llms/models" = ds "/var/lib/kdn/llms/models" [ snapOff ];
+          "fs/var/lib/kdn/llms/sessions" = ds "/var/lib/kdn/llms/sessions" [ snapOff ];
+          "fs/var/lib/llm-stats" = ds "/var/lib/llm-stats" [ snapOff ];
           "fs/var/lib/libvirt" = ds "/var/lib/libvirt" [ ];
           "fs/var/lib/microvms" = ds "/var/lib/microvms" [ ];
           "fs/var/lib/nixos" = ds "/var/lib/nixos" [ ];

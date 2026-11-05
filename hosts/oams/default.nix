@@ -6,6 +6,15 @@
   ...
 }:
 let
+  # Local LLM serving (task docs/tasks/2026-11/oams-llm-host/). This projects
+  # data/llm.nix's `servers.oams` into `kdn.llm.local` and adds the RX 6800M
+  # Vulkan runtime config. Leaner than brys: no TLS/leaf-key, no on-host
+  # Prometheus (both centralised on the LiteLLM gateway host).
+  llm = import ./llm.nix {
+    inherit lib pkgs kdnConfig;
+    profile = "desktop";
+  };
+
   slots = kdnConfig.self.mkSlots {
     inherit pkgs;
     # kdn's own host connectivity graph (moss/etra/drek/oams/brys/anji).
@@ -32,6 +41,10 @@ in
     kdnConfig.self.nixosModules.default
     slots.config.nixos
     "${kdnConfig.self}/data/ca/ca-dag.nix"
+    # LLM serving: secrets file, stats collector, model/session dirs.
+    llm.nixos
+    # The `kdn.llm.local` slot assignments from data/llm.nix.
+    llm.slot
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
@@ -39,6 +52,7 @@ in
           "build-farm"
           "ca-dag"
           "certificates"
+          "llm"
           "ssh-ca"
         ];
       };
@@ -46,6 +60,9 @@ in
   ];
 
   config = lib.mkMerge [
+    # The RX 6800M Vulkan runtime config (hardware.graphics, mesa, and the
+    # MESA_VK_DEVICE_SELECT pin to 1002:73df), owned by ./llm.nix.
+    llm.gpu
     {
       # Build-farm client: one `buildMachines` entry per system set, each at that set's proxy
       # port. See data/build-farm.nix.
