@@ -444,6 +444,17 @@ in
       kdn.hw.nanokvm.enable = true;
     }
     {
+      # The fleet LLM secrets (llama-server API keys), so the LiteLLM gateway
+      # (hosts/etra/litellm.nix) can authenticate to the backends. Unconditional:
+      # the gateway needs it whether or not the DNS file exists. Same file and
+      # basePath as brys; etra is a recipient via its SSH host key.
+      kdn.security.secrets.sops.files."llms" = {
+        sopsFile = "${self}/llms.nonsensitive.sops.yaml";
+        basePath = "/run/configs/llms";
+        sops.mode = "0444";
+      };
+    }
+    {
       # Both entries read one personal file. An absent path stops the whole evaluation inside
       # `builtins.readFile`, so declare no entry at all when the file is absent.
       kdn.security.secrets.sops.files = lib.mkIf (builtins.pathExists "${self}/dns.sops.yaml") {
@@ -455,15 +466,6 @@ in
           filters = [ (lib.strings.hasPrefix "kea.etra") ];
           sopsFile = "${self}/dns.sops.yaml";
           sops.owner = "kea";
-        };
-        # The fleet LLM secrets (llama-server API keys), so the LiteLLM gateway
-        # (hosts/etra/litellm.nix) can authenticate to the backends. Same file and
-        # basePath as brys; etra is a recipient via its SSH host key. (Defined in
-        # this `files` block because Nix forbids a second `files` attribute here.)
-        "llms" = {
-          sopsFile = "${self}/llms.nonsensitive.sops.yaml";
-          basePath = "/run/configs/llms";
-          sops.mode = "0444";
         };
       };
       # `or { }` covers the tree with no key. Both router options default to `{ }`

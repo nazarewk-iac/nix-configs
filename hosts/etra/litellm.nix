@@ -1,37 +1,28 @@
 # LiteLLM gateway — a single OpenAI-compatible entrypoint for the local LLM fleet.
 #
-# Task: docs/tasks/2026-11/litellm-gateway/. This is a HOST-LOCAL module (like
-# hosts/brys/llm.nix), not a den aspect, because it is deployed only on etra.
+# Task: docs/tasks/2026-11/litellm-gateway/. Host-LOCAL module (like
+# hosts/brys/llm.nix) because it is deployed only on etra.
 #
-# ## State of this work
+# ## State: LIVE (2026-11-05)
 #
-# The container and config are COMPLETE, but the piece that makes it actually
-# reach brys is deferred: etra's firewall reaches brys (ping works) yet brys
-# drops etra on both 39701 (compat proxy) and 443 (Caddy). Opening that needs a
-# firewall change on brys, which is not done here because doing it unattended on
-# critical infra is exactly the kind of change that locks you out.
+# The container runs (`autoStart = true`) and reaches brys over the NetBird mesh:
+# brys exposes llama-swap on `39704` via a narrow socat relay (hosts/brys/llm.nix,
+# firewall-opened only on `nb-priv`), and `litellm-brys-egress` forwards to that
+# mesh address. Verified end to end with a real completion.
 #
-# So `autoStart = false`: a `nixos-rebuild switch` on etra will NOT start this
-# container. Activation steps (when you want it):
+# ## Why no database
 #
-#   1. On brys, allow etra -> brys:39701 (the plain-HTTP OpenAI compat proxy).
-#   2. Set `autoStart = true` here and rebuild etra.
-#   3. Clients talk to `http://<etra>:4000/v1` with the master key.
-#
-# ## Why no database and no TLS
-#
-# No Postgres (`DATABASE_URL` unset): that gives no virtual keys, no budgets, no
-# spend logs, and one shared master key — which is what we want (research.md).
-# No TLS to brys: the egress relay points at brys's plain-HTTP compat proxy, so
-# there is no cert/hostname mismatch to solve on the private network.
+# No Postgres (`DATABASE_URL` unset): no virtual keys, no budgets, no spend logs,
+# one shared master key — which is what we want (research.md).
 #
 # ## Network shape (the repo's container rule: private network + narrow socat)
 #
 # The guest has a private veth (no host network). It reaches the outside ONLY
-# through two host socat relays bound to the bridge address:
-#   - ingress 10.233.100.1:4000  -> guest:4000        (clients -> gateway)
-#   - egress  10.233.100.1:8443  -> brys:39701        (gateway -> brys)
-# The guest's upstream api_base is therefore http://10.233.100.1:8443/v1.
+# through narrow host socat relays:
+#   - ingress 0.0.0.0:4000       -> guest:4000   (clients -> gateway; the router
+#                                                 firewall admits it only from nb-priv)
+#   - egress  10.233.100.1:8443  -> brys netbird:39704 (gateway -> brys)
+# The guest's api_base is http://10.233.100.1:8443/v1.
 { lib, pkgs, kdnConfig, ... }:
 let
   hostAddress = "10.233.100.1";
@@ -116,8 +107,8 @@ in
               ${pkgs.writeShellScript "litellm-run" ''
                 set -eu
                 export LITELLM_MASTER_KEY="$(cat /var/lib/litellm/master-key)"
-                # Upstream is brys's plain-HTTP compat proxy via the host egress
-                # relay; no TLS, so no cert to verify, and that proxy needs no key.
+                # Upstream is brys' llama-swap over NetBird, reached through the
+                # host egress relay. Plain HTTP (no TLS to verify), real API key.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
                 export BRYS_API_KEY="$(cat /run/secrets/brys-api-key)"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
@@ -171,8 +162,7 @@ in
     };
   };
 
-  # Egress relay: guest -> brys compat proxy. This is the piece that needs the
-  # brys-side firewall opening (see header step 1).
+  # Egress relay: guest -> brys' mesh-exposed llama-swap (39704).
   systemd.services.litellm-brys-egress = {
     description = "Relay the LiteLLM container to brys:${toString brysPort}";
     wantedBy = [ "multi-user.target" ];

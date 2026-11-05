@@ -2,8 +2,8 @@
 # Regenerate with docs/tasks/2026-11/litellm-gateway/ (see definition.md).
 #
 # Every alias brys serves is exposed here as an OpenAI-compatible model whose
-# upstream is brys's llama-swap, reached through the host socat egress relay
-# (10.233.100.1:8443 -> brys:443). The relay keeps the container on its private
+# upstream is brys' llama-swap, reached through the host socat egress relay
+# (10.233.100.1:8443 -> brys netbird:39704). The relay keeps the container on its private
 # network: it only ever talks to its host bridge address.
 
 model_list:
@@ -246,7 +246,10 @@ general_settings:
 router_settings:
   # The default request timeout is 6000 s; clamp it or a dead backend hangs a
   # request for over an hour. All-down returns 429 with retry-after.
-  timeout: 60
+  # 120 s, not the 6000 s default: a slow model (frontier) still gets a chance,
+  # but a dead backend does not hang a client for over an hour. Raise per-model
+  # in litellm_params for known-slow aliases if needed.
+  timeout: 120
   num_retries: 1
   cooldown_time: 30
   allowed_fails: 2
