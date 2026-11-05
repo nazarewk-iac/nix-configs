@@ -293,61 +293,68 @@ Every numeric column is measured on brys on 2026-10-18 except
 run used: 16384 for every measured run, or the registered served context for a
 model with no measurement. A dash means not applicable.
 
-| model                      | class        | params (active)                  | license     | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in                      |
-| -------------------------- | ------------ | -------------------------------- | ----------- | ------- | ------------ | ------- | ----- | ---------- | ----------- | ---- | ---------------------------------- |
-| qwen3.8-flash-next         | frontier     | —                                | —           | 93.7    | 1048576      | —       | —     | —          | —           | —    | swap main                          |
-| deepseek-v4-flash          | frontier     | ~180B MoE                        | custom      | 103     | 327680       | —       | —     | —          | —           | —    | swap main                          |
-| qwen3.5-4b                 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 114     | 643   | 60.8       | 158.0       | GPU  | swap with_grunt (:39705)           |
-| qwen3.5-4b                 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 2118    | 4733  | 13.0       | 68.7        | CPU  | swap with_grunt (:39705)           |
-| qwen3.5-9b                 | grunt        | 9B dense (hybrid)                | Apache-2.0  | 5.3     | 16384        | 3437    | 8855  | 5.6        | 40.8        | CPU  | swap with_grunt (:39705, disabled) |
-| phi-4                      | small-cpu    | —                                | —           | 9       | 16384        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3-30b-a3b              | small-cpu    | —                                | —           | 18      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3-next-80b             | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3-coder-next           | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| gpt-oss-120b               | small-cpu    | —                                | —           | 65      | —            | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3-235b                 | small-cpu    | —                                | —           | 77      | 65536        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3.5-0.8b               | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 114     | 348   | 163.4      | 63.8        | GPU  | swap with_surveyed (:39706, GPU)   |
-| qwen3.5-0.8b               | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 55.8       | 43.0        | CPU  | swap with_surveyed (:39706, GPU)   |
-| qwen3.5-2b                 | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 114     | 544   | 116.8      | 273.5       | GPU  | swap with_surveyed (:39706, GPU)   |
-| qwen3.5-2b                 | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, GPU)   |
-| tmax-2b                    | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 117     | 557   | 110.7      | 311         | GPU  | swap with_surveyed (:39706, GPU)   |
-| tmax-2b                    | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | swap with_surveyed (:39706, GPU)   |
-| granite-4.2-3b             | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 59      | 232   | 83.9       | 223.6       | GPU  | swap with_surveyed (:39706, GPU)   |
-| granite-4.2-3b             | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 2770    | 4906  | 19.8       | 174.0       | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-3b-instruct    | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 79.3       | 1369        | GPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-3b-instruct    | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 17.4       | 480         | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-3b-reasoning   | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 80.9       | 933         | GPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-3b-reasoning   | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 18.9       | 202         | CPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e2b                | surveyed-gpu | —                                | —           | 3.11    | 16384        | 133     | 1967  | 83.5       | 38.8        | GPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e2b                | surveyed-gpu | —                                | —           | 3.11    | 16384        | 263     | 3315  | 23.8       | 37.8        | CPU  | swap with_surveyed (:39706, GPU)   |
-| olmo-3-7b-instruct         | surveyed-gpu | —                                | —           | 4.47    | 16384        | 62      | 323   | 40.4       | 136         | GPU  | swap with_surveyed (:39706, GPU)   |
-| olmo-3-7b-instruct         | surveyed-gpu | —                                | —           | 4.47    | 16384        | 11445   | 15819 | 9.83       | 25.9        | CPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e4b                | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 170     | 2936  | 56.6       | 46.6        | GPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e4b                | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 2600    | 7512  | 9.6        | 50.5        | CPU  | swap with_surveyed (:39706, GPU)   |
-| granite-4.2-8b             | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 46      | 298   | 38.6       | 146.0       | GPU  | swap with_surveyed (:39706, GPU)   |
-| granite-4.2-8b             | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 6270    | 11349 | 8.2        | 71.1        | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-8b-instruct    | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.4       | 576         | GPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-8b-instruct    | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.1        | 244         | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-8b-reasoning   | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.9       | 458         | GPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-8b-reasoning   | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.5        | 56          | CPU  | swap with_surveyed (:39706, GPU)   |
-| mimo-v2.6-qwen-9b          | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.5     | 16384        | 3754    | 9325  | 5.7        | 28.1        | CPU  | swap with_surveyed (:39706, GPU)   |
-| tmax-9b                    | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 117     | 708   | 36.9       | 121         | GPU  | swap with_surveyed (:39706, GPU)   |
-| tmax-9b                    | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 839     | 6358  | 7.18       | 20.7        | CPU  | swap with_surveyed (:39706, GPU)   |
-| qwen3.5-0.8b-cpu           | surveyed-cpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 55.8       | 43.0        | CPU  | swap with_surveyed (:39706, CPU)   |
-| qwen3.5-2b-cpu             | surveyed-cpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, CPU)   |
-| tmax-2b-cpu                | surveyed-cpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | swap with_surveyed (:39706, CPU)   |
-| gemma-4-12b                | surveyed-cpu | 11.95B dense                     | Apache-2.0  | 7.12    | 16384        | 1871    | 8842  | 5.76       | 10.4        | CPU  | swap with_surveyed (:39706, CPU)   |
-| gemma-4-26b-a4b            | surveyed-cpu | 25.2B / 3.8B (MoE)               | Apache-2.0  | 14      | 16384        | 14482   | 28248 | 14.5       | 67.7        | CPU  | swap with_surveyed (:39706, CPU)   |
-| qwen3.6-27b                | surveyed-cpu | 27B dense                        | Apache-2.0  | 16      | 16384        | 11759   | 27798 | 1.8        | 10.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.8 t/s, slower than flash-next |
-| granite-4.2-30b            | surveyed-cpu | 30B dense                        | Apache-2.0  | 17      | 16384        | 17029   | 33865 | 2.1        | 17.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.1 t/s, slower than flash-next |
-| gemma-4-31b                | surveyed-cpu | 31B dense                        | Apache-2.0  | 18      | 16384        | 19319   | 36790 | 1.7        | 9.3         | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.7 t/s, slower than flash-next |
-| glm-4.7-flash              | surveyed-cpu | 30B / ~3B (MoE)                  | MIT         | 18      | 16384        | 13886   | 31352 | 11.5       | 46.5        | CPU  | swap with_surveyed (:39706, CPU)   |
-| olmo-3.1-32b               | surveyed-cpu | 32B                              | Apache-2.0  | 19      | 16384        | 18361   | 36951 | 2.3        | 17.6        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.3 t/s, slower than flash-next |
-| seed-oss-36b               | surveyed-cpu | 36B dense                        | Apache-2.0  | 20      | 16384        | 20178   | 40937 | 2.0        | 12.0        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.0 t/s, slower than flash-next |
-| qwen3.5-35b-a3b            | surveyed-cpu | 35B / 3B (MoE)                   | Apache-2.0  | 21      | 16384        | 12210   | 33206 | 9.2        | 45.9        | CPU  | swap with_surveyed (:39706, CPU)   |
-| qwen3.6-35b-a3b            | surveyed-cpu | 35B / ~3B (MoE)                  | Apache-2.0  | 21      | 16384        | 12210   | 33320 | 10.9       | 49.7        | CPU  | swap with_surveyed (:39706, CPU)   |
-| nemotron-3.5-lightning-30b | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid)  | OpenMDW-1.1 | 24      | 16384        | 363     | 23527 | 12.9       | 44.0        | CPU  | swap with_surveyed (:39706, CPU)   |
-| nemotron-3.5-bolt-74b      | bench-only   | 74B / 9B                         | OpenMDW-1.1 | 21      | —            | —       | —     | —          | —           | —    | — (bench only)                     |
+> **Corrected 2026-11-05.** Six rows reported decode faster than prefill, which no LLM can
+> do in normal decoding. They were re-measured with `/completion` timings, which report
+> prefill and decode separately: `gemma-4-e4b` GPU/CPU, `gemma-4-e2b` GPU/CPU,
+> `qwen3.5-0.8b` GPU/CPU (and its `-cpu` alias row, same measurement). All six now have
+> prefill ≫ decode. The lesson for future survey runs: do not infer a rate by dividing
+> tokens by wall clock, because a cold prompt is dominated by prefill.
+
+| model                      | host | class        | params (active)                  | license     | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in                      |
+| -------------------------- | ---- | ------------ | -------------------------------- | ----------- | ------- | ------------ | ------- | ----- | ---------- | ----------- | ---- | ---------------------------------- |
+| qwen3.8-flash-next         | brys | frontier     | —                                | —           | 93.7    | 1048576      | —       | —     | —          | —           | —    | swap main                          |
+| deepseek-v4-flash          | brys | frontier     | ~180B MoE                        | custom      | 103     | 327680       | —       | —     | —          | —           | —    | swap main                          |
+| qwen3.5-4b                 | brys | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 114     | 643   | 60.8       | 158.0       | GPU  | swap with_grunt (:39705)           |
+| qwen3.5-4b                 | brys | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 2118    | 4733  | 13.0       | 68.7        | CPU  | swap with_grunt (:39705)           |
+| qwen3.5-9b                 | brys | grunt        | 9B dense (hybrid)                | Apache-2.0  | 5.3     | 16384        | 3437    | 8855  | 5.6        | 40.8        | CPU  | swap with_grunt (:39705, disabled) |
+| phi-4                      | brys | small-cpu    | —                                | —           | 9       | 16384        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-30b-a3b              | brys | small-cpu    | —                                | —           | 18      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-next-80b             | brys | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-coder-next           | brys | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| gpt-oss-120b               | brys | small-cpu    | —                                | —           | 65      | —            | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3-235b                 | brys | small-cpu    | —                                | —           | 77      | 65536        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
+| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 114     | 348   | 64.7      | 500.9      | GPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6      | 457.2      | CPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-2b                 | brys | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 114     | 544   | 116.8      | 273.5       | GPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-2b                 | brys | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, GPU)   |
+| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 117     | 557   | 110.7      | 311         | GPU  | retired: registered, not served     |
+| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served     |
+| granite-4.2-3b             | brys | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 59      | 232   | 83.9       | 223.6       | GPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-3b             | brys | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 2770    | 4906  | 19.8       | 174.0       | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 79.3       | 1369        | GPU  | retired: registered, not served     |
+| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 17.4       | 480         | CPU  | retired: registered, not served     |
+| ministral-3-3b-reasoning   | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 80.9       | 933         | GPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-3b-reasoning   | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 18.9       | 202         | CPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 133     | 1967  | 25.4      | 149.4      | GPU  | retired: registered, not served     |
+| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 263     | 3315  | 25.4      | 138.1      | CPU  | retired: registered, not served     |
+| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 62      | 323   | 40.4       | 136         | GPU  | retired: registered, not served     |
+| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 11445   | 15819 | 9.83       | 25.9        | CPU  | retired: registered, not served     |
+| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 170     | 2936  | 15.7      | 84.5       | GPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 2600    | 7512  | 13.9      | 76.3       | CPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-8b             | brys | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 46      | 298   | 38.6       | 146.0       | GPU  | swap with_surveyed (:39706, GPU)   |
+| granite-4.2-8b             | brys | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 6270    | 11349 | 8.2        | 71.1        | CPU  | swap with_surveyed (:39706, GPU)   |
+| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.4       | 576         | GPU  | retired: registered, not served     |
+| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.1        | 244         | CPU  | retired: registered, not served     |
+| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.9       | 458         | GPU  | retired: registered, not served     |
+| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.5        | 56          | CPU  | retired: registered, not served     |
+| mimo-v2.6-qwen-9b          | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.5     | 16384        | 3754    | 9325  | 5.7        | 28.1        | CPU  | retired: registered, not served     |
+| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 117     | 708   | 36.9       | 121         | GPU  | retired: registered, not served     |
+| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 839     | 6358  | 7.18       | 20.7        | CPU  | retired: registered, not served     |
+| qwen3.5-0.8b-cpu           | brys | surveyed-cpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6      | 457.2      | CPU  | retired: registered, not served     |
+| qwen3.5-2b-cpu             | brys | surveyed-cpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | retired: registered, not served     |
+| tmax-2b-cpu                | brys | surveyed-cpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served     |
+| gemma-4-12b                | brys | surveyed-cpu | 11.95B dense                     | Apache-2.0  | 7.12    | 16384        | 1871    | 8842  | 5.76       | 10.4        | CPU  | retired: registered, not served     |
+| gemma-4-26b-a4b            | brys | surveyed-cpu | 25.2B / 3.8B (MoE)               | Apache-2.0  | 14      | 16384        | 14482   | 28248 | 14.5       | 67.7        | CPU  | retired: registered, not served     |
+| qwen3.6-27b                | brys | surveyed-cpu | 27B dense                        | Apache-2.0  | 16      | 16384        | 11759   | 27798 | 1.8        | 10.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.8 t/s, slower than flash-next |
+| granite-4.2-30b            | brys | surveyed-cpu | 30B dense                        | Apache-2.0  | 17      | 16384        | 17029   | 33865 | 2.1        | 17.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.1 t/s, slower than flash-next |
+| gemma-4-31b                | brys | surveyed-cpu | 31B dense                        | Apache-2.0  | 18      | 16384        | 19319   | 36790 | 1.7        | 9.3         | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.7 t/s, slower than flash-next |
+| glm-4.7-flash              | brys | surveyed-cpu | 30B / ~3B (MoE)                  | MIT         | 18      | 16384        | 13886   | 31352 | 11.5       | 46.5        | CPU  | retired: registered, not served     |
+| olmo-3.1-32b               | brys | surveyed-cpu | 32B                              | Apache-2.0  | 19      | 16384        | 18361   | 36951 | 2.3        | 17.6        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.3 t/s, slower than flash-next |
+| seed-oss-36b               | brys | surveyed-cpu | 36B dense                        | Apache-2.0  | 20      | 16384        | 20178   | 40937 | 2.0        | 12.0        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.0 t/s, slower than flash-next |
+| qwen3.5-35b-a3b            | brys | surveyed-cpu | 35B / 3B (MoE)                   | Apache-2.0  | 21      | 16384        | 12210   | 33206 | 9.2        | 45.9        | CPU  | swap with_surveyed (:39706, CPU)   |
+| qwen3.6-35b-a3b            | brys | surveyed-cpu | 35B / ~3B (MoE)                  | Apache-2.0  | 21      | 16384        | 12210   | 33320 | 10.9       | 49.7        | CPU  | retired: registered, not served     |
+| nemotron-3.5-lightning-30b | brys | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid)  | OpenMDW-1.1 | 24      | 16384        | 363     | 23527 | 12.9       | 44.0        | CPU  | retired: registered, not served     |
+| nemotron-3.5-bolt-74b      | brys | bench-only   | 74B / 9B                         | OpenMDW-1.1 | 21      | —            | —       | —     | —          | —           | —    | — (bench only)                     |
 
 Source research files: [coresidency-measured.research.md](tasks/2026-10/brys-grunt-colocation/coresidency-measured.research.md)
 (all measured columns), [models-2026.research.md](tasks/2026-10/brys-grunt-colocation/models-2026.research.md)
@@ -573,25 +580,35 @@ no `mmproj`, so it was unreachable and had no vision. Measured on brys against a
 | dense OCR @default budget        | 14/18 lines exact                                                         |
 | audio ASR (native, 30 s clip)    | **correct** full transcription in 7.4 s — unique in the fleet             |
 | needle retrieval 12k tokens      | correct                                                                   |
-| needle retrieval 30k tokens      | correct, 1549 s (≈20 tok/s prefill effective)                             |
+| needle retrieval 30k tokens      | correct, 1549 s wall clock for the whole request                          |
 | 128k window                      | loads and reports `n_ctx_slot = 131072`; a 175k request is refused cleanly |
 
-**The GPU is not faster than the CPU here.** `llama-bench` on this card:
+**On the W6600 the GPU is only ~2x the CPU**, and that ratio is the real story (see the
+brys-vs-oams table below for the same model on a stronger card). `llama-bench`, clean card,
+`-r 2`:
 
 | backend     | pp512 | pp2048 | tg128 |
 | ----------- | ----: | -----: | ----: |
-| Vulkan (99) |  83.5 |   75.3 |  14.6 |
-| CPU (16t)   |  78.0 |   71.0 |  14.0 |
+| Vulkan (99) | 158.9 |  151.4 |  24.8 |
+| CPU (16t)   |  78.3 |   71.3 |  13.9 |
 
-The spread is under 10%, so putting the 4.8 GB Q4_0 on the 8 GB W6600 buys ~6% prefill and
-costs the card its headroom. Long-context prefill at ~80 tok/s is what caps practical use at
-roughly 30k tokens of input (~25 min). The 128k window is real but not usable latency-wise.
+`pp*` is prefill, `tg128` is decode; those are the only two rates quoted in this section.
+Any wall-clock figure below is a whole request (prefill + decode + HTTP), so do not divide
+tokens by it to get a rate.
 
-**`-nkvo` (KV in RAM, weights on GPU) is safe and costs nothing measurable** — 23.6 s vs 22.8 s
-on a fixed 1.6k-token prompt, output correct, zero `amdgpu` errors. The Vulkan `-nkvo`
-gibberish bug (upstream #23827) is fixed in this build. At 128k context + `-nkvo` + mmproj the
-process sits at ~5.1 GB RSS. This is the configuration to use if the model is ever put on a
-tighter box; on brys the difference is noise.
+An earlier version of this section reported 83.5/75.3/14.6 for the GPU row. That run
+shared the 8 GB card with the llama-swap router's own resident gemma, which roughly halves
+throughput; the numbers above are with the card free. Prefill at ~160 t/s is what caps
+practical use: the 30k-token retrieval above took 1549 s end to end, and most of that is
+prefill. The 128k window is real but not usable at this prefill rate.
+
+**`-nkvo` (KV in RAM, weights on GPU) is safe and costs nothing measurable.** A/B on one fixed
+1.6k-token prompt: 22.8 s with KV on the GPU, 23.6 s with `-nkvo`, output correct both times,
+zero `amdgpu` errors. Those are whole-request wall clocks on one prompt, not a decode
+measurement, so a ~3% difference is inside noise. The Vulkan `-nkvo` gibberish bug (upstream
+#23827) is fixed in this build. At 128k context + `-nkvo` + mmproj the process sits at
+~5.1 GB RSS. This is the configuration to use if the model is ever put on a tighter box; on
+brys the difference is noise.
 
 **`--image-max-tokens 1120` is the OCR lever** (default is lower). Upscaling the image 2x does
 nothing — the budget, not the pixels, is the cap. Do not bother pre-scaling for this model the
@@ -609,6 +626,56 @@ Recommended flags, which the fleet config should mirror:
 `<|think|>` in the system prompt, and a leaked thinking block becomes visible garbage in
 tool-call turns. Sampling is the model card's (temp 1.0 / top_p 0.95 / top_k 64), not
 llama.cpp's defaults.
+
+### Same models on brys vs oams: the card matters far more than the flags (2026-11-05)
+
+Measured with `llama-bench -ngl 99 -t 16 -p 512,2048 -n 128 -r 2`, same llama.cpp
+closure, same GGUF files on both hosts. `brys` = Radeon Pro W6600 (NAVI23, 8 GB);
+`oams` = Radeon RX 6800M (NAVI22, 12 GB). Neither host had another model loaded
+during a run — that condition matters, see the note below.
+
+| model         | host | pp512 | pp2048 | tg128 |
+| ------------- | ---- | ----: | -----: | ----: |
+| qwen3.5-0.8b  | brys | 926.8 |  930.3 |  94.8 |
+| qwen3.5-0.8b  | oams | 6330.5 | 6015.1 | 265.8 |
+| qwen3.5-2b    | brys | 383.6 |  390.9 |  54.1 |
+| qwen3.5-2b    | oams | 2981.2 | 2882.3 | 157.7 |
+| gemma-4-e2b   | brys | 390.4 |  346.4 |  40.0 |
+| gemma-4-e2b   | oams | 2486.7 | 2113.0 | 137.6 |
+| granite-4.2-3b| brys | 180.5 |  167.4 |  34.1 |
+| granite-4.2-3b| oams | 1407.2 | 1280.0 | 114.0 |
+| gemma-4-e4b   | brys | 158.9 |  151.4 |  24.8 |
+| gemma-4-e4b   | oams | 1371.8 | 1317.8 |  82.4 |
+
+**oams is 6-9x faster at prefill and 2.8-3.4x at decode**, on identical software. The
+W6600 is not slow because of Vulkan or this llama.cpp build; it is the weaker card.
+
+The CPU columns show why this is a GPU story and not a machine story: oams' CPU
+decode is *worse* than brys' (gemma-4-e4b: 4.3 vs 13.9 t/s) because it is a laptop
+that thermally throttles, yet its GPU decode is 3.3x brys'. brys' GPU/CPU ratio is
+only ~1.8x on prefill (158.9 vs 78.3), i.e. the W6600 barely beats its own CPU;
+oams' ratio is ~4.8x (1371.8 vs 284.0).
+
+**A measurement trap worth recording.** The first brys run of gemma-4-e4b read
+83.5/75.3/14.6, and a later run read 158.9/151.4/24.8 — a 2x swing. The cause was
+the managed llama-swap router holding its own resident gemma-4-e4b on the same 8 GB
+card (`lsof /dev/dri/renderD*` showed two `llama-ser` holders). On an 8 GB card a
+single co-resident model halves the throughput of a benchmark. Unload first, then
+measure, or the numbers are meaningless.
+
+**128K context fits neither host's VRAM cleanly, but oams degrades far better.**
+At `--ctx-size 131072` with mmproj, both load, and the buffer breakdown differs in
+the one line that matters:
+
+```
+brys:  CPU_Mapped model buffer = 2730.00 MiB   Vulkan0 model buffer = 2696.04 MiB
+oams:  Vulkan_Host model buffer = 2730.00 MiB   Vulkan0 model buffer = 2696.04 MiB
+```
+
+`CPU_Mapped` means weights in host RAM, read over the bus — the slow path. `Vulkan_Host`
+is Vulkan staging memory. So at 128K brys pushes ~2.7 GiB of the model to the CPU while
+oams keeps it in device-addressable memory. Total on-card need is ~5.0 GiB
+(2.7 model + 2.05 KV + 0.25 compute), which fits 12 GB comfortably and squeezes 8 GB.
 
 Where it belongs in the tier map: **`tools-*` and `audio-*` candidates**, plus vision where the
 task is UI understanding or sparse text rather than dense OCR at small sizes. It is serial and
