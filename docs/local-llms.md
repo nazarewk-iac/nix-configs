@@ -17,6 +17,41 @@ aspect; the `client` and `proxy` subslots stay for now.
 > See [llama-swap mode](#llama-swap-mode) for the alternative lifecycle owner
 > that replaces the per-router `llama-server` units.
 
+## The fleet is growing beyond one host
+
+Two efforts change this document's single-host assumption. Each has its own task
+with the detail; this is the summary.
+
+**A second llama-swap host, `oams`.** A 12 GB RX 6800M laptop is 6-9x faster at
+prefill than brys's 8 GB W6600 on identical small models (measured; see
+[the brys-vs-oams table](#same-models-on-brys-vs-oams-the-card-matters-far-more-than-the-flags-2026-11-05)).
+So the small GPU models want to move there. The work is the ZFS datasets, the
+llama-swap wiring, a toggle that turns serving off for gaming and on battery, and
+model selection. Task: [docs/tasks/2026-11/oams-llm-host/](tasks/2026-11/oams-llm-host/definition.md).
+Model candidates (researched, ranked by quality-per-GB, with the disk cost of
+each): [models-for-oams/research.md](tasks/2026-11/oams-llm-host/models-for-oams/research.md).
+
+One concrete finding from that research worth recording here: **`qwen3.8-flash-next`
+can run on oams at 256K context**, but not because the weights fit in RAM — they
+do not, and they do not need to. With `--lazy-mode auto` + `mmap` the weights are
+file-backed (brys serves the 93.7 GB file in 54.1 GiB RSS), so the binding
+constraint is the KV cache, which at 256K is 3.2 GB (q8_0) / 6.4 GB (F16). 1M does
+not fit comfortably. Full arithmetic:
+[qwen-flash-next.research.md](tasks/2026-11/oams-llm-host/qwen-flash-next.research.md).
+
+**A gateway, `litellm` on `etra`.** One OpenAI-compatible entrypoint in front of
+every host, with retries, cooldowns, fallbacks and Prometheus metrics. It runs
+**without a database**: `config.yaml` in the repo, a single shared
+`LITELLM_MASTER_KEY` from sops, no virtual keys or spend logs. Two facts matter
+operationally: the default request timeout is **6000 s** and must be clamped, and
+when all deployments for a model are unavailable LiteLLM returns **HTTP 429**, not
+503 (503 exists only on `/health`). Alert on the `litellm_deployment_state`
+metric. Task: [docs/tasks/2026-11/litellm-gateway/](tasks/2026-11/litellm-gateway/definition.md),
+config/behaviour detail in [research.md](tasks/2026-11/litellm-gateway/research.md),
+and the "can a request wake a powered-off host" question in
+[wake-on-request.research.md](tasks/2026-11/litellm-gateway/wake-on-request.research.md)
+(short answer: no native hook; primitives exist, a wake-proxy is the robust path).
+
 ## Concept
 
 `kdn.llm.local` runs one or more llama-server processes (from llama.cpp) in
