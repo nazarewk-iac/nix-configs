@@ -50,14 +50,19 @@ spend logs. All detail is in
 "can a request wake a powered-off host": [wake-on-request.research.md](tasks/2026-11/litellm-gateway/wake-on-request.research.md)
 — short answer, no native hook, a wake-proxy is the robust path).
 
-> **It is NOT deployed yet.** The container and config exist as code
-> (`hosts/etra/litellm.nix`, `hosts/etra/litellm.config.yaml`) and etra builds
-> with them, but `autoStart = false`, so nothing runs. The blocker is networking:
-> etra reaches brys (ping works) yet **brys drops etra on `39701` and `443`**, so
-> the gateway cannot talk to any backend until brys opens its firewall for etra.
+> **It is LIVE (2026-11-05).** The container runs on etra (`autoStart = true`) and
+> reaches brys over **NetBird**: brys exposes llama-swap to the mesh on `39704`
+> (narrow socat relay, firewall-opened only on `nb-priv`), and etra's container
+> egress relay forwards to `100.79.164.36:39704`. Verified end to end — a chat
+> completion through the proxy returns the model's answer. oams is not a backend
+> yet (it is a laptop that stops serving on battery/gaming; add it the same way
+> once its toggle is proven).
 
-**How you will access it, once activated.** From any host on etra's trusted LAN
-(`nb-priv`):
+**How to access it (live).** The ingress binds `0.0.0.0:4000`, but etra's router
+firewall only trusts `nb-priv` (NetBird), so today it is reachable from etra
+itself and from NetBird peers granted access to etra — **not** from the plain LAN
+until `4000` is opened on the LAN interface (or a reverse NetBird ACL grants peers
+-> etra). Endpoint:
 
 ```
 base URL : http://<etra>:4000/v1         # OpenAI-compatible

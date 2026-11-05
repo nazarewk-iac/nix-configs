@@ -107,3 +107,23 @@ done unattended. Steps to activate are in `hosts/etra/litellm.nix`:
 - Registering oams as a second backend (blocked on the same firewall question
   plus oams being a laptop with the serving toggle).
 - Wake-on-request: research only (see wake-on-request.research.md).
+
+## ACTIVATED 2026-11-05
+
+Live on etra (`autoStart = true`). Path: client -> etra:4000 -> LiteLLM
+container -> host egress relay (10.233.100.1:8443) -> brys over NetBird
+(100.79.164.36:39704) -> llama-swap. Verified with a real chat completion.
+
+What it took beyond the initial code:
+- brys' llama-swap needs an API key: etra joined the `llms` sops recipients (its
+  SSH host key) and mounts `/run/configs/llms`, passing the real key to LiteLLM.
+- the host firewall had to allow the egress port on `ve-litellm`, or the guest's
+  backend calls were blackholed (60 s timeouts).
+- brys needed a mesh relay: `39704` -> loopback llama-swap, firewall-opened only
+  on `nb-priv`.
+
+### Still open
+- oams is not a backend (add once its serving toggle is proven).
+- Reachability from non-NetBird LAN peers: the ingress binds 0.0.0.0 but etra's
+  firewall trusts only `nb-priv`; open 4000 on the LAN interface for plain clients.
+- Prometheus scrape of `/metrics` on the gateway.
