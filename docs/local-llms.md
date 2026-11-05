@@ -39,18 +39,61 @@ constraint is the KV cache, which at 256K is 3.2 GB (q8_0) / 6.4 GB (F16). 1M do
 not fit comfortably. Full arithmetic:
 [qwen-flash-next.research.md](tasks/2026-11/oams-llm-host/qwen-flash-next.research.md).
 
-**A gateway, `litellm` on `etra`.** One OpenAI-compatible entrypoint in front of
-every host, with retries, cooldowns, fallbacks and Prometheus metrics. It runs
-**without a database**: `config.yaml` in the repo, a single shared
-`LITELLM_MASTER_KEY` from sops, no virtual keys or spend logs. Two facts matter
-operationally: the default request timeout is **6000 s** and must be clamped, and
-when all deployments for a model are unavailable LiteLLM returns **HTTP 429**, not
-503 (503 exists only on `/health`). Alert on the `litellm_deployment_state`
-metric. Task: [docs/tasks/2026-11/litellm-gateway/](tasks/2026-11/litellm-gateway/definition.md),
-config/behaviour detail in [research.md](tasks/2026-11/litellm-gateway/research.md),
-and the "can a request wake a powered-off host" question in
-[wake-on-request.research.md](tasks/2026-11/litellm-gateway/wake-on-request.research.md)
-(short answer: no native hook; primitives exist, a wake-proxy is the robust path).
+### The LiteLLM gateway (etra) — status, access, usage
+
+A single OpenAI-compatible entrypoint in front of the fleet, with retries,
+cooldowns, fallbacks and Prometheus metrics. It runs **without a database**:
+`config.yaml` in the repo, one shared `LITELLM_MASTER_KEY`, no virtual keys or
+spend logs. All detail is in
+[docs/tasks/2026-11/litellm-gateway/](tasks/2026-11/litellm-gateway/definition.md)
+(config/behaviour: [research.md](tasks/2026-11/litellm-gateway/research.md);
+"can a request wake a powered-off host": [wake-on-request.research.md](tasks/2026-11/litellm-gateway/wake-on-request.research.md)
+— short answer, no native hook, a wake-proxy is the robust path).
+
+> **It is NOT deployed yet.** The container and config exist as code
+> (`hosts/etra/litellm.nix`, `hosts/etra/litellm.config.yaml`) and etra builds
+> with them, but `autoStart = false`, so nothing runs. The blocker is networking:
+> etra reaches brys (ping works) yet **brys drops etra on `39701` and `443`**, so
+> the gateway cannot talk to any backend until brys opens its firewall for etra.
+
+**How you will access it, once activated.** From any host on etra's trusted LAN
+(`nb-priv`):
+
+```
+base URL : http://<etra>:4000/v1         # OpenAI-compatible
+auth     : Authorization: Bearer <master key>
+models   : the brys aliases — chat-std-mid, tools-std-fast, vision-std-fast,
+           frontier, …, every alias in data/llm.nix (32 of them)
+metrics  : http://<etra>:4000/metrics    # litellm_deployment_state per backend
+```
+
+The master key is generated on first start into `/var/lib/litellm/master-key`
+(mode 0400). That directory is bind-mounted into the container at the same path,
+so on etra you read it directly: `sudo cat /var/lib/litellm/master-key`.
+Example once live:
+
+```sh
+KEY=$(sudo cat /var/lib/litellm/master-key)
+curl -s http://etra:4000/v1/chat/completions \
+  -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d '{"model":"chat-std-mid","messages":[{"role":"user","content":"hi"}]}'
+```
+
+**To activate** (each step matters):
+1. On **brys**, allow etra -> brys:39701 (the plain-HTTP OpenAI compat proxy).
+2. Set `autoStart = true` in `hosts/etra/litellm.nix`, rebuild etra.
+3. (Optional) point a Prometheus at `http://etra:4000/metrics`.
+
+**Not yet done**: only brys is registered. oams is deliberately left out until
+its serving toggle is proven and a backend-health story exists (oams is a laptop
+that stops serving on battery/while gaming). The config is generated from brys'
+member view in `data/llm.nix`; adding oams means adding its alias->endpoint block
+the same way.
+
+**Operational facts** baked into the config: the default request timeout is
+**6000 s** and is clamped to 60 s; when all deployments for a model are down
+LiteLLM returns **HTTP 429** (not 503 — 503 is only on `/health`); alert on
+`litellm_deployment_state` (0 healthy / 1 partial / 2 outage).
 
 ## Concept
 

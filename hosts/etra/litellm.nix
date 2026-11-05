@@ -134,14 +134,16 @@ in
   # Host firewall on the container veth (the bridge is not trusted by nixos-fw).
   networking.firewall.interfaces.ve-litellm.allowedTCPPorts = [ gatewayPort ];
 
-  # Ingress relay: LAN clients -> guest gateway.
+  # Ingress relay: LAN clients -> guest gateway. It binds 0.0.0.0 so clients on
+  # etra's trusted LAN (`nb-priv`, see hosts/etra/default.nix) reach it at
+  # http://<etra>:4000; the router firewall drops it on every untrusted net.
   systemd.services.litellm-ingress = {
     description = "Relay :${toString gatewayPort} to the LiteLLM container";
     wantedBy = [ "multi-user.target" ];
     after = [ "container@litellm.service" ];
     wants = [ "container@litellm.service" ];
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString gatewayPort},bind=${hostAddress},fork,reuseaddr TCP:${localAddress}:${toString gatewayPort}";
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString gatewayPort},bind=0.0.0.0,fork,reuseaddr TCP:${localAddress}:${toString gatewayPort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;
