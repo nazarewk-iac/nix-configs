@@ -145,6 +145,12 @@
           ++ lib.optionals m.mmproj.enable [
             "mmproj = ${mmprojFile name}"
           ]
+          ++ lib.optionals (perf.imageMinTokens != null) [
+            "image-min-tokens = ${toString perf.imageMinTokens}"
+          ]
+          ++ lib.optionals (perf.imageMaxTokens != null) [
+            "image-max-tokens = ${toString perf.imageMaxTokens}"
+          ]
           ++ lib.optionals (threads != null) [
             "threads = ${toString threads}"
           ]
@@ -295,6 +301,14 @@
         ++ lib.optionals m.mmproj.enable [
           "--mmproj"
           (mmprojFile name)
+        ]
+        ++ lib.optionals (perf.imageMinTokens != null) [
+          "--image-min-tokens"
+          (toString perf.imageMinTokens)
+        ]
+        ++ lib.optionals (perf.imageMaxTokens != null) [
+          "--image-max-tokens"
+          (toString perf.imageMaxTokens)
         ]
         ++ lib.optionals (threads != null) [
           "--threads"
@@ -1183,6 +1197,26 @@
             Keep the KV cache on the CPU (`--no-kv-offload`). Use it with `nGpuLayers` so a large
             long-context KV does not compete with the dense weights for VRAM. It emits
             `no-kv-offload = on` only when true.
+          '';
+        };
+
+        options.perf.imageMaxTokens = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Token budget for ONE image (`--image-max-tokens`), for vision models with dynamic
+            resolution. Gemma 4 uses a ladder of 70/140/280/560/1120; the top value is the OCR
+            lever (measured: dense-text transcription 14/18 -> 17/18 lines exact on gemma-4-e4b).
+            `null` omits the key and the model default applies.
+          '';
+        };
+
+        options.perf.imageMinTokens = lib.mkOption {
+          type = with lib.types; nullOr ints.positive;
+          default = null;
+          description = ''
+            Floor for one image (`--image-min-tokens`), the counterpart of `imageMaxTokens`.
+            Setting both equal pins the budget; `null` omits the key.
           '';
         };
 
