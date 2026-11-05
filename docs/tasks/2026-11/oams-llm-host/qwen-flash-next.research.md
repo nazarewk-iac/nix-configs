@@ -488,3 +488,45 @@ less RAM than the model), not a backend/driver bug. Vulkan itself did not fault.
 **Conclusion stands from §4:** on oams the sane model is `qwen3.5-35b-a3b`
 (17.5 GB, fits, full 256K). `qwen3.8-flash-next` is a brys-class workload. ROCm is
 not a path to running a 94 GB model on a 62 GB laptop, regardless of GPU backend.
+
+---
+
+## Lower quant measured on oams (2026-11-05) — safe disk streaming works
+
+Downloaded `UD-IQ3_XXS` (~84 GB, quality 85.4% vs 89.6% for IQ4_XS per the repo's
+quant table) and ran it on oams with the **safe** config: plain `mmap` (default),
+**no `--n-cpu-moe`**, **CPU-only** (`--n-gpu-layers 0`), 16K context, under a
+system `MemoryMax=24G` scope with `OOMPolicy=stop` and a 1200 s wall-clock cap.
+This is the configuration that does *not* reproduce the OOM.
+
+| metric | IQ3_XXS / oams (CPU, mmap) | IQ4_XS / brys (CPU, mmap, reference) |
+| --- | --- | --- |
+| load to healthy | 141 s | 83 s |
+| process RSS | 17.6 GB (file-backed) | 45 GB (file-backed) |
+| system RAM used | ~35–40 GB, 25 GB reclaimable | 15.7 GB |
+| **decode** | **3.17 t/s** | 3.23 t/s |
+| prefill (1080-tok, cold) | ~6.5 t/s | 44 t/s (warm/cached) |
+| OOM / GPU fault | **none** | none |
+
+**Findings:**
+
+1. **It runs safely on oams** with plain mmap and no `--n-cpu-moe`. No OOM, no
+   amdgpu fault (0 in dmesg), the box stayed responsive the whole time. The 84 GB
+   file is reclaimable page cache; the process itself is ~17.6 GB.
+2. **The lower quant did NOT speed up decode.** 3.17 t/s (IQ3) vs 3.23 t/s (IQ4 on
+   brys) is the same within noise. Decode is bound by compute + reading the active
+   experts, which is ~the same per token at IQ3 and IQ4. The quant change mainly
+   shrank the file (84 vs 94 GB) and cost quality (85.4% vs 89.6%).
+3. **Prefill is disk-bound and slow** (~6.5 t/s cold on oams vs 44 t/s on brys with
+   the file cached). This is what caps practical context here, not RAM: a 256K
+   prefill at ~6 t/s is hours.
+4. **GPU offload was deliberately NOT tested.** It is the path that earlier crashed
+   (`--load-mode dio` → `vk::Queue::submit: ErrorDeviceLost` on this GPU family,
+   and the `-cmoe` combos are slower). A GPU hang is not bounded by `MemoryMax`, so
+   it is not safe to attempt unattended. Test it only with a human present.
+
+**Verdict:** oams *can* serve flash-next at ~3 t/s decode, disk-streamed, for short
+contexts — a real but slow capability, roughly brys-alone speed. It is not a good
+default (the 35B-A3B is far better per GB and per second), but the machine no
+longer OOMs when configured correctly. The `UD-IQ3_XXS` set is at
+`/home/kdn/UD-IQ3_XXS` on oams.
