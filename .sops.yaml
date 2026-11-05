@@ -98,6 +98,13 @@ creation_rules:
           # (sshd starts on its own, verified 2026-11-04), so a host's SSH identity must not be
           # able to read the fleet's LLM keys.
           - *tpm-brys
+          # oams also serves LLM models now (task docs/tasks/2026-11/oams-llm-host/), so it
+          # needs this file at boot too. It has no YubiKey at boot and no TPM age identity
+          # enrolled yet, so it uses its SSH host key (the same unattended mechanism brys uses
+          # for its own files). Without this, adding the file to oams stranded the host on
+          # 2026-11-05: sops-install-secrets failed with "0 successful groups", which failed
+          # kdn-secrets.target, which failed sshd's dependency and took SSH down.
+          - *ssh-oams
   # One file, one rule. `default.unattended.sops.yaml` is the NetworkManager default-connection
   # config, which every host decrypts; brys needs it at boot, so it carries the TPM identity.
   # It sits above the glob rule because sops uses the FIRST matching rule.
