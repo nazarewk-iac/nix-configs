@@ -442,3 +442,49 @@ file. On disk grounds alone, the 35B is the right default for a laptop.
 | Active-param bytes/token (4.3 B), 1.5–2.1 GiB/token | ESTIMATE | arithmetic §1.4 |
 | oams decode 12–18 t/s if it fit | ESTIMATE | bandwidth §3.2 |
 | oams bandwidth ~32–36 GB/s | ESTIMATE | DDR4-3200 dual-channel, −30% |
+
+---
+
+## Attempted run on oams, 2026-11-05 — it OOM-crashed, and ROCm would not help
+
+The model was copied to oams (88 GB, `UD-IQ4_XS` + mmproj) and loaded at
+`--ctx-size 262144 --n-cpu-moe 24 --flash-attn on -ctk q8_0 -ctv q8_0 -cram 1024`.
+The machine **hard-crashed** (unresponsive, ctrl-alt-del dead). The kernel log
+shows the cause unambiguously:
+
+```
+llama-server invoked oom-killer: gfp_mask=0x40cc0(GFP_KERNEL|__GFP_COMP) ...
+global_oom, task=... pid 70272 (llama-server)
+Out of memory: Killed process ... (atuin) ...
+```
+
+**This was an out-of-memory event, not an amdgpu/Vulkan fault.** `llama-server`
+drove the box into global OOM; the resulting reclaim/swap thrash is what made the
+system unresponsive.
+
+**Why the OOM, given the weights are file-backed?** `--n-cpu-moe 24` marks the
+routed-expert tensors of 24 of the 48 layers to be kept in **anonymous** RAM (not
+file-backed page cache). For a 93.7 GB model that is tens of GB of anon memory —
+plus KV, prompt cache, and the desktop session — far beyond oams' 62 GB. The
+mmap/file-backed reasoning in §2.1 holds only with **no** `--n-cpu-moe`: the
+moment experts are pinned into anon RAM, they stop being reclaimable and the
+budget collapses.
+
+**Would ROCm have avoided it? No.** ROCm is a different GPU compute backend; it
+changes nothing about how much anonymous memory the process needs. The failure was
+a resource-configuration error (too many layers pinned to anon RAM on a box with
+less RAM than the model), not a backend/driver bug. Vulkan itself did not fault.
+
+**What a safe attempt would require**, if ever retried:
+
+- **No `--n-cpu-moe`** (or a small value like 2–8), so experts stay file-backed
+  and reclaimable. Accept that prefill becomes SSD-bound.
+- A hard memory ceiling: run under `systemd-run -p MemoryMax=...` so the OOM killer
+  takes the server, not the whole session.
+- A much shorter context to start (32K, not 256K).
+- Headless (no graphical session) to free ~20-45 GB.
+- A separate `systemd` scope with `OOMPolicy`, so a failure cannot take the box.
+
+**Conclusion stands from §4:** on oams the sane model is `qwen3.5-35b-a3b`
+(17.5 GB, fits, full 256K). `qwen3.8-flash-next` is a brys-class workload. ROCm is
+not a path to running a 94 GB model on a 62 GB laptop, regardless of GPU backend.
