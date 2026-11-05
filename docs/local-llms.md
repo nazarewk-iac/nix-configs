@@ -554,6 +554,66 @@ Tile height matters: qwen-vl maps area to tokens, so a 2000px-wide full screensh
 matter how it is cut; three 700px tiles cost about the same but each region keeps its pixels, which
 is what fixes the glyph errors.
 
+### Gemma 4 E4B: measured capability and the correct serving flags (2026-11-05)
+
+`gemma-4-e4b` is declared in `data/llm.nix` on the `surveyed` router but had no alias and
+no `mmproj`, so it was unreachable and had no vision. Measured on brys against a private
+`llama-server` (build b11539, `llama-cpp-sessions-vulkan-noblas`) on the W6600, 16 threads.
+
+**It is a text/vision/audio workhorse at 4.5B-effective, not a context workhorse.**
+
+| scenario                         | result                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| tool calling, 4 tools, 6 cases   | **6/6 correct**: right tool, right args, no spurious calls, parallel calls |
+| tool args holding JSON           | escaped correctly (`{"port": 8080, ...}` as an argument value)            |
+| tool error recovery              | turned a `No such file` result into a plain-English failure, no retry loop |
+| UI screenshot understanding      | **correct**: nav items, section, exact `ERROR disk 94% full` text         |
+| table extraction                 | **perfect** 5x4 markdown table, correct max-region reasoning              |
+| dense OCR @1120 image tokens     | **17/18 lines exact**; failures are letter drops in long codes            |
+| dense OCR @default budget        | 14/18 lines exact                                                         |
+| audio ASR (native, 30 s clip)    | **correct** full transcription in 7.4 s — unique in the fleet             |
+| needle retrieval 12k tokens      | correct                                                                   |
+| needle retrieval 30k tokens      | correct, 1549 s (≈20 tok/s prefill effective)                             |
+| 128k window                      | loads and reports `n_ctx_slot = 131072`; a 175k request is refused cleanly |
+
+**The GPU is not faster than the CPU here.** `llama-bench` on this card:
+
+| backend     | pp512 | pp2048 | tg128 |
+| ----------- | ----: | -----: | ----: |
+| Vulkan (99) |  83.5 |   75.3 |  14.6 |
+| CPU (16t)   |  78.0 |   71.0 |  14.0 |
+
+The spread is under 10%, so putting the 4.8 GB Q4_0 on the 8 GB W6600 buys ~6% prefill and
+costs the card its headroom. Long-context prefill at ~80 tok/s is what caps practical use at
+roughly 30k tokens of input (~25 min). The 128k window is real but not usable latency-wise.
+
+**`-nkvo` (KV in RAM, weights on GPU) is safe and costs nothing measurable** — 23.6 s vs 22.8 s
+on a fixed 1.6k-token prompt, output correct, zero `amdgpu` errors. The Vulkan `-nkvo`
+gibberish bug (upstream #23827) is fixed in this build. At 128k context + `-nkvo` + mmproj the
+process sits at ~5.1 GB RSS. This is the configuration to use if the model is ever put on a
+tighter box; on brys the difference is noise.
+
+**`--image-max-tokens 1120` is the OCR lever** (default is lower). Upscaling the image 2x does
+nothing — the budget, not the pixels, is the cap. Do not bother pre-scaling for this model the
+way the qwen-vl recipe does.
+
+Recommended flags, which the fleet config should mirror:
+
+```sh
+--mmproj mmproj-gemma-4-E4B-it-Q8_0.gguf \
+--jinja --reasoning off --reasoning-budget 0 \
+--image-max-tokens 1120 --temp 1.0 --top-p 0.95 --top-k 64
+```
+
+`--reasoning off` matters: gemma 4 has no real effort levels, the template renders
+`<|think|>` in the system prompt, and a leaked thinking block becomes visible garbage in
+tool-call turns. Sampling is the model card's (temp 1.0 / top_p 0.95 / top_k 64), not
+llama.cpp's defaults.
+
+Where it belongs in the tier map: **`tools-*` and `audio-*` candidates**, plus vision where the
+task is UI understanding or sparse text rather than dense OCR at small sizes. It is serial and
+~15 tok/s decode, so it cannot replace a `-fast` tier that expects 30+ tok/s.
+
 ### Co-residence with the frontier
 
 The 35B shares RAM with the resident frontier, as two separate tiers (see
