@@ -127,8 +127,11 @@ installed as the next boot, not yet activated. A reboot of oams applies it.
   only on AC and with no `app-steam_app_*` scope; off auto-tripped stops and
   masks llama-swap. Reuses the build-farm gaming signal.
 - **Models served**: the 4 small fast models (gemma-4-e4b, granite-4.2-3b,
-  qwen3.5-0.8b, qwen3.5-2b) plus the measured winner **qwen3.5-35b-a3b** at
-  `-ngl 99 -n-cpu-moe 24` (113 pp / 10.2 tg, stable).
+  qwen3.5-0.8b, qwen3.5-2b).
+- **qwen3.5-35b-a3b DROPPED 2026-11-05.** It measured well (113 pp / 10.2 tg
+  with `-ngl 99 -n-cpu-moe 24`) but is not frontier-quality and not fast enough
+  to justify keeping on oams over brys. The `hosts.oams` block, co-residency tier
+  and model files were removed; the `perf.nCpuMoe` option stays as a general knob.
 - **Deployed as boot generations** 733 and 734 (pinned as GC roots). NOT switched
   live; a reboot of oams applies it. See the incident note above for why.
 
