@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Deploy LiteLLM as a NixOS container on etra as the single entrypoint for the local LLM fleet, fully declaratively (no DB, no Web UI), register brys as a backend, expose Prometheus metrics, and define how unreachable backends are handled.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-11-05T09:49:54+01:00
 ---
@@ -82,3 +82,28 @@ Full detail in [research.md](research.md). The decision-relevant points:
 - Do we want cheap virtual keys later? If so, a DB becomes necessary and this
   task's no-DB premise changes.
 - Wake-on-request for brys is researched but out of scope here; see research.md.
+
+## Progress 2026-11-05
+
+- **Config as code**: `hosts/etra/litellm.config.yaml` — every brys alias from
+  `data/llm.nix`, no DB, clamped router timeouts, prometheus callback.
+- **Container**: `hosts/etra/litellm.nix` — private veth, narrow socat ingress
+  (`:4000`) and egress (`:8443` -> brys compat proxy), persistence under
+  `sys/state` + `sys/cache`, master key generated on first start.
+- **Builds**: etra builds cleanly with the container included.
+- **`autoStart = false`**: deliberately INERT.
+
+### Blocker for activation
+
+etra reaches brys (ping OK) but brys **drops etra** on both `39701` (compat proxy)
+and `443` (Caddy). Opening that needs a firewall change on brys, which was not
+done unattended. Steps to activate are in `hosts/etra/litellm.nix`:
+1. On brys, allow etra -> brys:39701.
+2. Set `autoStart = true`, rebuild etra.
+3. Clients use `http://<etra>:4000/v1` with the master key.
+
+### Not done
+- Prometheus scrape of the gateway (brys has a Prometheus; etra does not yet).
+- Registering oams as a second backend (blocked on the same firewall question
+  plus oams being a laptop with the serving toggle).
+- Wake-on-request: research only (see wake-on-request.research.md).

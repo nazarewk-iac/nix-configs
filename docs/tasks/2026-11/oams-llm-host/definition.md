@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Turn oams (ASUS ROG laptop, RX 6800M 12 GB, 64 GB RAM) into a second llama-swap host for small GPU models, with ZFS-backed model storage, a GPU-serving toggle that yields to gaming and battery, and registration in the fleet data so LiteLLM can route to it.
-status: open
+status: in-progress
 authored_by: agent
 timestamp: 2026-11-05T09:49:54+01:00
 ---
@@ -116,3 +116,24 @@ prompt (verified on the host).
 **Deployment state at end of this run:** generation 730 is running (last good,
 pinned); generation 732 carries the oams llama-swap work and the sops fix and is
 installed as the next boot, not yet activated. A reboot of oams applies it.
+
+## Progress 2026-11-05
+
+- **Datasets**: `/var/lib/kdn/llms/{models,sessions}` and `/var/lib/llm-stats`
+  declared in `hosts/oams/disko.nix`; modes fixed by `systemd.tmpfiles`.
+- **Host wiring**: `hosts/oams/llm.nix` projects `servers.oams`; GPU pinned to the
+  6800M (`1002:73df`). llama-swap enabled via the `llm` aspect.
+- **Serving toggle**: `oams-llm on|off|auto|status` + 30 s timer. `auto` serves
+  only on AC and with no `app-steam_app_*` scope; off auto-tripped stops and
+  masks llama-swap. Reuses the build-farm gaming signal.
+- **Models served**: the 4 small fast models (gemma-4-e4b, granite-4.2-3b,
+  qwen3.5-0.8b, qwen3.5-2b) plus the measured winner **qwen3.5-35b-a3b** at
+  `-ngl 99 -n-cpu-moe 24` (113 pp / 10.2 tg, stable).
+- **Deployed as boot generations** 733 and 734 (pinned as GC roots). NOT switched
+  live; a reboot of oams applies it. See the incident note above for why.
+
+### Still open
+
+- The serving toggle has not been exercised end-to-end (no reboot yet).
+- GPU stability: the dense 9B fully on the 12 GB card faults the GPU; only the
+  MoE-with-n-cpu-moe path is proven stable. Watch for this if more models are added.
