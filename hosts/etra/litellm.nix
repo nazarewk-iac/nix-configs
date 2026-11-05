@@ -75,6 +75,12 @@ in
       hostPath = "/var/lib/litellm";
       isReadOnly = false;
     };
+    # brys llama-swap requires an API key. It comes from the shared llms sops file
+    # (config now mounts it on etra); bind just that one key into the guest.
+    bindMounts."/run/secrets/brys-api-key" = {
+      hostPath = "/run/configs/llms/llama-server/api-keys/default";
+      isReadOnly = true;
+    };
 
     config =
       { pkgs, ... }:
@@ -113,7 +119,7 @@ in
                 # Upstream is brys's plain-HTTP compat proxy via the host egress
                 # relay; no TLS, so no cert to verify, and that proxy needs no key.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
-                export BRYS_API_KEY="dummy"
+                export BRYS_API_KEY="$(cat /run/secrets/brys-api-key)"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 exec ${pkgs.litellm}/bin/litellm \
@@ -133,7 +139,13 @@ in
   };
 
   # Host firewall on the container veth (the bridge is not trusted by nixos-fw).
-  networking.firewall.interfaces.ve-litellm.allowedTCPPorts = [ gatewayPort ];
+  # `gatewayPort` lets the ingress relay reach the guest; `egressPort` lets the
+  # guest reach the egress relay bound on the bridge address (without it the
+  # backend calls are blackholed and every completion times out).
+  networking.firewall.interfaces.ve-litellm.allowedTCPPorts = [
+    gatewayPort
+    egressPort
+  ];
 
   # Ingress relay: LAN clients -> guest gateway. It binds 0.0.0.0 so clients on
   # etra's trusted LAN (`nb-priv`, see hosts/etra/default.nix) reach it at

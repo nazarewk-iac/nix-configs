@@ -105,6 +105,9 @@ creation_rules:
           # 2026-11-05: sops-install-secrets failed with "0 successful groups", which failed
           # kdn-secrets.target, which failed sshd's dependency and took SSH down.
           - *ssh-oams
+          # etra runs the LiteLLM gateway and needs the fleet llama-server API keys to call
+          # the backends. Its SSH host key is the unattended identity, like oams.
+          - *ssh-etra
   # One file, one rule. `default.unattended.sops.yaml` is the NetworkManager default-connection
   # config, which every host decrypts; brys needs it at boot, so it carries the TPM identity.
   # It sits above the glob rule because sops uses the FIRST matching rule.
