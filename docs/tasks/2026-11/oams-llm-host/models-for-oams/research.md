@@ -106,3 +106,40 @@ Qwen3-Embedding-8B (RAG). ~30 GB covering chat, agentic coding, retrieval.
 - [Qwen3.6-35B on 12 GB guide](https://github.com/shiqikuangsan31/Qwen3.6-35B-12GB-VRAM-Guide)
 - [llama.cpp -cmoe telemetry](https://github.com/ggml-org/llama.cpp/discussions/30426)
 - [whisper.cpp models](https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md)
+
+---
+
+## Measured on oams, 2026-11-05 (llama-bench, `-p 512,2048 -n 128 -r 2`)
+
+Model files copied from brys to `/home/kdn/gmodels` on oams. Vulkan build
+`llama-cpp-sessions-vulkan-noblas` (same as brys).
+
+| model | config | pp512 | pp2048 | tg128 | notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| **qwen3.5-35b-a3b** (MoE, 20.5 GB) | CPU (`-ngl 0`) | — | 101.6 | 9.25 | best decode |
+| **qwen3.5-35b-a3b** | GPU attn + experts CPU (`-ngl 99 -ncmoe 24`) | 113.2 | — | **10.23** | **winner**, stable |
+| qwen3.5-35b-a3b | `-ngl 99 -ncmoe 32` | 111.4 | — | 10.02 | ~same |
+| qwen3.5-9b (dense, 5.3 GB) | CPU (`-ngl 0`) | — | 80.6 | 5.58 | slower than the MoE |
+| qwen3.5-9b (dense) | GPU (`-ngl 99`) | — | — | **CRASH** | `vk::Device::resetFences: ErrorUnknown`, 4 amdgpu faults |
+
+### The findings that matter
+
+1. **`qwen3.5-35b-a3b` is the best model for oams, and it is an MoE — 3B active
+   beats the 9B dense on BOTH axes.** Decode 9.25 t/s on CPU vs 5.58 for the 9B;
+   with GPU attention (`ncmoe 24`) it reaches **10.2 t/s decode / 113 t/s prefill**.
+   Its only cost is disk/RAM (20.5 GB file), which oams has.
+2. **GPU help is real but modest and model-dependent.** The MoE with `-n-cpu-moe`
+   (small VRAM footprint: attention only) gains ~10% decode and is **stable**. But
+   a *dense* 9B fully on the 12 GB card **faults the GPU** (`ErrorUnknown`, amdgpu
+   faults) — so "fits in VRAM" is not "safe on this Vulkan stack", consistent with
+   the W6600 hangs on brys. Prefer keeping the big tensors on CPU and only the
+   attention/shared path on the GPU.
+3. This reframes the Shortlist: **rank 1 for oams is `qwen3.5-35b-a3b` at
+   `-ngl 99 -n-cpu-moe 24`** (~10 t/s), not the small dense models. The small GPU
+   models (`gemma-4-e4b` etc., ranked earlier) remain useful for fast/vision/audio
+   at 40-80 t/s, but the MoE is the "real work" model.
+
+Disk added on oams for these tests: `qwen3.5-9b` 5.7 GB + `qwen3.5-35b-a3b` 22 GB,
+plus the two flash-next quants (88 + 84 GB) under `/home/kdn/UD-IQ4_XS` and
+`/home/kdn/UD-IQ3_XXS` — the flash-next copies can be deleted, they are not the
+oams default.
