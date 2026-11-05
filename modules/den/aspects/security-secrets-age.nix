@@ -160,7 +160,22 @@ let
                     outdir="''${output%/*}"
                     test "$outdir" == "$output" || mkdir -p "$outdir"
                   fi
-                  ( ${text} ) >"$output"
+                  # BEST-EFFORT per source. A key source that is merely UNAVAILABLE must not
+                  # abort the others. The YubiKey generator errors when `pcscd` is not yet up at
+                  # boot ("PC/SC error: Access was denied"), and with `set -e` that killed the
+                  # whole subshell — so the SSH host-key identity was never written, `sops`
+                  # found no working key, `sops-install-secrets` failed, `kdn-secrets.target`
+                  # failed, and sshd's dependency took SSH down with it (oams, 2026-11-05; the
+                  # same class as the brys incident of 2026-11-04). Each source is now
+                  # independent: it contributes its keys if it can, and is skipped otherwise.
+                  {
+                    while IFS= read -r _kdn_gen_script; do
+                      [ -n "$_kdn_gen_script" ] || continue
+                      "$_kdn_gen_script" || true
+                    done <<'__KDN_GEN_SCRIPTS__'
+${text}
+__KDN_GEN_SCRIPTS__
+                  } >"$output"
                 '';
               }
             )
