@@ -484,11 +484,11 @@ in
           };
           enable = true;
           hfFile = "gemma-4-e4b.gguf";
-          hfRepo = "surveyed";
+          hfRepo = ".";
           mmproj = {
             enable = true;
             hfFile = "mmproj-gemma-4-E4B-it-Q8_0.gguf";
-            hfRepo = "surveyed";
+            hfRepo = ".";
           };
           perf = {
             device = "Vulkan0";
@@ -558,7 +558,7 @@ in
           };
           enable = true;
           hfFile = "granite-4.2-3b.gguf";
-          hfRepo = "surveyed";
+          hfRepo = ".";
           perf = {
             device = "Vulkan0";
             nGpuLayers = 99;
@@ -1031,7 +1031,7 @@ in
           };
           enable = true;
           hfFile = "qwen3.5-0.8b.gguf";
-          hfRepo = "surveyed";
+          hfRepo = ".";
           perf = {
             device = "Vulkan0";
             nGpuLayers = 99;
@@ -1098,7 +1098,7 @@ in
           };
           enable = true;
           hfFile = "qwen3.5-2b.gguf";
-          hfRepo = "surveyed";
+          hfRepo = ".";
           perf = {
             device = "Vulkan0";
             nGpuLayers = 99;
