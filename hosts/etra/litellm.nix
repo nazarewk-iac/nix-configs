@@ -33,6 +33,10 @@ let
   # 39704 by a narrow relay (hosts/brys/llm.nix); 39700 itself is loopback-only.
   brysHost = "100.79.164.36";
   brysPort = 39704;
+  # oams over NetBird (nb-priv), same relay pattern on 39704.
+  oamsHost = "100.79.80.79";
+  oamsPort = 39704;
+  oamsEgressPort = 8444;
 in
 {
   # State for the gateway. DB-less, so this is only logs / a local cache / the
@@ -111,6 +115,9 @@ in
                 # host egress relay. Plain HTTP (no TLS to verify), real API key.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
                 export BRYS_API_KEY="$(cat /run/secrets/brys-api-key)"
+                export OAMS_API_BASE="http://${hostAddress}:${toString oamsEgressPort}/v1"
+                # Same shared llama-server key as brys (one fleet api-key file).
+                export OAMS_API_KEY="$(cat /run/secrets/brys-api-key)"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 exec ${pkgs.litellm}/bin/litellm \
@@ -136,6 +143,7 @@ in
   networking.firewall.interfaces.ve-litellm.allowedTCPPorts = [
     gatewayPort
     egressPort
+    oamsEgressPort
   ];
 
   # Ingress relay: LAN clients -> guest gateway. It binds 0.0.0.0 so clients on
@@ -170,6 +178,27 @@ in
     wants = [ "container@litellm.service" ];
     serviceConfig = {
       ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString egressPort},bind=${hostAddress},fork,reuseaddr TCP:${brysHost}:${toString brysPort}";
+      Restart = "always";
+      RestartSec = 3;
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [
+        "AF_INET"
+        "AF_INET6"
+      ];
+    };
+  };
+
+  systemd.services.litellm-oams-egress = {
+    description = "Relay the LiteLLM container to oams:${toString oamsPort}";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "container@litellm.service" ];
+    wants = [ "container@litellm.service" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString oamsEgressPort},bind=${hostAddress},fork,reuseaddr TCP:${oamsHost}:${toString oamsPort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;

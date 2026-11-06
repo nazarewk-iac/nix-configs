@@ -1,10 +1,10 @@
-# LiteLLM gateway config — GENERATED from data/llm.nix (brys member view).
-# Regenerate with docs/tasks/2026-11/litellm-gateway/ (see definition.md).
+# LiteLLM gateway config — GENERATED from data/llm.nix member views (brys + oams).
+# Regenerate from the fleet data; do not hand-edit model_list.
 #
-# Every alias brys serves is exposed here as an OpenAI-compatible model whose
-# upstream is brys' llama-swap, reached through the host socat egress relay
-# (10.233.100.1:8443 -> brys netbird:39704). The relay keeps the container on its private
-# network: it only ever talks to its host bridge address.
+# Each brys alias is a deployment on brys (BRYS_API_BASE = egress 8443 -> brys netbird:39704).
+# The aliases oams also serves get a SECOND deployment on oams (OAMS_API_BASE =
+# egress 8444 -> oams netbird:39704), so LiteLLM load-balances and fails over between
+# the two hosts for those model groups.
 
 model_list:
   - model_name: audio-std-mid
@@ -35,6 +35,13 @@ model_list:
       api_key: os.environ/BRYS_API_KEY
     model_info:
       id: brys-chat-dumb-fast-alt
+  - model_name: chat-dumb-fast-alt
+    litellm_params:
+      model: openai/granite-4.2-3b
+      api_base: os.environ/OAMS_API_BASE
+      api_key: os.environ/OAMS_API_KEY
+    model_info:
+      id: oams-chat-dumb-fast-alt
   - model_name: chat-std-fast
     litellm_params:
       model: openai/lfm2.5-24b-a2b
@@ -161,6 +168,13 @@ model_list:
       api_key: os.environ/BRYS_API_KEY
     model_info:
       id: brys-tiny-dumb-fast
+  - model_name: tiny-dumb-fast
+    litellm_params:
+      model: openai/qwen3.5-0.8b
+      api_base: os.environ/OAMS_API_BASE
+      api_key: os.environ/OAMS_API_KEY
+    model_info:
+      id: oams-tiny-dumb-fast
   - model_name: tiny-dumb-fast-alt
     litellm_params:
       model: openai/qwen3.5-2b
@@ -168,6 +182,13 @@ model_list:
       api_key: os.environ/BRYS_API_KEY
     model_info:
       id: brys-tiny-dumb-fast-alt
+  - model_name: tiny-dumb-fast-alt
+    litellm_params:
+      model: openai/qwen3.5-2b
+      api_base: os.environ/OAMS_API_BASE
+      api_key: os.environ/OAMS_API_KEY
+    model_info:
+      id: oams-tiny-dumb-fast-alt
   - model_name: tiny-quick-fast
     litellm_params:
       model: openai/qwen3.5-4b
@@ -189,6 +210,13 @@ model_list:
       api_key: os.environ/BRYS_API_KEY
     model_info:
       id: brys-tools-dumb-fast
+  - model_name: tools-dumb-fast
+    litellm_params:
+      model: openai/granite-4.2-3b
+      api_base: os.environ/OAMS_API_BASE
+      api_key: os.environ/OAMS_API_KEY
+    model_info:
+      id: oams-tools-dumb-fast
   - model_name: tools-std-fast
     litellm_params:
       model: openai/lfm2.5-24b-a2b
@@ -233,23 +261,20 @@ model_list:
       id: brys-vision-std-fast-moe
 
 litellm_settings:
-  # Prometheus metrics: the metric to alert on is litellm_deployment_state
-  # (0 healthy / 1 partial / 2 outage).
   callbacks: [prometheus]
   drop_params: true
 
 general_settings:
-  # A database is deliberately NOT configured: no virtual keys, no budgets,
-  # no spend logs. One shared master key. See research.md.
   master_key: os.environ/LITELLM_MASTER_KEY
 
 router_settings:
-  # The default request timeout is 6000 s; clamp it or a dead backend hangs a
-  # request for over an hour. All-down returns 429 with retry-after.
-  # 120 s, not the 6000 s default: a slow model (frontier) still gets a chance,
-  # but a dead backend does not hang a client for over an hour. Raise per-model
-  # in litellm_params for known-slow aliases if needed.
+  # 120 s (not the 6000 s default): a slow model gets a chance, a dead backend
+  # does not hang a client for an hour. All-down returns 429 with retry-after.
   timeout: 120
   num_retries: 1
   cooldown_time: 30
   allowed_fails: 2
+  # Round-robin across the deployments of a model group (brys + oams for the
+  # shared aliases), and try the other host first on a retry.
+  routing_strategy: simple-shuffle
+  enable_weighted_failover: true
