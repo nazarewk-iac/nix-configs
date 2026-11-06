@@ -243,6 +243,33 @@ in
       '')
     ];
 
+    # Expose llama-swap to the NetBird mesh so etra's LiteLLM gateway can reach
+    # oams (mirrors the brys relay, hosts/brys/llm.nix). llama-swap is loopback
+    # (127.0.0.1:39700); this narrow relay listens on 39704 and the firewall opens
+    # it only on `nb-priv`, so it is mesh-only. Litellm points at
+    # <oams-netbird>:39704.
+    networking.firewall.interfaces."nb-priv".allowedTCPPorts = [ 39704 ];
+    systemd.services."llm-netbird-relay-swap" = {
+      description = "Relay llama-swap /v1 to the NetBird mesh (for the etra LiteLLM gateway)";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "llama-swap.service" ];
+      wants = [ "llama-swap.service" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:39704,bind=0.0.0.0,fork,reuseaddr TCP:127.0.0.1:39700";
+        Restart = "always";
+        RestartSec = 3;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+        DynamicUser = true;
+      };
+    };
+
     # The ZFS ARC cap is shared with brys' tuning file; without it the ARC evicts
     # the mmap'd weights. oams already sets its own ARC cap in default.nix, so do
     # not import the brys tuning file (which also carries brys-only kernel args).
