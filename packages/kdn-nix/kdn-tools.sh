@@ -28,6 +28,9 @@ Repository packages (packages/):
   certs/secrets:  kdn-certs  kdn-anonymize  pass-secret-service  kdn-keepass  pinentry
   ssh / yubi:     kdn-ssh-access  kdn-yk  gpg-smartcard-reset-keys  git-credential-keyring
   infra / agents: kdnctl  jj-mcp  mcpsnoop  opencode-compat-proxy  basic-memory  aws-sso  kagi-cli
+  storage / zfs:  kdn-disko-zfs  spec|show|plan|apply a host's disko-declared ZFS datasets
+                  (wraps numtide/disko-zfs; auto-ignores undeclared live datasets, so
+                  plan never proposes destroying container/volume storage)
   desktop / sys:  sway-vnc  systemd-cryptsetup  systemd-find-cycles  kdn-gamingctl  rambox  lnav
   dev / misc:     link-python  init-py-script  git-utils  klg  klog-time-tracker  data-converters
                   ff-ctl  fortitoken-decrypt  ss-util  tc-redirect-tap  whicher  ik-llama-cpp

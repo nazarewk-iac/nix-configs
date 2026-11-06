@@ -46,6 +46,7 @@ in
   whicher = pkgs.callPackage ./whicher { };
 
   basic-memory = pkgs.callPackage ./basic-memory { inherit __inputs__; };
+  kdn-disko-zfs = pkgs.callPackage ./kdn-disko-zfs { inherit __inputs__; };
   jj-mcp = pkgs.callPackage ./jj-mcp { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };

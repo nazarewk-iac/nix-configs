@@ -139,6 +139,10 @@ in
       # reap-builders (plan/apply for leaked daemon workers), list-roots, which, and
       # `kdn-tools` which lists this tooling. Same set the kdn-nix package installs.
       (pkgs.callPackage ./packages/kdn-nix { })
+      # numtide/disko-zfs (this repo's pinned input) plus the kdn-disko-zfs wrapper
+      # (spec/show/plan/apply for any host's disko-declared ZFS datasets).
+      inputs.nix-configs.inputs.disko-zfs.packages.${pkgs.stdenv.hostPlatform.system}.default
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-disko-zfs
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)
