@@ -17,6 +17,9 @@ from pathlib import Path
 
 from . import core
 
+# Fast-fail, non-interactive ssh: an unreachable host must not hang the tool.
+SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10"]
+
 
 def say(*parts: object) -> None:
     print(">", *parts, file=sys.stderr)
@@ -67,6 +70,8 @@ class Context:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
         self.host = args.host or os.uname().nodename.split(".")[0]
+        # The flake attr (`-H`) and the ssh target can differ; `--ssh-host` overrides.
+        self.ssh_host = getattr(args, "ssh_host", None) or self.host
         self.repo = args.repo or self._git_root()
         if not (Path(self.repo) / "flake.nix").is_file():
             sys.exit(f"error: no flake.nix in {self.repo} (pass -r PATH)")
@@ -120,11 +125,13 @@ class Context:
 
     # -- host calls ---------------------------------------------------------
     def _remote_bin(self) -> str:
-        say(f"nix copy --to ssh-ng://{self.host} (disko-zfs)")
-        subprocess.run(
-            ["nix", "copy", "--no-check-sigs", "--to", f"ssh-ng://{self.host}", self.binary()],
+        say(f"nix copy --to ssh-ng://{self.ssh_host} (disko-zfs)")
+        rc = subprocess.run(
+            ["nix", "copy", "--no-check-sigs", "--to", f"ssh-ng://{self.ssh_host}", self.binary()],
             check=False,
-        )
+        ).returncode
+        if rc != 0:
+            sys.exit(f"error: failed to copy disko-zfs to {self.ssh_host} (nix copy rc={rc})")
         return self.binary()
 
     def host_show(self) -> dict:
@@ -132,9 +139,9 @@ class Context:
             out = run([self.binary(), "show"], capture=True, sudo=True)
         else:
             binpath = self._remote_bin()
-            say(f"ssh {self.host} sudo {binpath} show")
+            say(f"ssh {self.ssh_host} sudo {binpath} show")
             out = subprocess.run(
-                ["ssh", self.host, "sudo", binpath, "show"],
+                ["ssh", *SSH_OPTS, self.ssh_host, "sudo", binpath, "show"],
                 check=True, text=True, capture_output=True,
             ).stdout
         return json.loads(out)
@@ -142,8 +149,8 @@ class Context:
     def _push_spec(self) -> str:
         if self.is_local:
             return str(self.spec_path)
-        say(f"scp {self.spec_path} -> {self.host}:{self.remote_spec}")
-        subprocess.run(["scp", "-q", str(self.spec_path), f"{self.host}:{self.remote_spec}"], check=True)
+        say(f"scp {self.spec_path} -> {self.ssh_host}:{self.remote_spec}")
+        subprocess.run(["scp", *SSH_OPTS, "-q", str(self.spec_path), f"{self.ssh_host}:{self.remote_spec}"], check=True)
         return self.remote_spec
 
     def host_disko(self, *args: str) -> str:
@@ -151,9 +158,9 @@ class Context:
         if self.is_local:
             return run([self.binary(), *args, "--spec", spec_on_host], capture=True, sudo=True)
         binpath = self.binary()
-        say(f"ssh {self.host} sudo {binpath} {' '.join(args)} --spec {spec_on_host}")
+        say(f"ssh {self.ssh_host} sudo {binpath} {' '.join(args)} --spec {spec_on_host}")
         return subprocess.run(
-            ["ssh", self.host, "sudo", binpath, *args, "--spec", spec_on_host],
+            ["ssh", *SSH_OPTS, self.ssh_host, "sudo", binpath, *args, "--spec", spec_on_host],
             check=True, text=True, capture_output=True,
         ).stdout
 
@@ -207,7 +214,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument("command", nargs="?", default="plan", choices=["spec", "show", "plan", "apply"])
-    p.add_argument("-H", "--host", help="target host (default: this machine)")
+    p.add_argument("-H", "--host", help="target host / flake attr (default: this machine)")
+    p.add_argument("--ssh-host", dest="ssh_host", help="ssh target if it differs from --host")
     p.add_argument("-r", "--repo", help="repo checkout with the flake (default: git root)")
     p.add_argument("-s", "--spec-file", help="spec path to write/read (default: temp)")
     p.add_argument("--dry-run", action="store_true", help="do not contact the host; print implied creates")
