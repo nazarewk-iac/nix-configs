@@ -193,14 +193,16 @@ in
         esac
         printf '%s\n' "$eff" > "$dir/serve-effective"
 
-        mask=/etc/systemd/system/llama-swap.service
+        # A runtime mask, NOT a file in /etc: /etc/systemd/system/llama-swap.service
+        # is NixOS's own managed unit symlink and /etc is read-only during a switch,
+        # so writing there both clobbers the unit and fails activation. `--runtime`
+        # writes to /run (writable) and is re-established on every boot by this unit.
+        # Every call tolerates failure so a transient error never aborts a switch.
         if [ "$eff" = off ]; then
           systemctl stop llama-swap.service 2>/dev/null || true
-          ln -sf /dev/null "$mask"
-          systemctl daemon-reload
+          systemctl mask --runtime llama-swap.service 2>/dev/null || true
         else
-          rm -f "$mask"
-          systemctl daemon-reload
+          systemctl unmask --runtime llama-swap.service 2>/dev/null || true
           systemctl start llama-swap.service 2>/dev/null || true
         fi
       '';
