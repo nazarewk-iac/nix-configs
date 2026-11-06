@@ -165,6 +165,17 @@ class Context:
         ).stdout
 
 
+def confirm_or_abort() -> None:
+    """Pause between plan and apply. `apply --yes` skips it; no TTY refuses."""
+    if not sys.stdin.isatty():
+        sys.exit("REFUSING: apply in a non-interactive context needs --yes")
+    sys.stderr.write("\nApply the additive commands above? [y/N] ")
+    sys.stderr.flush()
+    answer = sys.stdin.readline().strip().lower()
+    if answer not in ("y", "yes"):
+        sys.exit("aborted; nothing applied")
+
+
 def emit(text: str) -> None:
     sys.stdout.write(text if text.endswith("\n") else text + "\n")
 
@@ -197,6 +208,8 @@ def cmd_plan(ctx: Context, apply: bool = False) -> None:
     if apply:
         if core.has_destructive(plan_text) and not ctx.args.force:
             sys.exit("REFUSING: plan has destructive commands (use --force)")
+        if not ctx.args.yes:
+            confirm_or_abort()
         say("disko-zfs apply")
         emit(ctx.host_disko("apply"))
 
@@ -220,6 +233,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("-s", "--spec-file", help="spec path to write/read (default: temp)")
     p.add_argument("--dry-run", action="store_true", help="do not contact the host; print implied creates")
     p.add_argument("--force", action="store_true", help="apply even if destructive commands are present")
+    p.add_argument("-y", "--yes", action="store_true", help="apply without the confirmation pause")
     p.add_argument("--disko-zfs", dest="disko_zfs", help="disko-zfs binary to use")
     return p
 
