@@ -89,11 +89,18 @@ curl -s http://etra:4000/v1/chat/completions \
 2. Set `autoStart = true` in `hosts/etra/litellm.nix`, rebuild etra.
 3. (Optional) point a Prometheus at `http://etra:4000/metrics`.
 
-**Not yet done**: only brys is registered. oams is deliberately left out until
-its serving toggle is proven and a backend-health story exists (oams is a laptop
-that stops serving on battery/while gaming). The config is generated from brys'
-member view in `data/llm.nix`; adding oams means adding its alias->endpoint block
-the same way.
+**Backends: brys + oams.** All 32 brys aliases are registered; the 4 aliases oams
+serves (`tiny-dumb-fast`, `tiny-dumb-fast-alt`, `tools-dumb-fast`,
+`chat-dumb-fast-alt`) get a **second deployment on oams** over NetBird
+(`OAMS_API_BASE` = egress 8444 -> oams netbird:39704). LiteLLM load-balances
+across both and fails over on error. Measured failure modes (see the task's
+[failure-modes.research.md](tasks/2026-11/litellm-gateway/failure-modes.research.md)):
+oams **stopped** (connection refused) fails over invisibly in ~30 ms; oams
+**blackholed** (NetBird off / dead route) makes a request hang the full 120 s
+timeout before failover (worst case ~240 s) — recommend background health checks
++ `enable_health_check_routing` before relying on it over an unreliable link. A
+model whose *only* backend is down returns 500 briefly then a fast **429** once
+cooled.
 
 **Operational facts** baked into the config: the default request timeout is
 **6000 s** and is clamped to 60 s; when all deployments for a model are down
