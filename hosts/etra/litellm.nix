@@ -49,24 +49,58 @@ let
   views = { brys = llm.mkMemberView data "brys"; oams = llm.mkMemberView data "oams"; };
   # Deployments: one per (host, alias). `api_base`/`api_key` are per-host env vars
   # the container resolves at start (see the container ExecStart).
+  # Measured rates for a base model id on this host, or null.
+  ratesOf = host: baseId: (views.${host}.models.${baseId}.capabilities.rates or null);
   deployments =
     host: baseEnv: keyEnv:
-    map (alias: {
-      model_name = alias;
-      litellm_params = {
-        model = "openai/${views.${host}.aliasToModel.${alias}}";
-        api_base = "os.environ/${baseEnv}";
-        api_key = "os.environ/${keyEnv}";
-      };
-      model_info = {
-        id = "${host}-${alias}";
-        # (#1) A cheap, SHORT probe: the egress relay to a blackholed host HANGS its
-        # upstream connect for minutes, so the probe must time out fast (well under
-        # health_check_interval) or the deployment never flips unhealthy.
-        health_check_timeout = 5;
-        health_check_max_tokens = 1;
-      };
-    }) (builtins.attrNames views.${host}.aliasToModel);
+    map (
+      alias:
+      let
+        baseId = views.${host}.aliasToModel.${alias};
+        r = ratesOf host baseId;
+      in
+      {
+        model_name = alias;
+        litellm_params = {
+          model = "openai/${baseId}";
+          api_base = "os.environ/${baseEnv}";
+          api_key = "os.environ/${keyEnv}";
+        }
+        # Measured throughput -> a tpm rate limit (decode t/s * 60 s, a loose ceiling
+        # so latency-based/usage routing can use it; a busy host still refuses work).
+        // lib.optionalAttrs (r != null) {
+          tpm = (builtins.fromJSON (builtins.toJSON (r.decode * 60)));
+          # (#4) Per-deployment streaming timeout = the first-token (prefill) wait for
+          # a FULL context: servedContext / prefill_tokens_per_second, plus margin.
+          # A deep model at 1M ctx and ~0.2 t/s prefill needs hours; a fast small
+          # model needs seconds, so a dead one fails fast. Floor 120 s, no ceiling
+          # (a slow-but-alive prefill MUST be allowed to finish).
+          # Budget a FIRST TOKEN for at most 100k tokens of context (the policy:
+          # never START a request above ~100k; a session may build past that via the
+          # disk session cache / prefix reuse, not one huge cold prefill). Capped at
+          # 2h so a dead-but-connected backend cannot hang a client for longer; a
+          # genuinely running prefill resumes from checkpoints, not from scratch.
+          stream_timeout = let
+            prefill = if r.prefill <= 0 then 1 else r.prefill;
+            startTokens = 100 * 1024;
+            budget = 120 + (builtins.fromJSON (builtins.toJSON (startTokens / prefill)));
+          in if budget > 7200 then 7200 else budget;
+        };
+        model_info = {
+          id = "${host}-${alias}";
+          # (#1) A cheap, SHORT probe: the egress relay to a blackholed host HANGS its
+          # upstream connect for minutes, so the probe must time out fast (well under
+          # health_check_interval) or the deployment never flips unhealthy.
+          health_check_timeout = 5;
+          health_check_max_tokens = 1;
+        }
+        // lib.optionalAttrs (r != null) {
+          # Measured throughput, surfaced via /model/info for clients and docs.
+          tokens_per_second = r.decode;
+          prefill_tokens_per_second = r.prefill;
+        };
+      }
+    ) (builtins.attrNames views.${host}.aliasToModel);
 
   # brys deployment for every alias; oams only for aliases it also serves.
   brysAliases = builtins.attrNames views.brys.aliasToModel;

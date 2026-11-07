@@ -267,6 +267,10 @@ in
         "tools-deep-slow"
       ];
       capabilities = {
+        # Measured throughput (docs/local-llms.md). Decode 2.36 t/s on 16 CPU threads;
+        # warm prefill ~30 t/s, but a COLD 1M-token prefill is hours, so the derived
+        # stream_timeout from contextSize/prefill is the real first-token budget.
+        rates = { decode = 2.36; prefill = 30.0; mode = "CPU"; };
         loadSeconds = 90;
         operation = "cpu";
       };
@@ -336,6 +340,8 @@ in
         "tiny-quick-fast"
       ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 60.8; prefill = 158.0; mode = "GPU"; };
         loadSeconds = 2;
         operation = "gpu";
       };
@@ -360,6 +366,11 @@ in
       };
     };
     "qwen3.5-9b" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 5.6; prefill = 40.8; mode = "CPU"; };
+      };
       hosts.brys = {
         set = "grunt";
         servedContext = 16384;
@@ -379,6 +390,11 @@ in
       };
     };
     "gemma-4-12b" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 5.76; prefill = 10.4; mode = "CPU"; };
+      };
       gpu = false;
       contextSize = 16384;
       hosts.brys = {
@@ -399,6 +415,11 @@ in
       };
     };
     "gemma-4-26b-a4b" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 14.5; prefill = 67.7; mode = "CPU"; };
+      };
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
@@ -419,6 +440,11 @@ in
       };
     };
     "gemma-4-e2b" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 25.4; prefill = 149.4; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -448,6 +474,8 @@ in
       # ~80 tok/s, so it is a serial workhorse, not a fast tier. GPU is only ~6% ahead of CPU
       # on this card; it stays on the GPU because that costs nothing when co-resident.
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 15.7; prefill = 84.5; mode = "GPU"; };
         loadSeconds = 25;
         operation = "gpu";
       };
@@ -511,6 +539,11 @@ in
       };
     };
     "glm-4.7-flash" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 11.5; prefill = 46.5; mode = "CPU"; };
+      };
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
@@ -536,6 +569,8 @@ in
         "chat-dumb-fast-alt"
       ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 83.9; prefill = 223.6; mode = "GPU"; };
         loadSeconds = 1;
         operation = "gpu";
       };
@@ -581,6 +616,8 @@ in
     "granite-4.2-8b" = {
       aliases = [ "tools-std-fast-alt" ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 38.6; prefill = 146.0; mode = "GPU"; };
         loadSeconds = 3;
         operation = "gpu";
       };
@@ -662,6 +699,11 @@ in
       };
     };
     "mimo-v2.6-qwen-9b" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 5.7; prefill = 28.1; mode = "CPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -684,6 +726,11 @@ in
       };
     };
     "ministral-3-3b-instruct" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 79.3; prefill = 1369.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -708,6 +755,8 @@ in
     "ministral-3-3b-reasoning" = {
       aliases = [ "reason-quick-fast-alt" ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 80.9; prefill = 933.0; mode = "GPU"; };
         loadSeconds = 1;
         operation = "gpu";
       };
@@ -733,6 +782,11 @@ in
       };
     };
     "ministral-3-8b-instruct" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 38.4; prefill = 576.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -755,6 +809,11 @@ in
       };
     };
     "ministral-3-8b-reasoning" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 38.9; prefill = 458.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -805,6 +864,11 @@ in
       };
     };
     "nemotron-3.5-lightning-30b" = {
+      capabilities = {
+        operation = "cpu";
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 12.9; prefill = 44.0; mode = "CPU"; };
+      };
       gpu = false;
       contextSize = 8192;
       hosts.brys = {
@@ -825,6 +889,11 @@ in
       };
     };
     "olmo-3-7b-instruct" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 40.4; prefill = 136.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -1008,6 +1077,8 @@ in
     "qwen3.5-0.8b" = {
       aliases = [ "tiny-dumb-fast" ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 64.7; prefill = 500.9; mode = "GPU"; };
         loadSeconds = 1;
         operation = "gpu";
       };
@@ -1075,6 +1146,8 @@ in
     "qwen3.5-2b" = {
       aliases = [ "tiny-dumb-fast-alt" ];
       capabilities = {
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 116.8; prefill = 273.5; mode = "GPU"; };
         loadSeconds = 1;
         operation = "gpu";
       };
@@ -1142,6 +1215,8 @@ in
     "qwen3.5-35b-a3b" = {
       aliases = [ "chat-std-mid" ];
       capabilities = {
+        # Measured throughput on CPU (docs/local-llms.md unified table).
+        rates = { decode = 9.2; prefill = 45.9; mode = "CPU"; };
         loadSeconds = 25;
         operation = "cpu";
       };
@@ -1185,6 +1260,11 @@ in
       };
     };
     "tmax-2b" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 110.7; prefill = 311.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
@@ -1229,6 +1309,11 @@ in
       };
     };
     "tmax-9b" = {
+      capabilities = {
+        operation = "gpu";
+        # Measured throughput on GPU (docs/local-llms.md unified table).
+        rates = { decode = 36.9; prefill = 121.0; mode = "GPU"; };
+      };
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
