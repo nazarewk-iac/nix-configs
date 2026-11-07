@@ -105,12 +105,28 @@ in
           "prometheus-container"
           "service-rustdesk"
           "ssh-ca"
+          "web-exposure"
         ];
       };
     }
   ];
 
   config = lib.mkMerge [
+    {
+      # Per-host HTTPS exposure: one Caddy vhost on :443 (internal-CA leaf) that
+      # fronts the LiteLLM gateway and the Prometheus, sub-path per service, with
+      # an index page at `/`. Firewall opens 443 only on `nb-priv`: etra is the
+      # border router, so a global open would expose these to the WAN.
+      kdn.web.exposure = {
+        domain = "etra.priv.nb.net.int.kdn.im";
+        certName = "zellij-web";
+        title = "etra";
+        routes = {
+          "/litellm" = { upstream = "127.0.0.1:4000"; label = "LiteLLM gateway"; };
+          "/prometheus" = { upstream = "10.233.101.2:9090"; label = "Prometheus"; };
+        };
+      };
+    }
     {
       # The build-farm proxy: one container, HAProxy `balance first` over the fleet.
       # The shared module is the den `build-farm` aspect; this file owns only the data.

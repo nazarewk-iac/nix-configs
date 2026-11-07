@@ -69,7 +69,7 @@ let
         # Measured throughput -> a tpm rate limit (decode t/s * 60 s, a loose ceiling
         # so latency-based/usage routing can use it; a busy host still refuses work).
         // lib.optionalAttrs (r != null) {
-          tpm = (builtins.fromJSON (builtins.toJSON (r.decode * 60)));
+          tpm = builtins.floor (r.decode * 60);
           # (#4) Per-deployment streaming timeout = the first-token (prefill) wait for
           # a FULL context: servedContext / prefill_tokens_per_second, plus margin.
           # A deep model at 1M ctx and ~0.2 t/s prefill needs hours; a fast small
@@ -83,7 +83,7 @@ let
           stream_timeout = let
             prefill = if r.prefill <= 0 then 1 else r.prefill;
             startTokens = 100 * 1024;
-            budget = 120 + (builtins.fromJSON (builtins.toJSON (startTokens / prefill)));
+            budget = 120 + builtins.floor (startTokens / prefill);
           in if budget > 7200 then 7200 else budget;
         };
         model_info = {
@@ -248,16 +248,14 @@ in
         systemd.services.litellm = {
           description = "LiteLLM OpenAI-compatible gateway";
           wantedBy = [ "multi-user.target" ];
-          after = [
-            "network.target"
-            "litellm-keygen.service"
-          ];
-          wants = [ "litellm-keygen.service" ];
+          after = [ "network.target" ];
           serviceConfig = {
             ExecStart = ''
               ${pkgs.writeShellScript "litellm-run" ''
                 set -eu
                 export LITELLM_MASTER_KEY="$(cat /etc/litellm-master-key)"
+                # The probe callback (probe.host_probe) lives beside config.yaml.
+                export PYTHONPATH="/etc/litellm''${PYTHONPATH:+:$PYTHONPATH}"
                 # Upstream is brys' llama-swap over NetBird, reached through the
                 # host egress relay. Plain HTTP (no TLS to verify), real API key.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
@@ -363,14 +361,20 @@ in
   # --- Prometheus scraping the gateway's /metrics (#2) ------------------------
   #
   # A confined Prometheus (the prometheus-container aspect) scrapes the gateway.
-  # The gateway's /metrics needs the bearer master key, so the key is mounted into
-  # the TSDB dir (readable by the prometheus user) and passed as the scrape auth.
-  # Prometheus reaches the gateway through a narrow socat relay on the container
-  # bridge; the gateway stays on its own private veth.
+  # The gateway's /metrics is on a public route (no bearer token), so the scrape is
+  # unauthenticated and needs no key. Prometheus reaches the gateway over the
+  # container bridge; the gateway stays on its own private veth.
   kdn.prometheus-container = {
     hostAddress = "10.233.101.1";
     localAddress = "10.233.101.2";
     stateDir = "/var/lib/prometheus2";
+    # Served under /prometheus by etra's Caddy, which strips the prefix. The
+    # external URL keeps absolute links on /prometheus; route-prefix `/` lets the
+    # strip work.
+    extraFlags = [
+      "--web.external-url=https://etra.priv.nb.net.int.kdn.im/prometheus/"
+      "--web.route-prefix=/"
+    ];
     targets = [
       {
         job = "litellm";

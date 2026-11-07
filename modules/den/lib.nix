@@ -247,6 +247,7 @@ let
     virt-microvm-guest = ./aspects/virt-microvm-guest.nix;
     virt-microvm-host = ./aspects/virt-microvm-host.nix;
     virt-vagrant = ./aspects/virt-vagrant.nix;
+    web-exposure = ./aspects/web-exposure.nix;
     zellij = ./aspects/zellij.nix;
     zellij-web = ./aspects/zellij.nix;
   };

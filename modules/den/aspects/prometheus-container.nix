@@ -60,6 +60,16 @@
           type = lib.types.str;
           default = "2GB";
         };
+        extraFlags = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Extra `prometheus` flags. Used to serve the UI under a path prefix
+            behind a reverse proxy: pass `--web.external-url=<url>/<prefix>/` so
+            absolute links keep the prefix, and `--web.route-prefix=/` so the
+            proxy may strip the prefix before forwarding.
+          '';
+        };
         # Each target is a scrape job. `targets` are `host:port` as seen FROM the
         # container (usually the host bridge address + a socat relay port).
         targets = lib.mkOption {
@@ -112,7 +122,7 @@
                 listenAddress = "0.0.0.0";
                 port = cfg.port;
                 inherit (cfg) retentionTime;
-                extraFlags = [ "--storage.tsdb.retention.size=${cfg.retentionSize}" ];
+                extraFlags = [ "--storage.tsdb.retention.size=${cfg.retentionSize}" ] ++ cfg.extraFlags;
                 scrapeConfigs = map (t: {
                   job_name = t.job;
                   scrape_interval = t.interval;

@@ -40,6 +40,17 @@ in
       routers = srv.routers;
       swap = srv.swap;
       models = llm.mkServerModels data "oams" profile;
+
+      # Uniform HTTPS exposure (brys/etra): the den `llm` aspect renders a Caddy
+      # vhost on :443 serving llama-swap under /llama-swap with an index page.
+      # The leaf is oams' existing internal-CA `zellij-web` certificate; the key is
+      # its sops-decrypted runtime path.
+      domain = "oams.priv.nb.net.int.kdn.im";
+      certs = {
+        certFile = "${kdnConfig.self}/hosts/oams/certs/zellij.pub";
+        keyFile = "/run/secrets/kdn/certificates/zellij-web.key";
+        sans = [ "oams.priv.nb.net.int.kdn.im" ];
+      };
     };
   };
 

@@ -70,6 +70,16 @@ in
 
       # The routed model set for this boot profile, projected from the data.
       models = llm.mkServerModels data "brys" profile;
+
+      # Expose the on-host Prometheus under /prometheus on the same vhost. Caddy
+      # strips the prefix; brys' Prometheus sets external-url so absolute links
+      # keep it (see the extraFlags below).
+      web.extraRoutes = {
+        "/prometheus" = {
+          upstream = "10.233.90.2:9090";
+          label = "Prometheus";
+        };
+      };
     };
   };
 
@@ -238,7 +248,12 @@ in
           listenAddress = "0.0.0.0";
           port = 9090;
           retentionTime = "30d";
-          extraFlags = [ "--storage.tsdb.retention.size=2GB" ];
+          extraFlags = [
+            "--storage.tsdb.retention.size=2GB"
+            # Served under /prometheus by Caddy, which strips the prefix.
+            "--web.external-url=https://brys.priv.nb.net.int.kdn.im/prometheus/"
+            "--web.route-prefix=/"
+          ];
           scrapeConfigs = [
             {
               job_name = "llama-swap";
