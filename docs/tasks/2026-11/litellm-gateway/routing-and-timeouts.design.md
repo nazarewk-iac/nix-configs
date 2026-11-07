@@ -283,3 +283,39 @@ is moot.)
   (Python module loaded via `litellm_settings.callbacks`) and a cron/loop writing
   per-host reachability, which is a real (small) feature, not a config line.
   Deferred, not done.
+
+## Implemented 2026-11-07: durable state + host-side probe
+
+### Durable routing state (Redis + AOF)
+- `services.redis.servers.litellm` on etra: `bind 127.0.0.1`, `appendOnly=true`,
+  `appendFsync=everysec`, dir `/var/lib/redis-litellm` persisted under `sys/state`.
+- A narrow socat relay exposes it on the litellm bridge (`10.233.100.1:6379`); the
+  guest sets `general_settings.coordination_redis = { host = 10.233.100.1; port =
+  6379; }`, and the router's `DualCache` then uses it (`router._update_redis_cache`).
+- **Verified**: litellm writes `deployment:<id>:allowed_fails`,
+  `global_router:*:rpm:*`/`:tpm:*`, and the health state into Redis; a no-TTL key set
+  before `systemctl restart redis-litellm` survived (AOF on disk). Ephemeral
+  counters (cooldown 30 s, per-minute tpm/rpm) expire by design — only the
+  latency-history map (`*_map`, TTL 3600 s) is durable and only under
+  latency-based-routing; simple-shuffle builds none.
+
+### Host-side probe plugin (fixes the blackhole caveat)
+Two pieces, because the in-container probe cannot tell "dead" from "slow" through
+the egress relay (the relay accepts, then hangs upstream):
+1. **`litellm-host-probe.service` + `.timer`** on the etra host: every 15 s,
+   `timeout 3 bash -c "exec 3<>/dev/tcp/<netbird-ip>/39704"` for brys and oams —
+   a real connect timeout over NetBird. Writes `/var/lib/litellm/host-health.json`
+   atomically (`{"brys": true, "oams": false}`). The dir is already bind-mounted
+   into the container, so the file is read there (a *file* bind-mount would break
+   on the atomic rename — hence the dir mount + tmpfiles placeholder).
+2. **`probe.py`** (mounted at `/etc/litellm/probe.py`, loaded by litellm via
+   `callbacks: ["probe.host_probe"]` from beside config.yaml) implements
+   `async_filter_deployments`: maps a deployment to its host by the `model_info.id`
+   prefix (`oams-…`/`brys-…`), drops deployments on a down host, and keeps all if
+   the whole group is down. Never raises (a filter bug must not break routing).
+
+**Verified end to end** (this is the behavior built-in health routing could not
+give): blackhole oams → health file `oams:false` within ~20 s → all requests served
+by brys in **~0.05 s** (was a 120–200 s hang) → remove blackhole → oams resumes and
+the load-balancing mix returns. `simple-shuffle`/`enable_health_check_routing` remain
+on as a second net; the plugin is the effective one for blackholes.
