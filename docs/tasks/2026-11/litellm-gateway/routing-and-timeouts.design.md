@@ -162,3 +162,65 @@ is off. Blocker: nixpkgs `prisma` (python 0.15.0, what litellm 1.102.1 pins) nee
 an engine built at its own commit (~5.x); nixpkgs ships prisma-engines 6.19.3 and
 7.10.0, neither matching, and no NixOS prebuilt exists. Routing needs no DB, so
 this stays a scaffold until a matching `prisma-engines` is packaged.
+
+## Corrected facts, verified against the installed closure (2026-11-07)
+
+### #1 What actually needs a DB
+The proxy has **44 `prisma_client is None` guards**. A DB is required for:
+virtual keys (`/key/*`), users/teams (`/user/new`, `/team/new`), **budgets**
+(spend counters), **spend logs** (`/spend/logs`, `disable_spend_logs` controls
+it), and **config-managed models** (`store_model_in_db`, `/model/new`,
+`/model/delete`). **Routing, load-balancing, health checks, cooldowns, tag
+routing and the complexity router do NOT need a DB** — they are config/in-memory
+(Redis only for cross-worker sharing). So a DB buys key/budget/spend accounting
+and DB-stored models, none of which this fleet uses.
+
+### #2 Does /metrics expose tok/s and prefill (TTFT) so we can tune later?
+Yes — per deployment:
+- `litellm_deployment_latency_per_output_token` (histogram) = seconds per output
+  token, i.e. **inverse decode tok/s** per deployment.
+- `litellm_llm_api_time_to_first_token_metric` (histogram) = **TTFT** per
+  deployment/model, the prefill proxy.
+- plus success/failure counters and `litellm_deployment_state`.
+So real-world decode/prefill are observable per host+model from Prometheus, and
+the measured `rates` in `data/llm.nix` can be refined from those (a periodic
+export → data file is a future nicety; not automated yet).
+
+### #3 Is config `tpm` the only source of truth, or are real measurements used?
+Both, for **different** strategies:
+- `simple-shuffle`: `weight`/`rpm`/`tpm` from config are **the only** input
+  (static weighting).
+- `usage-based-routing(-v2)`: uses **live** tpm/rpm counters (Redis) against the
+  configured `tpm`/`rpm` as the **limit**.
+- `latency-based-routing`: uses **measured** history — per-deployment
+  `time_to_first_token_seconds` and `latency_normalized` sample lists (last 10,
+  averaged over TTL) — config `tpm`/`rpm` are only ceilings. **This is the one
+  that self-tunes to real speed**, in-memory per worker (Redis to share).
+So config `tpm` is a ceiling/weight, not a claim the router trusts over reality
+when you pick latency-based routing.
+
+### #4 Where can `tpm` be used?
+1. **Rate limiting** per deployment (usage-based-routing: refuse/queue past tpm).
+2. **Weight** for `simple-shuffle` (when `weight` is unset, tpm/rpm stand in).
+3. **`max_parallel_requests` derivation** (`rpm` > `tpm/1000*6` when unset).
+4. As a **ceiling** for usage-based and latency-based routing.
+It is NOT a throughput predictor the router uses for latency (that comes from
+measurements under latency-based routing).
+
+### #5 The real DB blocker (corrected — my earlier reason was wrong)
+`prisma` 0.15.0 and `psycopg` ARE in the litellm closure — so the version is not
+the problem. The actual gaps:
+- **No engine binary** packaged: prisma 0.15 needs engine commit `393aa359…`
+  (prisma-engines **5.17.0**); nixpkgs ships only 6.19.3 / 7.10.0, and prisma on
+  `linux-nixos` has no prebuilt (the CLI hits `binaries.prisma.sh .../linux-nixos/
+  ...404`).
+- **No generated prisma client** and **`litellm_proxy_extras` is not installed**
+  in the nixpkgs package — litellm's DB path needs `prisma generate` (schema-engine
+  + node) to produce the Python client, which the package does not bake.
+Therefore enabling `DATABASE_URL` fails at `prisma generate` / query-engine load,
+not at a version check. Fixing it is a packaging job: ship a matching
+`prisma-engines` 5.17.0 built for NixOS, bake the generated client, and add
+`litellm_proxy_extras`. That is out of scope for a config change and is why the DB
+stays an off-by-default scaffold. (A `prisma-engines_6` `query-engine` exists and
+could be tried with `PRISMA_QUERY_ENGINE_BINARY`, but without a generated client it
+is moot.)
