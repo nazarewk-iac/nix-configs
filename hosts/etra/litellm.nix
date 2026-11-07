@@ -222,9 +222,14 @@ in
       hostPath = "/var/lib/litellm";
       isReadOnly = false;
     };
-    # brys llama-swap requires an API key. It comes from the shared llms sops file
-    # (config now mounts it on etra); bind just that one key into the guest.
-    bindMounts."/run/secrets/brys-api-key" = {
+    # The SOPS-decrypted secrets, as individual FILES mounted under /etc — NOT
+    # under /run: the container has its own /run tmpfs which SHADOWS any bind placed
+    # there (observed: /run/configs/llms was empty inside the guest).
+    bindMounts."/etc/litellm-master-key" = {
+      hostPath = "/run/configs/llms/litellm/master-key";
+      isReadOnly = true;
+    };
+    bindMounts."/etc/litellm-llama-key" = {
       hostPath = "/run/configs/llms/llama-server/api-keys/default";
       isReadOnly = true;
     };
@@ -234,21 +239,11 @@ in
       {
         networking.firewall.allowedTCPPorts = [ gatewayPort ];
 
-        # Generate the shared master key on first start (DB-less: one bearer key
-        # for every client). It lives in the persisted state dir.
-        systemd.services.litellm-keygen = {
-          description = "Generate the LiteLLM master key once";
-          wantedBy = [ "multi-user.target" ];
-          before = [ "litellm.service" ];
-          serviceConfig.Type = "oneshot";
-          script = ''
-            set -eu
-            install -d -m 0750 /var/lib/litellm
-            test -s /var/lib/litellm/master-key || \
-              ${pkgs.openssl}/bin/openssl rand -hex 32 > /var/lib/litellm/master-key
-            chmod 0400 /var/lib/litellm/master-key
-          '';
-        };
+        # The master key is a SOPS secret (llms.nonsensitive: litellm.master-key),
+        # mounted read-only into the container at /run/configs/llms. One key for the
+        # gateway AND every client (Pi/OpenCode read the same path on their host).
+        # (No auto-generation: a generated key would not match the clients'.)
+        # Nothing to create here; the container reads it directly below.
 
         systemd.services.litellm = {
           description = "LiteLLM OpenAI-compatible gateway";
@@ -262,14 +257,14 @@ in
             ExecStart = ''
               ${pkgs.writeShellScript "litellm-run" ''
                 set -eu
-                export LITELLM_MASTER_KEY="$(cat /var/lib/litellm/master-key)"
+                export LITELLM_MASTER_KEY="$(cat /etc/litellm-master-key)"
                 # Upstream is brys' llama-swap over NetBird, reached through the
                 # host egress relay. Plain HTTP (no TLS to verify), real API key.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
-                export BRYS_API_KEY="$(cat /run/secrets/brys-api-key)"
+                export BRYS_API_KEY="$(cat /etc/litellm-llama-key)"
                 export OAMS_API_BASE="http://${hostAddress}:${toString oamsEgressPort}/v1"
                 # Same shared llama-server key as brys (one fleet api-key file).
-                export OAMS_API_KEY="$(cat /run/secrets/brys-api-key)"
+                export OAMS_API_KEY="$(cat /etc/litellm-llama-key)"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 ${lib.optionalString dbEnabled ''

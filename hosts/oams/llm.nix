@@ -106,15 +106,6 @@ in
       };
     };
 
-    # The shared fleet secrets file (`llms.nonsensitive.sops.yaml`) is mounted at
-    # the same path as on brys; it carries the llama-server API keys. No LLM TLS
-    # key on this host — the gateway terminates the client connection.
-    kdn.security.secrets.sops.files."llms" = {
-      sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
-      basePath = "/run/configs/llms";
-      sops.mode = "0444";
-    };
-
     # --- GPU serving toggle ----------------------------------------------------
     #
     # oams is a laptop: the GPU must be free for gaming and the battery must be

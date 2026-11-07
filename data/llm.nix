@@ -62,9 +62,11 @@ in
     # alias and the gateway chooses the host. The key is the gateway master key; it is
     # read from the client's runtime secrets the same way the direct endpoints are.
     litellm = {
-      baseUrl = "http://etra.lan.etra.net.int.kdn.im:4000/v1";
+      # etra's NetBird address: the gateway ingress is trusted only on nb-priv, so a
+      # client reaches it over the mesh (the LAN FQDN is firewalled off).
+      baseUrl = "http://100.79.187.16:4000/v1";
       api = "openai-completions";
-      apiKey = "!cat /run/configs/litellm/master-key";
+      apiKey = "!cat /run/configs/llms/litellm/master-key";
     };
     # A remote router. Unlike `brys`, models here name `endpoint = "requesty"` and have no host
     # block, so they never appear in the local fleet catalog or the llama-swap serving set.

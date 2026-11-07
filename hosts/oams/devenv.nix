@@ -137,8 +137,8 @@ in
   # the key is the gateway master key (a sops secret the client reads at runtime).
   kdn.llm.client.upstreams.litellm = {
     enable = true;
-    baseURL = "http://etra.lan.etra.net.int.kdn.im:4000/v1";
-    apiKeyFile = "/run/configs/litellm/master-key";
+    baseURL = "http://100.79.187.16:4000/v1";
+    apiKeyFile = "/run/configs/llms/litellm/master-key";
     discovery.enable = true;
   };
 
