@@ -382,8 +382,9 @@ in
   # `gatewayPort` lets the ingress relay reach the guest; `egressPort` lets the
   # guest reach the egress relay bound on the bridge address (without it the
   # backend calls are blackholed and every completion times out).
-  # The prometheus container reaches the gateway ingress (0.0.0.0:4000 on the host)
-  # through the host firewall; the veth is not trusted, so open just that port.
+  # The prometheus container reaches the gateway through the bridge relay bound
+  # at 10.233.101.1:4000; the veth is not trusted, so open just that port. Caddy
+  # reaches the gateway over the caddy-only unix socket, not a TCP port.
   networking.firewall.interfaces.ve-prometheus.allowedTCPPorts = [ gatewayPort ];
 
   networking.firewall.interfaces.ve-litellm.allowedTCPPorts = [
@@ -393,16 +394,46 @@ in
     6379  # routing-state Redis relay
   ];
 
-  # Ingress relay: LAN clients -> guest gateway. It binds 0.0.0.0 so clients on
-  # etra's trusted LAN (`nb-priv`, see hosts/etra/default.nix) reach it at
-  # http://<etra>:4000; the router firewall drops it on every untrusted net.
-  systemd.services.litellm-ingress = {
-    description = "Relay :${toString gatewayPort} to the LiteLLM container";
+  # Ingress for Caddy: a UNIX socket owned by the `caddy` user, so ONLY Caddy
+  # reaches the gateway. No TCP listener exists on the host, so no other local
+  # user (and nothing off-host) can reach it. Caddy proxies
+  # unix//run/kdn/litellm.sock. The socket runs as caddy so the socket is
+  # owned caddy:caddy (no chown, which a DynamicUser could not do).
+  systemd.services.litellm-ingress-sock = {
+    description = "Expose the LiteLLM container on a Caddy-only unix socket";
     wantedBy = [ "multi-user.target" ];
     after = [ "container@litellm.service" ];
     wants = [ "container@litellm.service" ];
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString gatewayPort},bind=0.0.0.0,fork,reuseaddr TCP:${localAddress}:${toString gatewayPort}";
+      ExecStart = "${pkgs.socat}/bin/socat -d UNIX-LISTEN:/run/kdn/litellm.sock,fork,unlink-early,mode=0660 TCP:${localAddress}:${toString gatewayPort}";
+      User = "caddy";
+      Group = "caddy";
+      RuntimeDirectory = "kdn";
+      RuntimeDirectoryMode = "0750";
+      Restart = "always";
+      RestartSec = 3;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [
+        "AF_UNIX"
+        "AF_INET"
+        "AF_INET6"
+      ];
+    };
+  };
+
+  # Ingress for Prometheus: bound to the Prometheus container's host-bridge
+  # address only, so the scraper reaches it and nothing else does (no 0.0.0.0,
+  # no host loopback). The veth firewall opens just this port.
+  systemd.services.litellm-ingress-prom = {
+    description = "Relay the gateway to the Prometheus container over the bridge";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "container@litellm.service" ];
+    wants = [ "container@litellm.service" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString gatewayPort},bind=10.233.101.1,fork,reuseaddr TCP:${localAddress}:${toString gatewayPort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;

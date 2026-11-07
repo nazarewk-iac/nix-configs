@@ -124,7 +124,8 @@ in
         services = {
           litellm = {
             subdomain = "litellm.etra.priv.nb.net.int.kdn.im";
-            upstream = "127.0.0.1:4000";
+            # Caddy-only unix socket: no TCP listener for the gateway on the host.
+            upstream = "unix//run/kdn/litellm.sock";
             label = "LiteLLM gateway";
           };
           prometheus = {
