@@ -68,9 +68,9 @@ in
     # alias and the gateway chooses the host. The key is the gateway master key; it is
     # read from the client's runtime secrets the same way the direct endpoints are.
     litellm = {
-      # The gateway is exposed by etra's Caddy on the default HTTPS port behind an
-      # internal-CA leaf; Caddy strips the /litellm prefix before forwarding.
-      baseUrl = "https://etra.priv.nb.net.int.kdn.im/litellm/v1";
+      # The gateway is exposed on its own subdomain by etra's Caddy over HTTPS with
+      # an internal-CA leaf (resolved via NetBird DNS zones).
+      baseUrl = "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/litellm/master-key";
     };

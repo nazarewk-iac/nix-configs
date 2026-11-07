@@ -137,9 +137,8 @@ in
   # the key is the gateway master key (a sops secret the client reads at runtime).
   kdn.llm.client.upstreams.litellm = {
     enable = true;
-    # The gateway is exposed over HTTPS by etra's Caddy (internal-CA leaf); the
-    # /litellm prefix is stripped before the gateway sees the request.
-    baseURL = "https://etra.priv.nb.net.int.kdn.im/litellm/v1";
+    # The gateway is exposed on its own subdomain over HTTPS by etra's Caddy.
+    baseURL = "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
     apiKeyFile = "/run/configs/llms/litellm/master-key";
     discovery.enable = true;
   };
