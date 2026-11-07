@@ -479,6 +479,14 @@ in
         basePath = "/run/configs/llms";
         sops.mode = "0444";
       };
+      # Client API keys for the gateway's custom auth (non-master, model-scoped).
+      # Sensitive: its own file, decryptable by etra (ssh host key) + recovery YubiKeys.
+      kdn.security.secrets.sops.files."litellm-keys" = {
+        sopsFile = "${self}/hosts/etra/litellm-keys.sops.yaml";
+        keyPrefix = "keys";
+        basePath = "/run/configs/litellm-keys";
+        sops.mode = "0400";
+      };
     }
     {
       # Both entries read one personal file. An absent path stops the whole evaluation inside

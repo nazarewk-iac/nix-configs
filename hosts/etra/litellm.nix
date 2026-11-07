@@ -37,6 +37,12 @@ let
   oamsHost = "100.79.80.79";
   oamsPort = 39704;
   oamsEgressPort = 8444;
+  # Requesty (SaaS) egress: the container reaches it through a TLS-terminating
+  # socat relay (plaintext over the private veth -> TLS to requesty), so the
+  # container itself has no direct internet egress.
+  requestyHost = "router.requesty.ai";
+  requestyPort = 443;
+  requestyEgressPort = 8445;
 
   # --- Gateway config, GENERATED from data/llm.nix (no flat file to sync) -------
   #
@@ -147,15 +153,38 @@ let
     }
   ) poolBaseIds;
 
+  # Requesty deployments must be EXPLICIT: a `model_name: "requesty/*"` wildcard
+  # does NOT route (404 "model group not found") and pollutes /v1/models with the
+  # OpenAI price-map names, not Requesty's real catalog. List the real Requesty ids
+  # (fetched from its /v1/models). A deployment's model_name is `requesty/<real id>`.
+  requestyModelIds = [
+    "deepinfra/deepseek-v4.1-flash-1017"
+    "runware/deepseek-v4.1-flash-1017"
+    "tensorx/qwen3.8-flash-next"
+  ];
+  requestyDeployments = map (
+    mid:
+    {
+      model_name = "requesty/${mid}";
+      litellm_params = {
+        model = "openai/${mid}";
+        api_base = "http://${hostAddress}:${toString requestyEgressPort}/v1";
+        api_key = "os.environ/REQUESTY_API_KEY";
+      };
+      model_info = { id = "requesty-${builtins.replaceStrings [ "/" ] [ "-" ] mid}"; };
+    }
+  ) requestyModelIds;
+
   modelList =
     (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY")
     ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY")
-    ++ poolDeployments;
+    ++ poolDeployments
+    ++ requestyDeployments;
 
   gatewayConfig = {
     model_list = modelList;
     litellm_settings = {
-      callbacks = [ "prometheus" "probe.host_probe" "fastest.fastest_fit" ];
+      callbacks = [ "prometheus" "probe.host_probe" "fastest.fastest_fit" "enforce.scope" ];
       drop_params = true;
       # (#6) a very long first token (huge prefill) must not be cut off. These are
       # the proxy-wide defaults; the per-deployment streaming limit is what governs
@@ -168,6 +197,12 @@ let
     };
     general_settings = {
       master_key = "os.environ/LITELLM_MASTER_KEY";
+      # DB-less client auth: validate non-master keys against a sops keys file and
+      # scope each to an allow-list of model groups. The hook also handles the
+      # master key (full access), because custom_auth runs before LiteLLM's own
+      # master-key check.
+      custom_auth = "auth.user_api_key_auth";
+      custom_auth_run_common_checks = true;
       # (#1) background health checks + routing: a blackholed host is filtered out
       # of the candidates BEFORE any connect, so a client request never pays a
       # connect timeout. Probe cheaply and detect fast.
@@ -280,6 +315,23 @@ in
       hostPath = "/run/configs/llms/llama-server/api-keys/default";
       isReadOnly = true;
     };
+    bindMounts."/etc/litellm-requesty-key" = {
+      hostPath = "/run/configs/llms/requesty/api-key";
+      isReadOnly = true;
+    };
+    # Client API keys (sops) and the custom-auth hook.
+    bindMounts."/etc/litellm-keys-clients" = {
+      hostPath = "/run/configs/litellm-keys/keys/clients";
+      isReadOnly = true;
+    };
+    bindMounts."/etc/litellm/auth.py" = {
+      hostPath = "${./litellm_auth.py}";
+      isReadOnly = true;
+    };
+    bindMounts."/etc/litellm/enforce.py" = {
+      hostPath = "${./litellm_enforce.py}";
+      isReadOnly = true;
+    };
 
     config =
       { pkgs, ... }:
@@ -310,6 +362,8 @@ in
                 export OAMS_API_BASE="http://${hostAddress}:${toString oamsEgressPort}/v1"
                 # Same shared llama-server key as brys (one fleet api-key file).
                 export OAMS_API_KEY="$(cat /etc/litellm-llama-key)"
+                export REQUESTY_API_KEY="$(cat /etc/litellm-requesty-key)"
+                export KDN_LITELLM_KEYS_FILE=/etc/litellm-keys-clients
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 ${lib.optionalString dbEnabled ''
@@ -347,6 +401,13 @@ in
     port = 6379;
     appendOnly = true;
     appendFsync = "everysec";
+  };
+
+  # The keys file is a sops secret; the container bind-mounts it, so it must start
+  # after sops has written the file (a missing bind source fails nspawn).
+  systemd.services."container@litellm" = {
+    after = [ "sops-install-secrets.service" ];
+    wants = [ "sops-install-secrets.service" ];
   };
 
   systemd.services.litellm-redis-ingress = {
@@ -438,6 +499,7 @@ in
     gatewayPort
     egressPort
     oamsEgressPort
+    requestyEgressPort
     6379  # routing-state Redis relay
   ];
 
@@ -513,6 +575,30 @@ in
       RestrictAddressFamilies = [
         "AF_INET"
         "AF_INET6"
+      ];
+    };
+  };
+
+  # Egress relay: guest -> Requesty over TLS. Plaintext on the private veth, TLS to
+  # the SaaS; the container needs no internet route of its own.
+  systemd.services.litellm-requesty-egress = {
+    description = "Relay the LiteLLM container to Requesty over TLS";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "container@litellm.service" ];
+    wants = [ "container@litellm.service" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString requestyEgressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=10 OPENSSL:${requestyHost}:${toString requestyPort}";
+      Restart = "always";
+      RestartSec = 3;
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [
+        "AF_INET"
+        "AF_INET6"
+        "AF_UNIX"
       ];
     };
   };
