@@ -224,3 +224,62 @@ not at a version check. Fixing it is a packaging job: ship a matching
 stays an off-by-default scaffold. (A `prisma-engines_6` `query-engine` exists and
 could be tried with `PRISMA_QUERY_ENGINE_BINARY`, but without a generated client it
 is moot.)
+
+## Q&A round 2 (verified in the installed closure, 2026-11-07)
+
+### Q1 How do routing strategies work without a DB? Memory or Redis? Is Redis persisted?
+- Routing state is **never** in the DB. The router builds `self.cache =
+  DualCache(redis_cache=…, in_memory_cache=InMemoryCache())` (`router.py:904`).
+  - **No Redis configured → in-memory only** (`InMemoryCache` = an in-process
+    dict, no disk). State is per-worker and **lost on restart**.
+  - **Redis configured → shared and durable** across workers/pods; `InMemory`
+    remains the fast local tier.
+- **`DiskCache` exists but is NOT used for router state.** `litellm.cache` /
+  `cache_params` `type: disk` only backs **response caching**; the router's
+  cooldown/usage/latency counters still use the DualCache. There is no built-in
+  "persist routing state to disk without Redis".
+- **Making it durable = add Redis with disk persistence.** Redis/valkey is in
+  nixpkgs (valkey 9.x). Configure AOF (`appendonly yes`) or RDB snapshots so the
+  data survives restart; point LiteLLM at it with `REDIS_HOST`/`REDIS_PORT`/
+  `REDIS_PASSWORD` (or `REDIS_URL`), or `litellm_settings.cache_params`
+  (`type: redis`, host/port/password/db, `default_redis_ttl`). Without this the
+  latency/usage history resets on every restart (acceptable today: it rebuilds in
+  a few requests; a deliberate choice, not a requirement).
+- **Not from Prometheus.** Metrics are export-only; the router never reads them
+  back. (So "adjust config after real usage" is a human/cron step over
+  `/metrics`, not something the router does itself.)
+
+### Q2 Is prefill tok/s available, or only TTFT? Is TTFT biased for follow-ups?
+- There is **no direct prefill-tokens/sec metric**. Available per deployment:
+  `litellm_llm_api_time_to_first_token_metric` (TTFT), and input-token counters
+  (`litellm_input_tokens_metric`, `litellm_cached_tokens_metric`,
+  `litellm_provider_cache_read_input_tokens_metric`).
+- **Prefill rate must be derived**: `newly_prefilled_tokens / TTFT`. You get the
+  honest denominator only by subtracting cached tokens
+  (`prompt_tokens − cached_tokens`), which the metrics expose.
+- **Yes, raw TTFT is biased for follow-ups**: a follow-up whose prefix is already
+  cached has a tiny TTFT for a large `prompt_tokens`, inflating an apparent
+  prefill rate. Correct: use `(prompt − cached)/TTFT` and ignore requests with a
+  high cache-hit ratio. That double-count is exactly why the derived-from-single-
+  request numbers in `data/llm.nix` are a starting estimate, not ground truth.
+
+### Q3 Cold start / which models are loaded on the target?
+- **No cold-start or loaded-state awareness in routing.** No `cold_start` /
+  `load_seconds` / `is_loaded` signal exists in the router strategies (grep: none).
+  LiteLLM cannot see llama-swap's loaded/evicted state.
+- The only hooks to add it: `async_filter_deployments` (per-request plugin) or a
+  custom `get_available_deployment`, both of which can query each backend's
+  llama-swap `/v1/models` `status`. Same mechanism the host-side healthcheck would
+  use (Q4). Not implemented.
+
+### Q4 Host-side healthcheck — did I implement it? Why not?
+- **No.** Only LiteLLM's built-in `background_health_checks` +
+  `enable_health_check_routing` are enabled; measured (see the blackhole section)
+  they do not skip a blackholed host behind the etra relay, because the relay
+  accepts the TCP connect and the probe sits on the relay's hung upstream.
+- The doc's recommended fix is a **host-side probe** (check `100.79.80.79:39704`
+  directly from etra, where a blackhole is a real connect timeout) feeding
+  `async_filter_deployments`. It is **not built** — it needs a small LiteLLM plugin
+  (Python module loaded via `litellm_settings.callbacks`) and a cron/loop writing
+  per-host reachability, which is a real (small) feature, not a config line.
+  Deferred, not done.
