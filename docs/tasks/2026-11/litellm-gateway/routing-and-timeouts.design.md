@@ -119,3 +119,46 @@ of robustness, if this must be solved:
 
 The `health_check_timeout: 5` and interval settings are kept (correct per the code
 path and cheap); the limitation is documented, not claimed fixed.
+
+## #2 measured token rates (2026-11-07)
+
+Every served model now carries `capabilities.rates = { decode; prefill; mode; }`
+in `data/llm.nix`, from the measured `docs/local-llms.md` table. The gateway turns
+them into `litellm_params.tpm` (decode×60) and `model_info.tokens_per_second` /
+`prefill_tokens_per_second` (visible via `/model/info`). 23 deployments carry rates
+after adding flash-next (decode 2.36, prefill 30 t/s).
+
+## #4 blackhole + long-prefill timeouts (revised)
+
+Policy adopted: **never START a request above ~100k context** (a session may grow
+past it via the disk session cache / prefix reuse), and **cap the first-token wait
+at 2 h**. So per-deployment `stream_timeout = min(7200, 120 + 100k/prefill)`:
+fast models ~230 s, frontier/deep ~3533 s (~59 min). This bounds both a
+slow-but-alive prefill (allowed to finish within the cap) and a dead backend.
+
+The **blackhole caveat stands** (see above): a host that is blackholed behind the
+egress relay still isn't skipped cheaply by health routing. The 2 h cap limits the
+damage; the robust fix (host-side probe + `async_filter_deployments`) is still the
+documented path.
+
+## Checkpoints: what they restore (answering the "arbitrary past prefixes" question)
+
+The disk session cache (`ctx-checkpoints`, `slot-save-path`, `slot-save-sessions =
+x-session-id`) does **not** give arbitrary restore of any past prefix. It saves, per
+**client session id**, the KV state at a few checkpoints (recurrent-state snapshots,
+`ctx-checkpoints 32`, `checkpoint-min-step`), so a request carrying the SAME
+`x-session-id` resumes from that session's nearest saved state instead of
+re-prefilling — and it survives a server restart. It is **not** a content-addressed
+prefix cache you can point at any older prefix; it is "this conversation, resume
+where it was". The llama.cpp **prompt/prefix cache** (`--cache-ram`, in memory) does
+reuse any identical prompt prefix, but only while resident (evictable). So: yes to
+"resume my session cheaply, across restarts", no to "restore an arbitrary older
+prefix from the past".
+
+## #3 LiteLLM database — blocker recorded
+
+`dbEnabled` scaffolding exists (DATABASE_URL + prisma-engines paths + password) but
+is off. Blocker: nixpkgs `prisma` (python 0.15.0, what litellm 1.102.1 pins) needs
+an engine built at its own commit (~5.x); nixpkgs ships prisma-engines 6.19.3 and
+7.10.0, neither matching, and no NixOS prebuilt exists. Routing needs no DB, so
+this stays a scaffold until a matching `prisma-engines` is packaged.
