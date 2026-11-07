@@ -151,6 +151,17 @@ let
       enable_weighted_failover = true;
     };
   };
+  # --- Optional Postgres for LiteLLM persistence (#3) --------------------------
+  #
+  # OFF by default. LiteLLM uses a DB for virtual keys, spend logs, budgets, and to
+  # persist config-managed models — none required for routing. Enabling it needs a
+  # working Prisma schema+query engine; on NixOS this means prisma-engines, whose
+  # version must match the prisma pinned inside nixpkgs' litellm (see the task doc
+  # for the exact compatibility note). `database.enable = true` wires it all.
+  dbEnabled = false;
+  dbUser = "litellm";
+  dbName = "litellm";
+  dbPasswordFile = "/var/lib/litellm/db-password";
   configFile = (pkgs.formats.json { }).generate "litellm-config.json" gatewayConfig;
 in
 {
@@ -241,6 +252,12 @@ in
                 export OAMS_API_KEY="$(cat /run/secrets/brys-api-key)"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
+                ${lib.optionalString dbEnabled ''
+                # Prisma engines from nixpkgs (the packaged prisma has none).
+                export PRISMA_SCHEMA_ENGINE_BINARY="${pkgs.prisma-engines}/bin/schema-engine"
+                export PRISMA_QUERY_ENGINE_LIBRARY="${pkgs.prisma-engines}/lib/libquery_engine.so.node"
+                export DATABASE_URL="postgresql://${dbUser}:$(cat ${dbPasswordFile})@${hostAddress}:5432/${dbName}"
+                ''}
                 exec ${pkgs.litellm}/bin/litellm \
                   --config /etc/litellm/config.yaml \
                   --host 0.0.0.0 --port ${toString gatewayPort}
