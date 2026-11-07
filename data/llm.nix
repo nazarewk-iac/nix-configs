@@ -56,6 +56,16 @@ in
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
     };
+    # The LiteLLM gateway on etra: one OpenAI-compatible entrypoint in front of the
+    # whole fleet, with load-balancing and failover across brys and oams. It exposes
+    # every served ALIAS (see lib/llm.nix `mkPiModelsJson`), so a client picks an
+    # alias and the gateway chooses the host. The key is the gateway master key; it is
+    # read from the client's runtime secrets the same way the direct endpoints are.
+    litellm = {
+      baseUrl = "http://etra.lan.etra.net.int.kdn.im:4000/v1";
+      api = "openai-completions";
+      apiKey = "!cat /run/configs/litellm/master-key";
+    };
     # A remote router. Unlike `brys`, models here name `endpoint = "requesty"` and have no host
     # block, so they never appear in the local fleet catalog or the llama-swap serving set.
     requesty = {

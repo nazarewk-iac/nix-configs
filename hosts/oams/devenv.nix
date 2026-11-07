@@ -132,6 +132,16 @@ in
   ];
   kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
 
+  # The LiteLLM gateway on etra: one entrypoint in front of the whole fleet, with
+  # load-balancing and failover across brys and oams. Same discovery model as `brys`;
+  # the key is the gateway master key (a sops secret the client reads at runtime).
+  kdn.llm.client.upstreams.litellm = {
+    enable = true;
+    baseURL = "http://etra.lan.etra.net.int.kdn.im:4000/v1";
+    apiKeyFile = "/run/configs/litellm/master-key";
+    discovery.enable = true;
+  };
+
   kdn.llm.client.upstreams.brys = {
     enable = true;
     baseURL = "https://brys.priv.nb.net.int.kdn.im/v1";

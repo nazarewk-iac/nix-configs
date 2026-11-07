@@ -124,6 +124,7 @@ let
     mcp-pretty-print = ./aspects/mcp-pretty-print.nix;
     mcp-snoop = ./aspects/mcp-snoop.nix;
     monitoring-prometheus-stack = ./aspects/monitoring.nix;
+    prometheus-container = ./aspects/prometheus-container.nix;
     net-dynamic-hosts = ./aspects/net-dynamic-hosts.nix;
     net-interfaces = ./aspects/net-interfaces.nix;
     net-netbird = ./aspects/net-netbird.nix;

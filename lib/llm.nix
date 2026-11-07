@@ -85,11 +85,20 @@ let
     map (id: base // { inherit id; }) ids;
 
   # One provider entry per endpoint. `models` is every SERVED model, one entry per alias.
+  #
+  # The `litellm` gateway is special: it does not OWN models (none name `endpoint =
+  # "litellm"`); it FRONT-ENDS the fleet and exposes the same aliases the local hosts
+  # serve. So its provider lists every served model, same as the union — a client picks
+  # an alias and the gateway routes to a host.
   mkPiModelsJson = lib.mapAttrs (epName: ep: {
     baseUrl = ep.baseUrl;
     api = ep.api;
     apiKey = ep.apiKey;
-    models = builtins.concatLists (map piEntries (builtins.attrNames (modelsForEndpoint epName)));
+    models = builtins.concatLists (
+      map piEntries (
+        builtins.attrNames (if epName == "litellm" then servedModels else modelsForEndpoint epName)
+      )
+    );
   }) data.endpoints;
 
   # The purpose aliases only (legacy bare ids like `fast` are not purposes).

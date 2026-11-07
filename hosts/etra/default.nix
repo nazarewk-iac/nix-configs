@@ -102,6 +102,7 @@ in
           "build-farm"
           "ca-dag"
           "certificates"
+          "prometheus-container"
           "service-rustdesk"
           "ssh-ca"
         ];
