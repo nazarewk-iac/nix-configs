@@ -106,14 +106,56 @@ let
   brysAliases = builtins.attrNames views.brys.aliasToModel;
   oamsAliases = builtins.attrNames views.oams.aliasToModel;
 
+  # A "fastest fit" pool: one model GROUP whose deployments are several fast chat
+  # models, so the `fastest` callback can pick the quickest one that FITS the
+  # request (context/vision) instead of always using one alias. Curated to fast
+  # GPU models (cheap health checks, 16k context); extending the pool with a big
+  # context model would let the same selector escalate on long prompts.
+  poolBaseIds = [
+    "qwen3.5-2b"
+    "granite-4.2-3b"
+    "qwen3.5-4b"
+    "ministral-3-3b-reasoning"
+  ];
+  poolDeployments = map (
+    baseId:
+    let
+      # Read from the raw data model: the member view builds `vision`/`capabilities`
+      # via `inherit`, so a model that omits `vision` throws when that field is
+      # forced (and `or` cannot catch a throwing value).
+      dm = data.models.${baseId};
+      r = dm.capabilities.rates or null;
+    in
+    {
+      model_name = "chat-fast";
+      litellm_params = {
+        model = "openai/${baseId}";
+        api_base = "os.environ/BRYS_API_BASE";
+        api_key = "os.environ/BRYS_API_KEY";
+      };
+      model_info = {
+        id = "brys-chat-fast-${baseId}";
+        health_check_timeout = 5;
+        health_check_max_tokens = 1;
+        max_input_tokens = dm.contextSize;
+        supports_vision = dm.vision or false;
+      }
+      // lib.optionalAttrs (r != null) {
+        tokens_per_second = r.decode;
+        prefill_tokens_per_second = r.prefill;
+      };
+    }
+  ) poolBaseIds;
+
   modelList =
     (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY")
-    ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY");
+    ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY")
+    ++ poolDeployments;
 
   gatewayConfig = {
     model_list = modelList;
     litellm_settings = {
-      callbacks = [ "prometheus" "probe.host_probe" ];
+      callbacks = [ "prometheus" "probe.host_probe" "fastest.fastest_fit" ];
       drop_params = true;
       # (#6) a very long first token (huge prefill) must not be cut off. These are
       # the proxy-wide defaults; the per-deployment streaming limit is what governs
@@ -216,6 +258,11 @@ in
     # `probe`, instance `host_probe` — see litellm_settings.callbacks).
     bindMounts."/etc/litellm/probe.py" = {
       hostPath = "${./litellm_probe.py}";
+      isReadOnly = true;
+    };
+    # The fastest-fit selector (module `fastest`, instance `fastest_fit`).
+    bindMounts."/etc/litellm/fastest.py" = {
+      hostPath = "${./litellm_fastest.py}";
       isReadOnly = true;
     };
     bindMounts."/var/lib/litellm" = {

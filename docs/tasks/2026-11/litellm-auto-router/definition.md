@@ -1,7 +1,7 @@
 ---
 type: Task
 description: Evaluate LiteLLM's auto/complexity router and semantic/tag routing against the pi-orchestrator's hand-maintained intent-alias picker, and decide whether to adopt, complement, or skip it.
-status: research-done
+status: in-progress
 authored_by: agent
 timestamp: 2026-11-07T04:30:00+01:00
 ---
@@ -75,3 +75,52 @@ Research complete; **no implementation yet**. Recommended next step if adopted:
 add `enable_tag_filtering` + `litellm_params.tags` derived from the existing
 intent aliases (a `tags` field in `data/llm.nix`), and a couple of `routing_groups`
 for the shared small models. The complexity router is optional and off.
+
+## Reframe: latency / task-fit, not cost (2026-11-07)
+
+The operator clarified the goal: not cost savings, but **automatically picking the
+fastest model that FITS the task**, because the primary `qwen3.8-flash-next` is
+notoriously slow. `capabilities.rates` (decode/prefill tps) now exist in
+`data/llm.nix`, so "fastest" is a measured, client-side-known quantity.
+
+"Fastest fit" is two decisions: (1) **fit** = which capability class (cheap chat
+vs code vs deep vs vision/tools, plus context size), (2) **speed** = among models
+that fit, which is fastest right now. LiteLLM splits them poorly: the complexity
+router models *fit* crudely (quality tiers, no tps knowledge); `latency-based-routing`
+only choose among deployments of the SAME model name (can't cross model sizes);
+tag routing is the fit lever. The orchestrator is the right home for *fit* (it has
+task context); the gateway is the right home for *speed*.
+
+## Prototype: `chat-fast` pool + `fastest.fastest_fit` (2026-11-07)
+
+Implemented and deployed on etra:
+
+- A model GROUP `chat-fast` in `hosts/etra/litellm.nix` = several fast GPU chat
+  models (`qwen3.5-2b`, `granite-4.2-3b`, `qwen3.5-4b`,
+  `ministral-3-3b-reasoning`), each deployment carrying `tokens_per_second`,
+  `prefill_tokens_per_second`, `max_input_tokens`, `supports_vision` in
+  `model_info` (read from the raw `data.models` entry, NOT the member view, which
+  throws on `.vision`).
+- A selector plugin `hosts/etra/litellm_fastest.py` (`fastest.fastest_fit`),
+  callback #3 beside `prometheus` and `probe.host_probe`. For a request to a group
+  in `KDN_FASTEST_GROUPS` (default `chat-fast`) it drops deployments that cannot
+  FIT (context window, vision) and keeps the single fastest by measured tps
+  (prefill rate for prompts > `KDN_FASTEST_LARGE_PROMPT`, else decode rate).
+
+Verified: a `chat-fast` request returns `x-litellm-model-id:
+brys-chat-fast-qwen3.5-2b` — the 116.8 t/s model, i.e. the fastest, not a slow
+default.
+
+### Caveats / next steps
+- **Fit is only context+vision today.** Tool/function-calling fit and per-task
+  capability are not filtered; add `supports_function_calling` etc. when the data
+  carries it.
+- **Pool is small (16k) models only** to keep the 30 s background health checks
+  cheap. Adding a big-context model would let the same selector **escalate** on
+  long prompts (fastest small one below ~16k, big-context model above).
+- The selector returns exactly the single fastest deployment; failover relies on
+  the upstream health/cooldown filtering. Consider returning top-2 with weights if
+  failover proves fragile.
+- **This is speed; the orchestrator still owns fit.** The durable win is also a
+  policy change so cheap sub-tasks default to `chat-fast` rather than the slow
+  primary.
