@@ -113,7 +113,7 @@ let
   gatewayConfig = {
     model_list = modelList;
     litellm_settings = {
-      callbacks = [ "prometheus" ];
+      callbacks = [ "prometheus" "probe.host_probe" ];
       drop_params = true;
       # (#6) a very long first token (huge prefill) must not be cut off. These are
       # the proxy-wide defaults; the per-deployment streaming limit is what governs
@@ -137,6 +137,14 @@ let
       # containerised Prometheus. `litellm_settings` sets the switch that makes it
       # unauthenticated (public_routes alone is overridden for /metrics).
       public_routes = [ "/metrics" ];
+      # (#1) Durable routing state: the router's cooldown/usage/latency DualCache
+      # uses this Redis via `coordination_redis` (router._update_redis_cache). A
+      # local valkey/redis with AOF persists it across restarts; without it the
+      # router is in-memory-per-worker and forgets on restart.
+      coordination_redis = {
+        host = hostAddress;
+        port = 6379;
+      };
     };
     router_settings = {
       timeout = 3600;
@@ -179,6 +187,12 @@ in
       directory = "/var/lib/prometheus2";
       mode = "0750";
     }
+    # Redis AOF for durable routing state (#1). systemd's redis `StateDirectory`
+    # is /var/lib/redis-litellm; on this tmpfs-root host it must be persisted.
+    {
+      directory = "/var/lib/redis-litellm";
+      mode = "0700";
+    }
   ];
   # The container's writable root.
   kdn.disks.persist."sys/cache".directories = [
@@ -196,6 +210,12 @@ in
 
     bindMounts."/etc/litellm/config.yaml" = {
       hostPath = "${configFile}";
+      isReadOnly = true;
+    };
+    # The host-reachability callback, loaded from beside config.yaml (module
+    # `probe`, instance `host_probe` — see litellm_settings.callbacks).
+    bindMounts."/etc/litellm/probe.py" = {
+      hostPath = "${./litellm_probe.py}";
       isReadOnly = true;
     };
     bindMounts."/var/lib/litellm" = {
@@ -274,6 +294,77 @@ in
       };
   };
 
+  # --- Durable routing state: Redis with AOF (#1) -----------------------------
+  #
+  # The router's DualCache (cooldowns, usage, latency history) uses Redis when
+  # `general_settings.coordination_redis` is set. A local redis with append-only
+  # persistence keeps that state across proxy restarts and shares it across workers.
+  # Bound to loopback; a narrow relay exposes it on the litellm bridge only, so the
+  # guest reaches it and nothing else does. Routing counters are not secrets.
+  services.redis.servers.litellm = {
+    enable = true;
+    bind = "127.0.0.1";
+    port = 6379;
+    appendOnly = true;
+    appendFsync = "everysec";
+  };
+
+  systemd.services.litellm-redis-ingress = {
+    description = "Expose the routing-state Redis to the LiteLLM container";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "redis-litellm.service" ];
+    wants = [ "redis-litellm.service" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:6379,bind=${hostAddress},fork,reuseaddr TCP:127.0.0.1:6379";
+      Restart = "always";
+      RestartSec = 3;
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
+    };
+  };
+
+  # The prober's health file must exist before the container bind-mounts the dir
+  # (a file bind-mount would break on the prober's atomic rename; the dir mount is
+  # safe, so we only guarantee the file is present at boot).
+  systemd.tmpfiles.rules = [ "f /var/lib/litellm/host-health.json 0644 root root -" ];
+
+  # --- Host-side reachability prober (#2) -------------------------------------
+  #
+  # Connects to each host's llama-swap over NetBird DIRECTLY (a real connect
+  # timeout, unlike the relay path) and writes host-health.json for the container
+  # callback to read. Only the two known hosts; extend the map as hosts join.
+  systemd.services.litellm-host-probe = {
+    description = "Probe brys/oams llama-swap reachability over NetBird";
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.coreutils pkgs.bash ];
+    serviceConfig = {
+      Type = "oneshot";
+      # Cheap, idempotent writer driven by the timer below.
+      StartLimitIntervalSec = 0;
+      StartLimitBurst = 0;
+    };
+    script = ''
+      set -eu
+      f=/var/lib/litellm/host-health.json
+      tmp="$f.tmp"
+      probe() { if timeout 3 bash -c "exec 3<>/dev/tcp/$1/39704" 2>/dev/null; then printf true; else printf false; fi; }
+      printf '{"brys": %s, "oams": %s}\n' "$(probe ${brysHost})" "$(probe ${oamsHost})" > "$tmp"
+      mv "$tmp" "$f"
+    '';
+  };
+  systemd.timers.litellm-host-probe = {
+    description = "Recheck host reachability";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "30s";
+      OnUnitActiveSec = "15s";
+    };
+  };
+
   # --- Prometheus scraping the gateway's /metrics (#2) ------------------------
   #
   # A confined Prometheus (the prometheus-container aspect) scrapes the gateway.
@@ -307,6 +398,7 @@ in
     gatewayPort
     egressPort
     oamsEgressPort
+    6379  # routing-state Redis relay
   ];
 
   # Ingress relay: LAN clients -> guest gateway. It binds 0.0.0.0 so clients on
