@@ -121,9 +121,17 @@ in
         domain = "etra.priv.nb.net.int.kdn.im";
         certName = "zellij-web";
         title = "etra";
-        routes = {
-          "/litellm" = { upstream = "127.0.0.1:4000"; label = "LiteLLM gateway"; };
-          "/prometheus" = { upstream = "10.233.101.2:9090"; label = "Prometheus"; };
+        services = {
+          litellm = {
+            subdomain = "litellm.etra.priv.nb.net.int.kdn.im";
+            upstream = "127.0.0.1:4000";
+            label = "LiteLLM gateway";
+          };
+          prometheus = {
+            subdomain = "prometheus.etra.priv.nb.net.int.kdn.im";
+            upstream = "10.233.101.2:9090";
+            label = "Prometheus";
+          };
         };
       };
     }
@@ -506,7 +514,11 @@ in
         ca = "kdn";
         type = "tls-server";
         commonName = "etra.priv.nb.net.int.kdn.im";
-        sans = [ "etra.priv.nb.net.int.kdn.im" ];
+        sans = [
+          "etra.priv.nb.net.int.kdn.im"
+          "litellm.etra.priv.nb.net.int.kdn.im"
+          "prometheus.etra.priv.nb.net.int.kdn.im"
+        ];
         directory = "hosts/etra/certs";
         certFile = "zellij.pub";
         keyFile = "zellij.key";

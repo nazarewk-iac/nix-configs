@@ -58,28 +58,8 @@ in
       routers = srv.routers;
       swap = srv.swap;
 
-      # Host-side TLS identity: the cert lives in the repo (`self`), the key is a sops secret.
-      domain = "brys.lan.etra.net.int.kdn.im";
-      certs.certFile = "${kdnConfig.self}/hosts/brys/certs/llm.pub";
-      certs.keyFile = "/run/secrets/kdn/brys/llm.key";
-      certs.sans = [
-        "brys.lan.etra.net.int.kdn.im"
-        "brys.lan.drek.net.int.kdn.im"
-        "brys.priv.nb.net.int.kdn.im"
-      ];
-
       # The routed model set for this boot profile, projected from the data.
       models = llm.mkServerModels data "brys" profile;
-
-      # Expose the on-host Prometheus under /prometheus on the same vhost. Caddy
-      # strips the prefix; brys' Prometheus sets external-url so absolute links
-      # keep it (see the extraFlags below).
-      web.extraRoutes = {
-        "/prometheus" = {
-          upstream = "10.233.90.2:9090";
-          label = "Prometheus";
-        };
-      };
     };
   };
 
@@ -248,12 +228,7 @@ in
           listenAddress = "0.0.0.0";
           port = 9090;
           retentionTime = "30d";
-          extraFlags = [
-            "--storage.tsdb.retention.size=2GB"
-            # Served under /prometheus by Caddy, which strips the prefix.
-            "--web.external-url=https://brys.priv.nb.net.int.kdn.im/prometheus/"
-            "--web.route-prefix=/"
-          ];
+          extraFlags = [ "--storage.tsdb.retention.size=2GB" ];
           scrapeConfigs = [
             {
               job_name = "llama-swap";

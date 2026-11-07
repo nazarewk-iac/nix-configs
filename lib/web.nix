@@ -10,7 +10,14 @@ let
   # "litellm" and get the same Caddyfile line.
   slash = p: if lib.hasPrefix "/" p then p else "/${p}";
 
-  link = l: ''<li><a href="${slash l.path}/">${l.label}</a></li>'';
+  # A link entry is `{ path }` (a path prefix on this host) or `{ href }` (a full
+  # URL, e.g. a service subdomain), always with a `label`.
+  link =
+    l:
+    let
+      href = l.href or "${slash l.path}/";
+    in
+    ''<li><a href="${href}">${l.label}</a></li>'';
 in
 {
   # The body of a host's index page: a title and one link per exposed service.

@@ -368,13 +368,6 @@ in
     hostAddress = "10.233.101.1";
     localAddress = "10.233.101.2";
     stateDir = "/var/lib/prometheus2";
-    # Served under /prometheus by etra's Caddy, which strips the prefix. The
-    # external URL keeps absolute links on /prometheus; route-prefix `/` lets the
-    # strip work.
-    extraFlags = [
-      "--web.external-url=https://etra.priv.nb.net.int.kdn.im/prometheus/"
-      "--web.route-prefix=/"
-    ];
     targets = [
       {
         job = "litellm";

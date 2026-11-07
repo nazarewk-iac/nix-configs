@@ -54,12 +54,28 @@ in
           "certificates"
           "llm"
           "ssh-ca"
+          "web-exposure"
         ];
       };
     }
   ];
 
   config = lib.mkMerge [
+    {
+      # Per-service HTTPS exposure: llama-swap on its own subdomain (served from
+      # the loopback llama-swap, so its absolute /ui and /v1 paths work unchanged).
+      kdn.web.exposure = {
+        domain = "oams.priv.nb.net.int.kdn.im";
+        certName = "zellij-web";
+        title = "oams";
+        services = {
+          llama-swap = {
+            subdomain = "llama-swap.oams.priv.nb.net.int.kdn.im";
+            upstream = "127.0.0.1:39700";
+          };
+        };
+      };
+    }
     # The RX 6800M Vulkan runtime config (hardware.graphics, mesa, and the
     # MESA_VK_DEVICE_SELECT pin to 1002:73df), owned by ./llm.nix.
     llm.gpu
@@ -432,7 +448,10 @@ in
         ca = "kdn";
         type = "tls-server";
         commonName = "oams.priv.nb.net.int.kdn.im";
-        sans = [ "oams.priv.nb.net.int.kdn.im" ];
+        sans = [
+          "oams.priv.nb.net.int.kdn.im"
+          "llama-swap.oams.priv.nb.net.int.kdn.im"
+        ];
         directory = "hosts/oams/certs";
         certFile = "zellij.pub";
         keyFile = "zellij.key";

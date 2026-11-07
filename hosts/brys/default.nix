@@ -54,12 +54,33 @@ in
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
-        aspects = [ "llm" ];
+        aspects = [ "llm" "web-exposure" ];
       };
     }
   ];
 
   config = lib.mkMerge [
+    {
+      # Per-service HTTPS exposure: llama-swap and Prometheus each on their own
+      # subdomain (llama-swap served from loopback so its absolute /ui and /v1
+      # paths work; Prometheus served at its subdomain root, no path prefix).
+      kdn.web.exposure = {
+        domain = "brys.priv.nb.net.int.kdn.im";
+        certName = "zellij-web";
+        title = "brys";
+        services = {
+          llama-swap = {
+            subdomain = "llama-swap.brys.priv.nb.net.int.kdn.im";
+            upstream = "127.0.0.1:39700";
+          };
+          prometheus = {
+            subdomain = "prometheus.brys.priv.nb.net.int.kdn.im";
+            upstream = "10.233.90.2:9090";
+            label = "Prometheus";
+          };
+        };
+      };
+    }
     {
       home-manager.sharedModules = [ slots.config.home ];
     }
@@ -393,7 +414,11 @@ in
         ca = "kdn";
         type = "tls-server";
         commonName = "brys.priv.nb.net.int.kdn.im";
-        sans = [ "brys.priv.nb.net.int.kdn.im" ];
+        sans = [
+          "brys.priv.nb.net.int.kdn.im"
+          "llama-swap.brys.priv.nb.net.int.kdn.im"
+          "prometheus.brys.priv.nb.net.int.kdn.im"
+        ];
         directory = "hosts/brys/certs";
         certFile = "zellij.pub";
         keyFile = "zellij.key";
