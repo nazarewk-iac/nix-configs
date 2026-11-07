@@ -1,0 +1,107 @@
+---
+type: Task
+description: Add DB-less, model-scoped client API keys to the LiteLLM gateway (custom auth) and a Requesty backend, and establish whether Pi can discover Requesty models through LiteLLM.
+status: in-progress
+authored_by: agent
+timestamp: 2026-11-07T22:46:17+01:00
+---
+
+# LiteLLM client API keys and Requesty backend
+
+## Goal
+
+Non-master clients get their own API keys, each scoped to an allow-list of model
+groups, so a "local-only" key can never spend on paid providers. The master key
+keeps full access to all models (local + Requesty).
+
+## Implemented and verified (2026-11-07, deployed on etra)
+
+- **DB-less custom auth** `hosts/etra/litellm_auth.py`
+  (`general_settings.custom_auth: "auth.user_api_key_auth"` +
+  `custom_auth_run_common_checks: true`). It reads a sops-mounted JSON map
+  `token -> {name, models}` and returns `UserAPIKeyAuth(models=...)`. Because
+  custom auth runs **before** LiteLLM's own master-key check, the hook also
+  handles the master key explicitly (PROXY_ADMIN, all models).
+- **Enforcement** `hosts/etra/litellm_enforce.py` (`enforce.scope`, a `pre_call`
+  hook). LiteLLM does NOT enforce a custom-auth token's `models` list unless
+  `litellm.enable_post_custom_auth_checks` is True — and that is a getattr-only
+  global, not a config key. So the scope is enforced here instead: admin/`models
+  is None` → all; otherwise the requested group must be in the list, else 403.
+  Fails closed on unexpected errors.
+- **Keys file** `hosts/etra/litellm-keys.sops.yaml` (sops; etra ssh-host key +
+  recovery YubiKeys), decrypted to `/run/configs/litellm-keys/keys/clients`,
+  mounted into the container. Note: the sops `files` aspect discovers keys by
+  parsing the YAML structure and **skips the first top-level leaf**, so the file
+  is wrapped as `keys: { clients: <json> }` with `keyPrefix = "keys"`.
+- **Two keys created** (rotate/remove as needed):
+  - `sk-506d…60cf` "pi-fast" → `["chat-fast"]`
+  - `sk-b697…fd16` "pi-all-local" → the local aliases (no `requesty/*`)
+- Container ordering fixed: `container@litellm` now starts after
+  `sops-install-secrets` (the keys-file bind source must exist, or nspawn fails).
+
+**Verified:** master → `chat-fast` 200, `chat-deep-slow` 200 (all); client
+`pi-fast` → `chat-fast` 200, `chat-deep-slow` **403**, `requesty/...` **403**,
+unknown key **401**. `/v1/models` (master) = 36 entries incl. 3 explicit
+Requesty ids.
+
+## Requesty backend — findings (important)
+
+Decisions were driven by source inspection of LiteLLM 1.102.1 + live tests:
+
+1. **No first-class Requesty provider**; it is OpenAI-compatible.
+2. **`model_name: "requesty/*"` wildcard is misleading and broken.** It does not
+   route (404 "model group not found"), and it fills `/v1/models` with ~229
+   `requesty/<name>` entries that are LiteLLM's **OpenAI price-map names**, NOT
+   Requesty's real catalog (Requesty currently exposes only 4 ids). **Do not use
+   the wildcard.**
+3. **Explicit deployments are the right shape** and list correctly
+   (`requesty/deepinfra/deepseek-v4.1-flash-1017`, `…/runware/…`,
+   `…/tensorx/qwen3.8-flash-next`).
+4. **Calling still 404s — a relay cannot front a vhost-routed upstream.** The
+   `socat OPENSSL` egress relay keeps the client's `Host` header = the relay
+   address (`10.233.100.1:8445`), so Requesty serves its default vhost and 404s.
+   A raw TLS tunnel cannot rewrite `Host`. **Fix:** give the container real
+   internet **egress (NAT)** and set `api_base https://router.requesty.ai/v1`
+   directly (no relay). Not done in this task — see Open items.
+
+## Pi auto-discovery answer (the operator's doubt)
+
+**No real auto-discovery.** Through the gateway, Pi's `--list-models` shows only
+its static `models.json` catalog (56 entries, local aliases). The gateway's own
+`/v1/models` can list model groups, but the wildcard's "hundreds of requesty
+models" were fake price-map names, and the 3 explicit ones do not route yet. To
+surface real Requesty models to any client you must **enumerate them explicitly**
+(few, and Requesty's real set is small) — there is no catalog pass-through.
+
+## Decisions
+
+- DB-less over Postgres: `custom_auth` + `pre_call` enforcement (no DB, no
+  prisma engine). DB remains optional later for real virtual keys/budgets.
+- Scope by model-group name; "disallow paid" = omit `requesty/*` from a key.
+- Master key handled inside the hook (must be), keeps full access.
+- Explicit Requesty deployments, not wildcard.
+- Requesty calling deferred until container egress (NAT) exists; the relay is a
+  dead end.
+
+## Caveats
+
+- Key list lives in the hook file path; rotating keys = edit the sops file.
+- `pre_call` enforcement matches the exact model-group string; an alias that
+  maps to a group must be listed as that group name.
+- The 3 Requesty deployments currently 404 on call and are health-checked every
+  30 s (harmless 404s, log noise). Consider removing them until NAT egress lands.
+- `custom_auth` means **all** non-master traffic goes through the hook; a bug in
+  it can lock out clients — the hook fails safe (401 only for unknown keys,
+  master always allowed) but review before exposing.
+
+## Open items / next steps
+
+1. **Requesty egress**: enable outbound NAT for the litellm container (or run it
+   with an egress path that preserves the real Host) and switch `api_base` to
+   `https://router.requesty.ai/v1`; then verify a master call 200 and a
+   local-only key still 403.
+2. Decide whether to auto-enumerate Requesty's `/v1/models` into `model_list` at
+   deploy time (small, curated) since there is no runtime discovery for clients.
+3. Consider DB mode later for budgets/rotation/UI, if ever needed.
+4. Orchestrator/default policy (from the auto-router task): cheap tasks should
+   default to `chat-fast`, using a scoped key rather than the master key.
