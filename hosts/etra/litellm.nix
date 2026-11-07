@@ -58,7 +58,14 @@ let
         api_base = "os.environ/${baseEnv}";
         api_key = "os.environ/${keyEnv}";
       };
-      model_info.id = "${host}-${alias}";
+      model_info = {
+        id = "${host}-${alias}";
+        # (#1) A cheap, SHORT probe: the egress relay to a blackholed host HANGS its
+        # upstream connect for minutes, so the probe must time out fast (well under
+        # health_check_interval) or the deployment never flips unhealthy.
+        health_check_timeout = 5;
+        health_check_max_tokens = 1;
+      };
     }) (builtins.attrNames views.${host}.aliasToModel);
 
   # brys deployment for every alias; oams only for aliases it also serves.
@@ -282,7 +289,7 @@ in
     after = [ "container@litellm.service" ];
     wants = [ "container@litellm.service" ];
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString egressPort},bind=${hostAddress},fork,reuseaddr TCP:${brysHost}:${toString brysPort}";
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString egressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=5 TCP:${brysHost}:${toString brysPort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;
@@ -303,7 +310,7 @@ in
     after = [ "container@litellm.service" ];
     wants = [ "container@litellm.service" ];
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString oamsEgressPort},bind=${hostAddress},fork,reuseaddr TCP:${oamsHost}:${toString oamsPort}";
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString oamsEgressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=5 TCP:${oamsHost}:${toString oamsPort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;

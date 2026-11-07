@@ -86,3 +86,36 @@ a confined Prometheus; etra uses it to scrape the gateway. `/metrics` is exposed
 without auth via `require_auth_for_metrics_endpoint: false` (public_routes alone is
 overridden for `/metrics`), scraped at `/metrics/` (no 307). Verified up;
 `litellm_deployment_state` alerting metric ingested (0 = healthy).
+
+## Blackholed-host caveat (measured 2026-11-07, IMPORTANT)
+
+Health-check routing does **not** reliably protect against a *blackholed* host in
+this deployment, for two measured reasons:
+
+1. **The egress relay hides the blackhole.** LiteLLM probes `10.233.100.1:8444` (the
+   etra-side socat relay). The relay's local accept always succeeds; only its
+   *upstream* connect to the blackholed oams hangs. So the probe sits in the
+   relay until its timeout, not until a fast TCP refusal.
+2. **The health cycle ran at 60 s, not the 5 s `health_check_timeout`.** Logs show
+   `background_health_check_cycle_duration_exceeded_interval duration_ms=60045
+   interval_seconds=30`. `health_check_timeout` IS read (`health_check.py:530`) but
+   the cycle still took 60 s — the probe's residual socket read is not bounded by
+   that timeout, so a cycle exceeds the interval. `deployment_state` stayed 0 for the
+   blackholed oams throughout, and real requests still hung ~120-200 s.
+
+`socat connect-timeout=5` did **not** fix it (a SYN blackhole is bounded by the
+kernel TCP timeout, not socat's inactivity timer).
+
+**What actually works today:** a *stopped* host (connection refused) fails over in
+~30 ms with no config help. A *blackholed* host is the hard case. Options, in order
+of robustness, if this must be solved:
+- Put the health check on the **host** side (probe `100.79.80.79:39704` directly
+  from etra, where a blackhole is a real connect timeout) and feed the result via a
+  custom `async_filter_deployments` — bypasses the relay-hides-it problem.
+- Or make each backend's relay die fast on a blackhole (e.g. a connect watchdog),
+  so a refused/hung upstream both surface as a fast error.
+- Or accept it: the shared aliases always have a brys sibling, so a client only
+  pays the hang while oams is cooling, then brys serves.
+
+The `health_check_timeout: 5` and interval settings are kept (correct per the code
+path and cheap); the limitation is documented, not claimed fixed.
