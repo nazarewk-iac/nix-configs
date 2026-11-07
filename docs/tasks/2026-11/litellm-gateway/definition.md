@@ -127,3 +127,23 @@ What it took beyond the initial code:
 - Reachability from non-NetBird LAN peers: the ingress binds 0.0.0.0 but etra's
   firewall trusts only `nb-priv`; open 4000 on the LAN interface for plain clients.
 - Prometheus scrape of `/metrics` on the gateway.
+
+## Progress 2026-11-07
+
+- **#1 health checks + routing**: `background_health_checks`, `enable_health_check_routing`,
+  interval 30s, staleness 120s. A blackholed backend is filtered before any connect
+  (see routing-and-timeouts.design.md).
+- **#2 Prometheus**: new `prometheus-container` den aspect; etra scrapes LiteLLM
+  `/metrics` (unauth, `/metrics/`); verified target up, `litellm_deployment_state`
+  ingested. The gateway's `/metrics` is exposed without auth.
+- **#3 routing**: documented (weights per alias, pin-per-host via extra model_names,
+  least-busy, latency-based, no warm-model preference without a plugin).
+- **#4 clients**: gateway added to Pi (`data/llm.nix` litellm endpoint + all aliases)
+  and to OpenCode (oams upstream). Client master key must be provisioned at
+  `/run/configs/litellm/master-key`.
+- **#5 config-as-code**: `hosts/etra/litellm.config.yaml` removed; the config is now
+  generated in `litellm.nix` via `pkgs.formats.json` from `data/llm.nix` (36
+  deployments, health/timeout settings), no flat file to sync.
+- **#6 timeouts**: `request_timeout`/`timeout` 3600, `stream_timeout` 1800 (per-chunk,
+  not total). A slow-but-alive 30-min-TTFT stream is not cut off; see design doc for
+  the `0`/`null` caveats and the client `timeout=None` requirement.
