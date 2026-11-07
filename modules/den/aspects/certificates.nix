@@ -77,6 +77,7 @@ let
       sopsModule ? null,
       keyPathFor,
       ownerSupport ? false,
+      trustCAs ? false,
     }:
     { config, lib, ... }:
     let
@@ -239,18 +240,33 @@ let
       # as a non-root user needs it, because the default key file is root-only. The `homeManager`
       # sops module declares no `owner`, so that class ignores it.
       config = lib.mkIf (cfg.certs != { }) (
-        lib.optionalAttrs (sopsModule != null) {
-          sops.secrets = lib.mapAttrs' (
-            name: cert:
-            lib.nameValuePair (secretName name) (
-              {
-                format = "binary";
-                sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
-              }
-              // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
-            )
-          ) cfg.certs;
-        }
+        lib.mkMerge [
+          (lib.optionalAttrs (sopsModule != null) {
+            sops.secrets = lib.mapAttrs' (
+              name: cert:
+              lib.nameValuePair (secretName name) (
+                {
+                  format = "binary";
+                  sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
+                }
+                // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
+              )
+            ) cfg.certs;
+          })
+          # Trust every CA the certificate DAG declares, so a leaf the host SERVES (or
+          # a client it talks to) verifies system-wide. Without this a tls-server leaf
+          # signed by the managed root fails Node/curl verification (the hosts used to
+          # trust only the old LLM CA).
+          (lib.optionalAttrs trustCAs {
+            security.pki.certificateFiles = lib.mapAttrsToList (
+              _: ca: "${toString repoRoot}/${ca.directory}/${ca.certFile}"
+            ) (config.kdn.ca-dag.cas or { });
+            # Node ignores the system trust store unless told; point it at the merged
+            # bundle so a Pi/Node client verifies the internal-CA leaf. A system-wide
+            # env var covers every Node app and the shells that launch them.
+            environment.variables.NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
+          })
+        ]
       );
     };
 in
@@ -258,6 +274,7 @@ in
   kdn.certificates.nixos = mkTarget {
     sopsModule = inputs.sops-nix.nixosModules.sops;
     ownerSupport = true;
+    trustCAs = true;
     keyPathFor =
       { config, name }:
       config.sops.secrets.${secretName name}.path;
@@ -266,6 +283,7 @@ in
   kdn.certificates.darwin = mkTarget {
     sopsModule = inputs.sops-nix.darwinModules.default;
     ownerSupport = true;
+    trustCAs = true;
     keyPathFor =
       { config, name }:
       config.sops.secrets.${secretName name}.path;
