@@ -24,13 +24,17 @@
 { ... }:
 {
   kdn.pi-client.homeManager =
-    { lib, ... }:
+    { config, lib, ... }:
     {
       programs.pi-coding-agent = {
         enable = true;
         package = null;
 
-        models.providers = (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson;
+        # Only the endpoints valid for THIS host: the shared gateway and router
+        # everywhere, plus a serving host's own direct path when running on it.
+        models.providers =
+          (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson
+            { host = config.kdn.hostName; };
 
         # pi has no per-provider default for `brys` or `requesty`, so without this it falls back to
         # the first entry in models.json, which is alphabetical (measured: `gemma-4-12b`).

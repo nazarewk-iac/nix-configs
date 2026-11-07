@@ -137,22 +137,20 @@ in
   # the key is the gateway master key (a sops secret the client reads at runtime).
   kdn.llm.client.upstreams.litellm = {
     enable = true;
-    baseURL = "http://100.79.187.16:4000/v1";
+    # The gateway is exposed over HTTPS by etra's Caddy (internal-CA leaf); the
+    # /litellm prefix is stripped before the gateway sees the request.
+    baseURL = "https://etra.priv.nb.net.int.kdn.im/litellm/v1";
     apiKeyFile = "/run/configs/llms/litellm/master-key";
     discovery.enable = true;
   };
 
-  kdn.llm.client.upstreams.brys = {
+  # On oams itself, keep a direct loopback path to the local llama-swap so this
+  # host still works offline (no gateway, no network). The remote `brys` direct
+  # endpoint is dropped: off-host traffic goes through the gateway.
+  kdn.llm.client.upstreams.oams = {
     enable = true;
-    baseURL = "https://brys.priv.nb.net.int.kdn.im/v1";
-    # The aspect writes the wrapper environment entry from this file, so no manual
-    # `kdn.opencode.wrapper.envFiles` line is needed.
+    baseURL = "http://127.0.0.1:9530/v1";
     apiKeyFile = "/run/configs/llms/llama-server/api-keys/default";
-    # Only discovery is configured. The model id list, the served context, and the
-    # per-model names all come from the server's `/v1/models` (llama-swap publishes
-    # each model's context as the top-level `context_length`). There is no
-    # hand-written overlay, so every request runs at the model's real maximum
-    # context (Qwen 1M).
     discovery.enable = true;
   };
 }

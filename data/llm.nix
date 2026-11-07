@@ -43,18 +43,24 @@ in
 {
   # ---------------------------------------------------------------- endpoints
   endpoints = {
+    # Direct loopback path to brys' llama-swap, valid ONLY when a client runs on
+    # brys itself (offline capability). Other clients use the `litellm` gateway.
     brys = {
-      baseUrl = "https://brys.priv.nb.net.int.kdn.im/v1";
+      baseUrl = "http://127.0.0.1:9530/v1";
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
+      localHost = "brys";
     };
     # The second local llama-swap host (a laptop, RX 6800M). Same OpenAI-compatible
     # shape as `brys`; the shared API key file is mounted on the host too. Clients
     # normally reach this through the LiteLLM gateway, but the direct URL stays valid.
+    # Direct loopback path to oams' llama-swap, valid ONLY on oams (offline). The
+    # compat proxy on 9530 gives the same DSML translation an off-host client gets.
     oams = {
-      baseUrl = "http://oams.lan.etra.net.int.kdn.im:39700/v1";
+      baseUrl = "http://127.0.0.1:9530/v1";
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/llama-server/api-keys/default";
+      localHost = "oams";
     };
     # The LiteLLM gateway on etra: one OpenAI-compatible entrypoint in front of the
     # whole fleet, with load-balancing and failover across brys and oams. It exposes
@@ -62,9 +68,9 @@ in
     # alias and the gateway chooses the host. The key is the gateway master key; it is
     # read from the client's runtime secrets the same way the direct endpoints are.
     litellm = {
-      # etra's NetBird address: the gateway ingress is trusted only on nb-priv, so a
-      # client reaches it over the mesh (the LAN FQDN is firewalled off).
-      baseUrl = "http://100.79.187.16:4000/v1";
+      # The gateway is exposed by etra's Caddy on the default HTTPS port behind an
+      # internal-CA leaf; Caddy strips the /litellm prefix before forwarding.
+      baseUrl = "https://etra.priv.nb.net.int.kdn.im/litellm/v1";
       api = "openai-completions";
       apiKey = "!cat /run/configs/llms/litellm/master-key";
     };

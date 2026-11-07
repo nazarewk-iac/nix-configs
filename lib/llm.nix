@@ -90,16 +90,30 @@ let
   # "litellm"`); it FRONT-ENDS the fleet and exposes the same aliases the local hosts
   # serve. So its provider lists every served model, same as the union — a client picks
   # an alias and the gateway routes to a host.
-  mkPiModelsJson = lib.mapAttrs (epName: ep: {
-    baseUrl = ep.baseUrl;
-    api = ep.api;
-    apiKey = ep.apiKey;
-    models = builtins.concatLists (
-      map piEntries (
-        builtins.attrNames (if epName == "litellm" then servedModels else modelsForEndpoint epName)
-      )
-    );
-  }) data.endpoints;
+  #
+  # An endpoint may name `localHost = "<name>"`: it is a direct path to a serving
+  # host, valid only for a client RUNNING on that host (offline capability). Such
+  # an endpoint is included only when the caller passes the matching `host`.
+  mkPiModelsJson =
+    { host ? null }:
+    lib.mapAttrs (epName: ep: {
+      baseUrl = ep.baseUrl;
+      api = ep.api;
+      apiKey = ep.apiKey;
+      models = builtins.concatLists (
+        map piEntries (
+          builtins.attrNames (
+            if epName == "litellm" then
+              servedModels
+            else if data.servers ? ${epName} then
+              # A direct host endpoint lists only the models THAT host serves.
+              lib.filterAttrs (_: m: enabledOn epName m) data.models
+            else
+              modelsForEndpoint epName
+          )
+        )
+      );
+    }) (lib.filterAttrs (_: ep: (ep.localHost or null) == null || (ep.localHost or null) == host) data.endpoints);
 
   # The purpose aliases only (legacy bare ids like `fast` are not purposes).
   purposeAliases = lib.filterAttrs (
