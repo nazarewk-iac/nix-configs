@@ -626,7 +626,14 @@ in
               pkgs.openssh
               pkgs.netcat-openbsd
             ];
-            serviceConfig.Type = "oneshot";
+            serviceConfig = {
+              Type = "oneshot";
+              # Recompute is now event-driven, and one link flap is several events, so restarts can
+              # come in bursts. Lift systemd's default start limit: this is an idempotent, cheap
+              # writer and may always run.
+              StartLimitIntervalSec = 0;
+              StartLimitBurst = 0;
+            };
             environment = {
               MACHINES_ON = toString (pkgs.writeText "kdn-nix-machines-on" machinesOn);
               MACHINES_OFF = toString (pkgs.writeText "kdn-nix-machines-off" machinesOff);
@@ -684,14 +691,41 @@ in
             '';
           };
 
+          # Events drive the recompute now (see the dispatcher and udev blocks below); this timer is
+          # only a coarse safety net for a missed event — a device that appeared while the daemon was
+          # down, or a dispatcher quirk. The old 2-minute poll was pure waste.
           systemd.timers.kdn-build-farm-machines = {
             description = "Track the Wi-Fi for the brys auto switch";
             wantedBy = [ "timers.target" ];
             timerConfig = {
-              OnBootSec = "1min";
-              OnUnitActiveSec = "2min";
+              OnBootSec = "30s";
+              OnUnitActiveSec = "15min";
             };
           };
+
+          # Event-driven recompute. NetworkManager covers wlan/eth/vlan and NM-driven VPNs. Its
+          # dispatcher script receives the interface in `$1` and the action in `$2`; only the events
+          # that can change reachability are forwarded, so a link renegotiation does not restart the
+          # unit for nothing.
+          networking.networkmanager.dispatcherScripts =
+            lib.optional (config.networking.networkmanager.enable or false)
+              {
+                source = pkgs.writeShellScript "kdn-build-farm-dispatch" ''
+                  case "''${2:-}" in
+                    up | down | connectivity-change | dhcp4-change | dhcp6-change | vpn-up | vpn-down)
+                      exec ${config.systemd.package}/bin/systemctl --no-block restart kdn-build-farm-machines.service
+                      ;;
+                  esac
+                '';
+              };
+
+          # NetBird is not NM-managed, so the dispatcher never sees its interfaces. They are named
+          # `nb-<name>` (e.g. `nb-priv`), so udev catches their appearance and removal. udev cannot
+          # OR two ACTIONs in one rule, hence one rule per action.
+          services.udev.extraRules = ''
+            ACTION=="add", SUBSYSTEM=="net", KERNEL=="nb-*", RUN+="${config.systemd.package}/bin/systemctl --no-block restart kdn-build-farm-machines.service"
+            ACTION=="remove", SUBSYSTEM=="net", KERNEL=="nb-*", RUN+="${config.systemd.package}/bin/systemctl --no-block restart kdn-build-farm-machines.service"
+          '';
 
           environment.systemPackages = [
             (pkgs.writeShellScriptBin "build-farm-brys" ''
