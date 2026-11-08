@@ -78,8 +78,9 @@ let
       keyPathFor,
       ownerSupport ? false,
       trustCAs ? false,
+      trustClass ? "nixos",
     }:
-    { config, lib, ... }:
+    { config, lib, pkgs, ... }:
     let
       cfg = config.kdn.certificates;
 
@@ -98,6 +99,32 @@ let
       # The host name is read once here, outside the submodule, so the submodule default can close
       # over it. A submodule's own `config` cannot see the outer `kdn.hostName`.
       hostName = config.kdn.hostName;
+
+      # A single PEM bundle of every CA the ca-dag declares, so Node (which takes one
+      # file) can trust the whole set. Lazy: only forced when CA trust is enabled.
+      caBundle = pkgs.writeText "kdn-ca-bundle.pem" (
+        lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (
+            _: ca: builtins.readFile "${toString repoRoot}/${ca.directory}/${ca.certFile}"
+          ) (config.kdn.ca-dag.cas or { })
+        )
+      );
+
+      # Trust emission differs per class (a devenv/HM module has no security.pki).
+      trustSection =
+        if trustClass == "nixos" || trustClass == "darwin" then
+          {
+            security.pki.certificateFiles = lib.mapAttrsToList (
+              _: ca: "${toString repoRoot}/${ca.directory}/${ca.certFile}"
+            ) (config.kdn.ca-dag.cas or { });
+            environment.variables.NODE_EXTRA_CA_CERTS = "${caBundle}";
+          }
+        else if trustClass == "home" then
+          { home.sessionVariables.NODE_EXTRA_CA_CERTS = "${caBundle}"; }
+        else if trustClass == "devenv" then
+          { env.NODE_EXTRA_CA_CERTS = "${caBundle}"; }
+        else
+          { };
 
       certsSubmodule =
         { name, config, ... }:
@@ -239,9 +266,10 @@ let
       # the `darwin` module defaults the group to `staff`. `mode` stays `0400`. A service that runs
       # as a non-root user needs it, because the default key file is root-only. The `homeManager`
       # sops module declares no `owner`, so that class ignores it.
-      config = lib.mkIf (cfg.certs != { }) (
-        lib.mkMerge [
-          (lib.optionalAttrs (sopsModule != null) {
+      config = lib.mkMerge [
+        # Key secrets exist only for hosts that DECLARE a certificate.
+        (lib.mkIf (cfg.certs != { }) (
+          lib.optionalAttrs (sopsModule != null) {
             sops.secrets = lib.mapAttrs' (
               name: cert:
               lib.nameValuePair (secretName name) (
@@ -252,22 +280,14 @@ let
                 // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
               )
             ) cfg.certs;
-          })
-          # Trust every CA the certificate DAG declares, so a leaf the host SERVES (or
-          # a client it talks to) verifies system-wide. Without this a tls-server leaf
-          # signed by the managed root fails Node/curl verification (the hosts used to
-          # trust only the old LLM CA).
-          (lib.optionalAttrs trustCAs {
-            security.pki.certificateFiles = lib.mapAttrsToList (
-              _: ca: "${toString repoRoot}/${ca.directory}/${ca.certFile}"
-            ) (config.kdn.ca-dag.cas or { });
-            # Node ignores the system trust store unless told; point it at the merged
-            # bundle so a Pi/Node client verifies the internal-CA leaf. A system-wide
-            # env var covers every Node app and the shells that launch them.
-            environment.variables.NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca-certificates.crt";
-          })
-        ]
-      );
+          }
+        ))
+        # CA trust is INDEPENDENT of declaring a leaf: a pure CLIENT host still needs to
+        # trust the internal CA to reach the HTTPS gateway. Gated on the ca-dag having a
+        # CA (so importing ca-dag, not declaring a cert, is the switch). Requires
+        # `repoRoot` (the CA certs are located relative to it).
+        (lib.mkIf (trustCAs && (config.kdn.ca-dag.cas or { }) != { }) trustSection)
+      ];
     };
 in
 {
@@ -291,6 +311,8 @@ in
 
   kdn.certificates.homeManager = mkTarget {
     sopsModule = inputs.sops-nix.homeManagerModules.sops;
+    trustCAs = true;
+    trustClass = "home";
     keyPathFor =
       { config, name }:
       config.sops.secrets.${secretName name}.path;
@@ -298,6 +320,8 @@ in
 
   # The `devenv` class carries no sops-nix module. The CLI decrypt primitive fills this path.
   kdn.certificates.devenv = mkTarget {
+    trustCAs = true;
+    trustClass = "devenv";
     keyPathFor =
       { name, ... }:
       "/run/secrets/kdn/certificates/${name}.key";
