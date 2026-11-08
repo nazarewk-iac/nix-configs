@@ -101,6 +101,10 @@ in
   # Live fleet state for the orchestrator: which aliases are loaded, their served context, and the
   # host headroom, in one tool. It degrades to the static view on a network fault.
   fleet-status = ./fleet-status;
+  # Model discovery: dynamic providers (refreshModels) that list the LIVE litellm
+  # gateway and local llama-swap catalogs, so `pi --list-models` shows discovered
+  # models (e.g. Requesty ids) layered under the static data/llm.nix catalog.
+  model-discovery = ./model-discovery;
 
   # pi-hashline-edit: replaces the built-in read/edit with hashline versions. read prefixes each
   # line with "N:" and a [path#TAG] header; edit takes a line-anchored patch and REJECTS it when
