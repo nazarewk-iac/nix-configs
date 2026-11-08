@@ -180,8 +180,10 @@ let
 
   # Requesty deployments must be EXPLICIT: a `model_name: "requesty/*"` wildcard
   # does NOT route (404 "model group not found") and pollutes /v1/models with the
-  # OpenAI price-map names, not Requesty's real catalog. List the real Requesty ids
-  # (fetched from its /v1/models). A deployment's model_name is `requesty/<real id>`.
+  # OpenAI price-map names, not Requesty's real catalog. These ids are a PINNED
+  # SNAPSHOT of Requesty's /v1/models (which carries no context/pricing metadata);
+  # refresh with hosts/etra/litellm_requesty_discover.py when the catalog changes.
+  # A deployment's model_name is `requesty/<real id>`.
   requestyModelIds = [
     "deepinfra/deepseek-v4.1-flash-1017"
     "runware/deepseek-v4.1-flash-1017"

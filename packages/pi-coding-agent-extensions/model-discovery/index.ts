@@ -30,6 +30,7 @@ type Endpoint = {
   id: string;
   name: string;
   baseUrl: string;
+  keyFile: string;
   apiKey: () => string;
   /** Force the openai-completions API (llama-swap never advertises it). */
   api: "openai-completions";
@@ -58,6 +59,7 @@ function endpoints(): Endpoint[] {
       id: "litellm-dynamic",
       name: "LiteLLM (discovered)",
       baseUrl: litellm,
+      keyFile: litellmKey,
       api: "openai-completions",
       apiKey: readKey(litellmKey, "KDN_LLM_API_KEY_litellm"),
     });
@@ -67,6 +69,7 @@ function endpoints(): Endpoint[] {
       id: "llamaswap-dynamic",
       name: "llama-swap (discovered)",
       baseUrl: llama,
+      keyFile: llamaKey,
       api: "openai-completions",
       apiKey: readKey(llamaKey, "KDN_LLM_API_KEY_brys"),
     });
@@ -120,13 +123,17 @@ function register(pi: ExtensionAPI, ep: Endpoint): void {
   pi.registerProvider(ep.id, {
     name: ep.name,
     baseUrl: ep.baseUrl,
-    apiKey: "",
+    // A `!command` apiKey so discovered models authenticate at inference, not
+    // only the catalog GET (an empty key 401s on call). Pi resolves it per request.
+    apiKey: "!cat " + ep.keyFile,
     api: ep.api,
     authHeader: true,
     models: [],
     refreshModels: async (context) => {
-      // `pi --list-models` runs offline-safe (allowNetwork=false); still attempt the
-      // fetch — it has its own short timeout and degrades to [] on failure.
+      // `pi --list-models` runs offline-safe (allowNetwork=false) and still calls
+      // this. Attempt the fetch (short timeout, degrades to []), unless explicitly
+      // opted out with KDN_PI_DISCOVER_OFFLINE=1.
+      if (process.env.KDN_PI_DISCOVER_OFFLINE === "1") return [];
       const signal = context.signal ?? AbortSignal.timeout(TIMEOUT_MS);
       try {
         const list = await getModels(ep.baseUrl, ep.apiKey(), signal);

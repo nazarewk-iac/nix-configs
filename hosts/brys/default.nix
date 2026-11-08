@@ -68,6 +68,8 @@ in
         domain = "brys.priv.nb.net.int.kdn.im";
         certName = "zellij-web";
         title = "brys";
+        listenAddresses = [ "100.79.164.36" ];
+        networkServices = [ "netbird-priv.service" ];
         services = {
           llama-swap = {
             subdomain = "llama-swap.brys.priv.nb.net.int.kdn.im";

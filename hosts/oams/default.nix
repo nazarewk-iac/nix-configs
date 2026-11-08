@@ -68,6 +68,8 @@ in
         domain = "oams.priv.nb.net.int.kdn.im";
         certName = "zellij-web";
         title = "oams";
+        listenAddresses = [ "100.79.80.79" ];
+        networkServices = [ "netbird-priv.service" ];
         services = {
           llama-swap = {
             subdomain = "llama-swap.oams.priv.nb.net.int.kdn.im";

@@ -99,6 +99,15 @@
           type = lib.types.listOf lib.types.str;
           default = [ "0.0.0.0" ];
         };
+        networkServices = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Units that bring up `listenAddresses` (e.g. `netbird-priv.service`). Caddy
+            starts AFTER them, is `PartOf` them (restarts when they restart, e.g. a
+            NetBird interface flap), and is wanted by them. Empty on a 0.0.0.0 bind.
+          '';
+        };
         firewallInterfaces = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ "nb-priv" ];
@@ -140,10 +149,18 @@
           # A config reload does NOT refresh the LoadCredential key, so restart
           # (not reload) whenever the certificate file changes — otherwise a new
           # cert meets the old key and TLS fails with "private key does not match".
+          # Also restart on the sops KEY file change (a key-only rotation does not
+          # change certPath but does change the decrypted credential at the stable
+          # /run/secrets path). And bind to the network services that own the bind
+          # address, restarting with them so a NetBird flap re-binds cleanly.
           systemd.services.caddy = {
-            after = [ "sops-install-secrets.service" ];
-            wants = [ "sops-install-secrets.service" ];
-            restartTriggers = [ cert.certPath ];
+            after = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
+            wants = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
+            partOf = cfg.networkServices;
+            restartTriggers = [
+              cert.certPath
+              "${toString config.kdn.certificates.repoRoot}/${cert.directory}/${cert.keyFile}.sops"
+            ];
           };
 
           services.caddy.virtualHosts = {

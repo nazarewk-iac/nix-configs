@@ -64,10 +64,11 @@
           type = lib.types.listOf lib.types.str;
           default = [ ];
           description = ''
-            Extra `prometheus` flags. Used to serve the UI under a path prefix
-            behind a reverse proxy: pass `--web.external-url=<url>/<prefix>/` so
-            absolute links keep the prefix, and `--web.route-prefix=/` so the
-            proxy may strip the prefix before forwarding.
+            Extra `prometheus` flags. The gateway exposure now serves Prometheus
+            at its OWN subdomain root (web-exposure), so no path-prefix flags are
+            needed for it; this option remains for any host that serves Prometheus
+            under a path prefix behind a reverse proxy (pass
+            `--web.external-url=<url>/<prefix>/` and `--web.route-prefix=/`).
           '';
         };
         # Each target is a scrape job. `targets` are `host:port` as seen FROM the

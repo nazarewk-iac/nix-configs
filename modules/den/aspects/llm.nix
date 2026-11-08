@@ -98,7 +98,6 @@
 
       # The shared Caddy renderer: the same index page + sub-path routing the
       # `web-exposure` aspect uses for etra.
-      web = import ../../../lib/web.nix { inherit lib; };
 
       enabledModels = lib.filterAttrs (_: m: m.enable) cfg.models;
 
@@ -1712,28 +1711,6 @@
         description = "Loopback port the compat proxy listens on. Caddy targets it.";
       };
 
-      # The vhost shape: llama-swap under `/llama-swap` (prefix stripped, so the
-      # backend is unaware), an index page at `/`, and any extra service the host
-      # adds (e.g. `/prometheus`).
-      options.kdn.llm.local.web.extraRoutes = lib.mkOption {
-        type = lib.types.attrsOf (
-          lib.types.submodule {
-            options = {
-              upstream = lib.mkOption { type = lib.types.str; };
-              strip = lib.mkOption { type = lib.types.bool; default = true; };
-              label = lib.mkOption { type = lib.types.str; default = ""; };
-            };
-          }
-        );
-        default = { };
-        description = "Extra sub-path services behind the same vhost (besides /llama-swap).";
-      };
-      options.kdn.llm.local.web.indexTitle = lib.mkOption {
-        type = lib.types.str;
-        default = config.kdn.hostName;
-        description = "The index page heading.";
-      };
-
       # Global download behaviour, not per-model. Every enabled model downloads in sequence, with
       # this one mode.
       options.kdn.llm.local.download.mode = lib.mkOption {
@@ -1932,13 +1909,6 @@
                 printf '\n' >> /var/lib/llama-cpp/api-keys
               done
             '';
-            # Hand the private key to Caddy at run time, so no store path holds it.
-            # The key is a sops secret, so Caddy must start after it is decrypted.
-            caddy.serviceConfig.LoadCredential = lib.mkIf lanGateReady [
-              "llm-key:${cfg.certs.keyFile}"
-            ];
-            caddy.after = lib.mkIf lanGateReady [ "sops-install-secrets.service" ];
-            caddy.wants = lib.mkIf lanGateReady [ "sops-install-secrets.service" ];
             # One loopback compat proxy in front of the router. It forwards the client's
             # `Authorization` header — the bearer key that `--api-key-file` validates — on the
             # streaming path too, and it passes every other path through. So one instance is enough.
@@ -2058,57 +2028,6 @@
             OnUnitActiveSec = cfg.sessionStore.pruneInterval;
           };
         };
-
-        # The one LAN gate. Caddy terminates TLS with the consumer's own certificate, and it reverse
-        # proxies to the loopback compat proxy, which passes through to the router.
-        services.caddy = lib.mkIf lanGateReady {
-          enable = true;
-          virtualHosts.${cfg.domain} = {
-            # Bind each network that a certificate hostname resolves on, and answer to every extra
-            # hostname.
-            listenAddresses = cfg.certs.listenAddresses;
-            # The extra hostnames of this one vhost. The primary is the vhost key itself.
-            serverAliases = lib.remove cfg.domain cfg.certs.sans;
-            extraConfig = ''
-              # The literal credential path, not `{$CREDENTIALS_DIRECTORY}`:
-              # systemd does not pass `CREDENTIALS_DIRECTORY` to `ExecReload`, so
-              # `caddy reload` adapts the Caddyfile with an empty value and the
-              # reload fails with "open /llm-key: no such file or directory".
-              # The path is stable for the `caddy.service` unit.
-              tls ${cfg.certs.certFile} /run/credentials/caddy.service/llm-key
-              ${
-                web.mkCaddyRoutes {
-                  indexPath = pkgs.writeTextDir "index.html" (
-                    web.mkIndexHtml {
-                      title = cfg.web.indexTitle;
-                      links = [
-                        {
-                          path = "/llama-swap";
-                          label = "llama-swap";
-                        }
-                      ]
-                      ++ lib.mapAttrsToList (path: r: {
-                        inherit path;
-                        label = if r.label == "" then lib.removePrefix "/" path else r.label;
-                      }) cfg.web.extraRoutes;
-                    }
-                  );
-                  routes = {
-                    "/llama-swap" = {
-                      upstream = "127.0.0.1:${toString cfg.compatProxy.port}";
-                    };
-                  }
-                  // cfg.web.extraRoutes;
-                }
-              }'';
-          };
-        };
-
-        # Caddy is the one process that needs a port. The router and the proxy stay on the loopback.
-        networking.firewall.allowedTCPPorts = lib.mkIf lanGateReady [
-          80
-          443
-        ];
 
         systemd.targets.kdn-llm-download = {
           description = "Download the enabled local models";

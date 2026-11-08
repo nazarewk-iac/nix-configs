@@ -121,6 +121,8 @@ in
         domain = "etra.priv.nb.net.int.kdn.im";
         certName = "zellij-web";
         title = "etra";
+        listenAddresses = [ "100.79.187.16" ];
+        networkServices = [ "netbird-priv.service" ];
         services = {
           litellm = {
             subdomain = "litellm.etra.priv.nb.net.int.kdn.im";
@@ -487,6 +489,16 @@ in
         basePath = "/run/configs/litellm-keys";
         sops.mode = "0400";
       };
+      # The sops leaf parser never emits the FIRST top-level line, so the keys file
+      # is wrapped `keys: { clients: … }` and stripped by keyPrefix. If someone
+      # reorders that file, discovery silently drops the secret — assert it.
+      assertions = [
+        {
+          assertion =
+            config.kdn.security.secrets.sops.files."litellm-keys".discovered.keys == [ "clients" ];
+          message = "litellm-keys.sops.yaml must keep `keys: { clients: … }` first; the sops leaf parser skips the first top-level line.";
+        }
+      ];
     }
     {
       # Both entries read one personal file. An absent path stops the whole evaluation inside
