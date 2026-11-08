@@ -48,7 +48,7 @@ function readKey(file: string, fallbackEnv?: string): () => string {
 function endpoints(): Endpoint[] {
   const out: Endpoint[] = [];
   const litellm = process.env.KDN_PI_DISCOVER_LITELLM || "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
-  const litellmKey = process.env.KDN_PI_DISCOVER_LITELLM_KEY || "/run/configs/llms/litellm/master-key";
+  const litellmKey = process.env.KDN_PI_DISCOVER_LITELLM_KEY || "/run/configs/llms/litellm/client-key";
   const llama = process.env.KDN_PI_DISCOVER_LLAMASWAP || "http://127.0.0.1:9530/v1";
   const llamaKey =
     process.env.KDN_PI_DISCOVER_LLAMASWAP_KEY || "/run/configs/llms/llama-server/api-keys/default";

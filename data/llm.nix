@@ -72,7 +72,10 @@ in
       # an internal-CA leaf (resolved via NetBird DNS zones).
       baseUrl = "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
       api = "openai-completions";
-      apiKey = "!cat /run/configs/llms/litellm/master-key";
+      # A non-admin client key (all-models allow-list), NOT the master key: the
+      # gateway custom_auth validates it and scopes it — the master key stays admin
+      # only. Shared via the llms sops tree so every client host reads the same token.
+      apiKey = "!cat /run/configs/llms/litellm/client-key";
     };
     # A remote router. Unlike `brys`, models here name `endpoint = "requesty"` and have no host
     # block, so they never appear in the local fleet catalog or the llama-swap serving set.

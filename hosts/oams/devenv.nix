@@ -139,7 +139,8 @@ in
     enable = true;
     # The gateway is exposed on its own subdomain over HTTPS by etra's Caddy.
     baseURL = "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
-    apiKeyFile = "/run/configs/llms/litellm/master-key";
+    # Non-admin client key (all models), not the master key.
+    apiKeyFile = "/run/configs/llms/litellm/client-key";
     discovery.enable = true;
   };
 
