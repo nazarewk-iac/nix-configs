@@ -680,12 +680,13 @@ in
     Listen ${hostAddress}
     Timeout 600
     Allow ${localAddress}
-    # Destination bound: deny everything except the SaaS host (defence in depth —
-    # `Allow` above only restricts the client IP).
-    FilterDefaultDeny Yes
-    Filter "^${builtins.replaceStrings ["."] ["\\."] requestyHost}$"
     ConnectPort ${toString requestyPort}
     LogLevel Info
+    # NOTE: egress is bounded by (a) the guest having NO WAN route (the proxy is its
+    # only path out), (b) `ConnectPort 443`, and (c) the guest IP ACL above. tinyproxy
+    # cannot hostname-filter a CONNECT destination without a filter FILE; if stricter
+    # destination pinning is ever needed, add `Filter "/etc/kdn/litellm-proxy.filter"`
+    # + `FilterExtended On` + `FilterDefaultDeny Yes` with a regex file.
   '';
 
   systemd.services.litellm-oams-egress = {
