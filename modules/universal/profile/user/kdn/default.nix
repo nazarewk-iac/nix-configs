@@ -96,7 +96,14 @@ in
     };
     ssh.authorizedKeysPath = lib.mkOption {
       type = with lib.types; path;
-      default = pkgs.writeText "kdn-authorized-keys" cfg.ssh.authorizedKeysText;
+      # `builtins.toFile`, NOT `pkgs.writeText`. NixOS' sshd module reads every
+      # `openssh.authorizedKeys.keyFiles` entry with `lib.readFile` at EVALUATION time
+      # (nixos/modules/services/networking/ssh/sshd.nix). Reading a `writeText` derivation
+      # forces an import-from-derivation build of that file for the target system, which the
+      # build farm has to serve and which makes the output unstable. `builtins.toFile`
+      # materialises the same bytes in the store during evaluation with no build, so the
+      # read needs no builder. `authorizedKeysText` is plain text with no store context.
+      default = builtins.toFile "kdn-authorized-keys" cfg.ssh.authorizedKeysText;
       description = ''
         `authorizedKeysList` as a file, for an `openssh.authorizedKeys.keyFiles` reader.
         The content equals the seed file, so the reader sees the same bytes as before.
