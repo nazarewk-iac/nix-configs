@@ -71,3 +71,21 @@ Use the same age recipients as the other KDN sops files (see any `*.sops.yaml`
 
 Add `data/ca/ca.pub` to the system CA authorities on the hosts that consume
 services signed by this CA via the `kdn.ca` slot (`security.pki.certificateFiles`).
+
+## Exception: web leaf certs re-issued manually (2026-11-08)
+
+The per-host web leaves (`hosts/<host>/certs/zellij.pub` + `zellij.key.sops`)
+were re-issued **manually with openssl** (SANs for the Caddy subdomain vhosts)
+instead of through `kdn-certs apply`, because the full-flake walk was slow and
+the leaf keys need a YubiKey touch for the existing sops recipients. Result:
+
+- leaf validity is **3650 days** (the prior policy was 90 days) — longer than the
+  declarative rotation intends;
+- `kdn-certs status` may report these leaves as mismatched (serial/notBefore/
+  validity differ from the declaration), even though the SANs are correct;
+- the private key WAS re-encrypted to the right recipients (each host's SSH host
+  age identity is included, so boot decrypt works).
+
+This is a recorded, accepted exception. To return to the declarative flow, run
+`kdn-certs apply` (or `kdn-certs ca sign`) with the CA key available and the
+YubiKey present; that regenerates the leaves and clears the drift.
