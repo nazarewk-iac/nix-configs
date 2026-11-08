@@ -105,3 +105,64 @@ surface real Requesty models to any client you must **enumerate them explicitly*
 3. Consider DB mode later for budgets/rotation/UI, if ever needed.
 4. Orchestrator/default policy (from the auto-router task): cheap tasks should
    default to `chat-fast`, using a scoped key rather than the master key.
+
+## Update 2026-11-07 (later): discovery script, all-models key, egress plan
+
+### All-models non-master key (staged, not yet deployed)
+The keys file now also holds a key with NO `models` field (`{"name":"all-models"}`).
+The auth hook returns `models=None` for it and the enforce hook treats `None` as
+"all models", so this non-master key can call every group incl. `requesty/*`.
+Takes effect on the next `switch` (the sops file is part of the system closure).
+
+### Discovery script (done, tested)
+`hosts/etra/litellm_requesty_discover.py` fetches Requesty's real `/v1/models`
+and builds explicit LiteLLM deployments. Tested live against
+`https://router.requesty.ai` — it returns the 4 real ids (the wildcard's fake
+price-map names are gone by construction). Two modes:
+- print: a JSON list of deployment dicts.
+- `--base BASE.json --out OUT.json`: load a base config, replace any `requesty/…`
+  deployments, write the merged config. `urllib` honours `HTTPS_PROXY`.
+
+### Preferred integration: server-side, interaction-less (designed, not wired)
+Because LiteLLM's `model_list` is static at start, discovery must run where the
+config is produced. Two options:
+1. **Build-time (Nix)**: commit a generated `requesty-models.json` and have
+   `litellm.nix` read it. Deterministic, but needs a manual/CI refresh — not
+   interaction-less.
+2. **Runtime (preferred)**: the container's litellm unit becomes a wrapper:
+   ```sh
+   cp /etc/litellm-base/config.json /tmp/litellm-config.json   # Nix base, no requesty
+   python3 /etc/litellm/litellm_requesty_discover.py \
+       --base /tmp/litellm-config.json --out /tmp/litellm-config.json || true
+   exec litellm --config /tmp/litellm-config.json --host 0.0.0.0 --port 4000
+   ```
+   Discovery failure falls back to the base config (gateway keeps serving local
+   models). A container `systemd` timer re-runs discovery and restarts litellm
+   periodically. This is the interaction-less path.
+   The Nix-generated config stops listing requesty (base only); requesty groups
+   appear at runtime. Consequence: only `models=None` keys (master + `all-models`)
+   can reach the dynamic `requesty/*` names; scoped local keys stay local (fine).
+
+### Egress requirement (blocker before Requesty works)
+The container has no internet route; the `socat OPENSSL` relay keeps the relay's
+Host header, so Requesty 404s. It must reach `https://router.requesty.ai/v1`
+directly with correct Host. Two ways:
+- **NAT (preferred, requested)**: `networking.nat = { enable = true;
+  internalInterfaces = [ "ve-litellm" ]; externalInterface = "wan"; };`, add a
+  router forwarding `{ from = "ve-litellm"; to = "wan"; }`, and give the guest a
+  default route + DNS (`networking.defaultGateway = hostAddress;
+  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];`). Risk: etra is the border
+  router (custom nftables/router); must be verified live (SSH up, relays still
+  work, router masquerade intact) with a rollback store ready.
+- **CONNECT proxy**: a host `tinyproxy`/`squid` on `10.233.100.1:PORT`; set
+  `HTTPS_PROXY` in the container. Preserves SNI/Host, no router changes.
+
+**Not deployed.** These touch the border router and the container's network
+namespace; they are staged with the snippets above and need a supervised switch
+to verify (the discovery wrapper is safe — it falls back to the base config).
+
+### Decisions
+- Discovery is server-side; the printed/merged JSON is the source of truth for
+  requesty groups (no hand-maintained list).
+- Prefer runtime merge + timer over build-time JSON, for interaction-less refresh.
+- Keep `requesty/*` reachable only to `models=None` keys while groups are dynamic.
