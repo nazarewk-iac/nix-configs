@@ -62,17 +62,23 @@ let
   # Deployments: one per (host, alias). `api_base`/`api_key` are per-host env vars
   # the container resolves at start (see the container ExecStart).
   # Measured rates for a base model id on this host, or null.
-  ratesOf = host: baseId: (views.${host}.models.${baseId}.capabilities.rates or null);
+  # Measured rates from raw data (the member view forces `vision`/`capabilities`,
+  # which throws on models that omit `vision`).
+  ratesOf = host: baseId: (data.models.${baseId}.capabilities.rates or null);
+  # `nameToBase` maps an exposed group name -> the base model id it serves.
+  # Built from aliases AND from un-aliased served base ids, so the gateway mirrors
+  # the full static catalog (lib/llm.nix lists aliases when a model has them, else
+  # its base id; the gateway used to expose only aliases, dropping 18 base ids).
   deployments =
-    host: baseEnv: keyEnv:
+    host: baseEnv: keyEnv: nameToBase:
     map (
-      alias:
+      name:
       let
-        baseId = views.${host}.aliasToModel.${alias};
+        baseId = nameToBase.${name};
         r = ratesOf host baseId;
       in
       {
-        model_name = alias;
+        model_name = name;
         litellm_params = {
           model = "openai/${baseId}";
           api_base = "os.environ/${baseEnv}";
@@ -99,7 +105,7 @@ let
           in if budget > 7200 then 7200 else budget;
         };
         model_info = {
-          id = "${host}-${alias}";
+          id = "${host}-${name}";
           # (#1) A cheap, SHORT probe: the egress relay to a blackholed host HANGS its
           # upstream connect for minutes, so the probe must time out fast (well under
           # health_check_interval) or the deployment never flips unhealthy.
@@ -112,7 +118,7 @@ let
           prefill_tokens_per_second = r.prefill;
         };
       }
-    ) (builtins.attrNames views.${host}.aliasToModel);
+    ) (builtins.attrNames nameToBase);
 
   # brys deployment for every alias; oams only for aliases it also serves.
   brysAliases = builtins.attrNames views.brys.aliasToModel;
@@ -181,9 +187,29 @@ let
     }
   ) requestyModelIds;
 
+  # Every group name the gateway should expose on `host`: its aliases (alias -> base
+  # id) PLUS the served base ids that have no alias (base id -> itself), so the
+  # gateway mirrors the static catalog. A base id that already has an alias is NOT
+  # also listed under its own id (the alias is the canonical name), matching
+  # lib/llm.nix's `if aliases == [] then [name] else aliases`.
+  nameToBaseFor =
+    host:
+    let
+      aliases = views.${host}.aliasToModel;
+      aliasedBaseIds = builtins.attrValues aliases;
+      # ONLY what llama-swap actually serves: the same projection the host uses
+      # (`mkServerModels` filters by the boot profile's `sets`, so `retired` models
+      # — defined but not served — are correctly excluded). Mirroring just
+      # `enable = true` earlier advertised retired base ids and 404'd on call.
+      # The profile must match the host boot profile (brys/oams: "desktop").
+      servedBaseIds = builtins.attrNames (llm.mkServerModels data host "desktop");
+      unaliasedBaseIds = builtins.filter (id: !(builtins.elem id aliasedBaseIds)) servedBaseIds;
+    in
+    aliases // lib.genAttrs unaliasedBaseIds (id: id);
+
   modelList =
-    (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY")
-    ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY")
+    (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY" (nameToBaseFor "brys"))
+    ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY" (nameToBaseFor "oams"))
     ++ poolDeployments
     ++ requestyDeployments;
 
