@@ -87,12 +87,17 @@ async function getModels(baseUrl: string, key: string, signal: AbortSignal): Pro
 function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
   const id = String(m.id);
   const name = typeof m.name === "string" && m.name.trim() ? m.name : id;
-  const ctx =
+  // Prefer the gateway's advertised budget (max_input_tokens, the curated reduced
+  // window an alias sets) over llama-swap's native context_length. Fall back down.
+  const advertisedIn = Number(m.max_input_tokens) > 0 ? Number(m.max_input_tokens) : null;
+  const nativeCtx =
     Number(m.context_length) > 0
       ? Number(m.context_length)
       : Number(m.contextWindow) > 0
         ? Number(m.contextWindow)
         : DEFAULT_CONTEXT;
+  const ctx = advertisedIn ?? nativeCtx;
+  const advertisedOut = Number(m.max_output_tokens) > 0 ? Number(m.max_output_tokens) : null;
   const reasoning = /thinking|reason|o1|o3|qwen3|deepseek-r/i.test(`${id} ${name}`);
   return {
     type: "chat",
@@ -104,7 +109,7 @@ function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
     input: Array.isArray(m.input) ? m.input.filter((x: any) => x === "text" || x === "image") : ["text"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: ctx,
-    maxTokens: Math.min(DEFAULT_MAX_TOKENS, ctx),
+    maxTokens: Math.min(advertisedOut ?? DEFAULT_MAX_TOKENS, ctx),
   };
 }
 

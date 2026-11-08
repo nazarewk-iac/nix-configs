@@ -76,6 +76,13 @@ let
       let
         baseId = nameToBase.${name};
         r = ratesOf host baseId;
+        # The curated CLIENT budget, mirroring lib/llm.nix `piEntries`:
+        # min(pi.contextWindow or default, native contextSize). Surfaced via
+        # /v1/models + /model/info as max_input_tokens/max_output_tokens so clients
+        # (and the Pi discovery extension) see the reduced window an alias advertises.
+        dm = data.models.${baseId};
+        ctx = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow);
+        maxOut = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
       in
       {
         model_name = name;
@@ -111,6 +118,9 @@ let
           # health_check_interval) or the deployment never flips unhealthy.
           health_check_timeout = 5;
           health_check_max_tokens = 1;
+          # The curated client budget (see the `let` above). Advertised, not enforced.
+          max_input_tokens = ctx;
+          max_output_tokens = maxOut;
         }
         // lib.optionalAttrs (r != null) {
           # Measured throughput, surfaced via /model/info for clients and docs.
@@ -155,7 +165,10 @@ let
         id = "brys-chat-fast-${baseId}";
         health_check_timeout = 5;
         health_check_max_tokens = 1;
-        max_input_tokens = dm.contextSize;
+        # Same curated budget as the alias groups (min(pi.contextWindow, native)).
+        max_input_tokens = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow);
+        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens)
+          (lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow));
         supports_vision = dm.vision or false;
       }
       // lib.optionalAttrs (r != null) {
@@ -202,7 +215,11 @@ let
       # — defined but not served — are correctly excluded). Mirroring just
       # `enable = true` earlier advertised retired base ids and 404'd on call.
       # The profile must match the host boot profile (brys/oams: "desktop").
-      servedBaseIds = builtins.attrNames (llm.mkServerModels data host "desktop");
+      # Served = in the profile's `sets` AND enabled (llama-swap skips `enable =
+      # false`, e.g. qwen3.5-9b, which the lms aspect filters out).
+      servedBaseIds = builtins.attrNames (
+        lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host "desktop")
+      );
       unaliasedBaseIds = builtins.filter (id: !(builtins.elem id aliasedBaseIds)) servedBaseIds;
     in
     aliases // lib.genAttrs unaliasedBaseIds (id: id);
