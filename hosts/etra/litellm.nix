@@ -44,6 +44,12 @@ let
   requestyPort = 443;
   requestyEgressPort = 8445;
 
+  # HTTP CONNECT proxy for the container's SaaS egress. Bound to the litellm
+  # bridge host address (reachable only from the guest, not the LAN). A CONNECT
+  # tunnel preserves the real Host/SNI, so Requesty serves the right vhost —
+  # unlike a raw socat TLS relay, which keeps the relay's Host and 404s.
+  requestyProxyPort = 8888;
+
   # --- Gateway config, GENERATED from data/llm.nix (no flat file to sync) -------
   #
   # Every alias on brys is one deployment. The aliases oams also serves get a
@@ -168,7 +174,7 @@ let
       model_name = "requesty/${mid}";
       litellm_params = {
         model = "openai/${mid}";
-        api_base = "http://${hostAddress}:${toString requestyEgressPort}/v1";
+        api_base = "https://${requestyHost}/v1";
         api_key = "os.environ/REQUESTY_API_KEY";
       };
       model_info = { id = "requesty-${builtins.replaceStrings [ "/" ] [ "-" ] mid}"; };
@@ -363,6 +369,11 @@ in
                 # Same shared llama-server key as brys (one fleet api-key file).
                 export OAMS_API_KEY="$(cat /etc/litellm-llama-key)"
                 export REQUESTY_API_KEY="$(cat /etc/litellm-requesty-key)"
+                # SaaS egress via the host CONNECT proxy; local relays bypass it.
+                export HTTPS_PROXY="http://${hostAddress}:${toString requestyProxyPort}"
+                export HTTP_PROXY="http://${hostAddress}:${toString requestyProxyPort}"
+                export NO_PROXY="${hostAddress}"
+                export no_proxy="${hostAddress}"
                 export KDN_LITELLM_KEYS_FILE=/etc/litellm-keys-clients
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
@@ -499,7 +510,7 @@ in
     gatewayPort
     egressPort
     oamsEgressPort
-    requestyEgressPort
+    requestyProxyPort
     6379  # routing-state Redis relay
   ];
 
@@ -579,15 +590,17 @@ in
     };
   };
 
-  # Egress relay: guest -> Requesty over TLS. Plaintext on the private veth, TLS to
-  # the SaaS; the container needs no internet route of its own.
-  systemd.services.litellm-requesty-egress = {
-    description = "Relay the LiteLLM container to Requesty over TLS";
+  # HTTP CONNECT proxy for the container's SaaS egress, bound to the litellm
+  # bridge host address so only the guest reaches it. Allow-listed to the SaaS
+  # host only; everything else is refused. The container sets HTTPS_PROXY to it
+  # (with NO_PROXY covering the local relays), so the container still has no
+  # direct internet route. See docs/litellm-connect-egress.md.
+  systemd.services.litellm-requesty-proxy = {
+    description = "HTTP CONNECT proxy for the LiteLLM container's SaaS egress";
     wantedBy = [ "multi-user.target" ];
-    after = [ "container@litellm.service" ];
-    wants = [ "container@litellm.service" ];
+    environment.HTTPS_PROXY = "";
     serviceConfig = {
-      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString requestyEgressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=10 OPENSSL:${requestyHost}:${toString requestyPort}";
+      ExecStart = "${pkgs.tinyproxy}/bin/tinyproxy -d -c /etc/kdn/litellm-proxy.conf";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;
@@ -598,10 +611,22 @@ in
       RestrictAddressFamilies = [
         "AF_INET"
         "AF_INET6"
-        "AF_UNIX"
       ];
     };
   };
+  # NB: tinyproxy `Allow`/`Deny` are CLIENT-IP ACLs, not destination filters.
+  # The only client is the container guest (localAddress). `ConnectPort` limits
+  # the CONNECT method to 443 (HTTPS only). tinyproxy cannot restrict the
+  # destination hostname; the layer-3 firewall (the container has no WAN route,
+  # and the proxy itself is the only egress) is what bounds the target.
+  environment.etc."kdn/litellm-proxy.conf".text = ''
+    Port ${toString requestyProxyPort}
+    Listen ${hostAddress}
+    Timeout 600
+    Allow ${localAddress}
+    ConnectPort ${toString requestyPort}
+    LogLevel Info
+  '';
 
   systemd.services.litellm-oams-egress = {
     description = "Relay the LiteLLM container to oams:${toString oamsPort}";
