@@ -195,6 +195,9 @@ let
         model = "openai/${mid}";
         api_base = "https://${requestyHost}/v1";
         api_key = "os.environ/REQUESTY_API_KEY";
+        # Requesty's /v1/models returns no context/pricing, so fit metadata is
+        # unavailable; give a conservative first-token budget like the router default.
+        stream_timeout = 1800;
       };
       model_info = { id = "requesty-${builtins.replaceStrings [ "/" ] [ "-" ] mid}"; };
     }
@@ -217,8 +220,12 @@ let
       # The profile must match the host boot profile (brys/oams: "desktop").
       # Served = in the profile's `sets` AND enabled (llama-swap skips `enable =
       # false`, e.g. qwen3.5-9b, which the lms aspect filters out).
+      # Union over every boot profile the host declares (brys has desktop +
+      # appliance), so the gateway mirrors whatever set the host can boot.
       servedBaseIds = builtins.attrNames (
-        lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host "desktop")
+        lib.foldl' (acc: prof:
+          acc // lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host prof)
+        ) { } (builtins.attrNames data.servers.${host}.profiles)
       );
       unaliasedBaseIds = builtins.filter (id: !(builtins.elem id aliasedBaseIds)) servedBaseIds;
     in
@@ -634,17 +641,21 @@ in
   };
 
   # HTTP CONNECT proxy for the container's SaaS egress, bound to the litellm
-  # bridge host address so only the guest reaches it. Allow-listed to the SaaS
-  # host only; everything else is refused. The container sets HTTPS_PROXY to it
-  # (with NO_PROXY covering the local relays), so the container still has no
-  # direct internet route. See docs/litellm-connect-egress.md.
+  # bridge host address so only the guest reaches it. `Allow` is a CLIENT-IP ACL
+  # (the guest); `FilterDefaultDeny Yes` + `Filter` bound the DESTINATION to the
+  # SaaS host, `ConnectPort 443` bounds the method. The container sets HTTPS_PROXY
+  # to it (NO_PROXY covers the local relays), so it has no direct internet route.
+  # See docs/litellm-connect-egress.md.
   systemd.services.litellm-requesty-proxy = {
     description = "HTTP CONNECT proxy for the LiteLLM container's SaaS egress";
     wantedBy = [ "multi-user.target" ];
     environment.HTTPS_PROXY = "";
     serviceConfig = {
       ExecStart = "${pkgs.tinyproxy}/bin/tinyproxy -d -c /etc/kdn/litellm-proxy.conf";
+      # Config edits must take effect: the unit does not restart on a mere file
+      # change, so key off the generated config's store path.
       Restart = "always";
+      restartTriggers = [ config.environment.etc."kdn/litellm-proxy.conf".source ];
       RestartSec = 3;
       DynamicUser = true;
       NoNewPrivileges = true;
@@ -667,6 +678,10 @@ in
     Listen ${hostAddress}
     Timeout 600
     Allow ${localAddress}
+    # Destination bound: deny everything except the SaaS host (defence in depth —
+    # `Allow` above only restricts the client IP).
+    FilterDefaultDeny Yes
+    Filter "^${builtins.replaceStrings ["."] ["\\."] requestyHost}$"
     ConnectPort ${toString requestyPort}
     LogLevel Info
   '';
