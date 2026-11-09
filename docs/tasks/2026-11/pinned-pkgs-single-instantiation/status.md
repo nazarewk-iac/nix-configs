@@ -271,3 +271,12 @@ The base ships the **darcula-kdn** recolored icon. A device that sets a **differ
 against this base — give it its own pkgs variant (recomputed for that palette) or leave it unpinned.
 Changing the default palette requires updating the three color constants in
 `modules/den-pkgs/overlays.nix` (base05/base0C/base0D).
+
+## Specialisations use the same pinned pkgs (2026-11-09)
+
+A `specialisation` with `inheritParentConfig = true` (oams `vfio`) inherits the parent `nixpkgs.pkgs`
+→ already the pinned base. A `specialisation` with `inheritParentConfig = false` (brys `llms`) does
+**not** inherit it, so it built a second nixpkgs. Fixed: brys's `specialisation.llms.configuration`
+now imports a module that sets `nixpkgs.pkgs = kdnConfig.self.pkgs.<system>.default` (+ `mkForce`
+empty overlays/config), so the boot entry uses the same set. Verified: `llms` `pkgs.hello` == base
+and `pkgs.kdn` present. No specialisation now instantiates a second nixpkgs.

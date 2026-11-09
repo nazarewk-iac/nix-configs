@@ -409,6 +409,15 @@ in
         configuration = {
           imports = [
             ./llms-frontier.nix
+            # `inheritParentConfig = false` does not inherit `nixpkgs.pkgs`, so pin this boot entry
+            # to the SAME per-system pkgs as the main host — no second nixpkgs instantiation and an
+            # identical package set. (`imports`, not `config`, so nothing has to inherit it.)
+            ({ kdnConfig, lib, ... }:
+              lib.mkIf (kdnConfig != null) {
+                nixpkgs.pkgs = kdnConfig.self.pkgs.${kdnConfig.system}.default;
+                nixpkgs.overlays = lib.mkForce [ ];
+                nixpkgs.config = lib.mkForce { };
+              })
           ];
         };
       };
