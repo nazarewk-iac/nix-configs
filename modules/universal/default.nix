@@ -19,6 +19,7 @@ let
 in
 {
   imports = [
+    ../den-pkgs/pin-module.nix
     ./_stylix.nix
     ./_options.nix
   ]

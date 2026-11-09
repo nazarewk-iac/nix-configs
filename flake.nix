@@ -182,6 +182,11 @@
       inherit (self) lib;
 
       flakeLib = lib.kdn.flakes.forFlake self;
+
+      # One evaluated pkgs per (system, variant), shared by every host of that system. Producer:
+      # modules/den-pkgs. A host opts in by setting nixpkgs.pkgs to self.pkgs.<system>.<variant>.
+      supportedSystems = builtins.filter (system: system != "x86_64-darwin") (import inputs.systems);
+      denPkgsLib = import ./modules/den-pkgs { inherit inputs self; };
     in
     (flake-parts.lib.mkFlake { inherit inputs; } {
       # `inputs.systems` is `nix-systems/default`, which still lists `x86_64-darwin`. Nixpkgs
@@ -345,6 +350,8 @@
         )
       ];
       flake.self = self;
+      # `<flake>.pkgs.<system>.{default,cuda}` — the pinned sets. See modules/den-pkgs.
+      flake.pkgs = lib.genAttrs supportedSystems (system: denPkgsLib.forSystem system);
       flake.lib = inputs.nixpkgs.lib.extend self.libOverlay;
       flake.libOverlay = final: prev: {
         kdn = import ./lib { lib = final; };
