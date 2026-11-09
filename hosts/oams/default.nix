@@ -38,6 +38,7 @@ let
 in
 {
   imports = [
+    ({ kdn.pkgs.pin = true; })
     kdnConfig.self.nixosModules.default
     slots.config.nixos
     "${kdnConfig.self}/data/ca/ca-dag.nix"

@@ -246,3 +246,28 @@ per-system pkgs. It is the **only** remaining delta for oams (verified: supergfx
 To pin a stylix desktop later, the options are: a theme-specific variant (one pkgs per palette —
 defeats sharing), accept the default (un-themed) nixos-icons for the pinned build, or move the icon
 recolor out of the build into activation. None is a clean static-base embed.
+
+## nixos-icons precomputed; ALL SIX hosts pinned (2026-11-09)
+
+The 19 last delta (stylix `nixos-icons`) is now embedded. stylix recolors it from
+`config.lib.stylix.colors`, and the project palette is the **fixed default**
+`modules/universal/stylix.pallette.yaml` (darcula-kdn) — identical across the fleet. So the base
+reuses **stylix's own overlay** (`modules/nixos-icons/overlay.nix`) with the fixed colors
+(base05/base0C/base0D + their RGB, hardcoded and marked "keep in sync" in `overlays.nix`), giving a
+single deterministic recolored `nixos-icons` that equals the desktops'. Verified: base `nixos-icons`
+== the (unpinned) brys icon (`1fj5yk…`), and brys+oams pinned become closure-IDENTICAL.
+
+Result: **all six hosts pinned** (moss, etra, briv, anji, brys, oams). Combined one-process eval of
+all six: **216 s**, 6 drvs, rc=0.
+
+`brys` note: its `specialisation.llms` uses `inheritParentConfig = false`, and a pin set via
+`imports` (a module) leaks into that sub-eval, which does not declare `kdn.pkgs`. So brys sets the
+pin in its `config` block (not inherited under `inheritParentConfig = false`); the specialisation
+then builds its own pkgs, matching the unpinned host.
+
+### Per-device themes (by design, notified)
+The base ships the **darcula-kdn** recolored icon. A device that sets a **different**
+`stylix.base16Scheme`/palette produces a different `nixos-icons` and therefore must **not** pin
+against this base — give it its own pkgs variant (recomputed for that palette) or leave it unpinned.
+Changing the default palette requires updating the three color constants in
+`modules/den-pkgs/overlays.nix` (base05/base0C/base0D).

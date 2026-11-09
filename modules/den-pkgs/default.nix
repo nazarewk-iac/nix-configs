@@ -7,7 +7,7 @@
 { inputs, self }:
 let
   lib = inputs.nixpkgs.lib;
-  staticOverlays = import ./overlays.nix { inherit lib; };
+  staticOverlays = import ./overlays.nix { inherit lib inputs; };
 
   # The uniform nixpkgs config for a pinned set. It must match what an unpinned host would set
   # (allowAliases/allowUnfree/permittedInsecurePackages from kdn.nixpkgs); a host that needs a

@@ -60,6 +60,10 @@ in
   ];
 
   config = lib.mkMerge [
+    # Pin nixpkgs to the single per-system pkgs. Set here, in `config`, not `imports`: a module
+    # would leak into the `inheritParentConfig = false` specialisation, which does not declare
+    # `kdn.pkgs`. That specialisation then builds its own pkgs (unpinned), matching the unpinned host.
+    { kdn.pkgs.pin = true; }
     {
       # Per-service HTTPS exposure: llama-swap and Prometheus each on their own
       # subdomain (llama-swap served from loopback so its absolute /ui and /v1

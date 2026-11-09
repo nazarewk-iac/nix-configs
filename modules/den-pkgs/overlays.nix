@@ -4,8 +4,42 @@
 # to share ONE evaluated `pkgs` across every host of a system. The host-dependent overlays (age
 # `sops` wrapper, hw-gpu multiGPU package, gaming allowUnfreePredicate) stay OUT — they must be
 # handled per host (see the pkgs-pinning task's "biggest risk").
-{ lib }:
+{ lib, inputs }:
+let
+  # `nixos-icons`, recolored by stylix from the theme palette. A pinned host cannot carry stylix's
+  # per-host overlay, so the base provides the recolored icon for the ONE default palette
+  # (`modules/universal/stylix.pallette.yaml`, darcula-kdn). These are that palette's base05/base0C/
+  # base0D (hex) and the RGB components stylix's `baseColorAdd` needs. Keep them in sync if the
+  # default palette changes.
+  #
+  # A device that uses a DIFFERENT theme (a different `stylix.base16Scheme`) yields a different
+  # icon and so must NOT pin against this base — give it its own pkgs variant or leave it unpinned.
+  iconsColors = {
+    scheme = "Darcula by kdn";
+    base05 = "a9b7c6";
+    base0C = "629755";
+    base0D = "9876aa";
+    "base0C-rgb-r" = "98";
+    "base0C-rgb-g" = "151";
+    "base0C-rgb-b" = "85";
+    "base0D-rgb-r" = "152";
+    "base0D-rgb-g" = "118";
+    "base0D-rgb-b" = "170";
+  };
+  stylixIconsConfig = {
+    stylix.enable = true;
+    stylix.targets.nixos-icons.enable = true;
+    lib.stylix.colors = iconsColors;
+  };
+in
 [
+  # `pkgs.nixos-icons` recolored for the default palette (see the `let` above).
+  (final: prev:
+    (import (inputs.stylix + "/modules/nixos-icons/overlay.nix") {
+      pkgs = prev;
+      config = stylixIconsConfig;
+      lib = lib;
+    }).overlay final prev)
   # `pkgs.jsonTemplate`, used by the sops json tTemplate router. Was inline in
   # modules/universal/security/secrets/sops/default.nix.
   (final: prev: {
