@@ -242,7 +242,9 @@ in
               })
             ];
             kdn.env.packages = [
-              pkgs.sops
+              # `config.sops.package` is the age-wrapped sops when the age aspect is enabled,
+              # and plain `pkgs.sops` otherwise — so the interactive CLI stays age-aware.
+              config.sops.package
               pkgs.kdn.kdn-sops-secrets
             ];
 

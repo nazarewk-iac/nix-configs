@@ -272,12 +272,13 @@ let
       );
 
   packagesOf =
-    { lib, pkgs }:
+    { lib, pkgs, config }:
     let
       filterPackages = import ../common/filter-packages.nix { inherit lib; };
     in
     filterPackages [
-      pkgs.sops
+      # age-wrapped sops when the age aspect is enabled, plain pkgs.sops otherwise.
+      config.sops.package
       (mkSopsSecretsCommand { inherit lib pkgs; })
     ];
 
@@ -322,7 +323,7 @@ let
         inputs.sops-nix.nixosModules.sops
       ];
 
-      environment.systemPackages = packagesOf { inherit lib pkgs; };
+      environment.systemPackages = packagesOf { inherit lib pkgs config; };
 
       sops.placeholder = placeholdersOf config;
 
@@ -381,7 +382,7 @@ let
         inputs.sops-nix.darwinModules.default
       ];
 
-      environment.systemPackages = packagesOf { inherit lib pkgs; };
+      environment.systemPackages = packagesOf { inherit lib pkgs config; };
 
       sops.placeholder = placeholdersOf config;
 

@@ -307,7 +307,7 @@ __KDN_GEN_SCRIPTS__
 
   # What both host classes share: the sops-nix key settings and the `sops` wrapper overlay.
   hostShared =
-    { config, lib, ... }:
+    { config, lib, pkgs, ... }:
     {
       # Fake the file presence, or the install fails. See
       # https://github.com/Mic92/sops-nix/issues/65 . sops-nix imports the SSH key on its own.
@@ -316,13 +316,10 @@ __KDN_GEN_SCRIPTS__
       sops.age.generateKey = false;
       sops.age.keyFile = config.kdn.security.secrets.age.keyFile;
 
-      nixpkgs.overlays = [
-        (lib.mkAfter (
-          _final: prev: {
-            sops = mkSopsWrapper { inherit config lib; } prev prev.sops;
-          }
-        ))
-      ];
+      # `sops.package`, not a `pkgs.sops` overlay: the wrapper reads per-host config, so it must
+      # not be a (shared, per-system) overlay. sops-nix runs this wrapped binary; `pkgs.sops`
+      # stays plain, so pkgs pinning keeps the closure identical.
+      sops.package = mkSopsWrapper { inherit config lib; } pkgs pkgs.sops;
     };
 
   nixosTarget =

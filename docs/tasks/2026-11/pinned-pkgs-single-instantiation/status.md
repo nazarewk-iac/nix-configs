@@ -129,3 +129,30 @@ Then base == host pkgs (both plain `sops` + sops.package wrapper), pinning is by
 the 20 % eval win applies with an unchanged closure. Apply to both the universal age module and the
 den `security-secrets-age` aspect; re-verify `toplevel` drvPath equality pinned vs unpinned, then
 enable hosts.
+
+## sops wrapper removed from overlays (2026-11-09) — one overlay down, HM left
+
+Applied the fix: both the universal age module and the den `security-secrets-age` aspect now set
+`sops.package = mkSopsWrapper …` instead of `nixpkgs.overlays = [ sops = mkSopsWrapper … ]`, and the
+two sops aspects install `config.sops.package` (wrapped when age is on, plain otherwise) so the CLI
+stays age-aware. `pkgs.sops` is now **plain in every pkgs**.
+
+Verified: with moss pinned vs unpinned, the `sops-age-wrapped` delta is **gone** — the name-aware
+walk now ends at `home-manager-files` and `check-sshd-config` (`sshd.conf-final`) only.
+
+**Remaining pin blocker:** Home-Manager semantics. Unpinned sets `home-manager.useGlobalPkgs = false`
+(`modules/universal/default.nix:97`), so HM builds its own pkgs. Pinning forces
+`useGlobalPkgs = true` (HM must use the system pkgs, because a pinned system has `nixpkgs.overlays`
+empty and HM can no longer build `pkgs.kdn.*` from it). Equal pkgs or not, `useGlobalPkgs` true-vs-
+false changes HM's generated files (`home-manager-files`) and, downstream, `sshd.conf-final`. So
+pinned ≠ unpinned by construction until both modes agree.
+
+Next (needs a closure decision + measurement): either
+1. set `home-manager.useGlobalPkgs = true` fleet-wide as policy (then pinned == unpinned), verifying
+   no closure change against the current tree; or
+2. keep HM independent and give a pinned host's HM the base overlays explicitly
+   (`home-manager.sharedModules` with `nixpkgs.overlays = [ self.overlays.default ] ++ staticOverlays`)
+   — keeps `useGlobalPkgs = false`, HM re-instantiates (loses some eval win) but the output matches.
+
+Host pins reverted; fleet unchanged. `den` aspects mirrored and parse-clean; verify via the den
+checks before relying on them.
