@@ -1,0 +1,81 @@
+---
+type: Task
+description: Connect the build farm's arm pool directly to anji's Rosetta builder VM (aarch64-linux) over a LAN port, bypassing the anji darwin host, so aarch64-linux builds (e.g. briv) run on the fast VM instead of failing on the darwin host or crawling on the Pi. Includes a dedicated SOPS-stored SSH key for VM access.
+status: open
+authored_by: agent
+timestamp: 2026-11-09T20:10:00+01:00
+---
+
+# Build farm: reach the Rosetta VM directly (not through anji's darwin proxy)
+
+## Why
+
+`arm` pool → `buildfarm-arm` (anji). anji is `aarch64-darwin`; it can only build aarch64-linux by
+forwarding to its local Rosetta VM. On the trusted/`buildDerivation` path that forward is skipped, so
+an aarch64-linux kernel-source **FOD with a non-FOD aarch64-linux dependency** fails on anji
+(`a 'aarch64-linux' … required … but I am 'aarch64-darwin'`) — the `docs/lix-caveats.md` edge. That
+is why `briv` cannot be built through the farm and it either fails or is pushed to the slow Pi.
+
+Fix: expose the **Rosetta VM's sshd on an anji LAN port** and point the `arm` pool straight at it, so
+the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
+
+## Current facts
+
+- The VM is `nix-rosetta-builder`; its sshd is forwarded by lima to **`127.0.0.1:31122`** on anji
+  (`nix-rosetta-builder.port = 31122`; `lima` user-mode networking, host-local only).
+- `data/build-farm.nix`: `builders.anji.address = anji.lan…` (one `port`, default 22), and `anji` is
+  in **two** pools (`arm` and `darwin`). A builder has a single port, so the darwin-pool `anji:22`
+  cannot also be the VM port → the VM needs its **own** builder entry (`anji-arm`).
+- The VM accepts builds from build-farm clients (it runs `kdn.profile.remote-builders` → the
+  `kdn-nix-remote-build` account + client signing keys).
+
+## Steps
+
+1. **anji: forward the VM port onto the LAN.** Add a launchd daemon (nix-darwin) that runs
+   `socat TCP-LISTEN:<LANPORT>,bind:<anji-lan-ip>,reuseaddr,fork TCP:127.0.0.1:31122`, and open
+   `<LANPORT>` in the darwin firewall for the LAN only. `<LANPORT>` = a fixed, documented port
+   (e.g. `31123`), reachable on `anji.lan` and (optionally) the NetBird mesh like the other pools.
+
+2. **Dedicated SSH key for VM access** (stored in SOPS):
+   - Generate an ed25519 key `kdn-rosetta-builder` (comment identifies the purpose).
+   - Private key → SOPS under the `llms`/builder secrets tree, re-encrypted so **only** the
+     build-farm gateway host key (etra) and the **usual two recovery YubiKeys** can decrypt it.
+     No other host.
+   - Public key → the VM's authorized keys for `kdn-nix-remote-build` (the `hosts/anji/linux-builder.nix`
+     remote-builder account), i.e. the VM trusts this dedicated key.
+   - **Auth model note (decide here):** HAProxy is TCP-passthrough, so the *client* authenticates to
+     the VM. Either (a) keep the existing per-client `kdn-nix-remote-build` keys trusted by the VM
+     (the VM already trusts them) and treat the dedicated key as an additional gateway/recovery
+     credential, or (b) make the dedicated key the only key the VM trusts and have the gateway hold
+     it. (a) is minimal and works today; (b) is stricter but needs the gateway to be the single
+     holder. Record the choice.
+
+3. **build farm: add the `anji-arm` builder.**
+   - `data/build-farm.nix` `builders.anji-arm = { address = "anji.lan…"; port = <LANPORT>; }`.
+   - `pools.arm.builderOrder = [ "anji-arm" "briv" ]` (briv stays the `backup`).
+   - Keep `builders.anji` (port 22) only in the `darwin` pool. The build-farm option asserts each
+     client's `hostPort`/`systems` maps to a pool — no client change (clients still dial
+     `buildfarm-arm`).
+
+4. **Redeploy + verify.**
+   - Redeploy anji (`darwin-rebuild`) for the socat + firewall + VM key; redeploy etra for the proxy.
+   - From a client: `nix store ping --store ssh-ng://kdn-nix-remote-build@buildfarm-arm` shows the
+     VM's nix, not anji's.
+   - Build `briv` with the **default** builders (no `--builders`): it must build on the VM (fast) and
+     succeed, proving the darwin-host edge is gone. Record the time.
+
+## Acceptance
+
+- `arm` pool resolves to the Rosetta VM (`aarch64-linux`) directly; briv builds via the default farm
+  without the `but I am 'aarch64-darwin'` error, and materially faster than the Pi.
+- The dedicated key exists in SOPS with only etra + the two YubiKeys as recipients; the VM authorizes
+  its public half as `kdn-nix-remote-build`.
+- Firewall exposes `<LANPORT>` on the LAN only; no darwin host in the aarch64-linux build path.
+
+## Risks
+
+- `socat` on darwin + the macOS application firewall; verify the bind and the firewall rule.
+- The VM's ssh host key changes if the lima guest is recreated (`diskSize`/`lima.yaml` change) — the
+  pool uses `StrictHostKeyChecking no`, but note it.
+- Redeploying anji recreates the guest only on a `lima.yaml` change; a plain socat/firewall change must
+  not hit that path.
