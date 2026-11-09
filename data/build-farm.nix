@@ -6,7 +6,10 @@
 # `maxConnections` is the only thing that ever makes `first` spill to the next pool member.
 #
 #   x86    : brys        — the fast box, capped low enough that a build cannot starve a resident model
-#   arm    : anji, briv  — anji is fast Apple silicon; briv is a Pi-class fallback only reached at cap
+#   arm    : anji only   — anji builds aarch64-linux on its local Rosetta VM and falls back to briv
+#                          (a Pi-class builder) only as a dependency fallback via anji's OWN
+#                          /etc/nix/machines. briv is deliberately NOT a proxy pool member: the
+#                          proxy never hands a whole aarch64-linux build to the Pi.
 #   darwin : anji        — the only darwin-capable builder
 {
   etra = {
@@ -53,10 +56,9 @@
         arm = {
           port = 2223;
           systems = [ "aarch64-linux" ];
-          builderOrder = [
-            "anji"
-            "briv"
-          ];
+          # anji alone. It forwards to rosetta-builder (primary) then briv (last-resort fallback)
+          # through its own buildMachines, so the proxy never routes a whole build to the Pi.
+          builderOrder = [ "anji" ];
         };
         darwin = {
           port = 2224;
