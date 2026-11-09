@@ -60,3 +60,35 @@ Baselines (eval-only, cold process) are in
 [../../2026-09/eval-performance/machine-differences.md](../../2026-09/eval-performance/machine-differences.md).
 The acceptance for L2 is a drop in the **single-process multi-host eval** once hosts share one
 `pkgs`. Not measured yet (no host pinned).
+
+## Update 2026-11-09 (evening) — moss/etra pinned in-tree: 20 % faster, but closure changed
+
+Inlining the missing `pkgs.kdn.kdn-sops-secrets` into `modules/den-pkgs/overlays.nix` was enough
+to make **moss and etra evaluate with `kdn.pkgs.pin = true`** (no eval error). Measured, both hosts
+in ONE `nix eval` process:
+
+| mode     | wall |
+| -------- | ---- |
+| pinned   | 77 s |
+| unpinned | 97 s |
+
+~20 % faster for the combined two-host eval — the L2 lever works.
+
+**Blocker (why hosts are NOT enabled):** the pinned `toplevel` drvPath differs from unpinned
+(`bwbr1yj…` vs `q058xx5…` for moss). The change is not cosmetic: `etc`/`system-path`/`activate`
+inputs differ, and nearly **every leaf drv differs, including `nss-cacert-3.126`** — so the pinned
+pkgs is NOT byte-equivalent to the host pkgs the modules build. The task requires an identical
+closure, so pinning stays opt-in and off. Root cause not yet isolated; prime suspects:
+
+1. `nixpkgs.config` — base hardcodes `{ allowAliases; allowUnfree = true; permittedInsecurePackages = []; }`,
+   the host derives it from `kdn.nixpkgs`; a divergence can move wide swaths of pkgs.
+2. The nixpkgs **source/instantiation** `lib.nixosSystem` uses may not be the same `inputs.nixpkgs`
+   the base imports (nixosSystem resolves nixpkgs via the lib source; verify), which would change
+   every package.
+3. Overlay set/order difference (base bakes `jsonTemplate`/`python-metadata`/`ceph`/`kdn-sops-secrets`
+   explicitly; the host gets them from modules).
+
+Next: isolate the leaf diff (`nix why-depends` / compare `base.nss-cacert.drvPath` against a plain
+`import inputs.nixpkgs { system; }` and against the host pkgs), fix, then re-verify identical
+drvPaths before enabling moss→etra→briv→brys→oams→anji. Pins reverted from `hosts/*` so nothing
+half-changes.

@@ -57,4 +57,27 @@
       )
     );
   })
+
+  # `pkgs.kdn.kdn-sops-secrets` (the placeholder-resolving command the sops module packs into
+  # `kdn.env.packages`). The universal sops module builds this inside its own `nixpkgs.overlays`;
+  # a pinned host drops that overlay, so the base must carry the package. Same build, same
+  # pattern as modules/universal/security/secrets/sops/default.nix (keep them in sync).
+  (final: prev: {
+    kdn = (prev.kdn or { }) // {
+      kdn-sops-secrets = prev.writers.writePython3Bin "kdn-sops-secrets"
+        {
+          libraries = with prev.python3Packages; [ fire ];
+          flakeIgnore = [ "E203" "E501" ];
+        }
+        (
+          prev.lib.pipe ../../modules/universal/security/secrets/sops/kdn-sops-secrets.py [
+            builtins.readFile
+            (builtins.replaceStrings
+              [ ''pattern: str = ""'' ]
+              [ ''pattern = r"<SOPS:(?P<path>[^:]+):(?P<hash>[^:]+):PLACEHOLDER>"'' ]
+            )
+          ]
+        );
+    };
+  })
 ]
