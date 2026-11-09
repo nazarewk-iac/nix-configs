@@ -45,6 +45,10 @@
         };
         briv = {
           address = "briv.lan.etra.net.int.kdn.im";
+          # Last-resort arm builder: HAProxy `backup`, so the proxy uses it ONLY when anji is
+          # healthy-`down`. Anji forwards normal aarch64-linux builds to its local Rosetta VM and
+          # falls back to briv (through its own buildMachines) only for a dependency it cannot serve.
+          backup = true;
         };
       };
       pools = {
@@ -56,9 +60,13 @@
         arm = {
           port = 2223;
           systems = [ "aarch64-linux" ];
-          # anji alone. It forwards to rosetta-builder (primary) then briv (last-resort fallback)
-          # through its own buildMachines, so the proxy never routes a whole build to the Pi.
-          builderOrder = [ "anji" ];
+          # anji is primary; briv is a HAProxy `backup`, so the proxy routes to it ONLY when anji
+          # is healthy-`down` — never on saturation. Anji itself forwards normal builds to its
+          # local Rosetta VM and falls back to briv (its own buildMachines) only for a dependency.
+          builderOrder = [
+            "anji"
+            "briv"
+          ];
         };
         darwin = {
           port = 2224;

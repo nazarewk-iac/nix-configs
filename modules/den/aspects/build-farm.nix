@@ -87,6 +87,16 @@ let
           hard-`down` and so unable to serve a build already dispatched.
         '';
       };
+      backup = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Mark this builder a HAProxy `backup` server: it takes traffic only when every non-backup
+          server in its pool is healthy-`down`. A saturated primary does NOT spill to it (unlike
+          `maxConnections`). Use it for a slow, last-resort builder that must never take a build
+          while the fast primary is available.
+        '';
+      };
     };
   };
 
@@ -296,6 +306,8 @@ in
             "server ${b} ${proxy.builders.${b}.address}:${
               toString proxy.builders.${b}.port
             } check inter 10s fall 2 rise 1 maxqueue 2${
+              lib.optionalString (proxy.builders.${b}.backup or false) " backup"
+            }${
               lib.optionalString (proxy.builders.${b}.maxConnections != null)
                 " maxconn ${toString proxy.builders.${b}.maxConnections}"
             }${
