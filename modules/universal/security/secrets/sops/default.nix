@@ -242,9 +242,10 @@ in
               })
             ];
             kdn.env.packages = [
-              # `config.sops.package` is the age-wrapped sops when the age aspect is enabled,
-              # and plain `pkgs.sops` otherwise — so the interactive CLI stays age-aware.
-              config.sops.package
+              # The interactive `sops` CLI. `sops.package` in sops-nix is the `sops-install-secrets`
+              # binary (ExecStart), NOT this CLI, so use `pkgs.sops` directly. Kept plain so a pinned
+              # host's pkgs matches the shared base (see pinned-pkgs task).
+              pkgs.sops
               pkgs.kdn.kdn-sops-secrets
             ];
 

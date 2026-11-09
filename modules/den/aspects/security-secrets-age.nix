@@ -316,10 +316,6 @@ __KDN_GEN_SCRIPTS__
       sops.age.generateKey = false;
       sops.age.keyFile = config.kdn.security.secrets.age.keyFile;
 
-      # `sops.package`, not a `pkgs.sops` overlay: the wrapper reads per-host config, so it must
-      # not be a (shared, per-system) overlay. sops-nix runs this wrapped binary; `pkgs.sops`
-      # stays plain, so pkgs pinning keeps the closure identical.
-      sops.package = mkSopsWrapper { inherit config lib; } pkgs pkgs.sops;
     };
 
   nixosTarget =

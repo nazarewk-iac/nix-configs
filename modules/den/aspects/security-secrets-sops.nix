@@ -277,8 +277,7 @@ let
       filterPackages = import ../common/filter-packages.nix { inherit lib; };
     in
     filterPackages [
-      # age-wrapped sops when the age aspect is enabled, plain pkgs.sops otherwise.
-      config.sops.package
+      pkgs.sops
       (mkSopsSecretsCommand { inherit lib pkgs; })
     ];
 

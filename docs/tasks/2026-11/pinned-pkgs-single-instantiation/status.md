@@ -280,3 +280,19 @@ A `specialisation` with `inheritParentConfig = true` (oams `vfio`) inherits the 
 now imports a module that sets `nixpkgs.pkgs = kdnConfig.self.pkgs.<system>.default` (+ `mkForce`
 empty overlays/config), so the boot entry uses the same set. Verified: `llms` `pkgs.hello` == base
 and `pkgs.kdn` present. No specialisation now instantiates a second nixpkgs.
+
+## sops fix corrected (2026-11-09) — `sops.package` is the installPackage, not the CLI
+
+The build gate rejected every NixOS host with
+`sops-...-sops-age-wrapped/bin/sops-install-secrets: No such file`. Cause: in sops-nix,
+`sops.package` is the **`sops-install-secrets` binary** (used in `ExecStart`), not the `sops` CLI, and
+its default derives `sops-install-secrets` from that package. Setting `sops.package = mkSopsWrapper …`
+(the CLI) therefore broke activation, and `config.sops.package` in the package lists was the wrong
+binary. Eval did not catch it — it is a build-time binary.
+
+Reverted: `sops.package` untouched; the interactive `sops` CLI stays plain `pkgs.sops` in
+`kdn.env.packages`. `pkgs.sops` stays plain in the base too, so pinning remains closure-identical.
+Trade-off (notified): the interactive `sops` CLI is no longer age-wrapped (no `SOPS_AGE_KEY`
+injection) — this only affects manual `sops` use; activation decrypts via `sops-install-secrets` +
+`sops.age.keyFile` + plugins, which is unaffected. Re-adding an age-aware CLI (as a package, leaving
+`installPackage` alone) is a follow-up.

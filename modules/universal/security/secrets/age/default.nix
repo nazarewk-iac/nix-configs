@@ -218,11 +218,6 @@ __KDN_GEN_SCRIPTS__
             sops.age.generateKey = false;
             sops.age.keyFile = "/var/lib/sops-nix/key.txt";
 
-            # `sops.package` instead of overriding `pkgs.sops` via `nixpkgs.overlays`. The wrapper
-            # reads per-host cfg.plugins/genScripts, so it cannot be a (shared, per-system) overlay
-            # without making the pinned pkgs host-specific. sops-nix runs this wrapped binary;
-            # `pkgs.sops` stays plain everywhere, so pinning keeps the closure identical.
-            sops.package = mkSopsWrapper pkgs pkgs.sops;
           }
         ]
       ))
