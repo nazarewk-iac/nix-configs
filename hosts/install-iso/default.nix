@@ -22,7 +22,6 @@
          `install-iso` uses some weird GRUB booting chimera
         see https://github.com/NixOS/nixpkgs/blob/9fbeebcc35c2fbc9a3fb96797cced9ea93436097/nixos/modules/installer/cd-dvd/iso-image.nix#L780-L787
       */
-      boot.initrd.systemd.enable = lib.mkForce false;
       boot.loader.systemd-boot.enable = lib.mkForce false;
     }
     {

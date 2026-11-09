@@ -70,7 +70,6 @@ in
           boot.zfs.requestEncryptionCredentials = false;
 
           boot.initrd.luks.forceLuksSupportInInitrd = true;
-          boot.initrd.systemd.enable = true;
 
           disko.enableConfig = true;
 

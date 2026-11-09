@@ -323,7 +323,6 @@ in
           {
             hardware.enableRedistributableFirmware = lib.mkDefault true;
             boot.initrd.systemd.emergencyAccess = "$y$j9T$fioAEKxXi2LmH.9HyzVJ4/$Ot4PUjYdz7ELvJBOnS1YgQFNW89SCxB/yyGVaq4Aux0";
-            boot.initrd.systemd.enable = lib.mkDefault true;
             boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
             boot.loader.systemd-boot.configurationLimit = 10;
             boot.loader.systemd-boot.enable = lib.mkDefault true;
@@ -537,7 +536,7 @@ in
                 "rd.systemd.default_debug_tty=tty10"
               ];
             in
-            lib.mkIf (config.boot.initrd.systemd.enable && cfg.bootDebug) {
+            lib.mkIf cfg.bootDebug {
               specialisation.emergency = {
                 inheritParentConfig = true;
                 configuration = {

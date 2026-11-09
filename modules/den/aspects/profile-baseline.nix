@@ -232,7 +232,6 @@ in
           boot.initrd.systemd.emergencyAccess = lib.mkIf (
             cfg.initrd.emergencyAccess != null
           ) cfg.initrd.emergencyAccess;
-          boot.initrd.systemd.enable = lib.mkDefault true;
           boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
           boot.loader.systemd-boot.configurationLimit = 10;
           boot.loader.systemd-boot.enable = lib.mkDefault true;
@@ -385,7 +384,7 @@ in
               "rd.systemd.default_debug_tty=tty10"
             ];
           in
-          lib.mkIf (config.boot.initrd.systemd.enable && cfg.bootDebugSpecialisations) {
+          lib.mkIf cfg.bootDebugSpecialisations {
             specialisation.emergency = {
               inheritParentConfig = true;
               configuration = {

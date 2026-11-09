@@ -1230,7 +1230,6 @@
           # enables systemd-cryptsetup-generator
           # see the `forceLuksSupportInInitrd` block of nixpkgs' luksroot.nix
           boot.initrd.luks.forceLuksSupportInInitrd = true;
-          boot.initrd.systemd.enable = true;
 
           # `false` keeps disko quiet: it then writes no `fileSystems` and no `boot` entry. See the
           # layout gate at the top of this target module.

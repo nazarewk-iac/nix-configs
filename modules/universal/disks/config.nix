@@ -549,7 +549,6 @@ in
         # enables systemd-cryptsetup-generator
         # see https://github.com/nazarewk/nixpkgs/blob/04f574a1c0fde90b51bf68198e2297ca4e7cccf4/nixos/modules/system/boot/luksroot.nix#L997-L1012
         boot.initrd.luks.forceLuksSupportInInitrd = true;
-        boot.initrd.systemd.enable = true;
 
         disko.enableConfig = true;
         kdn.fs.zfs.enable = lib.mkDefault true;
