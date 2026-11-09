@@ -189,3 +189,38 @@ standalone on the single pinned pkgs (`activationPackage` evaluates).
 
 **Remaining:** roll pinning + measurement to briv → brys → oams → anji (each may need its own
 variant for host-specific overlays: multiGPU on oams/brys). Build-verify moss/etra before deploying.
+
+## Rollout 2026-11-09 — moss, etra, briv, anji pinned; brys/oams blocked by host-specific overlays
+
+Per-host pinned-vs-unpinned check (unchanged tree, env toggle) and eval times:
+
+| host | pinned vs unpinned | eval (unpinned→pinned) |
+| ---- | ------------------ | ---------------------- |
+| moss+etra | IDENTICAL | 77 s → 62 s (combined) |
+| briv | IDENTICAL | 67 s → 65 s |
+| anji | IDENTICAL | 102 s → 88 s |
+| brys | DIFF | 129 s → 76 s (unpinned baseline) |
+| oams | DIFF | 91 s → 67 s |
+
+Combined one-process eval of the four pinned hosts (moss, etra, briv, anji): **145 s**, all drvs.
+
+### brys / oams — why they are NOT pinned
+
+Two host-specific overlays survive pinning and change the closure:
+
+1. **`supergfxctl` 5.2.1 downgrade** (multi-GPU). The pinned base carries the nixpkgs default
+   (5.2.7); the host downgrades to 5.2.1. A **plain derivation cannot substitute it**: nixpkgs
+   `services/hardware/supergfxd.nix` (pinned rev) reads `pkgs.supergfxctl` in `systemPackages`,
+   `systemd.packages`, `dbus.packages` and `udev.packages`, and declares **no `package` option**
+   — so only a `pkgs.supergfxctl` overlay (or reimplementing the service) works. Research: nixpkgs
+   issue #355798 is **open/stale** and `asus-linux/supergfxctl` is **archived (read-only)**, so no
+   fix is coming; the downgrade stays, and it cannot be verified as fixed without the dGPU hardware.
+2. **`nixos-icons` `source-patched`** (desktop/stylix) — a patch overlay applied on these desktops.
+
+Decision: leave brys/oams **unpinned** (they still get the rest of the work, incl. `useGlobalPkgs`).
+To pin them later, either accept a `multiGPU`/`desktop` **pkgs variant** that bakes these overlays,
+or reimplement `services.supergfxd` to take a package (letting the 5.2.1 build be a plain
+derivation, per the "prefer a derivation" preference).
+
+Base config now permits the insecure `olm-3.2.16` (matrix), which a pinned host could no longer set
+itself. The env-toggle used for the stable-tree measurement is removed; pins are in-file.

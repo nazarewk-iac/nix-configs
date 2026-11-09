@@ -15,7 +15,9 @@ let
   baseConfig = {
     allowAliases = true;
     allowUnfree = true;
-    permittedInsecurePackages = [ ];
+    # A pinned host can no longer set its own `nixpkgs.config`, so the shared config must permit
+    # every insecure package the fleet uses. `olm-3.2.16` (matrix) is the one today.
+    permittedInsecurePackages = [ "olm-3.2.16" ];
   };
 
   mk =

@@ -7,6 +7,7 @@
 }:
 {
   imports = [
+    ({ kdn.pkgs.pin = true; })
     kdnConfig.self.nixosModules.default
     "${kdnConfig.self}/data/ca/ca-dag.nix"
     {

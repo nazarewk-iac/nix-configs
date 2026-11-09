@@ -187,6 +187,7 @@ let
 in
 {
   imports = [
+    ({ kdn.pkgs.pin = true; })
     kdnConfig.self.darwinModules.default
     slots.config.darwin
     "${kdnConfig.self}/data/ca/ca-dag.nix"
