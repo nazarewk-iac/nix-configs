@@ -92,3 +92,40 @@ Next: isolate the leaf diff (`nix why-depends` / compare `base.nss-cacert.drvPat
 `import inputs.nixpkgs { system; }` and against the host pkgs), fix, then re-verify identical
 drvPaths before enabling moss→etra→briv→brys→oams→anji. Pins reverted from `hosts/*` so nothing
 half-changes.
+
+## Root cause found (2026-11-09) — the age `sops` wrapper, nothing else
+
+The pinned-vs-unpinned toplevel drvPath difference is caused by **exactly one thing**: the
+`age` `sops`-wrapper overlay. A name-aware walk of the two `toplevel` drv trees ends at:
+
+```
+ONLY-PINNED: system_fish-completions -> sops-3.13.3_fish-completions
+ONLY-UNPIN : system_fish-completions -> sops-3.13.3-sops-age-wrapped_fish-completions
+```
+
+So the unpinned host's `pkgs.sops` is `sops-age-wrapped`; the pinned base carries plain `sops`.
+**The rest of the pkgs is byte-identical** — verified `hello`, `cacert`, `dbus`, `stdenv`,
+`lixPackageSets.latest.lix` all equal between the base and `f.nixosConfigurations.moss._module.args.pkgs`.
+The `etc`/`dbus`/`system-path`/`sshd.conf` differences all cascade from that one swapped `sops`.
+
+Cause: `modules/universal/security/secrets/age/default.nix:221` (and
+`modules/den/aspects/security-secrets-age.nix:319`) do
+`nixpkgs.overlays = [ (mkAfter (final: prev: { sops = mkSopsWrapper prev prev.sops; })) ]`.
+`mkSopsWrapper` reads **per-host** `cfg.plugins` and `cfg.genScripts`, so the wrapped `sops` cannot
+live in the shared per-system base. `moss` enables age, so it is affected (not only `brys`).
+
+### Fix (turns pinning closure-identical)
+
+Stop overriding `pkgs.sops` through `nixpkgs.overlays`. sops-nix exposes `sops.package`
+(`modules/sops/default.nix:274` in the pinned sops-nix). So:
+
+1. Drop the `sops = mkSopsWrapper …` overlay.
+2. `sops.package = mkSopsWrapper pkgs pkgs.sops;` — sops-nix then runs the wrapped binary, while
+   `pkgs.sops` stays **plain** in every pkgs.
+3. Put the wrapper buildEnv into `kdn.env.packages`/`environment.systemPackages` so the interactive
+   `sops` command is still the age-aware one.
+
+Then base == host pkgs (both plain `sops` + sops.package wrapper), pinning is byte-identical, and
+the 20 % eval win applies with an unchanged closure. Apply to both the universal age module and the
+den `security-secrets-age` aspect; re-verify `toplevel` drvPath equality pinned vs unpinned, then
+enable hosts.
