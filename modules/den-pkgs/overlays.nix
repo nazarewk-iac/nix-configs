@@ -80,4 +80,11 @@
         );
     };
   })
+
+  # The `supergfxctl` 5.2.1 downgrade for multi-GPU hosts. nixpkgs' `services.supergfxd` reads
+  # `pkgs.supergfxctl` directly (no package option), so it can only be substituted by an overlay.
+  # The override is static, so the base carries it; unused by non-multi-GPU hosts.
+  (final: prev: {
+    supergfxctl = prev.callPackage ../../modules/universal/hw/gpu/supergfxctl.nix { };
+  })
 ]

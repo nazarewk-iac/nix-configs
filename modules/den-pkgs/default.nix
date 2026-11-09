@@ -33,15 +33,10 @@ let
     };
 in
 {
-  # `<flake>.pkgs.<system>.{default,cuda,...}`
+  # `<flake>.pkgs.<system>.{default,...}`
   forSystem =
     system:
     {
       default = mk { inherit system; };
-      # A CUDA-built variant for a specialised host (see the task's variants decision).
-      cuda = mk {
-        inherit system;
-        extraConfig.cudaSupport = true;
-      };
     };
 }

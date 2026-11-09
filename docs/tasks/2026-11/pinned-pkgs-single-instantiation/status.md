@@ -224,3 +224,25 @@ derivation, per the "prefer a derivation" preference).
 
 Base config now permits the insecure `olm-3.2.16` (matrix), which a pinned host could no longer set
 itself. The env-toggle used for the stable-tree measurement is removed; pins are in-file.
+
+## Embed pass 2026-11-09 — supergfxctl embedded; nixos-icons is not embeddable (notified)
+
+Goal: embed every host-specific overlay into the default pinned set where possible, and flag the
+rest.
+
+**Embedded (possible):**
+- `supergfxctl` 5.2.1 (multi-GPU) → `modules/den-pkgs/overlays.nix`. The universal hw-gpu overlay
+  applies it host-conditionally; the pinned base now carries the same static `callPackage`. Servers
+  don't reference it, so their closure is unchanged.
+- Removed the unused `cuda` variant (`modules/den-pkgs/default.nix`): **no host uses CUDA** (no
+  NVIDIA machines).
+
+**Not possible (notified):** `nixos-icons`. stylix recolors it from `config.lib.stylix.colors`
+(`stylix/modules/nixos-icons/overlay.nix` — an `overrideAttrs` whose `src` is a palette-derived
+`applyPatches`). That is **per-host theme data**, so it cannot live in a shared, static,
+per-system pkgs. It is the **only** remaining delta for oams (verified: supergfxctl delta gone;
+`nixos-icons` source/source-patched remains). Consequently **brys and oams stay unpinned**.
+
+To pin a stylix desktop later, the options are: a theme-specific variant (one pkgs per palette —
+defeats sharing), accept the default (un-themed) nixos-icons for the pinned build, or move the icon
+recolor out of the build into activation. None is a clean static-base embed.
