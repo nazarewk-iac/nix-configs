@@ -107,3 +107,17 @@ one number.
 
 All six items keep the existing rule: no number goes into `checks/README.md` until it is measured
 here.
+
+## Update 2026-11-09 — machine-difference estimate + pkgs-pinning link
+
+- Added [machine-differences.md](machine-differences.md): measured eval-only baselines for all six
+  hosts (moss 70 s, etra 82 s, briv 84 s, oams 148 s, brys 240 s, anji 242 s) and a ranked estimate
+  of why they differ. Top cause is **boot specialisations** (brys 4, oams 1) — each is a whole extra
+  config eval, orthogonal to nixpkgs instantiation.
+- The **pinned-pkgs** task ([../../2026-11/pinned-pkgs-single-instantiation/](../../2026-11/pinned-pkgs-single-instantiation/definition.md))
+  is lever **L2** here: one `pkgs` per `(system, variant)`, shared by every host of a system. It is
+  the lever that makes a **fleet-wide single-process eval** cheap (the compounding case: all-six in
+  one eval was ~90 s vs ~590 s summed). Its isolated den-root design is
+  [design-den-root.md](../../2026-11/pinned-pkgs-single-instantiation/design-den-root.md).
+- Blocker recorded: the **age `sops`-wrapper overlay is host-config-dependent** (only brys enables
+  age), so brys cannot share a static per-system pkgs until that wrapper leaves `nixpkgs.overlays`.
