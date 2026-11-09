@@ -8,6 +8,7 @@
 }:
 {
   imports = [
+    ({ kdn.pkgs.pin = true; })
     kdnConfig.self.nixosModules.default
     (modulesPath + "/profiles/qemu-guest.nix")
     (modulesPath + "/profiles/headless.nix")

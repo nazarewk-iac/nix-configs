@@ -90,6 +90,7 @@ let
 in
 {
   imports = [
+    ({ kdn.pkgs.pin = true; })
     kdnConfig.self.nixosModules.default
     # LiteLLM gateway (docs/tasks/2026-11/litellm-gateway/). autoStart=false:
     # inert until a brys-side firewall opening lets it reach a backend.

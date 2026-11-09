@@ -94,7 +94,7 @@ in
       home-manager.extraSpecialArgs =
         (kdnConfig.output.mkSubmodule { moduleType = "home-manager"; }).specialArgs;
       home-manager.backupFileExtension = "hmbackup";
-      home-manager.useGlobalPkgs = false;
+      home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
 
       home-manager.sharedModules = [

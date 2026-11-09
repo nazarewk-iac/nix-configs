@@ -198,6 +198,15 @@
 
       # The parallel den tree. It adds outputs and it changes none. See modules/den/README.md.
       imports = [
+        # A standalone home-manager output (see `flake.homeConfigurations.dummy`). flake-parts does
+        # not know `homeConfigurations`, so declare it as a lazy attrset.
+        ({ lib, ... }: {
+          options.flake.homeConfigurations = lib.mkOption {
+            type = lib.types.lazyAttrsOf lib.types.raw;
+            default = { };
+            description = "Standalone home-manager configurations (no NixOS host).";
+          };
+        })
         ./modules/den/flake-module.nix
         # `nix fmt` and the check: one formatter for Markdown (and room for more). Nix stays with
         # `kdn-nix-fmt`; see treefmt.nix for why.
@@ -352,6 +361,21 @@
       flake.self = self;
       # `<flake>.pkgs.<system>.{default,cuda}` — the pinned sets. See modules/den-pkgs.
       flake.pkgs = lib.genAttrs supportedSystems (system: denPkgsLib.forSystem system);
+
+      # A "dummy" standalone home-manager profile: how an adopter configures HM WITHOUT a NixOS/
+      # nix-darwin host, on the same single pinned pkgs. It builds against the pinned base, so it
+      # carries the repo overlays (kdn packages) with no extra nixpkgs instantiation.
+      flake.homeConfigurations.dummy = inputs.home-manager.lib.homeManagerConfiguration {
+        pkgs = self.pkgs.x86_64-linux.default;
+        modules = [
+          ({ ... }: {
+            home.username = "dummy";
+            home.homeDirectory = "/home/dummy";
+            home.stateVersion = "26.05";
+            programs.git.enable = true;
+          })
+        ];
+      };
       flake.lib = inputs.nixpkgs.lib.extend self.libOverlay;
       flake.libOverlay = final: prev: {
         kdn = import ./lib { lib = final; };
