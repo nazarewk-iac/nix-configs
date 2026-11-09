@@ -6,7 +6,7 @@
 # `maxConnections` is the only thing that ever makes `first` spill to the next pool member.
 #
 #   x86    : brys        — the fast box, capped low enough that a build cannot starve a resident model
-#   arm    : anji only   — anji builds aarch64-linux on its local Rosetta VM and falls back to briv
+#   arm    : anji-arm, briv — anji-arm = the Rosetta VM reached directly (anji.lan:31123); briv = backup
 #                          (a Pi-class builder) only as a dependency fallback via anji's OWN
 #                          /etc/nix/machines. briv is deliberately NOT a proxy pool member: the
 #                          proxy never hands a whole aarch64-linux build to the Pi.
@@ -45,11 +45,19 @@
           # a higher cap keeps more builds queued on the fast host instead of the Pi backup.
           maxConnections = 8;
         };
+        # The Rosetta builder VM, reached DIRECTLY on the LAN via anji's socat forward
+        # (anji.lan:31123 -> 127.0.0.1:31122). This is a real aarch64-linux endpoint, so the pool
+        # never sends an aarch64-linux build to the darwin host. Distinct from `anji` (port 22) so
+        # the darwin pool keeps using anji's host sshd.
+        anji-arm = {
+          address = "anji.lan.etra.net.int.kdn.im";
+          port = 31123;
+          maxConnections = 8;
+        };
         briv = {
           address = "briv.lan.etra.net.int.kdn.im";
-          # Last-resort arm builder: HAProxy `backup`, so the proxy uses it ONLY when anji is
-          # healthy-`down`. Anji forwards normal aarch64-linux builds to its local Rosetta VM and
-          # falls back to briv (through its own buildMachines) only for a dependency it cannot serve.
+          # Last-resort arm builder: HAProxy `backup`, so the proxy uses it ONLY when the Rosetta VM
+          # is healthy-`down`.
           backup = true;
         };
       };
@@ -66,7 +74,7 @@
           # is healthy-`down` — never on saturation. Anji itself forwards normal builds to its
           # local Rosetta VM and falls back to briv (its own buildMachines) only for a dependency.
           builderOrder = [
-            "anji"
+            "anji-arm"
             "briv"
           ];
         };

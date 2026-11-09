@@ -82,6 +82,7 @@ let
     "nix-gc"
     "nix-optimise"
     "anji-ext-unlock"
+    "kdn-rosetta-farm-forward"
   ];
 
   bootstrapStoreJson = builtins.toJSON {
@@ -473,6 +474,20 @@ in
           KeepAlive = false;
           StandardOutPath = "/var/log/anji-ext-unlock.log";
           StandardErrorPath = "/var/log/anji-ext-unlock.log";
+        };
+      };
+
+      # Expose the Rosetta builder VM's sshd (host-local 127.0.0.1:31122) on the LAN, so the build
+      # farm's `arm` pool reaches the aarch64-linux VM DIRECTLY and never touches this darwin host
+      # (which cannot build the kernel-source FOD — docs/lix-caveats.md). The build-farm `anji-arm`
+      # builder dials anji.lan:31123. See docs/tasks/2026-11/rosetta-vm-farm-builder/.
+      launchd.daemons.kdn-rosetta-farm-forward = {
+        command = "${pkgs.socat}/bin/socat TCP-LISTEN:31123,reuseaddr,fork TCP:127.0.0.1:31122";
+        serviceConfig = {
+          RunAtLoad = true;
+          KeepAlive = true;
+          StandardOutPath = "/var/log/kdn-rosetta-farm-forward.log";
+          StandardErrorPath = "/var/log/kdn-rosetta-farm-forward.log";
         };
       };
     }
