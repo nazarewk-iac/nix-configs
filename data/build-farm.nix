@@ -39,9 +39,11 @@
         anji = {
           address = "anji.lan.etra.net.int.kdn.im";
           # Apple M2: 8 physical cores (4 performance + 4 efficiency). `anji` is in TWO pools (arm
-          # and darwin) and HAProxy caps per backend server, so 4 per pool means at most 4+4 = 8
-          # concurrent builds in the worst case — one per physical core, the whole machine, not half.
-          maxConnections = 4;
+          # and darwin) and HAProxy caps per backend server, so 8 per pool means at most 8+8 = 16
+          # concurrent connections in the worst case. The arm pool rarely competes with darwin, and
+          # anji forwards its foreign builds to the Rosetta VM anyway (a separate 8-core guest), so
+          # a higher cap keeps more builds queued on the fast host instead of the Pi backup.
+          maxConnections = 8;
         };
         briv = {
           address = "briv.lan.etra.net.int.kdn.im";
