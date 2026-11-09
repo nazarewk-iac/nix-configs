@@ -156,3 +156,36 @@ Next (needs a closure decision + measurement): either
 
 Host pins reverted; fleet unchanged. `den` aspects mirrored and parse-clean; verify via the den
 checks before relying on them.
+
+## Resolved (2026-11-09) — pinning is closure-identical; enabled on moss+etra
+
+**The earlier "closure differs" was a measurement artifact.** I toggled `kdn.pkgs.pin` by editing
+`hosts/moss/default.nix` between the two evals. `builtins.getFlake "path:$PWD"` re-copies the tree
+to a store path keyed by the tree hash, so editing the host file changed `self`, and every
+`${self}/…` reference (e.g. the SSH CA at `data/ca`, the `git-credential-keyring` helper) moved —
+making *any* two evals of a changed tree differ regardless of pinning. Proof: with an **unchanged**
+tree and pin driven by an env var (`builtins.getEnv`), pinned and unpinned give the **same**
+`toplevel` drvPath.
+
+**Measured (stable tree, one process, env toggle):**
+
+| mode (moss+etra, one eval) | wall |
+| -------------------------- | ---- |
+| unpinned                   | 77 s |
+| pinned                     | 62 s |
+
+~19.5 % faster, drvPaths **identical**.
+
+**Prerequisites applied:**
+- `fix(sops): use sops.package …` (commit `c8219974`) — the one *real* pkgs delta (age wrapper).
+- `home-manager.useGlobalPkgs = true` fleet-wide (`modules/universal/default.nix:97`). Required:
+  a pinned system has empty `nixpkgs.overlays`, so HM must use the system pkgs. oams (unpinned,
+  multiGPU+HM) re-evaluated clean, so the flip is safe fleet-wide for eval.
+- `kdn.pkgs.pin = true` on **moss** and **etra** (verified pinned eval + closure-identical).
+
+**Standalone HM:** `flake.homeConfigurations.dummy` — a no-host home-manager profile built on
+`self.pkgs.x86_64-linux.default` (the pinned base). Demonstrates how an adopter configures HM
+standalone on the single pinned pkgs (`activationPackage` evaluates).
+
+**Remaining:** roll pinning + measurement to briv → brys → oams → anji (each may need its own
+variant for host-specific overlays: multiGPU on oams/brys). Build-verify moss/etra before deploying.
