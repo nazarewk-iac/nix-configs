@@ -91,3 +91,32 @@ exists on the client we actually ship before relying on it.
 
 Every item needs a measured number before it is called a win. The harnesses are `hack/eval-profile.sh`,
 `hack/eval-compare.sh`, `nix-eval-jobs`, and `nix eval .#<host>` (not `path:`).
+
+## numtide/iets — tested on moss (2026-11-09)
+
+[`numtide/iets`](https://github.com/numtide/iets) is a Rust re-implementation of the Nix **client**
+(no daemon, no store of its own; builds go to a daemon or a remote builder over `ssh-ng://`/`grpc://`).
+It exposes `iets build` (= nix-build/nix-fast-build), `iets eval-jobs` (= nix-eval-jobs), `iets eval`,
+`iets search`, `iets diff`, `iets print-dev-env`, and can act as a drop-in `nix`/`nix-build`.
+
+Claimed win: **1.5–1.8× faster NixOS-config eval than Nix 2.34.8 on one core, 3.3–5× on four**; an
+**eval cache that traces the files an eval reads** (more precise than Nix's flake eval cache); parallel
+`eval-jobs`; hash auto-fixing; JSON output for every command.
+
+Considerations for this repo:
+- Flakes must be **local and locked** — a local worktree flake with `flake.lock` is fine; remote
+  inputs *in the lock* are fine; no registry/`github:` roots, no `nix flake lock`.
+- **No import-from-derivation** — we already removed our one eval-time IFD
+  (`kdn-authorized-keys` → `builtins.toFile`), so this holds.
+- Integrity must be checked with `nix flake check` / a build, since eval semantics can diverge.
+
+**Test run on host `moss`** (`nix run github:numtide/iets -- build .#nixosConfigurations.moss.config.system.build.toplevel`):
+- `--dry-run` (evaluate + print the build plan): **15 s**.
+- real build: **47 derivations, ~29 s** (packages cached), output `…-nixos-system-moss`. It evaluated
+  the pinned config and drove the whole NixOS closure.
+
+So iets **can** evaluate this flake (local+locked, no IFD) and **start/complete** a host build. Worth
+benchmarking its `eval-jobs` and eval cache against our single-process pinning eval: they are
+complementary (iets eval cache across runs) and competitive (iets eval-jobs parallel, or its faster
+single-core eval). Not adopted yet — a candidate lever, measure the eval-only time on our hosts before
+committing to it.
