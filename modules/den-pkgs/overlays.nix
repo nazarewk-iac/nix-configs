@@ -34,12 +34,16 @@ let
 in
 [
   # `pkgs.nixos-icons` recolored for the default palette (see the `let` above).
-  (final: prev:
+  (
+    final: prev:
     (import (inputs.stylix + "/modules/nixos-icons/overlay.nix") {
       pkgs = prev;
       config = stylixIconsConfig;
       lib = lib;
-    }).overlay final prev)
+    }).overlay
+      final
+      prev
+  )
   # `pkgs.jsonTemplate`, used by the sops json tTemplate router. Was inline in
   # modules/universal/security/secrets/sops/default.nix.
   (final: prev: {
@@ -68,15 +72,17 @@ in
     pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
       (
         python-final: python-prev:
-        lib.pipe [ "cython_0" ] [
-          (map (name: {
-            inherit name;
-            value = python-prev.${name}.overridePythonAttrs (_: {
-              dontCheckPythonMetadata = true;
-            });
-          }))
-          builtins.listToAttrs
-        ]
+        lib.pipe
+          [ "cython_0" ]
+          [
+            (map (name: {
+              inherit name;
+              value = python-prev.${name}.overridePythonAttrs (_: {
+                dontCheckPythonMetadata = true;
+              });
+            }))
+            builtins.listToAttrs
+          ]
       )
     ];
   })
@@ -98,20 +104,24 @@ in
   # pattern as modules/universal/security/secrets/sops/default.nix (keep them in sync).
   (final: prev: {
     kdn = (prev.kdn or { }) // {
-      kdn-sops-secrets = prev.writers.writePython3Bin "kdn-sops-secrets"
-        {
-          libraries = with prev.python3Packages; [ fire ];
-          flakeIgnore = [ "E203" "E501" ];
-        }
-        (
-          prev.lib.pipe ../../modules/universal/security/secrets/sops/kdn-sops-secrets.py [
-            builtins.readFile
-            (builtins.replaceStrings
-              [ ''pattern: str = ""'' ]
-              [ ''pattern = r"<SOPS:(?P<path>[^:]+):(?P<hash>[^:]+):PLACEHOLDER>"'' ]
-            )
-          ]
-        );
+      kdn-sops-secrets =
+        prev.writers.writePython3Bin "kdn-sops-secrets"
+          {
+            libraries = with prev.python3Packages; [ fire ];
+            flakeIgnore = [
+              "E203"
+              "E501"
+            ];
+          }
+          (
+            prev.lib.pipe ../../modules/universal/security/secrets/sops/kdn-sops-secrets.py [
+              builtins.readFile
+              (builtins.replaceStrings
+                [ ''pattern: str = ""'' ]
+                [ ''pattern = r"<SOPS:(?P<path>[^:]+):(?P<hash>[^:]+):PLACEHOLDER>"'' ]
+              )
+            ]
+          );
     };
   })
 
@@ -120,5 +130,23 @@ in
   # The override is static, so the base carries it; unused by non-multi-GPU hosts.
   (final: prev: {
     supergfxctl = prev.callPackage ../../modules/universal/hw/gpu/supergfxctl.nix { };
+  })
+
+  # `nickel` 1.18.0 in nixpkgs 319e4ce does not declare the inputs its vendored `onig` crate
+  # needs. `cargo-setup-hook` exports `RUSTONIG_SYSTEM_LIBONIG=1` for every Rust build, so
+  # `onig_sys` runs `pkg-config`, finds no `oniguruma`, and aborts:
+  #
+  #   error: failed to run custom build command for `onig_sys v69.9.1`
+  #   Unable to find oniguruma in pkg-config, and RUSTONIG_SYSTEM_LIBONIG is set
+  #
+  # Upstream fixed it in NixOS/nixpkgs@4bab073cc6c0 ("nickel: fix build with system libs"), which
+  # is not in `nixos-unstable` yet. Drop this overlay once that commit reaches the tracked channel.
+  # It lives HERE, not in `nixpkgs.overlays`: a pinned host sets `nixpkgs.pkgs`, which makes
+  # `nixpkgs.overlays` inert.
+  (final: prev: {
+    nickel = prev.nickel.overrideAttrs (old: {
+      nativeBuildInputs = old.nativeBuildInputs ++ [ final.pkg-config ];
+      buildInputs = old.buildInputs ++ [ final.oniguruma ];
+    });
   })
 ]

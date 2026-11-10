@@ -7,7 +7,6 @@
 { inputs, self }:
 let
   lib = inputs.nixpkgs.lib;
-  staticOverlays = import ./overlays.nix { inherit lib inputs; };
 
   # The uniform nixpkgs config for a pinned set. It must match what an unpinned host would set
   # (allowAliases/allowUnfree/permittedInsecurePackages from kdn.nixpkgs); a host that needs a
@@ -28,7 +27,10 @@ let
     }:
     import inputs.nixpkgs {
       inherit system;
-      overlays = [ self.overlays.default ] ++ staticOverlays ++ extraOverlays;
+      # `self.overlays.default` already carries `self.overlays.static` (the host-independent
+      # overlays of modules/den-pkgs/overlays.nix), so a pinned set and the unpinned pkgs that den
+      # targets receive build one derivation per package.
+      overlays = [ self.overlays.default ] ++ extraOverlays;
       config = baseConfig // extraConfig;
     };
 in

@@ -275,8 +275,20 @@
         )
       ];
 
+      # The host-independent overlays from `modules/den-pkgs/overlays.nix`. A pinned host bakes them
+      # into its single pkgs instance through `self.overlays.default`; the unpinned pkgs that den
+      # targets and the devshell receive must carry the same set, or one package (nickel today) is
+      # built twice with different inputs and the profile holds both derivations.
+      flake.overlays.static = inputs.nixpkgs.lib.composeManyExtensions (
+        import ./modules/den-pkgs/overlays.nix {
+          lib = inputs.nixpkgs.lib;
+          inherit inputs;
+        }
+      );
+
       flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
         self.overlays.packages
+        self.overlays.static
         inputs.nur.overlays.default
         inputs.microvm.overlays.default
         inputs.angrr.overlays.default
