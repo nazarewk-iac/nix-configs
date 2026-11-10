@@ -219,6 +219,19 @@ ssh anji 'ssh rosetta-builder "readlink -f /run/current-system"'           # the
 ssh anji 'ssh rosetta-builder "cat /proc/sys/kernel/random/boot_id"'       # unchanged by a switch
 ```
 
+### The guest's Nix must match the fleet's
+
+`ssh-ng` negotiates a protocol version between the client's Nix and the guest's `nix-store --serve`.
+The guest therefore has to run the **same implementation** as the clients and the other builders.
+With a guest on CppNix 2.34 and a client on Lix 2.95 every connection died at
+`error: protocol mismatch`, before any build was dispatched; the farm then kept the pool's `backup`
+(`briv`, Lix 2.93) and silently built there.
+
+The fork installs `pkgs.lix` in the guest for that reason. It also means the guest's
+`nix.settings` must be written the way **Lix** reads them: `min-free` and `max-free` are plain byte
+counts, and a size string such as `"5G"` fails the generated `nix.conf` with
+`setting 'min-free' has invalid value '5G'` — which takes the whole guest build down with it.
+
 ---
 
 ## Background: why the store is _already_ single & how transfer works

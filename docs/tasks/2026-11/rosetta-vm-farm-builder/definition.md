@@ -126,3 +126,27 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
 - Still open on this task: the farm's `anji-arm` path. The socat forward had been running since
   2026-11-09 with a store closure that was later collected, so every per-connection `socat1` exec
   failed to load its libraries; it was kickstarted and needs a re-test from a client.
+
+## Progress — 2026-11-10 (why `anji-arm` stayed DOWN)
+
+`arm_out/anji-arm` was `DOWN` while the guest itself answered on `anji.lan:31123`. Three
+independent faults, each sufficient on its own to keep the pool on the `briv` backup:
+
+1. **sshd per-source penalties.** OpenSSH 10 penalises a connection closed before authentication —
+   which is exactly the HAProxy `tcp-check` every 10 s. The guest reset every probe
+   (`ECONNRESET … at step 1 of tcp-check`). The guest now sets
+   `services.openssh.settings.PerSourcePenaltyExemptList = "192.168.5.0/24"`, its own lima network.
+2. **The macOS application firewall.** macOS decides per **binary**, and socat had no allowance, so
+   LAN connections to 31123 were dropped before socat saw them. A loopback connection bypasses the
+   firewall, so every test on the host passed while every other machine failed. The allowance names
+   a store path, so a nixpkgs bump revokes it; `system.activationScripts.anji-firewall` re-adds it
+   when missing. See [hosts/anji/bootstrap.md, "Firewall"](../../../../hosts/anji/bootstrap.md).
+3. **Nix implementation mismatch.** The guest ran CppNix 2.34 while the clients and the other
+   builders run Lix 2.95; `ssh-ng` answered `protocol mismatch` before a build was dispatched. The
+   fork installs `pkgs.lix` in the guest, which also forces `min-free`/`max-free` to be byte counts
+   (Lix rejects the size strings CppNix accepts).
+
+`guest.switch` also needs `nix copy --no-check-sigs`: the guest's `nix-store --serve` enforces
+`require-sigs` even for `builder`, which is in `trusted-users` — the daemon path trusts that account
+and the serve path does not. The copy runs over the VM's private console network, so skipping the
+check there is the trust boundary the appliance already relies on.
