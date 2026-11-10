@@ -32,7 +32,7 @@
   inputs.brew-tap--homebrew--core.flake = false;
   inputs.brew-tap--homebrew--core.url = "github:homebrew/homebrew-core";
   inputs.brew.flake = false;
-  inputs.brew.url = "github:Homebrew/brew/5.1.8";
+  inputs.brew.url = "github:Homebrew/brew/7.0.11";
   inputs.colmena.url = "github:zhaofengli/colmena";
   inputs.crane.url = "github:ipetkov/crane";
   # den plus its own dependency. Both hold the exact revision the 004 den spike measured, and den

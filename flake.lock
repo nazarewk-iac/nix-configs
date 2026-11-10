@@ -142,16 +142,16 @@
     "brew": {
       "flake": false,
       "locked": {
-        "lastModified": 1777253336,
-        "narHash": "sha256-IYVi28jebMUfQ3MDPG9IkSrLsf09Y7ShsNo+n4cmURU=",
+        "lastModified": 1793000687,
+        "narHash": "sha256-8mCor0DDjNhi+0e+FllfqiMABujBl+/RxYW+wgMpcto=",
         "owner": "Homebrew",
         "repo": "brew",
-        "rev": "b9763ee5280dc1acb3036383b3608084eebac6b7",
+        "rev": "c6069d2a943b71b0a90d91fc1ac93cb9c1634dcc",
         "type": "github"
       },
       "original": {
         "owner": "Homebrew",
-        "ref": "5.1.8",
+        "ref": "7.0.11",
         "repo": "brew",
         "type": "github"
       }
@@ -1141,11 +1141,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794313512,
-        "narHash": "sha256-IzJnZtv0SexLJIj5Nr8FXbPYUCVHCVUxV1ho0k8vwLg=",
+        "lastModified": 1794328611,
+        "narHash": "sha256-mQagH3cw2NDJUYUVkwwueZFDpPZm6gP8Xr5rjBM58Q8=",
         "owner": "nazarewk",
         "repo": "nix-rosetta-builder",
-        "rev": "bebd77e68f6a15e7cef02a46e51e71afc0029f59",
+        "rev": "20efbddee269825447db0d356e3c699b7ac0ef20",
         "type": "github"
       },
       "original": {
