@@ -221,6 +221,13 @@ in
       # that an external adopter of `modules/universal` inherits no tap of this flake. This host
       # keeps the scan on, so its evaluated tap list stays exactly what it was.
       kdn.homebrew.tapsFromFlakeInputs = true;
+
+      # Do not upgrade casks/formulae during activation. A `brew bundle` upgrade of the `browsers`
+      # cask hung in a sandboxed subprocess on 2026-11-10 (idle ruby stuck in `open()`, no TTY, so
+      # no way to answer whatever it waited for) and the activation never completed. Installs still
+      # happen on activation; upgrades are a deliberate manual step. `mkForce` because
+      # `modules/universal/default.nix` sets the same option to `true` at normal priority.
+      homebrew.onActivation.upgrade = lib.mkForce false;
     }
     (lib.optionalAttrs rosettaBuilder {
       # Rosetta builder guest disk, sized for the owner's ~200+ GB Linux builds (2026-10-11). The
@@ -269,10 +276,29 @@ in
           uid = 25839;
           isSystemUser = true;
           group = "kdn-nix-remote-build";
+          # `nix-store --serve` runs through the login shell, so the account cannot be `nologin`
+          # (sshd then answers "This account is currently not available"). The shell is made
+          # unusable for anything but the build protocol by the `Match` block below.
+          shell = "/bin/sh";
           openssh.authorizedKeys.keys = [
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID/e1WNc2iAknU+3q/Eh5MAP2oR0rc937aCOCbrtOiSk kdn-nix-remote-build"
           ];
         };
+
+        # The build account must not be a shell account, but `nix-store --serve` needs a login
+        # shell. A `Match` block forces every session of that account to the serve command and
+        # removes everything else a shell would give: no TTY, no forwarding, no tunnels. Shell
+        # access stays with `builder` (the host key, sudo for in-place updates), which is the
+        # management account; the fleet-wide build key can only speak the Nix protocol.
+        services.openssh.extraConfig = ''
+          Match User kdn-nix-remote-build
+            ForceCommand /run/current-system/sw/bin/nix-store --serve --write
+            PermitTTY no
+            AllowAgentForwarding no
+            AllowTcpForwarding no
+            X11Forwarding no
+            PermitTunnel no
+        '';
       };
       # builderd's launchd PATH must start with /usr/bin. The fork's module (module.nix:307-326)
       # builds the job PATH without it, so lima's guest bootstrap execs the nix openssh from PATH;
