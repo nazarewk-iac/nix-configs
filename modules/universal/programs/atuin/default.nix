@@ -56,6 +56,11 @@ in
               sync_frequency = "60";
               daemon = {
                 enabled = true;
+                # atuin refuses to rebuild the threads index inline: a `store pull`, `status` or
+                # `account login` with the daemon down fails with "no daemon is running; enable
+                # `daemon.autostart = true`". The `kdn-atuin-login-<user>` unit runs exactly those
+                # commands at boot, outside a shell, so the shell hook cannot start the daemon for it.
+                autostart = true;
                 sync_frequency = 300;
               };
             };
