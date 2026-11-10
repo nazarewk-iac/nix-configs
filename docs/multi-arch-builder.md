@@ -165,6 +165,62 @@ drop the attribute entirely.
 
 ---
 
+## Updating the guest in place (`mode = "standalone"`)
+
+`nix-rosetta-builder.mode` selects how the guest's NixOS system is delivered:
+
+| Mode | Image path in `lima.yaml` | Guest system update | Guest disk and `/nix/store` |
+| --- | --- | --- | --- |
+| `ephemeral` (upstream default) | the image's store path | a new image changes the yaml, so the daemon runs `limactl delete --force` + `create` | discarded on every guest change |
+| `standalone` (`anji`) | `workingDir/image.qcow2`, a stable path | `guest.system` + `guest.switch`, applied in place | kept; a config change never recreates the VM |
+
+In `standalone` mode the image is only the bootstrap for a **new** guest, so a normal
+`darwin-rebuild switch` builds the host alone — the image is not in its closure, and the running
+guest keeps its disk and store across host switches, kernel bumps and user changes.
+
+### Update the running guest
+
+The switch script must run on the darwin host (it uses that host's `ssh` config alias). From a
+workstation, hand the host the flake source first:
+
+```bash
+SRC=$(nix eval --raw .#self.sourceInfo.outPath)
+nix copy --to ssh-ng://anji "$SRC"
+ssh anji "sudo nix run '$SRC#darwinConfigurations.anji.config.nix-rosetta-builder.guest.switch'"
+```
+
+The script copies `guest.system` into the guest and runs `switch-to-configuration switch` there. A
+kernel or initrd change needs `ssh rosetta-builder 'sudo reboot'`; lima keeps the same VM, so the
+disk and the store survive. `guest.system` and `guest.switch` are not part of the host's closure —
+build them when you need them.
+
+### Build and install the bootstrap image on demand
+
+Only a **new** guest reads the image:
+
+```bash
+ssh anji "sudo nix run '$SRC#darwinConfigurations.anji.config.nix-rosetta-builder.guest.installImage'"
+```
+
+That realises `guest.image` (the qcow2) and points `workingDir/image.qcow2` at it. When the file is
+missing, the daemon refuses to create a guest and says which command to run.
+
+### What still recreates the guest
+
+`memory`, `cores`, `diskSize`, `port` and `workingDir` feed the generated `lima.yaml`. A change to
+any of them changes the yaml, so the daemon deletes and recreates the guest and its store goes with
+it. Everything else — users, packages, kernel, services — is an in-place update.
+
+### Verify
+
+```bash
+ssh anji 'limactl list'                                                    # one running guest
+ssh anji 'ssh rosetta-builder "readlink -f /run/current-system"'           # the guest's generation
+ssh anji 'ssh rosetta-builder "cat /proc/sys/kernel/random/boot_id"'       # unchanged by a switch
+```
+
+---
+
 ## Background: why the store is _already_ single & how transfer works
 
 Understanding this decides most of the design. In **remote-builder** mode (what

@@ -107,3 +107,22 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
   path was broken.
 - The guest disk is `/dev/vda2`, 1008G with `x-systemd.growfs`, backed by a sparse 1T `diffdisk` on
   `/anji-ext-01`. No resize is needed; `diskSize = "1024GiB"` is already effective.
+
+## Progress — 2026-11-10 (standalone mode)
+
+- The guest is now updated **in place** instead of being recreated. `nix-rosetta-builder` moved to
+  the fork branch `feat/in-place-updates` (two commits) and `hosts/anji` sets
+  `nix-rosetta-builder.mode = "standalone"`. See
+  [docs/multi-arch-builder.md, "Updating the guest in place"](../../../multi-arch-builder.md).
+- Why it was needed here, beyond convenience: in `ephemeral` mode the generated `lima.yaml` embeds
+  the guest image's store path, so a darwin build depends on an `aarch64-linux` image closure. When
+  that image was built on another builder it is unsigned, and `anji` refuses it:
+  `cannot add path '…-sshd.conf-final' because it lacks a signature by a trusted key`. The stable
+  image path removes the dependency entirely.
+- The bootstrap image is out of the host's closure: `nix-rosetta-builder.guest.installImage` builds
+  and installs it on demand, and a switch no longer builds a qcow2.
+- `anji` itself now builds its aarch64-linux parts on its own Rosetta VM rather than the farm, and
+  the guest carries the `kdn-nix-remote-build` account with passwordless sudo for in-place updates.
+- Still open on this task: the farm's `anji-arm` path. The socat forward had been running since
+  2026-11-09 with a store closure that was later collected, so every per-connection `socat1` exec
+  failed to load its libraries; it was kickstarted and needs a re-test from a client.
