@@ -235,6 +235,13 @@ in
       # option set, and `nix-rosetta-builder` exists only while its module is imported. So
       # `rosettaBuilder = false` must drop the attribute entirely.
       nix-rosetta-builder.diskSize = "1024GiB";
+      # The image is only the bootstrap. `lima.yaml` then carries a STABLE image path, so a new
+      # image does not recreate a running guest, and `guest.system` / `guest.switch` update the
+      # guest in place — its disk and `/nix/store` survive. It also removes the yaml's dependency on
+      # the aarch64-linux image store path, which a darwin builder cannot accept as an input when
+      # the image was built elsewhere and is unsigned (measured 2026-11-10: `rosetta-builder.yaml`
+      # failed on anji with "cannot add path … lacks a signature by a trusted key").
+      nix-rosetta-builder.mode = "standalone";
       # 8 of the M2's 8 cores; 8 GiB of its 16 GiB RAM. The host idles through a build, and the
       # Rosetta VM is the only Linux builder since phase 3 detached the stock one.
       nix-rosetta-builder.cores = 8;
