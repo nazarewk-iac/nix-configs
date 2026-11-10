@@ -277,7 +277,22 @@ in
                       }:$PATH"
                       set -eEuo pipefail
 
-                      if ! cmp --silent -- <(atuin key) "$CREDS_DIR/key" ; then
+                      # A system unit that runs `User=<name>` has no `XDG_RUNTIME_DIR`, so atuin
+                      # looked for the daemon socket outside `/run/user/<uid>` and failed with
+                      # "a daemon still holds its pidfile ... after 4000ms". `%U` cannot help: in a
+                      # system unit it expands to the MANAGER's uid (0). Derive it from the running
+                      # user instead, and wait for linger to create the directory at boot.
+                      USER_RUNTIME_DIR="/run/user/$(id -u)"
+                      for _ in $(seq 1 30); do
+                        test -d "$USER_RUNTIME_DIR" && break
+                        sleep 1
+                      done
+                      export XDG_RUNTIME_DIR="$USER_RUNTIME_DIR"
+
+                      # Compare the KEYS, not the byte streams: `atuin key` ends with a newline and
+                      # the SOPS secret does not, so `cmp` failed on identical keys and forced a
+                      # logout + `store purge` + login on every boot.
+                      if [ "$(atuin key)" != "$(cat "$CREDS_DIR/key")" ] ; then
                         atuin logout || :
                         atuin store purge
                       elif atuin status | grep -v 'You are not logged in' || test -s "${hmUser.xdg.dataHome}/atuin/session" ; then
