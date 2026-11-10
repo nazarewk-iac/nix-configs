@@ -47,6 +47,7 @@ The user can switch the journals off. A direct "no worklog" instruction in the s
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 - [Tasks](.agents/rules/tasks.md) — one directory per task at `docs/tasks/<YYYY-MM>/<slug>/`, recursive sub-tasks, done-tag + sibling solution file; a work-run status belongs in the task's `.worklog.md` (full doc: [docs/tasks/README.md](docs/tasks/README.md))
 - [Worklog and Board](.agents/rules/agent-journal.md) — every agent run keeps a session `{worklog,board}.md` (`.cache/agents/<harness>-<session>/`) plus a task pair when a task exists; one board per parallel track; a direct "no worklog" instruction or `KDN_AGENT_WORKLOG=skip` turns them off
+- [Post-change Checks](.agents/rules/post-change-checks.md) — check by blast radius (bundles, never a bare `nix flake check`), prove both harnesses load, build/activate/verify hosts, boot check supervised, skip or defer on request (full doc: [docs/post-change-checks.md](docs/post-change-checks.md))
 - [Simple Technical English](.agents/rules/simple-technical-english.md) — strict ASD-STE100 for all docs, code comments, and chat; domain-vocabulary exception; ask the user before you drop STE
 - [Darwin Quirks](.agents/rules/darwin-quirks.md) — on macOS, surface an unpredicted behaviour to the user, then record it in [docs/darwin-quirks.md](docs/darwin-quirks.md) after confirmation
 

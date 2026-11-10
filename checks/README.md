@@ -22,6 +22,9 @@ costs the same 15 minutes the rule exists to save. `bundle-slow` alone runs 710.
 Four checks cost over a minute each: `den-eval-instantiate` runs 358 s and `jj-experiments-pytest`
 runs 188 s. Run a bundle instead.
 
+Which bundle a change needs is decided by blast radius: see
+[docs/post-change-checks.md](../docs/post-change-checks.md).
+
 ## Bundles
 
 One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin` for `x86_64-linux` or
