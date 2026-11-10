@@ -1,7 +1,7 @@
 ---
 type: Rule
 description: "Every agent run keeps a session worklog and board, plus a task pair when a task exists: where the files live, how a parallel track appends safely, and how to turn the journals off."
-timestamp: 2026-11-10T05:05:00+01:00
+timestamp: 2026-11-10T09:05:00+01:00
 ---
 
 # Worklog and board
@@ -12,23 +12,42 @@ replaying a transcript.
 
 ## Two levels, kept together
 
-| Level   | Files                                                         | Purpose                                                             |
-| ------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Session | `<repo>/.cache/agents/<harness>-<session>/{worklog,board}.md` | This run: what it did, the parallel tracks, the next action.        |
-| Task    | `<task-dir>/.{worklog,board}.md`                              | Durable history of the task, readable by whoever picks it up later. |
+| Level   | Files                                                                | Purpose                                                             |
+| ------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Session | `<repo>/.cache/agents/<harness>-<date>-<session>/{worklog,board}.md` | This run: what it did, the parallel tracks, the next action.        |
+| Task    | `<task-dir>/.{worklog,board}.md`                                     | Durable history of the task, readable by whoever picks it up later. |
 
 - **Always keep the session pair.** It exists even when the run touches several tasks or none.
 - **Also keep the task pair** when the run works in a task directory under `docs/tasks/`. Write the
   task-level entry for task progress; keep run-level detail (tracks, retries, dead ends) in the
   session pair.
 
-`<harness>` is the tool that runs the agent, for example `opencode`, `claude`, `pi` or `codex`.
-`<session>` is the harness session id when the harness has one, else `<YYYYMMDD-HHMMSS>`. Example:
+A session directory name has three parts, in this order:
+
+- `<harness>` — the tool that runs the agent: `opencode`, `pi`, `claude`, `codex`.
+- `<date>` — the run's start date, `YYYYMMDD`, no dashes. It makes the directory sort chronologically
+  and tells you when the run happened without opening a file.
+- `<session>` — the harness session id. **Always present, never a timestamp.**
 
 ```
-.cache/agents/opencode-ses_e3c837bf2ffeKUFIukMf5s2OB2/worklog.md
-.cache/agents/opencode-ses_e3c837bf2ffeKUFIukMf5s2OB2/board.md
+.cache/agents/opencode-20261110-ses_e3c837bf2ffeKUFIukMf5s2OB2/worklog.md
+.cache/agents/pi-20261110-01a193a9/worklog.md
 ```
+
+Never substitute a timestamp for the session id: a run whose directory has no id cannot be resumed,
+cannot be cross-referenced against the harness's own session store, and cannot be told apart from a
+sibling run that started the same minute. When a harness exposes no id at all, mint one
+(`local-<YYYYMMDD-HHMMSS>`) and reuse it for the whole run.
+
+How to get the id:
+
+| harness    | id                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------ |
+| `opencode` | `$OPENCODE_SESSION_ID` (`ses_…`)                                                     |
+| `pi`       | the UUID in the filename of the newest `~/.pi/agent/sessions/--<cwd-slug>--/*.jsonl` |
+
+Write the directory **once**, at the start of the run, and keep using it. A second run of the same
+session (a resume the next day) gets a new directory with the new date and the same session id.
 
 Both locations are git-ignored: `.*.md` covers a file inside a task directory, and `/.cache/`
 covers the session directory. Never add these files to a commit, and never move them into a

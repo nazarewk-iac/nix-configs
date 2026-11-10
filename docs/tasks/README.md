@@ -87,12 +87,12 @@ Two files record the state of the work, not the definition of it. Both start wit
 `.*.md` rule in `.gitignore` keeps them out of every commit. Every agent run keeps them at two
 levels; the full contract is in [agent-journal.md](../../.agents/rules/agent-journal.md).
 
-| Level   | File                                           | Contents                                                                |
-| ------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
-| Task    | `<task-dir>/.worklog.md`                       | Append-only. One dated section per work run. Never edit an older entry. |
-| Task    | `<task-dir>/.board.md`                         | The task's current state. One row per open item. Overwrite it freely.   |
-| Session | `.cache/agents/<harness>-<session>/worklog.md` | The run's history: what it did, in what order.                          |
-| Session | `.cache/agents/<harness>-<session>/board.md`   | The run's current state, including parallel tracks.                     |
+| Level   | File                                                      | Contents                                                                |
+| ------- | --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Task    | `<task-dir>/.worklog.md`                                  | Append-only. One dated section per work run. Never edit an older entry. |
+| Task    | `<task-dir>/.board.md`                                    | The task's current state. One row per open item. Overwrite it freely.   |
+| Session | `.cache/agents/<harness>-<YYYYMMDD>-<session>/worklog.md` | The run's history: what it did, in what order.                          |
+| Session | `.cache/agents/<harness>-<YYYYMMDD>-<session>/board.md`   | The run's current state, including parallel tracks.                     |
 
 A build, a verification run, a measurement or a debug session belongs here. An umbrella task keeps
 one task pair for the whole family, in the umbrella directory. The session pair exists even when
