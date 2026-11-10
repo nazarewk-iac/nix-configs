@@ -1141,11 +1141,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794328611,
-        "narHash": "sha256-mQagH3cw2NDJUYUVkwwueZFDpPZm6gP8Xr5rjBM58Q8=",
+        "lastModified": 1794329708,
+        "narHash": "sha256-AgIon3hDnizadaRYmIU+5SY2sJn9vDTz7BZi9kHVjeE=",
         "owner": "nazarewk",
         "repo": "nix-rosetta-builder",
-        "rev": "20efbddee269825447db0d356e3c699b7ac0ef20",
+        "rev": "58006c638932b729df293374588f2bc5d0679d27",
         "type": "github"
       },
       "original": {
