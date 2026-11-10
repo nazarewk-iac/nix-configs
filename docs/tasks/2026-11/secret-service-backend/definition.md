@@ -84,6 +84,15 @@ for requirement 3.
 - **mdellweg/pass_secret_service** — the known-fault case from the past; keep as a comparison point,
   not as a default.
 - **`bitw`** — Bitwarden-based; note only, probably remote-service bound.
+- **rosec** (`jmylchreest/rosec`) — Rust, MIT, active (557 commits, 47 stars). One daemon serves
+  `org.freedesktop.secrets`, its **own SSH agent**, live TOTP files, an optional FIDO2 passkey broker
+  and PAM unlock. Providers: a local encrypted vault (only a wrapped key on disk, PBKDF2-SHA256 +
+  AES-256 key wrap), Bitwarden PM/SM, Proton Pass (experimental, GPL-3.0), KeePassXC `.kdbx`
+  (experimental), and read-only GNOME Keyring for migration. The SSH agent populates itself from any
+  provider at `$XDG_RUNTIME_DIR/rosec/ssh/agent.sock` with no `ssh-add`, and a FUSE tree exposes
+  public keys, `config.d` snippets and an `allowed_signers` file. Local daemon: it has no sync of its
+  own, sync is per provider. Docs: <https://jmylchreest.github.io/rosec>. Packaging is unproven —
+  the README lists AUR only, so a nixpkgs derivation or a flake input is part of the evaluation.
 - **`gnome-keyring`, `KWallet`** — reference implementations, but both are DE-bound. Use for
   conformance comparison, not as a target.
 
@@ -108,6 +117,41 @@ For every candidate:
 10. Unlock: can it take a key from an external helper (sops/age, YubiKey, TPM2), or does it own the
     prompt and require a display.
 11. Online binding: does it call a remote service, need an account, or ship telemetry.
+12. Automated SSH key loading: can it feed an agent with no human `ssh-add`, and how — see the angle
+    below.
+
+## Angle — automated SSH key loading
+
+The service is not only for `libsecret` consumers. This tree already runs a FIDO2-capable agent
+(`kdn.home.ssh-agent.enable`) and signs commits through `kdn-signing`, so a candidate that can serve
+SSH keys is worth more than one that cannot.
+
+Two routes, either acceptable:
+
+- **The provider's own agent.** rosec ships one; check whether keys appear on unlock, what happens
+  when it locks, and whether it serves `ssh-add -l`, `ssh-keygen -Y sign` and FIDO2
+  (`sk-ssh-ed25519`) keys.
+- **An independent agent fed from the store.** OpenSSH `ssh-agent` loaded by a helper, with key
+  material coming from the same `sops`/`age`/YubiKey path that unlocks the store.
+
+Either route must satisfy:
+
+- **Automated.** No interactive `ssh-add`, no terminal prompt at use time. The unlock helper
+  (YubiKey/TPM2 behind `sops`/`age`) loads the keys, and a `systemd --user` unit can do it at unlock
+  or on demand.
+- **Headless.** Works from a TTY and an SSH session, with no portal and no display.
+- **Non-interactive consumers.** `git` over SSH, `git commit -S` verification, `ssh` from scripts and
+  from units outside a login shell.
+- **No plaintext key at rest.** Key material stays in the encrypted store; the agent holds it only
+  while unlocked.
+- **Lock semantics.** Locking the service, or removing a key's item/tag, revokes it from the agent.
+- **`allowed_signers`.** Commit verification needs a generated `allowed_signers` (or equivalent) that
+  follows the same lock state, since `git gpg.ssh.allowedSignersFile` is how this tree verifies
+  signatures.
+
+Record per candidate: the agent socket path, what starts it, what unlocks it, which key types it
+serves (software, FIDO2 resident, certificate), and the exact commands that prove the flow. A
+candidate with no SSH route is not rejected, but the research must say so in writing.
 
 ## Known fault case to document
 
@@ -132,6 +176,8 @@ Research phase (this task, until a decision):
 - `research.storage.md` — the on-disk form of each candidate: encryption, file tree vs single file
   vs SQLite, what Syncthing/Nextcloud/`litestream` can sync, and how an external `sops`/`age` helper
   unlocks it.
+- `research.ssh-agent.md` — per candidate, the automated SSH-key route from the angle above: socket
+  path, what starts it, what unlocks it, key types served, and the proof commands.
 - A recommendation with the smallest viable route: reuse, fork, or a thin wrapper over
   `libsecret`/D-Bus, including where the storage abstraction would go if a fork is needed.
 - A proof-of-concept plan: how `pass`/sops plug in, how the YubiKey/TPM2 unlock helper authorises the
@@ -149,7 +195,9 @@ has a tested PoC sketch (commands and expected calls) that:
 - keeps the store encrypted on disk and unlocks it through the `sops`/`age` helper with the YubiKey or
   TPM2 (a stub helper is enough for the sketch);
 - syncs the chosen layout with at least one of Nextcloud, Syncthing or `litestream` without a
-  conflicting lock file.
+  conflicting lock file;
+- loads one SSH key into an agent with **no** `ssh-add` and signs a commit with it, or states in
+  writing why the route cannot and what it uses instead.
 
 A candidate that cannot pass the headless check, requires an online service, or cannot be encrypted
 at rest is rejected in writing, with the evidence.
@@ -165,3 +213,5 @@ at rest is rejected in writing, with the evidence.
 - `yousefvand/secret-service`: <https://github.com/yousefvand/secret-service>
 - `mdellweg/pass_secret_service`: <https://github.com/mdellweg/pass_secret_service>
 - `grimsteel/pass-secret-service`: <https://github.com/grimsteel/pass-secret-service>
+- rosec: <https://github.com/jmylchreest/rosec> · docs <https://jmylchreest.github.io/rosec> ·
+  SSH agent <https://jmylchreest.github.io/rosec/ssh-agent>
