@@ -265,9 +265,9 @@ in
       # The key is the PUBLIC half of the shared build-farm client key deployed from SOPS as
       # `ssh.kdn-nix-remote-build` (fingerprint SHA256:xtdXqjc/53ZIhTn4bMquc6pGxQvX3gQKpxM7g7MX1P4).
       # Rotate both together. `allowed-users` stays at its `*` default: narrowing it to the new
-      # group would lock the guest's own `builder` account out of the daemon. The account is NOT a
-      # `trusted-user` — a trusted client uses `buildDerivation` and can no longer forward to the
-      # host's own builders (docs/lix-caveats.md).
+      # group would lock the guest's own `builder` account out of the daemon. The account IS a
+      # `trusted-user` — see the note next to `trusted-users` below for why the usual caveat does
+      # not apply to this leaf builder.
       #
       # ⚠️ A new image changes `lima.yaml`, so the daemon deletes and recreates the guest once.
       nix-rosetta-builder.potentiallyInsecureExtraNixosModule = {
@@ -304,10 +304,30 @@ in
         '';
 
         # `nix-daemon --stdio` runs as the connecting account, so that account must be trusted:
-        # only trusted users may add unsigned paths, which is what a builder does with every
-        # output it produces. Shell access stays with `builder` (the host key, passwordless sudo
-        # for in-place updates), which is the management account.
+        # only trusted users may add unsigned paths, which is what a builder does with every input
+        # a client uploads to it and every output it produces.
+        #
+        # `docs/lix-caveats.md` warns that a trusted client turns the build hook off on the remote
+        # host (it switches to `buildDerivation`, which cannot be distributed). That costs nothing
+        # HERE: this guest declares no builders of its own, so there is nothing for it to forward.
+        # The caveat applies to `anji` as a builder for other hosts, not to this leaf.
+        #
+        # Shell access stays with `builder` (the host key, passwordless sudo for in-place updates),
+        # which is the management account.
         nix.settings.trusted-users = [ "kdn-nix-remote-build" ];
+
+        # 8 GiB RAM is not enough for every aarch64 build. `rustc` compiling atuin's test harness
+        # was killed by the OOM killer twice (measured 2026-11-10, `anon-rss` 2.4 GB with several
+        # rustc processes alive, `--cores 2` did not save it). The guest's disk is a sparse 1 TiB
+        # image on the external volume, so an 8 GiB swap file is cheap and keeps the build alive
+        # without touching `nix-rosetta-builder.memory` — that option feeds `lima.yaml`, and
+        # changing it deletes the guest together with its store.
+        swapDevices = [
+          {
+            device = "/var/swapfile";
+            size = 8192;
+          }
+        ];
 
         # The farm's HAProxy health check opens a connection every 10 s and closes it before
         # authenticating. OpenSSH 10 counts exactly that as a penalty trigger, so the guest kept
