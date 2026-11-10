@@ -434,7 +434,10 @@ in
           )
           (lib.mkIf config.kdn.desktop.sway.enable {
             systemd.user.services.keepassxc.Unit = {
-              BindsTo = config.kdn.desktop.sway.systemd.secrets-service.service;
+              # `Wants`, not `BindsTo`: when the D-Bus activation of the secrets service times out
+              # (a locked YubiKey), `BindsTo` would stop KeePassXC before it can ever unlock. The
+              # wrapper keeps waiting and claims the bus name when the card arrives.
+              Wants = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
               Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
               After = [ config.kdn.desktop.sway.systemd.envs.target ];
               PartOf = [ config.wayland.systemd.target ];

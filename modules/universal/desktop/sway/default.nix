@@ -531,6 +531,10 @@ in
             serviceConfig.Slice = "background.slice";
             serviceConfig.Type = "dbus";
             serviceConfig.BusName = "org.freedesktop.secrets";
+            # A client that asks for `org.freedesktop.secrets` waits for this unit. Without a bound,
+            # a locked KeePassXC (YubiKey not ready yet) keeps every client waiting for the 90 s
+            # default. Fail the activation fast; KeePassXC claims the name when it unlocks.
+            serviceConfig.TimeoutStartSec = "15s";
           };
         }
         (lib.mkIf config.programs.gnupg.agent.enable {

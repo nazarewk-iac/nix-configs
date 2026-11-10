@@ -111,8 +111,15 @@
             Unit.Wants = [ "ssh-agent.service" ];
             Service = {
               Slice = "background.slice";
-              Type = "notify";
-              NotifyAccess = "all";
+              # `simple`, not `notify`. The wrapper unlocks the database with `pass`, which can wait
+              # for the YubiKey/GPG agent. A `notify` unit waits for the readiness signal and
+              # systemd kills it at the 90 s start timeout, while every client of
+              # `org.freedesktop.secrets` waits for the same window. With `simple` the unit is up
+              # at once, the wrapper waits for the card in the background, and the secret service
+              # appears when the unlock finishes.
+              Type = "simple";
+              Restart = "on-failure";
+              RestartSec = 5;
               Environment = lib.attrsets.mapAttrsToList (key: value: "${key}=${value}") envs;
               ExecStart = lib.strings.escapeShellArgs [
                 (lib.getExe kdn-keepass)

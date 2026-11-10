@@ -113,8 +113,12 @@ in
               Unit.Description = "KeePassXC password manager";
               Service = {
                 Slice = "background.slice";
-                Type = "notify";
-                NotifyAccess = "all";
+                # `simple`, not `notify`: the wrapper unlocks with `pass`, which can wait for the
+                # YubiKey/GPG agent. A `notify` unit waits for the readiness signal and is killed at
+                # the 90 s start timeout, and every `org.freedesktop.secrets` client waits too.
+                Type = "simple";
+                Restart = "on-failure";
+                RestartSec = 5;
                 Environment = lib.attrsets.mapAttrsToList (key: value: "${key}=${value}") envs;
                 ExecStart = lib.strings.escapeShellArgs [
                   (lib.getExe pkgs.kdn.kdn-keepass)
