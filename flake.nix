@@ -118,8 +118,6 @@
   inputs.angrr.inputs.nixpkgs.follows = "nixpkgs";
   inputs.argon40-nix.inputs.flake-utils.follows = "flake-utils";
   inputs.argon40-nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.colmena.inputs.flake-compat.follows = "flake-compat";
-  inputs.colmena.inputs.flake-utils.follows = "flake-utils";
   inputs.colmena.inputs.nixpkgs.follows = "nixpkgs";
   inputs.colmena.inputs.stable.follows = "nixpkgs-stable";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
@@ -171,6 +169,32 @@
   inputs.wezterm.inputs.flake-utils.follows = "flake-utils";
   inputs.wezterm.inputs.nixpkgs.follows = "nixpkgs";
   inputs.wezterm.inputs.rust-overlay.follows = "rust-overlay";
+
+  # Found by `hack/flake-structure-analysis.py`: transitive inputs that pinned their own
+  # source. Keep this list in sync with that script.
+  inputs.devenv.inputs.flake-compat.follows = "flake-compat";
+  inputs.devenv.inputs.flake-parts.follows = "flake-parts";
+  inputs.devenv.inputs.nixd.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.devenv.inputs.rust-overlay.follows = "rust-overlay";
+  inputs.flake-utils.inputs.systems.follows = "systems";
+  inputs.nix-homebrew.inputs.brew-src.follows = "brew";
+  inputs.nixos-anywhere.inputs.nixos-stable.follows = "nixpkgs-stable";
+  inputs.oh-my-pi.inputs.bun2nix-darwin-x64.inputs.flake-parts.follows = "flake-parts";
+  inputs.oh-my-pi.inputs.bun2nix-darwin-x64.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.oh-my-pi.inputs.bun2nix.inputs.flake-parts.follows = "flake-parts";
+  inputs.oh-my-pi.inputs.bun2nix.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.oh-my-pi.inputs.crane.follows = "crane";
+  inputs.oh-my-pi.inputs.nixpkgs-darwin-x64.follows = "nixpkgs";
+  inputs.pi.inputs.bun2nix-x86_64-darwin.inputs.treefmt-nix.follows = "treefmt-nix";
+  inputs.pi.inputs.nixpkgs-x86_64-darwin.follows = "nixpkgs";
+  inputs.stylix.inputs.base16.follows = "base16";
+  inputs.yensid.inputs.agenix.inputs.home-manager.follows = "home-manager";
+  inputs.yensid.inputs.agenix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.yensid.inputs.agenix.inputs.systems.follows = "systems";
+  inputs.yensid.inputs.garnix-lib.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.yensid.inputs.nixos-compose.inputs.flake-utils.follows = "flake-utils";
+  inputs.yensid.inputs.nixos-compose.inputs.flake-utils.inputs.systems.follows = "systems";
+  inputs.yensid.inputs.nixos-compose.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
     inputs@{
