@@ -127,6 +127,12 @@ let
               # patch and rejects a stale tag, so a small model cannot edit lines from an old read.
               ext.pi-hashline-edit
             ];
+            skills = [
+              # `pi-btw` ships `skills/btw/SKILL.md` beside `extensions/btw.ts`, and `--extension`
+              # loads only the extension entry point. Without `--skill` the `/btw` commands still
+              # register, but nothing teaches the model when to reach for them.
+              "${ext.pi-btw}/skills"
+            ];
           };
         }
       ];
