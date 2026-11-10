@@ -235,6 +235,17 @@
             });
           });
         })
+        # `scooter` 0.10.0 now depends on `onig_sys`, whose build script needs `pkg-config` +
+        # `oniguruma`, which the package does not declare. Add them until nixpkgs does.
+        (
+          final: prev:
+          {
+            scooter = prev.scooter.overrideAttrs (old: {
+              nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.pkg-config ];
+              buildInputs = (old.buildInputs or [ ]) ++ [ prev.oniguruma ];
+            });
+          }
+        )
         # `angle-grinder` 0.19.6's vendored `tikv-jemalloc-sys` build script panics because it gets
         # `JEMALLOC_OVERRIDE=nixpkgs.<LIB>` — not a real path after the newer rust toolchain. Drop
         # the override so it builds its own jemalloc. No upstream fix yet; remove when nixpkgs does.
