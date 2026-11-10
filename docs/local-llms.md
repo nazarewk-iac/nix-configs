@@ -85,6 +85,7 @@ curl -s http://etra:4000/v1/chat/completions \
 ```
 
 **To activate** (each step matters):
+
 1. On **brys**, allow etra -> brys:39701 (the plain-HTTP OpenAI compat proxy).
 2. Set `autoStart = true` in `hosts/etra/litellm.nix`, rebuild etra.
 3. (Optional) point a Prometheus at `http://etra:4000/metrics`.
@@ -98,9 +99,10 @@ across both and fails over on error. Measured failure modes (see the task's
 oams **stopped** (connection refused) fails over invisibly in ~30 ms; oams
 **blackholed** (NetBird off / dead route) makes a request hang the full 120 s
 timeout before failover (worst case ~240 s) — recommend background health checks
-+ `enable_health_check_routing` before relying on it over an unreliable link. A
-model whose *only* backend is down returns 500 briefly then a fast **429** once
-cooled.
+
+- `enable_health_check_routing` before relying on it over an unreliable link. A
+  model whose _only_ backend is down returns 500 briefly then a fast **429** once
+  cooled.
 
 **Operational facts** baked into the config: the default request timeout is
 **6000 s** and is clamped to 60 s; when all deployments for a model are down
@@ -403,47 +405,47 @@ model with no measurement. A dash means not applicable.
 | qwen3-coder-next           | brys | small-cpu    | —                                | —           | 48      | 131072       | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
 | gpt-oss-120b               | brys | small-cpu    | —                                | —           | 65      | —            | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
 | qwen3-235b                 | brys | small-cpu    | —                                | —           | 77      | 65536        | —       | —     | —          | —           | —    | router small (:39704, llm-small)   |
-| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 114     | 348   | 64.7      | 500.9      | GPU  | swap with_surveyed (:39706, GPU)   |
-| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6      | 457.2      | CPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 114     | 348   | 64.7       | 500.9       | GPU  | swap with_surveyed (:39706, GPU)   |
+| qwen3.5-0.8b               | brys | surveyed-gpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6       | 457.2       | CPU  | swap with_surveyed (:39706, GPU)   |
 | qwen3.5-2b                 | brys | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 114     | 544   | 116.8      | 273.5       | GPU  | swap with_surveyed (:39706, GPU)   |
 | qwen3.5-2b                 | brys | surveyed-gpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | swap with_surveyed (:39706, GPU)   |
-| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 117     | 557   | 110.7      | 311         | GPU  | retired: registered, not served     |
-| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served     |
+| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 117     | 557   | 110.7      | 311         | GPU  | retired: registered, not served    |
+| tmax-2b                    | brys | surveyed-gpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served    |
 | granite-4.2-3b             | brys | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 59      | 232   | 83.9       | 223.6       | GPU  | swap with_surveyed (:39706, GPU)   |
 | granite-4.2-3b             | brys | surveyed-gpu | 3B dense                         | Apache-2.0  | 2.1     | 16384        | 2770    | 4906  | 19.8       | 174.0       | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 79.3       | 1369        | GPU  | retired: registered, not served     |
-| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 17.4       | 480         | CPU  | retired: registered, not served     |
+| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 79.3       | 1369        | GPU  | retired: registered, not served    |
+| ministral-3-3b-instruct    | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 17.4       | 480         | CPU  | retired: registered, not served    |
 | ministral-3-3b-reasoning   | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 74      | 429   | 80.9       | 933         | GPU  | swap with_surveyed (:39706, GPU)   |
 | ministral-3-3b-reasoning   | brys | surveyed-gpu | —                                | —           | 2.15    | 16384        | 1778    | 3898  | 18.9       | 202         | CPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 133     | 1967  | 25.4      | 149.4      | GPU  | retired: registered, not served     |
-| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 263     | 3315  | 25.4      | 138.1      | CPU  | retired: registered, not served     |
-| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 62      | 323   | 40.4       | 136         | GPU  | retired: registered, not served     |
-| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 11445   | 15819 | 9.83       | 25.9        | CPU  | retired: registered, not served     |
-| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 170     | 2936  | 15.7      | 84.5       | GPU  | swap with_surveyed (:39706, GPU)   |
-| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 2600    | 7512  | 13.9      | 76.3       | CPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 133     | 1967  | 25.4       | 149.4       | GPU  | retired: registered, not served    |
+| gemma-4-e2b                | brys | surveyed-gpu | —                                | —           | 3.11    | 16384        | 263     | 3315  | 25.4       | 138.1       | CPU  | retired: registered, not served    |
+| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 62      | 323   | 40.4       | 136         | GPU  | retired: registered, not served    |
+| olmo-3-7b-instruct         | brys | surveyed-gpu | —                                | —           | 4.47    | 16384        | 11445   | 15819 | 9.83       | 25.9        | CPU  | retired: registered, not served    |
+| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 170     | 2936  | 15.7       | 84.5        | GPU  | swap with_surveyed (:39706, GPU)   |
+| gemma-4-e4b                | brys | surveyed-gpu | 4.5B eff (8B w/ embeddings)      | Apache-2.0  | 4.8     | 16384        | 2600    | 7512  | 13.9       | 76.3        | CPU  | swap with_surveyed (:39706, GPU)   |
 | granite-4.2-8b             | brys | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 46      | 298   | 38.6       | 146.0       | GPU  | swap with_surveyed (:39706, GPU)   |
 | granite-4.2-8b             | brys | surveyed-gpu | 8B dense                         | Apache-2.0  | 5.0     | 16384        | 6270    | 11349 | 8.2        | 71.1        | CPU  | swap with_surveyed (:39706, GPU)   |
-| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.4       | 576         | GPU  | retired: registered, not served     |
-| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.1        | 244         | CPU  | retired: registered, not served     |
-| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.9       | 458         | GPU  | retired: registered, not served     |
-| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.5        | 56          | CPU  | retired: registered, not served     |
-| mimo-v2.6-qwen-9b          | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.5     | 16384        | 3754    | 9325  | 5.7        | 28.1        | CPU  | retired: registered, not served     |
-| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 117     | 708   | 36.9       | 121         | GPU  | retired: registered, not served     |
-| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 839     | 6358  | 7.18       | 20.7        | CPU  | retired: registered, not served     |
-| qwen3.5-0.8b-cpu           | brys | surveyed-cpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6      | 457.2      | CPU  | retired: registered, not served     |
-| qwen3.5-2b-cpu             | brys | surveyed-cpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | retired: registered, not served     |
-| tmax-2b-cpu                | brys | surveyed-cpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served     |
-| gemma-4-12b                | brys | surveyed-cpu | 11.95B dense                     | Apache-2.0  | 7.12    | 16384        | 1871    | 8842  | 5.76       | 10.4        | CPU  | retired: registered, not served     |
-| gemma-4-26b-a4b            | brys | surveyed-cpu | 25.2B / 3.8B (MoE)               | Apache-2.0  | 14      | 16384        | 14482   | 28248 | 14.5       | 67.7        | CPU  | retired: registered, not served     |
+| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.4       | 576         | GPU  | retired: registered, not served    |
+| ministral-3-8b-instruct    | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.1        | 244         | CPU  | retired: registered, not served    |
+| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 74      | 402   | 38.9       | 458         | GPU  | retired: registered, not served    |
+| ministral-3-8b-reasoning   | brys | surveyed-gpu | —                                | —           | 5.2     | 16384        | 2303    | 7403  | 8.5        | 56          | CPU  | retired: registered, not served    |
+| mimo-v2.6-qwen-9b          | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.5     | 16384        | 3754    | 9325  | 5.7        | 28.1        | CPU  | retired: registered, not served    |
+| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 117     | 708   | 36.9       | 121         | GPU  | retired: registered, not served    |
+| tmax-9b                    | brys | surveyed-gpu | 9B dense                         | Apache-2.0  | 5.63    | 16384        | 839     | 6358  | 7.18       | 20.7        | CPU  | retired: registered, not served    |
+| qwen3.5-0.8b-cpu           | brys | surveyed-cpu | 0.8B dense                       | Apache-2.0  | 0.5     | 16384        | 535     | 1043  | 58.6       | 457.2       | CPU  | retired: registered, not served    |
+| qwen3.5-2b-cpu             | brys | surveyed-cpu | 2B dense (hybrid)                | Apache-2.0  | 1.2     | 16384        | 864     | 2085  | 20.1       | 118.5       | CPU  | retired: registered, not served    |
+| tmax-2b-cpu                | brys | surveyed-cpu | 2B dense                         | Apache-2.0  | 1.27    | 16384        | 385     | 1650  | 28.6       | 79.7        | CPU  | retired: registered, not served    |
+| gemma-4-12b                | brys | surveyed-cpu | 11.95B dense                     | Apache-2.0  | 7.12    | 16384        | 1871    | 8842  | 5.76       | 10.4        | CPU  | retired: registered, not served    |
+| gemma-4-26b-a4b            | brys | surveyed-cpu | 25.2B / 3.8B (MoE)               | Apache-2.0  | 14      | 16384        | 14482   | 28248 | 14.5       | 67.7        | CPU  | retired: registered, not served    |
 | qwen3.6-27b                | brys | surveyed-cpu | 27B dense                        | Apache-2.0  | 16      | 16384        | 11759   | 27798 | 1.8        | 10.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.8 t/s, slower than flash-next |
 | granite-4.2-30b            | brys | surveyed-cpu | 30B dense                        | Apache-2.0  | 17      | 16384        | 17029   | 33865 | 2.1        | 17.1        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.1 t/s, slower than flash-next |
 | gemma-4-31b                | brys | surveyed-cpu | 31B dense                        | Apache-2.0  | 18      | 16384        | 19319   | 36790 | 1.7        | 9.3         | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 1.7 t/s, slower than flash-next |
-| glm-4.7-flash              | brys | surveyed-cpu | 30B / ~3B (MoE)                  | MIT         | 18      | 16384        | 13886   | 31352 | 11.5       | 46.5        | CPU  | retired: registered, not served     |
+| glm-4.7-flash              | brys | surveyed-cpu | 30B / ~3B (MoE)                  | MIT         | 18      | 16384        | 13886   | 31352 | 11.5       | 46.5        | CPU  | retired: registered, not served    |
 | olmo-3.1-32b               | brys | surveyed-cpu | 32B                              | Apache-2.0  | 19      | 16384        | 18361   | 36951 | 2.3        | 17.6        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.3 t/s, slower than flash-next |
 | seed-oss-36b               | brys | surveyed-cpu | 36B dense                        | Apache-2.0  | 20      | 16384        | 20178   | 40937 | 2.0        | 12.0        | CPU  | swap with_surveyed (:39706, CPU)   | DROPPED 2026-11-04: 2.0 t/s, slower than flash-next |
 | qwen3.5-35b-a3b            | brys | surveyed-cpu | 35B / 3B (MoE)                   | Apache-2.0  | 21      | 16384        | 12210   | 33206 | 9.2        | 45.9        | CPU  | swap with_surveyed (:39706, CPU)   |
-| qwen3.6-35b-a3b            | brys | surveyed-cpu | 35B / ~3B (MoE)                  | Apache-2.0  | 21      | 16384        | 12210   | 33320 | 10.9       | 49.7        | CPU  | retired: registered, not served     |
-| nemotron-3.5-lightning-30b | brys | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid)  | OpenMDW-1.1 | 24      | 16384        | 363     | 23527 | 12.9       | 44.0        | CPU  | retired: registered, not served     |
+| qwen3.6-35b-a3b            | brys | surveyed-cpu | 35B / ~3B (MoE)                  | Apache-2.0  | 21      | 16384        | 12210   | 33320 | 10.9       | 49.7        | CPU  | retired: registered, not served    |
+| nemotron-3.5-lightning-30b | brys | surveyed-cpu | 30B / 3B (Mamba-2 + MoE hybrid)  | OpenMDW-1.1 | 24      | 16384        | 363     | 23527 | 12.9       | 44.0        | CPU  | retired: registered, not served    |
 | nemotron-3.5-bolt-74b      | brys | bench-only   | 74B / 9B                         | OpenMDW-1.1 | 21      | —            | —       | —     | —          | —           | —    | — (bench only)                     |
 
 Source research files: [coresidency-measured.research.md](tasks/2026-10/brys-grunt-colocation/coresidency-measured.research.md)
@@ -659,19 +661,19 @@ no `mmproj`, so it was unreachable and had no vision. Measured on brys against a
 
 **It is a text/vision/audio workhorse at 4.5B-effective, not a context workhorse.**
 
-| scenario                         | result                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| tool calling, 4 tools, 6 cases   | **6/6 correct**: right tool, right args, no spurious calls, parallel calls |
-| tool args holding JSON           | escaped correctly (`{"port": 8080, ...}` as an argument value)            |
-| tool error recovery              | turned a `No such file` result into a plain-English failure, no retry loop |
-| UI screenshot understanding      | **correct**: nav items, section, exact `ERROR disk 94% full` text         |
-| table extraction                 | **perfect** 5x4 markdown table, correct max-region reasoning              |
-| dense OCR @1120 image tokens     | **17/18 lines exact**; failures are letter drops in long codes            |
-| dense OCR @default budget        | 14/18 lines exact                                                         |
-| audio ASR (native, 30 s clip)    | **correct** full transcription in 7.4 s — unique in the fleet             |
-| needle retrieval 12k tokens      | correct                                                                   |
-| needle retrieval 30k tokens      | correct, 1549 s wall clock for the whole request                          |
-| 128k window                      | loads and reports `n_ctx_slot = 131072`; a 175k request is refused cleanly |
+| scenario                       | result                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------- |
+| tool calling, 4 tools, 6 cases | **6/6 correct**: right tool, right args, no spurious calls, parallel calls |
+| tool args holding JSON         | escaped correctly (`{"port": 8080, ...}` as an argument value)             |
+| tool error recovery            | turned a `No such file` result into a plain-English failure, no retry loop |
+| UI screenshot understanding    | **correct**: nav items, section, exact `ERROR disk 94% full` text          |
+| table extraction               | **perfect** 5x4 markdown table, correct max-region reasoning               |
+| dense OCR @1120 image tokens   | **17/18 lines exact**; failures are letter drops in long codes             |
+| dense OCR @default budget      | 14/18 lines exact                                                          |
+| audio ASR (native, 30 s clip)  | **correct** full transcription in 7.4 s — unique in the fleet              |
+| needle retrieval 12k tokens    | correct                                                                    |
+| needle retrieval 30k tokens    | correct, 1549 s wall clock for the whole request                           |
+| 128k window                    | loads and reports `n_ctx_slot = 131072`; a 175k request is refused cleanly |
 
 **On the W6600 the GPU is only ~2x the CPU**, and that ratio is the real story (see the
 brys-vs-oams table below for the same model on a stronger card). `llama-bench`, clean card,
@@ -724,24 +726,24 @@ closure, same GGUF files on both hosts. `brys` = Radeon Pro W6600 (NAVI23, 8 GB)
 `oams` = Radeon RX 6800M (NAVI22, 12 GB). Neither host had another model loaded
 during a run — that condition matters, see the note below.
 
-| model         | host | pp512 | pp2048 | tg128 |
-| ------------- | ---- | ----: | -----: | ----: |
-| qwen3.5-0.8b  | brys | 926.8 |  930.3 |  94.8 |
-| qwen3.5-0.8b  | oams | 6330.5 | 6015.1 | 265.8 |
-| qwen3.5-2b    | brys | 383.6 |  390.9 |  54.1 |
-| qwen3.5-2b    | oams | 2981.2 | 2882.3 | 157.7 |
-| gemma-4-e2b   | brys | 390.4 |  346.4 |  40.0 |
-| gemma-4-e2b   | oams | 2486.7 | 2113.0 | 137.6 |
-| granite-4.2-3b| brys | 180.5 |  167.4 |  34.1 |
-| granite-4.2-3b| oams | 1407.2 | 1280.0 | 114.0 |
-| gemma-4-e4b   | brys | 158.9 |  151.4 |  24.8 |
-| gemma-4-e4b   | oams | 1371.8 | 1317.8 |  82.4 |
+| model          | host |  pp512 | pp2048 | tg128 |
+| -------------- | ---- | -----: | -----: | ----: |
+| qwen3.5-0.8b   | brys |  926.8 |  930.3 |  94.8 |
+| qwen3.5-0.8b   | oams | 6330.5 | 6015.1 | 265.8 |
+| qwen3.5-2b     | brys |  383.6 |  390.9 |  54.1 |
+| qwen3.5-2b     | oams | 2981.2 | 2882.3 | 157.7 |
+| gemma-4-e2b    | brys |  390.4 |  346.4 |  40.0 |
+| gemma-4-e2b    | oams | 2486.7 | 2113.0 | 137.6 |
+| granite-4.2-3b | brys |  180.5 |  167.4 |  34.1 |
+| granite-4.2-3b | oams | 1407.2 | 1280.0 | 114.0 |
+| gemma-4-e4b    | brys |  158.9 |  151.4 |  24.8 |
+| gemma-4-e4b    | oams | 1371.8 | 1317.8 |  82.4 |
 
 **oams is 6-9x faster at prefill and 2.8-3.4x at decode**, on identical software. The
 W6600 is not slow because of Vulkan or this llama.cpp build; it is the weaker card.
 
 The CPU columns show why this is a GPU story and not a machine story: oams' CPU
-decode is *worse* than brys' (gemma-4-e4b: 4.3 vs 13.9 t/s) because it is a laptop
+decode is _worse_ than brys' (gemma-4-e4b: 4.3 vs 13.9 t/s) because it is a laptop
 that thermally throttles, yet its GPU decode is 3.3x brys'. brys' GPU/CPU ratio is
 only ~1.8x on prefill (158.9 vs 78.3), i.e. the W6600 barely beats its own CPU;
 oams' ratio is ~4.8x (1371.8 vs 284.0).
@@ -1060,21 +1062,25 @@ for the full record.
 `kdn.llm.client.upstreams.<name>.discovery.enable = true` stops the aspect from
 writing a hand-listed `models` block into the opencode provider. Instead the
 aspect writes a local pinned plugin (`.opencode/plugins/kdn-models-discovery.ts`)
-that runs the opencode `config` hook, fetches `<baseURL>/models` (the
-OpenAI-compatible model list; `discovery.url` overrides the path) and adds every
-discovered id to `provider.<name>.models`. Each entry gets `name` and
-`limit.context`; the context comes from the server's top-level `context_length`
-field, and `limit.output` is `min(8192, context/4)`. A hand-listed `models`
-block may still be supplied as a metadata overlay (reasoning, options, variants)
-for the ids it names; it is optional. A fetch failure leaves any overlay in
-place, so the shell still works offline.
+that fetches `<baseURL>/models` (the OpenAI-compatible model list;
+`discovery.url` overrides the path) and merges every discovered id into the
+provider with a `provider` transform. Each entry gets `name`, `limit.context`
+and `limit.output`; the context comes from the server's top-level
+`context_length` field, and `limit.output` is `min(8192, context/4)`. A
+hand-listed `models` block may still be supplied as a metadata overlay (context,
+capabilities, body, variants) for the ids it names; it is optional. A fetch
+failure leaves the overlay in place, so the shell still works offline. A 60 s
+timer re-fetches and calls `ctx.provider.reload()` when the inventory changes.
 
 The plugin is a local `.ts` file written into `.opencode/plugins/`, so it is
 **pinned by this repo's commit** — no npm fetch, no `@latest`, no network at
-startup for the plugin itself. A local plugin is needed because opencode 1.19.0
-(the nixpkgs pin) has no native `/v1/models` discovery; that lives on the
-unmerged 2.0 line. The `config` hook (`@opencode-ai/plugin`) is the verified
-extension point. See [the `llm-client` aspect](../modules/den/aspects/llm-client.nix).
+startup for the plugin itself. OpenCode 2 has no native `/v1/models` discovery
+for a custom OpenAI-compatible provider: the built-in discovery covers only
+Ollama, LM Studio and vLLM, and `opencode.provider.dynamic` loads a provider
+package rather than discovering models. The `provider` transform
+(`ctx.provider.transform`, `editor.add`, `editor.models.set`,
+`ctx.provider.reload`) is the verified extension point; the V1 `config` hook is
+gone. See [the `llm-client` aspect](../modules/den/aspects/llm-client.nix).
 
 **Server contract.** llama-swap renders a model's `capabilities.context` into
 the top-level `context_length` of `/v1/models`, for every id and alias. The
