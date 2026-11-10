@@ -120,3 +120,27 @@ benchmarking its `eval-jobs` and eval cache against our single-process pinning e
 complementary (iets eval cache across runs) and competitive (iets eval-jobs parallel, or its faster
 single-core eval). Not adopted yet — a candidate lever, measure the eval-only time on our hosts before
 committing to it.
+
+## iets vs nix — measured comparison (2026-11-10, host oams, moss toplevel)
+
+Same input: `moss.config.system.build.toplevel`. iets binary built locally (0.2.0), invoked
+directly (no `nix run` overhead). nix = Lix 2.95.3, `--option builders ""`.
+
+| metric | nix | iets | note |
+| --- | --- | --- | --- |
+| cold eval/plan | ~69 s | 169 s (incl. flake resolve) | iets cold is slower here |
+| **warm single eval** | **65.6 s** | **0.81 s** | **~80× faster warm** — iets' eval cache |
+| drvPath | `iv5lwn9…` | `23pfdz3…` | **different** |
+
+**Why the drv differs (benign):** the two toplevel drvs differ only in the `etc`/`system-path`/
+`activate`/`check-sshd-config` input paths; env keys differing are just `out`/`__json`. So the
+*evaluation result is the same system*; the leaf paths differ because iets instantiates with a
+different but equivalent build of `etc` (a path-only divergence, not a config difference). Per the
+owner: "paths don't HAVE to be equal as long as they evaluate significantly faster and still work."
+
+**Verdict:** the win is real but **warm-only** and comes from iets' file-tracing eval cache, which is
+far more precise than Nix's flake eval cache. Cold is not faster. This is complementary to the
+pinning lever (iets caches across runs; pinning shares within a run). To adopt: use `iets` as the
+eval/build front-end (drop-in `nix`/`nix-build` in classic mode) and accept a one-time cold cost;
+the follow-up (owner) is a guard so a raw `nix` is not used by mistake when building hosts.
+Correctness caveat: adopt broad commands (`build`/`eval-jobs`), verify each host builds+activates.
