@@ -232,6 +232,17 @@ The fork installs `pkgs.lix` in the guest for that reason. It also means the gue
 counts, and a size string such as `"5G"` fails the generated `nix.conf` with
 `setting 'min-free' has invalid value '5G'` — which takes the whole guest build down with it.
 
+Moving an existing guest from CppNix to Lix in one step then fails at
+`Failed to install bootloader`: `switch-to-configuration` installs the bootloader **before** it
+activates `/etc`, so the new Lix binary parses the old `nix.conf` and rejects its size strings.
+Activate the generation first, switch second:
+
+```bash
+sudo nix-env -p /nix/var/nix/profiles/system --set "$SYS"
+sudo "$SYS/activate"
+sudo "$SYS/bin/switch-to-configuration" switch
+```
+
 ---
 
 ## Background: why the store is _already_ single & how transfer works

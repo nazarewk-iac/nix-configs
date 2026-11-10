@@ -123,9 +123,9 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
   and installs it on demand, and a switch no longer builds a qcow2.
 - `anji` itself now builds its aarch64-linux parts on its own Rosetta VM rather than the farm, and
   the guest carries the `kdn-nix-remote-build` account with passwordless sudo for in-place updates.
-- Still open on this task: the farm's `anji-arm` path. The socat forward had been running since
-  2026-11-09 with a store closure that was later collected, so every per-connection `socat1` exec
-  failed to load its libraries; it was kickstarted and needs a re-test from a client.
+- Resolved 2026-11-10: the `anji-arm` path works (see the next section). The socat forward had been
+  running since 2026-11-09 with a store closure that was later collected, so every per-connection
+  `socat1` exec failed to load its libraries.
 
 ## Progress — 2026-11-10 (why `anji-arm` stayed DOWN)
 
@@ -145,8 +145,23 @@ independent faults, each sufficient on its own to keep the pool on the `briv` ba
    builders run Lix 2.95; `ssh-ng` answered `protocol mismatch` before a build was dispatched. The
    fork installs `pkgs.lix` in the guest, which also forces `min-free`/`max-free` to be byte counts
    (Lix rejects the size strings CppNix accepts).
+4. **The build account was forced to the wrong protocol.** The `Match` block forced
+   `nix-store --serve`, the legacy protocol, while an `ssh-ng` client opens the session with
+   `nix-daemon --stdio`. It now forces the daemon and the account joins `trusted-users`, so the
+   daemon may add the unsigned paths every build produces. It is still not a shell account: the
+   forced command ignores whatever the client asks for, and no TTY or forwarding is allowed.
 
-`guest.switch` also needs `nix copy --no-check-sigs`: the guest's `nix-store --serve` enforces
-`require-sigs` even for `builder`, which is in `trusted-users` — the daemon path trusts that account
-and the serve path does not. The copy runs over the VM's private console network, so skipping the
-check there is the trust boundary the appliance already relies on.
+Two operational details worth remembering:
+
+- `guest.switch` copies with `--no-check-sigs`: the guest's `nix-store --serve` path enforces
+  `require-sigs` even for `builder`, who is in `trusted-users` — the daemon path trusts that account
+  and the serve path does not. The copy runs over the VM's private console network, so skipping the
+  check there is the trust boundary the appliance already relies on.
+- Moving a guest from CppNix to Lix in one step fails at `Failed to install bootloader`:
+  `switch-to-configuration` installs the bootloader **before** activating `/etc`, so the new Lix
+  binary parses the old `nix.conf` and rejects its `min-free`/`max-free` size strings. Run
+  `$SYS/activate` first, then `$SYS/bin/switch-to-configuration switch`.
+
+After all four were off the list the proxy still failed, because macOS's firewall keeps its verdict
+per process: socat had been running since before the allowance existed, so LAN sessions were
+dropped while loopback and the health check worked. One `launchctl kickstart -k` cleared it.
