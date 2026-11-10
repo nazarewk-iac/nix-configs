@@ -34,6 +34,8 @@
 .*.md
 !*.py
 .*.py
+!*.ts
+.*.ts
 !/.envrc
 !/flake.lock
 !/devenv.yaml
