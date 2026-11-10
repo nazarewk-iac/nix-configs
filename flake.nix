@@ -235,6 +235,21 @@
             });
           });
         })
+        # `angle-grinder` 0.19.6's vendored `tikv-jemalloc-sys` build script panics because it gets
+        # `JEMALLOC_OVERRIDE=nixpkgs.<LIB>` — not a real path after the newer rust toolchain. Drop
+        # the override so it builds its own jemalloc. No upstream fix yet; remove when nixpkgs does.
+        (
+          final: prev:
+          {
+            # `tikv-jemalloc-sys` needs a jemalloc built with its `_rjem_` symbol prefix, which the
+            # system jemalloc is not. The nixpkgs cargo hook always sets JEMALLOC_OVERRIDE to a
+            # sentinel, so the crate never builds its own. Unset it in preBuild so the vendored
+            # build produces its own prefixed jemalloc (same as upstream's intent).
+            angle-grinder = prev.angle-grinder.overrideAttrs (old: {
+              preBuild = (old.preBuild or "") + "\nunset JEMALLOC_OVERRIDE\n";
+            });
+          }
+        )
         # `atuin` 18.23.0 fails its darwin e2e tests (`e2e_capture` and `e2e_pty`). That is
         # nixpkgs issue #573527. The tests drive an interactive bash in a pty, and they time out
         # on darwin. Skip the checks on darwin. Remove this entry when the package passes its
