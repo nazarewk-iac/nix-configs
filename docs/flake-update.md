@@ -145,6 +145,41 @@ Repeat until the build passes.
 
 ---
 
+## Audit the input graph
+
+`nix flake update` bumps every input, but a transitive input that pins its own source keeps its own
+copy. `nix flake metadata` does not show that, and the duplicates surface later as several
+revisions of one repository that each need a bump.
+
+`hack/flake-structure-analysis.py` reads `flake.lock` (or `nix flake metadata --json`) and counts,
+per repository, how many transitive inputs already follow it and how many pin their own revision:
+
+```bash
+hack/flake-structure-analysis.py
+hack/flake-structure-analysis.py --single-references   # include repos with one reference
+hack/flake-structure-analysis.py --json                # machine-readable
+```
+
+Rows sort by the `unfollowed` count. The `%unfol` column is the share of transitive references that
+pin their own revision. The `Suggested follows` block prints the declarations to paste into
+`flake.nix`:
+
+```nix
+inputs.devenv.inputs.flake-parts.follows = "flake-parts";
+```
+
+Rules of thumb:
+
+- A fork and its upstream are one project: the script matches them by repository name for the
+  owners given with `--fork-owner` (default `nazarewk-iac`, `nazarewk`). Every other repository
+  keeps `owner/name`, so two unrelated repositories named `default` never merge.
+- A `no top-level input for <repo>` comment means the repository has several transitive references
+  and no root input to follow to. Add a root input first if it should be centralised.
+- A suggestion can be wrong when an input is semantically different despite a similar name. Read
+  the comment, not only the name, and leave such an input unfollowed on purpose.
+
+---
+
 ## Testing
 
 ### macOS (Darwin) — build

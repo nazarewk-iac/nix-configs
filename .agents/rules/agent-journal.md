@@ -99,3 +99,7 @@ entries.
 
 Overwrite the board freely. It is a snapshot of the current state, not a history. The worklog is
 the history.
+
+Keep the tables readable in a terminal: run `hack/fmt-agent-docs.sh` after an edit. It formats every
+file under `.cache/agents/` (a tree-wide `nix fmt` skips that git-ignored directory) and pads the
+table cells so the pipes line up.
