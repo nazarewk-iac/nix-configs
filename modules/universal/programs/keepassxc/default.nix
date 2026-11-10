@@ -117,6 +117,18 @@ in
                 # YubiKey/GPG agent. A `notify` unit waits for the readiness signal and is killed at
                 # the 90 s start timeout, and every `org.freedesktop.secrets` client waits too.
                 Type = "simple";
+                # ...but `simple` sets NO `NOTIFY_SOCKET` unless access is granted, and the wrapper
+                # needs it: it hands `MAINPID` to the KeePassXC child (`systemd-notify --pid`) and
+                # signals readiness (`--ready`) once the database is UNLOCKED (a window exists and
+                # the "Unlock Database" dialog is gone; matching any app_id window accepted that
+                # dialog and lied to systemd — cold boot on oams, 2026-11-14). Without the handoff
+                # the
+                # unit tracks the expect wrapper, which exits as soon as `interact` sees no TTY;
+                # systemd then stops the unit and `KillMode=control-group` kills KeePassXC, and the
+                # next secret client re-activates the unit — an endless start/kill loop
+                # (measured on oams, 2026-11-10). `NotifyAccess` was set to `all` before commit
+                # 3f64b6114 dropped it together with `Type = "notify"`.
+                NotifyAccess = "all";
                 Restart = "on-failure";
                 RestartSec = 5;
                 Environment = lib.attrsets.mapAttrsToList (key: value: "${key}=${value}") envs;

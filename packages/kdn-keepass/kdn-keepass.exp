@@ -36,4 +36,8 @@ if {[info exists ::env(NOTIFY_SOCKET)]} {
   log kdn-keepassxc:systemd "ready signal sent"
 }
 
-interact -i $keepassxc_spawn_id
+# Keep the pty open until KeePassXC exits. `interact` reads from the wrapper's own stdin, and a
+# system service has none, so it returns at once: expect then exits, closes the pty mid-unlock, and
+# KeePassXC falls back to its "Unlock Database" dialog even though the password was submitted
+# (measured on oams, 2026-11-10). `expect eof` blocks on the child instead and needs no TTY.
+expect -i $keepassxc_spawn_id eof

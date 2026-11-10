@@ -531,10 +531,18 @@ in
             serviceConfig.Slice = "background.slice";
             serviceConfig.Type = "dbus";
             serviceConfig.BusName = "org.freedesktop.secrets";
-            # A client that asks for `org.freedesktop.secrets` waits for this unit. Without a bound,
-            # a locked KeePassXC (YubiKey not ready yet) keeps every client waiting for the 90 s
-            # default. Fail the activation fast; KeePassXC claims the name when it unlocks.
-            serviceConfig.TimeoutStartSec = "15s";
+            # A client that asks for `org.freedesktop.secrets` waits for this unit, and KeePassXC is
+            # what claims the name. The bound must therefore cover a COLD start. Measured on oams
+            # (2026-11-10): right after boot KeePassXC needed more than 15 s to claim the name, the
+            # unit failed with `result 'timeout'`, and systemd rolled back every unit started for
+            # it — KeePassXC and nextcloud-client (`Requires` this unit). The session then had no
+            # keepassxc and no nextcloud until a secret client re-activated the unit 6.5 minutes
+            # later. A warm start claims the name in 0.3 s, so the ceiling only matters at boot.
+            #
+            # 120 s is the cold ceiling: still bounded when the YubiKey is absent (the activation
+            # fails instead of hanging forever), but wide enough for Qt, the KDBX KDF and sway's
+            # output setup on a busy boot.
+            serviceConfig.TimeoutStartSec = "120s";
           };
         }
         (lib.mkIf config.programs.gnupg.agent.enable {

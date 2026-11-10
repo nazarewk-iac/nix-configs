@@ -434,10 +434,13 @@ in
           )
           (lib.mkIf config.kdn.desktop.sway.enable {
             systemd.user.services.keepassxc.Unit = {
-              # `Wants`, not `BindsTo`: when the D-Bus activation of the secrets service times out
-              # (a locked YubiKey), `BindsTo` would stop KeePassXC before it can ever unlock. The
-              # wrapper keeps waiting and claims the bus name when the card arrives.
-              Wants = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+              # Do NOT add `Wants=` for the secrets service here. KeePassXC is what claims
+              # `org.freedesktop.secrets`, and the service unit waits for that claim, so a `Wants`
+              # is a cycle: KeePassXC -> service -> (waits for) KeePassXC. The cycle used to be
+              # resolved by the service's start timeout, which then rolled back KeePassXC and
+              # `nextcloud-client` (`Requires` the service) and left the session without either
+              # (measured on oams, 2026-11-10). `Install.WantedBy` below is the other direction and
+              # is safe: it only makes an on-demand activation start KeePassXC when it is dead.
               Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
               After = [ config.kdn.desktop.sway.systemd.envs.target ];
               PartOf = [ config.wayland.systemd.target ];
