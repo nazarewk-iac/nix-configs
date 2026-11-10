@@ -151,6 +151,25 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode off
 ```
 
+The firewall decides per **binary**, and a binary that is not listed is denied. Two consequences
+matter here:
+
+- A connection over loopback bypasses the firewall. A service can therefore work when tested on
+  the host and be unreachable from every other machine, with no log entry anywhere.
+- The entry names a store path, so a nixpkgs bump moves the binary and silently revokes the
+  allowance.
+
+`/nix/store/*-socat-*/bin/socat1` is the one binary that needs an entry: it publishes the Rosetta
+guest's sshd on `anji.lan:31123` for the build farm (`kdn-rosetta-farm-forward`,
+`docs/multi-arch-builder.md`). A `system.activationScripts.anji-firewall` re-adds it whenever the
+entry is missing, so a bump repairs itself on the next activation. Add any other binary the same way:
+
+```bash
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /nix/store/…/bin/<binary>
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /nix/store/…/bin/<binary>
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --listapps   # verify
+```
+
 ## Screen Sharing
 
 Screen Sharing is enabled. Remote Management (ARD) is not configured. nix-darwin has no option for

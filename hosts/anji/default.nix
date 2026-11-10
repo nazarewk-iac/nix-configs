@@ -276,7 +276,7 @@ in
           uid = 25839;
           isSystemUser = true;
           group = "kdn-nix-remote-build";
-          # `nix-store --serve` runs through the login shell, so the account cannot be `nologin`
+          # `nix-daemon --stdio` runs through the login shell, so the account cannot be `nologin`
           # (sshd then answers "This account is currently not available"). The shell is made
           # unusable for anything but the build protocol by the `Match` block below.
           shell = "/bin/sh";
@@ -285,20 +285,36 @@ in
           ];
         };
 
-        # The build account must not be a shell account, but `nix-store --serve` needs a login
-        # shell. A `Match` block forces every session of that account to the serve command and
-        # removes everything else a shell would give: no TTY, no forwarding, no tunnels. Shell
-        # access stays with `builder` (the host key, sudo for in-place updates), which is the
-        # management account; the fleet-wide build key can only speak the Nix protocol.
+        # The build account must not be a shell account, but the protocol needs a login shell.
+        # A `Match` block forces every session of that account to the daemon and removes
+        # everything else a shell would give: no TTY, no forwarding, no tunnels.
+        #
+        # The command is `nix-daemon --stdio`, NOT `nix-store --serve`: the farm's builders are
+        # `ssh-ng://` URLs, and an `ssh-ng` client opens the session with `nix-daemon --stdio`.
+        # Forcing the legacy `--serve` protocol instead makes every connection die with
+        # `protocol mismatch` before a build is dispatched (measured 2026-11-10).
         services.openssh.extraConfig = ''
           Match User kdn-nix-remote-build
-            ForceCommand /run/current-system/sw/bin/nix-store --serve --write
+            ForceCommand /run/current-system/sw/bin/nix-daemon --stdio
             PermitTTY no
             AllowAgentForwarding no
             AllowTcpForwarding no
             X11Forwarding no
             PermitTunnel no
         '';
+
+        # `nix-daemon --stdio` runs as the connecting account, so that account must be trusted:
+        # only trusted users may add unsigned paths, which is what a builder does with every
+        # output it produces. Shell access stays with `builder` (the host key, passwordless sudo
+        # for in-place updates), which is the management account.
+        nix.settings.trusted-users = [ "kdn-nix-remote-build" ];
+
+        # The farm's HAProxy health check opens a connection every 10 s and closes it before
+        # authenticating. OpenSSH 10 counts exactly that as a penalty trigger, so the guest kept
+        # resetting the checks (`ECONNRESET … at step 1 of tcp-check`) and the `anji-arm` backend
+        # stayed DOWN. Exempt the guest's own lima network, which is the only path the checks and
+        # the host take; the public-facing penalty logic is irrelevant for this appliance.
+        services.openssh.settings.PerSourcePenaltyExemptList = "192.168.5.0/24";
       };
       # builderd's launchd PATH must start with /usr/bin. The fork's module (module.nix:307-326)
       # builds the job PATH without it, so lima's guest bootstrap execs the nix openssh from PATH;
@@ -551,6 +567,21 @@ in
           StandardErrorPath = "/var/log/kdn-rosetta-farm-forward.log";
         };
       };
+
+      # The macOS application firewall decides per BINARY, and socat has no allowance by default:
+      # a LAN connection to 31123 is dropped before it reaches socat, while a loopback connection
+      # bypasses the firewall and works — so the forward looks healthy on the host and dead from
+      # everywhere else (measured 2026-11-10: HAProxy kept `anji-arm` DOWN with ECONNRESET).
+      # The allowance names a store path, so every nixpkgs bump revokes it silently; no nix-darwin
+      # option covers per-app entries, so re-add it on activation. See hosts/anji/bootstrap.md.
+      system.activationScripts.anji-firewall.text = ''
+        alf=/usr/libexec/ApplicationFirewall/socketfilterfw
+        if ! "$alf" --listapps 2>/dev/null | grep -Fq -- '${pkgs.socat}'; then
+          "$alf" --add '${pkgs.socat}/bin/socat' >/dev/null 2>&1 || true
+          "$alf" --unblockapp '${pkgs.socat}/bin/socat' >/dev/null 2>&1 || true
+          echo "anji: allowed socat through the application firewall (farm forward on 31123)" >&2
+        fi
+      '';
     }
     (lib.optionalAttrs storeOnExternal {
       # The nix daemons re-homed behind the bootstrap. Each plist's top-level binary becomes the
