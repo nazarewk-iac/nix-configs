@@ -144,6 +144,21 @@ in
           {
             documentation.man.enable = !cfg.minimalServer;
           }
+          # `userborn` (the users-and-groups unit) ships `StateDirectory=userborn`, and systemd
+          # turns that into `RequiresMountsFor=/var/lib/userborn`. On a host that mounts `/var/lib`
+          # separately, the reverse ordering at shutdown forms a cycle:
+          #
+          #   var-lib.mount/stop after userborn.service/stop
+          #     after systemd-tmpfiles-setup-dev.service/stop
+          #     after local-fs-pre.target/stop
+          #     after var-lib.mount/stop
+          #
+          # systemd then deletes a job to break it, on every shutdown, and the choice is not stable.
+          # The directory is unused: the binary writes `/var/lib/nixos/userborn` from its own
+          # arguments, and `/var/lib/userborn` stays empty. Drop the declaration, keep the unit.
+          {
+            systemd.services.userborn.serviceConfig.StateDirectory = lib.mkForce null;
+          }
           (
             /*
               pythonMetadataCheck fixes, see:
