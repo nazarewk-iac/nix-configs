@@ -15,9 +15,10 @@
 ###
 
 !*.nix
-!meta.json
 !*.md
 .*.md
+# Per-host helper scripts (e.g. hosts/etra/litellm_auth.py, the LiteLLM custom-auth hook).
+!/*/*.py
 # SOPS-encrypted links
 !/*/ssh-keys/ssh_host_*_key.{sops,pub}
 !/*/luks/*.sops.header
