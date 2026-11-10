@@ -249,10 +249,22 @@ let
       ) attrs
     );
 
-  # The one documented exception. `modules/den/aspects/llm.nix` states the reason in the option's
-  # own description: the Caddy vhost points at the proxy port with no condition, so a separate
-  # aspect would have to reach back into `llm`. Remove this entry when that design lands.
-  allowedEnables = [ "llm/nixos: kdn.llm.local.compatProxy.enable" ];
+  # The documented exceptions. Each one selects a MODE of the parent feature, not the aspect
+  # itself, and a separate aspect would have to reach back into the parent's namespace:
+  #
+  # - `llm`: the Caddy vhost points at the proxy port with no condition, so a separate aspect
+  #   would have to reach back into `llm`. Remove this entry when that design lands.
+  # - `llm`: `swap` selects llama-swap as the serving engine instead of the plain router. The
+  #   router options live under the same `kdn.llm.local` tree, so it stays one aspect.
+  # - `security-secrets-age`: `tpm` selects the TPM-backed age identity instead of the file
+  #   identity. The rest of the age configuration is shared, so it stays one aspect.
+  allowedEnables = [
+    "llm/nixos: kdn.llm.local.compatProxy.enable"
+    "llm/nixos: kdn.llm.local.swap.enable"
+    "security-secrets-age/darwin: kdn.security.secrets.age.tpm.enable"
+    "security-secrets-age/homeManager: kdn.security.secrets.age.tpm.enable"
+    "security-secrets-age/nixos: kdn.security.secrets.age.tpm.enable"
+  ];
 
   enableHits = lib.subtractLists allowedEnables (
     lib.concatMap (
