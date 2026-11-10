@@ -28,6 +28,12 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
   cannot also be the VM port → the VM needs its **own** builder entry (`anji-arm`).
 - The VM accepts builds from build-farm clients (it runs `kdn.profile.remote-builders` → the
   `kdn-nix-remote-build` account + client signing keys).
+- **Measured 2026-11-10:** that second bullet is not true of the deployed image. The upstream guest
+  is a single-user appliance: `getent passwd` shows only `builder`, and `nix.conf` has
+  `trusted-users = root builder`. HAProxy passes the client's username through unchanged, so every
+  farm connection to `anji.lan:31123` dies at key exchange. The pool then marks `anji-arm` down and
+  uses the `backup` briv — the SD-card Pi — which is how the `anji` build of 2026-11-10 failed on
+  `system-path.drv` with that card full.
 
 ## Steps
 
@@ -49,6 +55,16 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
      credential, or (b) make the dedicated key the only key the VM trusts and have the gateway hold
      it. (a) is minimal and works today; (b) is stricter but needs the gateway to be the single
      holder. Record the choice.
+
+     **Decided 2026-11-10 (owner): (a).** The farm's clients already share one key, deployed from
+     SOPS as `ssh.kdn-nix-remote-build` (fingerprint `SHA256:xtdXqjc/53ZIhTn4bMquc6pGxQvX3gQKpxM7g7MX1P4`).
+     The guest takes its public half, so no new secret is generated and no gateway credential is
+     needed. Implemented in `hosts/anji/default.nix` as
+     `nix-rosetta-builder.potentiallyInsecureExtraNixosModule`: it declares the
+     `kdn-nix-remote-build` account (uid/gid 25839, `isSystemUser`) with that key and leaves
+     `allowed-users` at `*`. The account is deliberately **not** a `trusted-user`: a trusted client
+     uses `buildDerivation` and can no longer forward to its own builders (`docs/lix-caveats.md`).
+     A new image changes `lima.yaml`, so the guest is recreated once.
 
 3. **build farm: add the `anji-arm` builder.**
    - `data/build-farm.nix` `builders.anji-arm = { address = "anji.lan…"; port = <LANPORT>; }`.
@@ -79,3 +95,15 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
   pool uses `StrictHostKeyChecking no`, but note it.
 - Redeploying anji recreates the guest only on a `lima.yaml` change; a plain socat/firewall change must
   not hit that path.
+
+## Progress
+
+- 2026-11-10 — steps 1 and 3 are deployed: the socat forward runs as
+  `org.nixos.kdn-rosetta-farm-forward` (`0.0.0.0:31123` → `127.0.0.1:31122`) and `data/build-farm.nix`
+  carries the `anji-arm` builder. Step 2 now has its decision (model (a)) and the guest-side account;
+  the image rebuild, the anji switch, and the end-to-end `nix store ping` / `briv` build are pending.
+- Verified from anji: `nix store ping --store ssh-ng://rosetta-builder` answers
+  `Version: 2.34.8, Trusted: 1`, so the guest is a healthy builder for its own host. Only the LAN
+  path was broken.
+- The guest disk is `/dev/vda2`, 1008G with `x-systemd.growfs`, backed by a sparse 1T `diffdisk` on
+  `/anji-ext-01`. No resize is needed; `diskSize = "1024GiB"` is already effective.

@@ -239,6 +239,34 @@ in
       # Rosetta VM is the only Linux builder since phase 3 detached the stock one.
       nix-rosetta-builder.cores = 8;
       nix-rosetta-builder.memory = "8GiB";
+      # The build farm's `arm` pool dials this guest DIRECTLY on `anji.lan:31123`
+      # (`data/build-farm.nix`, builder `anji-arm`). HAProxy forwards TCP and cannot rewrite the
+      # SSH username, so the client authenticates to the guest itself as `kdn-nix-remote-build`.
+      # The upstream image is a single-user appliance (`builder` only), so without the account
+      # every connection dies at key exchange, the pool marks `anji-arm` down and falls back to the
+      # `backup` briv — an SD-card Pi that then runs the aarch64 builds (measured 2026-11-10: the
+      # anji build failed on briv `system-path.drv` with the SD card full).
+      #
+      # Upstream appends this module to the guest's NixOS config, so the account lives in the image.
+      # The key is the PUBLIC half of the shared build-farm client key deployed from SOPS as
+      # `ssh.kdn-nix-remote-build` (fingerprint SHA256:xtdXqjc/53ZIhTn4bMquc6pGxQvX3gQKpxM7g7MX1P4).
+      # Rotate both together. `allowed-users` stays at its `*` default: narrowing it to the new
+      # group would lock the guest's own `builder` account out of the daemon. The account is NOT a
+      # `trusted-user` — a trusted client uses `buildDerivation` and can no longer forward to the
+      # host's own builders (docs/lix-caveats.md).
+      #
+      # ⚠️ A new image changes `lima.yaml`, so the daemon deletes and recreates the guest once.
+      nix-rosetta-builder.potentiallyInsecureExtraNixosModule = {
+        users.groups.kdn-nix-remote-build.gid = 25839;
+        users.users.kdn-nix-remote-build = {
+          uid = 25839;
+          isSystemUser = true;
+          group = "kdn-nix-remote-build";
+          openssh.authorizedKeys.keys = [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID/e1WNc2iAknU+3q/Eh5MAP2oR0rc937aCOCbrtOiSk kdn-nix-remote-build"
+          ];
+        };
+      };
       # builderd's launchd PATH must start with /usr/bin. The fork's module (module.nix:307-326)
       # builds the job PATH without it, so lima's guest bootstrap execs the nix openssh from PATH;
       # nixpkgs builds openssh without GSSAPI, and lima passes `-o GSSAPIAuthentication=no`, which
