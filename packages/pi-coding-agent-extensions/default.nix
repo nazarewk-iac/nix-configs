@@ -32,10 +32,15 @@ let
       name,
       src,
       npmDeps ? null,
+      # Extra generated files placed at the extension root, e.g. a catalog snapshot.
+      extraFiles ? { },
     }:
     pkgs.runCommand "pi-extension-${name}" { } ''
       mkdir -p $out
       cp -r ${src}/. $out/
+      ${lib.concatStringsSep "\n" (
+        lib.mapAttrsToList (path: file: "install -m 0644 ${file} $out/${path}") extraFiles
+      )}
       ${lib.optionalString (npmDeps != null) ''
         # The extension's own runtime deps. Pi injects its SDK packages, so a missing
         # @earendil-works/* import is expected and correct.
@@ -44,6 +49,20 @@ let
       ''}
       chmod -R u+w $out
     '';
+  # model-discovery reads the curated client projection at runtime: the extension
+  # itself is TypeScript and cannot import Nix. `mkPiModelsJson` is the SAME
+  # function home-manager uses for `models.json`, so there is one source of truth
+  # (`data/llm.nix`) and no second capability table. Rendering it as an extension
+  # file makes a `data/llm.nix` change rebuild the extension.
+  modelDiscoveryCatalog = (pkgs.formats.json { }).generate "pi-model-catalog.json" (
+    let
+      llm = import ../../lib/llm.nix { inherit lib; };
+    in
+    # A localHost endpoint (`brys`, `oams`) is included only for the host that
+    # asks, so render both and merge: the catalog carries every direct endpoint
+    # plus the two shared ones. The provider keys are disjoint.
+    llm.mkPiModelsJson { host = "brys"; } // llm.mkPiModelsJson { host = "oams"; }
+  );
 in
 {
   # pi-orchestrator: forces the main agent to delegate to a subagent fleet ("engaged" mode).
@@ -102,9 +121,15 @@ in
   # host headroom, in one tool. It degrades to the static view on a network fault.
   fleet-status = ./fleet-status;
   # Model discovery: dynamic providers (refreshModels) that list the LIVE litellm
-  # gateway and local llama-swap catalogs, so `pi --list-models` shows discovered
-  # models (e.g. Requesty ids) layered under the static data/llm.nix catalog.
-  model-discovery = ./model-discovery;
+  # gateway, local llama-swap and Requesty router catalogs, so `pi --list-models`
+  # shows discovered models (e.g. Requesty ids) layered under the static
+  # data/llm.nix catalog. The bundled `catalog.json` carries the curated fields a
+  # live endpoint does not publish (input modalities, client token budgets).
+  model-discovery = mkExtension {
+    name = "model-discovery";
+    src = ./model-discovery;
+    extraFiles."catalog.json" = modelDiscoveryCatalog;
+  };
 
   # pi-hashline-edit: replaces the built-in read/edit with hashline versions. read prefixes each
   # line with "N:" and a [path#TAG] header; edit takes a line-anchored patch and REJECTS it when
@@ -154,6 +179,32 @@ in
 
   timestamps = ./timestamps;
   idle-marker = ./idle-marker;
+
+  # pi-btw: throwaway side conversations in an overlay (`/btw`, `/side`, and the
+  # `/btw:*` subcommands), so a tangent does not consume the main session's
+  # context. Vendored from the published npm tarball; it declares no runtime
+  # dependencies (only Pi's own pi-ai/pi-coding-agent/pi-tui peers), so there is
+  # no node_modules tree to carry. The package manifest points at
+  # `extensions/btw.ts`, which Pi resolves when the directory is loaded.
+  pi-btw =
+    let
+      version = "0.8.1";
+      src = pkgs.fetchurl {
+        url = "https://registry.npmjs.org/pi-btw/-/pi-btw-${version}.tgz";
+        hash = "sha256-MNPnzf7VasfyxlqV41jl7swmkQ4dKHphz8XOS4PfZpw=";
+      };
+      # The npm tarball nests everything under `package/`; strip that one root so
+      # `package.json`, `extensions/` and `skills/` sit at the output root.
+      unpacked = pkgs.runCommand "pi-btw-${version}" { } ''
+        mkdir -p $out
+        tar xzf ${src} -C $out --strip-components=1
+        chmod -R u+w $out
+      '';
+    in
+    mkExtension {
+      name = "pi-btw-${version}";
+      src = unpacked;
+    };
 
   # pi-ask-user: the interactive `ask_user` tool. It lets an agent stop and ask the operator a
   # focused question with option lists, instead of guessing or silently stalling. Vendored from a

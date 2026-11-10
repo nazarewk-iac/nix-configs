@@ -35,9 +35,7 @@ let
   # needs no local serving block.
   modelsForEndpoint =
     ep:
-    lib.filterAttrs (
-      _: m: endpointOf m == ep && (!(data.servers ? ${ep}) || isServed m)
-    ) data.models;
+    lib.filterAttrs (_: m: endpointOf m == ep && (!(data.servers ? ${ep}) || isServed m)) data.models;
 
   # alias -> model id, inverted once over the served models. A model may answer to several aliases.
   aliasToModel = lib.foldl' (
@@ -61,6 +59,11 @@ let
         # `maxTokens` is an explicit number (per model in data/llm.nix, else `pi.defaults`). Clamp
         # it to the window so an output cap can never exceed the context it shares with the prompt.
         maxTokens = lib.min (m.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
+        # The SERVED model id behind this alias. Pi ignores an unknown field, but
+        # model-discovery reads the rendered catalog: a gateway lists a remote model
+        # under a provider-scoped id (`requesty/deepinfra/<baseId>`), and this field
+        # is how the curated context and modality reach that live entry.
+        baseId = name;
       }
       // lib.optionalAttrs (m.vision or false) {
         input = [
@@ -95,25 +98,33 @@ let
   # host, valid only for a client RUNNING on that host (offline capability). Such
   # an endpoint is included only when the caller passes the matching `host`.
   mkPiModelsJson =
-    { host ? null }:
-    lib.mapAttrs (epName: ep: {
-      baseUrl = ep.baseUrl;
-      api = ep.api;
-      apiKey = ep.apiKey;
-      models = builtins.concatLists (
-        map piEntries (
-          builtins.attrNames (
-            if epName == "litellm" then
-              servedModels
-            else if data.servers ? ${epName} then
-              # A direct host endpoint lists only the models THAT host serves.
-              lib.filterAttrs (_: m: enabledOn epName m) data.models
-            else
-              modelsForEndpoint epName
+    {
+      host ? null,
+    }:
+    lib.mapAttrs
+      (epName: ep: {
+        baseUrl = ep.baseUrl;
+        api = ep.api;
+        apiKey = ep.apiKey;
+        models = builtins.concatLists (
+          map piEntries (
+            builtins.attrNames (
+              if epName == "litellm" then
+                servedModels
+              else if data.servers ? ${epName} then
+                # A direct host endpoint lists only the models THAT host serves.
+                lib.filterAttrs (_: m: enabledOn epName m) data.models
+              else
+                modelsForEndpoint epName
+            )
           )
-        )
+        );
+      })
+      (
+        lib.filterAttrs (
+          _: ep: (ep.localHost or null) == null || (ep.localHost or null) == host
+        ) data.endpoints
       );
-    }) (lib.filterAttrs (_: ep: (ep.localHost or null) == null || (ep.localHost or null) == host) data.endpoints);
 
   # The purpose aliases only (legacy bare ids like `fast` are not purposes).
   purposeAliases = lib.filterAttrs (
@@ -210,7 +221,9 @@ let
       enabled = srv.profiles.${profile}.sets;
     in
     lib.mapAttrs (_id: m: serverEntry host profile m) (
-      lib.filterAttrs (_: m: (m.hosts or { }) ? ${host} && builtins.elem m.hosts.${host}.set enabled) data.models
+      lib.filterAttrs (
+        _: m: (m.hosts or { }) ? ${host} && builtins.elem m.hosts.${host}.set enabled
+      ) data.models
     );
 
   # ---------------------------------------------------------------- member projection

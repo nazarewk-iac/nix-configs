@@ -87,7 +87,7 @@ let
         {
           pi.coding-agent = {
             # The repo flake's version-selected package (local copy > pi.nix > nixpkgs), so devenv
-            # gets the vendored 1.4.0. devenv's own `pkgs` has no repo overlay, so read the flake
+            # gets the vendored 1.5.1. devenv's own `pkgs` has no repo overlay, so read the flake
             # output instead of `pkgs.pi-coding-agent`.
             package = inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
             # The default working style for local LLMs plus the model catalog, appended to every
@@ -96,6 +96,10 @@ let
             extensions = [
               ext.timestamps
               ext.idle-marker
+              # Side conversations in a TUI overlay (`/btw`, `/side`, `/btw:*`), so a
+              # tangent does not spend the main session's context. Needs a TUI; the
+              # devshell is interactive, so it stays on by default.
+              ext.pi-btw
               # Vendored pi-orchestrator: engaged by default, so the parent agent keeps only
               # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
               # subagent extension, whose async/status/retry behaviour this one already has.
