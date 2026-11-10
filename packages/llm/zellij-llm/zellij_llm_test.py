@@ -95,7 +95,8 @@ def wait_for(predicate, timeout=10, interval=0.2):
 def test_spawn_creates_session_and_runs_stdin_script(session):
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -109,11 +110,25 @@ def test_spawn_creates_session_and_runs_stdin_script(session):
 
 def test_spawn_is_idempotent_on_existing_session(session):
     run(
-        "zellij-llm", "run", "-b", "--session", session, "--pane", "p1", input_text="true\n"
+        "zellij-llm",
+        "run",
+        "-b",
+        "--session",
+        session,
+        "--pane",
+        "p1",
+        input_text="true\n",
     )
     # The second spawn must not fail even though the session already exists.
     run(
-        "zellij-llm", "run", "-b", "--session", session, "--pane", "p2", input_text="true\n"
+        "zellij-llm",
+        "run",
+        "-b",
+        "--session",
+        session,
+        "--pane",
+        "p2",
+        input_text="true\n",
     )
     assert wait_for(lambda: len(list_panes(session)) >= 3)  # default pane + p1 + p2
 
@@ -121,7 +136,8 @@ def test_spawn_is_idempotent_on_existing_session(session):
 def test_peek_returns_pane_output_by_title_and_by_id(session):
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -209,7 +225,8 @@ def test_spawn_persists_pane_by_default(session):
     # and review. The pane stays present and does NOT report exited (a live shell holds it open).
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -226,7 +243,8 @@ def test_spawn_ephemeral_closes_pane_on_exit(session):
     # --ephemeral closes the pane the moment its command exits, so it disappears from the list.
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -241,7 +259,8 @@ def test_spawn_wait_stream_matches_spawn_and_watch(session):
     # `spawn --wait --mode stream` is the same behavior as `spawn-and-watch --mode stream`.
     out = run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -261,7 +280,8 @@ def test_watch_follows_existing_pane_to_exit(session):
     # Spawn without waiting, then attach with `watch` and follow the pane until it exits.
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -287,7 +307,8 @@ def test_wait_blocks_until_exit_and_returns_code(session):
     # `wait` blocks until the pane's command exits, then reports EXIT:<code> with no streaming.
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -316,7 +337,8 @@ def test_session_survives_after_command_exits(session):
     # command finishes. The pane drops to a shell, which keeps the session alive and attachable.
     run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         session,
         "--pane",
@@ -362,7 +384,8 @@ def test_spawn_rejects_oversized_session_name(session):
     long_name = "x" * 120
     out = run(
         "zellij-llm",
-        "run", "-b",
+        "run",
+        "-b",
         "--session",
         long_name,
         "--pane",
@@ -435,18 +458,18 @@ def test_opencode_attach_prints_command(session):
 def test_opencode_spawn_dry_run_wraps_devenv(tmp_path):
     # A devenv project (devenv.nix present) wraps the command in `devenv shell --`.
     (tmp_path / "devenv.nix").write_text("{ }\n")
-    out = run("zellij-llm", "opencode", "run", "-b", "--cwd", str(tmp_path), "--dry-run")
+    out = run("zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run")
     assert out.stdout.strip().startswith("devenv shell -- opencode")
 
 
 def test_opencode_spawn_dry_run_no_devenv(tmp_path):
-    out = run("zellij-llm", "opencode", "run", "-b", "--cwd", str(tmp_path), "--dry-run")
+    out = run("zellij-llm", "opencode", "spawn", "--cwd", str(tmp_path), "--dry-run")
     assert out.stdout.strip().startswith("opencode")
     # --model and --opencode-arg pass through.
     out = run(
         "zellij-llm",
         "opencode",
-        "run", "-b",
+        "spawn",
         "--cwd",
         str(tmp_path),
         "--dry-run",
@@ -463,7 +486,7 @@ def test_opencode_spawn_and_list(session, tmp_path):
     run(
         "zellij-llm",
         "opencode",
-        "run", "-b",
+        "spawn",
         "--session",
         session,
         "--pane",
@@ -488,7 +511,7 @@ def test_opencode_watch_reports_running_then_idle(session, tmp_path):
     run(
         "zellij-llm",
         "opencode",
-        "run", "-b",
+        "spawn",
         "--session",
         session,
         "--pane",
@@ -527,7 +550,7 @@ def test_opencode_send_returns_ok(session, tmp_path):
     run(
         "zellij-llm",
         "opencode",
-        "run", "-b",
+        "spawn",
         "--session",
         session,
         "--pane",
