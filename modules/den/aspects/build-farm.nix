@@ -361,6 +361,8 @@ in
       machinesOff = lib.concatMapStrings (c: machineLine c + "\n") (
         builtins.filter (c: !c.toggleable) clients
       );
+      machinesOnFile = pkgs.writeText "kdn-nix-machines-on" machinesOn;
+      machinesOffFile = pkgs.writeText "kdn-nix-machines-off" machinesOff;
 
       # One `nix.buildMachines` entry per client row. The host name must be an SSH alias when the
       # port is not 22: `buildMachines` has no port field and the daemon connects with plain `ssh`.
@@ -602,6 +604,13 @@ in
           # names that file; `nix.buildMachines` is deliberately not used, because it resolves to a
           # store path fixed at build time.
           nix.settings.builders = lib.mkForce "@/run/kdn/nix-machines";
+          # Seed the file at `sysinit.target`, before any socket can accept a client. The generator
+          # below rewrites it with the effective list once `multi-user.target` is reached; a build
+          # that starts in between sees the safe "off" list instead of a missing file.
+          systemd.tmpfiles.rules = [
+            "d /run/kdn 0755 root root -"
+            "C /run/kdn/nix-machines 0644 root root - ${machinesOffFile}"
+          ];
           nix.distributedBuilds = true;
           nix.settings.builders-use-substitutes = true;
           # The fallback is local, but Lix sets no SSH `ConnectTimeout` of its own, so a dropped
@@ -626,10 +635,14 @@ in
           systemd.services.kdn-build-farm-machines = {
             description = "Recompute the build-farm builder list from the brys on|off|auto state";
             wantedBy = [ "multi-user.target" ];
-            before = [
-              "nix-daemon.service"
-              "nix-daemon.socket"
-            ];
+            # Only the service, never `nix-daemon.socket`. The socket is pulled by `sockets.target`,
+            # which is ordered before `basic.target` and so before `multi-user.target`; a oneshot
+            # that multi-user pulls cannot also run before the socket without an ordering cycle,
+            # and systemd breaks that cycle by deleting the socket job — which left the daemon
+            # unstartable at boot (2026-11-10). The file always exists by then: `tmpfiles` seeds it
+            # with the "off" list at `sysinit.target`, and this unit rewrites it with the effective
+            # list. A socket connection that arrives in between reads a valid, safe list.
+            before = [ "nix-daemon.service" ];
             path = [
               pkgs.networkmanager
               pkgs.gnugrep
@@ -647,8 +660,8 @@ in
               StartLimitBurst = 0;
             };
             environment = {
-              MACHINES_ON = toString (pkgs.writeText "kdn-nix-machines-on" machinesOn);
-              MACHINES_OFF = toString (pkgs.writeText "kdn-nix-machines-off" machinesOff);
+              MACHINES_ON = toString machinesOnFile;
+              MACHINES_OFF = toString machinesOffFile;
               # One SSID per line, so a name with spaces survives (`while read`, not word-split).
               AUTO_SSIDS = lib.concatMapStrings (s: s + "\n") cfg.autoWifi;
               # Optional reachability fallback: when set, "is brys reachable on the LAN" also
