@@ -116,3 +116,38 @@ When a patch has landed in the channel we track:
 1. Comment out or delete the `[patch.<input>.<name>]` entry in `.flake.patches/config.toml`
 2. Delete the `.patch` file under `.flake.patches/<input>/`
 3. Re-run patches to verify: `nix run '.#update' -- g:patches`
+
+---
+
+## Inputs without an `-upstream` anchor
+
+`.flake.patches` rewrites an input by comparing it with `{name}-upstream`, so an input without that
+anchor cannot be patched at all. `nixos-hardware` is such an input today.
+
+When the fix belongs there, override it in the module that consumes it instead — one worked
+example is the Raspberry Pi kernel in
+[modules/universal/profile/hardware/rpi4/default.nix](../modules/universal/profile/hardware/rpi4/default.nix):
+
+```nix
+boot.kernelPackages = lib.mkForce (
+  pkgs.linuxPackagesFor (
+    (pkgs.callPackage "${inputs.nixos-hardware}/raspberry-pi/common/kernel.nix" {
+      rpiVersion = 4;
+    }).overrideAttrs (old: { patches = [ ./my-fix.patch ] ++ (old.patches or [ ]); })
+  )
+);
+```
+
+Two rules that cost time to learn:
+
+- **`overrideAttrs` on `patches`, not `.override { kernelPatches = …; }`.** A package that the
+  module already `overrideAttrs`ed has an inert `.override`: passing `kernelPatches = [ ]` through
+  it leaves the derivation byte-identical.
+- **Vendor the patch file.** `fetchpatch` runs on the *remote builder*, so the bytes that get
+  hashed on the client and the bytes the builder downloads can differ, and the build then fails
+  with `expected path: … / got path: …`.
+
+Add an upstream issue or PR reference in the comment, and delete the override once the input
+carries the fix. Adding `{name}-upstream` to `flake.nix` is the alternative when the workaround
+would be large.
+

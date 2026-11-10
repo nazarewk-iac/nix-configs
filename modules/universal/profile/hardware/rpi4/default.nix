@@ -88,6 +88,38 @@ in
           #hardware.raspberry-pi."4".apply-overlays-dtmerge.enable = true;
         })
         {
+          # The RPi vendor kernel (nixos-hardware's `raspberry-pi/common/kernel.nix`, 6.18) builds
+          # its bundled `tools/bpf` helpers, and since Linux 6.16 the arm64 UAPI declares the
+          # 128-bit registers as `__u128` — a typedef the kernel's private
+          # `tools/include/linux/types.h` lacks. Against a glibc whose `asm/*.h` carry that
+          # declaration the tools build dies with:
+          #
+          #   tools/bpf/resolve_btfids: pager.c → asm/sigcontext.h:81
+          #   error: unknown type name '__u128'; did you mean '__u32'?
+          #
+          # nixpkgs fixes this for its own kernels (`tools_128bit_types`, nixpkgs #581990), but not
+          # for the nixos-hardware package, which pins its own `kernelPatches` list. Prepend the
+          # same upstream commit to that derivation's patch list. Remove once nixos-hardware
+          # carries it. `overrideAttrs` on `patches`, not `.override { kernelPatches = …; }`: the
+          # package the module returns is an `overrideAttrs` result, whose `.override` is inert
+          # (measured: `kernelPatches = [ ]` through it leaves the derivation unchanged).
+          #
+          # The patch is vendored, not `fetchpatch`ed: the fetch happens on the remote builder, and
+          # the guest's download of that GitHub URL did not match the hash the client computed
+          # (`expected path: …-tools-add-128-bit-…`, `got path: …`), so the build failed on a
+          # different set of bytes than the one that was hashed.
+          boot.kernelPackages = lib.mkForce (
+            pkgs.linuxPackagesFor (
+              (pkgs.callPackage "${inputs.nixos-hardware}/raspberry-pi/common/kernel.nix" {
+                rpiVersion = 4;
+              }).overrideAttrs
+                (old: {
+                  patches = [ ./tools-128bit-types.patch ] ++ (old.patches or [ ]);
+                })
+            )
+          );
+        }
+        {
           # there is no module "tpm-tis" for rpi4 kernel
           systemd.tpm2.enable = lib.mkForce false;
           security.tpm2.enable = lib.mkForce false;
