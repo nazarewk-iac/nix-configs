@@ -22,8 +22,10 @@ Full doc: [docs/tasks/README.md](../../docs/tasks/README.md).
   sub-task points at its parent with `../definition.md`.
 - **Never track the status of a work run as a task.** A build, a verification run or a debug
   session belongs in `<task-dir>/.worklog.md` (append-only, dated) with the current state in
-  `<task-dir>/.board.md`. The `.*.md` rule in `.gitignore` keeps both out of every commit. A
-  helper script for one run belongs in a git-ignored path such as `.cache/agent-notes/`.
+  `<task-dir>/.board.md`. The `.*.md` rule in `.gitignore` keeps both out of every commit. Every run
+  also keeps a session pair in `.cache/agents/<harness>-<session>/`; see
+  [agent-journal.md](agent-journal.md). A helper script for one run belongs in a git-ignored path
+  such as `.cache/agent-notes/`.
 - **Parked work** gets a transient `status.md` (Done-so-far / Remaining / Next-directions) while
   `status: in-progress`; **delete it when the task is declared done** — a task is not done while
   a `status.md` remains.

@@ -22,6 +22,18 @@ carrying a description: the next edit would silently join an already-described
 change, and the user reviews from the tip. See
 [Jujutsu VCS](.agents/rules/jujutsu-vcs.md).
 
+## Keep a worklog and a board
+
+Every run keeps a **session** worklog (append-only, dated) and board (current state) in
+`.cache/agents/<harness>-<session>/{worklog,board}.md`. A run that works in a task directory also
+keeps the task pair, `<task-dir>/.{worklog,board}.md`: the session pair records the run, the task
+pair records the task's history. Parallel tracks get one `board-<track>.md` each and append to the
+shared worklog.
+
+The user can switch the journals off. A direct "no worklog" instruction in the session wins;
+`KDN_AGENT_WORKLOG=skip` is the scriptable fallback. See
+[Worklog and Board](.agents/rules/agent-journal.md).
+
 ## Topic Files
 
 - [Jujutsu VCS](.agents/rules/jujutsu-vcs.md) — jj mandate, working copy, split, bookmark hygiene, fork rebase (full doc: [docs/jujutsu-vcs.md](docs/jujutsu-vcs.md), fork topology: [docs/jujutsu-vcs.fork.md](docs/jujutsu-vcs.fork.md); short pointer also at [version-control.md](.agents/rules/version-control.md))
@@ -34,6 +46,7 @@ change, and the user reviews from the tip. See
 - [Flake Update](.agents/rules/flake-update.md) — update procedure, patch handling, testing (full doc: [docs/flake-update.md](docs/flake-update.md))
 - [MCP Setup](.agents/rules/mcp-setup.md) — gateway architecture, adding backends, mcpsnoop (full doc: [docs/mcp-setup.md](docs/mcp-setup.md))
 - [Tasks](.agents/rules/tasks.md) — one directory per task at `docs/tasks/<YYYY-MM>/<slug>/`, recursive sub-tasks, done-tag + sibling solution file; a work-run status belongs in the task's `.worklog.md` (full doc: [docs/tasks/README.md](docs/tasks/README.md))
+- [Worklog and Board](.agents/rules/agent-journal.md) — every agent run keeps a session `{worklog,board}.md` (`.cache/agents/<harness>-<session>/`) plus a task pair when a task exists; one board per parallel track; a direct "no worklog" instruction or `KDN_AGENT_WORKLOG=skip` turns them off
 - [Simple Technical English](.agents/rules/simple-technical-english.md) — strict ASD-STE100 for all docs, code comments, and chat; domain-vocabulary exception; ask the user before you drop STE
 - [Darwin Quirks](.agents/rules/darwin-quirks.md) — on macOS, surface an unpredicted behaviour to the user, then record it in [docs/darwin-quirks.md](docs/darwin-quirks.md) after confirmation
 

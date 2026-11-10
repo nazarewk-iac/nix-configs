@@ -83,16 +83,28 @@ A sub-task is not the same thing as a supporting document:
 
 ## The worklog and the board
 
-Two files record the state of the work, not the definition of it. Both live in the task directory
-and both start with a dot. The `.*.md` rule in `.gitignore` keeps them out of every commit.
+Two files record the state of the work, not the definition of it. Both start with a dot, and the
+`.*.md` rule in `.gitignore` keeps them out of every commit. Every agent run keeps them at two
+levels; the full contract is in [agent-journal.md](../../.agents/rules/agent-journal.md).
 
-| File                     | Contents                                                                |
-| ------------------------ | ----------------------------------------------------------------------- |
-| `<task-dir>/.worklog.md` | Append-only. One dated section per work run. Never edit an older entry. |
-| `<task-dir>/.board.md`   | The current state. One row per open item. Overwrite it freely.          |
+| Level   | File                                           | Contents                                                                |
+| ------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| Task    | `<task-dir>/.worklog.md`                       | Append-only. One dated section per work run. Never edit an older entry. |
+| Task    | `<task-dir>/.board.md`                         | The task's current state. One row per open item. Overwrite it freely.   |
+| Session | `.cache/agents/<harness>-<session>/worklog.md` | The run's history: what it did, in what order.                          |
+| Session | `.cache/agents/<harness>-<session>/board.md`   | The run's current state, including parallel tracks.                     |
 
 A build, a verification run, a measurement or a debug session belongs here. An umbrella task keeps
-one worklog and one board for the whole family, in the umbrella directory.
+one task pair for the whole family, in the umbrella directory. The session pair exists even when
+the run touches several tasks or none; the task pair is the durable history of that task.
+
+A run split into parallel tracks adds one `board-<track>.md` per track at the session level. A
+track edits only its own board, and every track appends to the shared `worklog.md`. Append with one
+small `cat >> file`; add `flock` when the host has it (Linux does, macOS does not) and fall back to
+the plain append when it does not.
+
+The user can turn both levels off for a session: a direct "no worklog" instruction wins, and
+`KDN_AGENT_WORKLOG=skip` is the scriptable fallback.
 
 ## Never track the status of a work run as a task
 
