@@ -148,16 +148,16 @@
     "brew": {
       "flake": false,
       "locked": {
-        "lastModified": 1777253336,
-        "narHash": "sha256-IYVi28jebMUfQ3MDPG9IkSrLsf09Y7ShsNo+n4cmURU=",
+        "lastModified": 1793000687,
+        "narHash": "sha256-8mCor0DDjNhi+0e+FllfqiMABujBl+/RxYW+wgMpcto=",
         "owner": "Homebrew",
         "repo": "brew",
-        "rev": "b9763ee5280dc1acb3036383b3608084eebac6b7",
+        "rev": "c6069d2a943b71b0a90d91fc1ac93cb9c1634dcc",
         "type": "github"
       },
       "original": {
         "owner": "Homebrew",
-        "ref": "5.1.8",
+        "ref": "7.0.11",
         "repo": "brew",
         "type": "github"
       }
@@ -1352,16 +1352,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1791245239,
-        "narHash": "sha256-cCutBlM0cPbqw6QqcWLVZloIgsol5aNTXnO3rhoZ//0=",
+        "lastModified": 1794337051,
+        "narHash": "sha256-3piHXfYFv+O8BAqzi/2nBz14xPQdmg1tzkYWbYH97mM=",
         "owner": "nazarewk",
         "repo": "nix-rosetta-builder",
-        "rev": "0f95e61b73e7ac2a1b4c7ad9de76d53330b916ae",
+        "rev": "12b2fba9293a91617f1d46efcf7adf4cb89b5b50",
         "type": "github"
       },
       "original": {
         "owner": "nazarewk",
-        "ref": "feat/customize-working-directory",
+        "ref": "feat/in-place-updates",
         "repo": "nix-rosetta-builder",
         "type": "github"
       }
@@ -1759,11 +1759,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1794042290,
-        "narHash": "sha256-ziZn2PvCJE5JEEpqTdxXwJpPB+L3YqoCpTAMCzyaP3U=",
+        "lastModified": 1793971866,
+        "narHash": "sha256-uVB2kW7dlfbZLJe7Dp2xcl3z3WWTVyFs9NXeVozidoI=",
         "owner": "nazarewk-iac",
         "repo": "nixpkgs",
-        "rev": "f4a03c008967841f2a0b3cb7c436fc6fc31671f6",
+        "rev": "296d5fa316d8aa9596fa37a0aca699dcf1809377",
         "type": "github"
       },
       "original": {
