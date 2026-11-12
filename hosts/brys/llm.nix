@@ -445,10 +445,15 @@ in
     };
 
     # Raw-decrypt the brys LLM leaf PRIVATE key from hosts/brys/certs/llm.key.sops
-    # into /run/secrets (root-only tmpfs) before Caddy starts. Uses the wrapped
-    # `sops` (age identity auto-imported from brys' SSH host key). The pub cert
+    # into /run/secrets (root-only tmpfs) before Caddy starts. The pub cert
     # is referenced directly from the store (no decryption). Caddy loads the key
     # via LoadCredential (see the llm slot's caddy wiring).
+    #
+    # `sops decrypt` looks for an identity at `$HOME/.ssh/id_*` and brys' root home has none, so
+    # this unit needs one passed explicitly. `SOPS_AGE_SSH_PRIVATE_KEY_FILE` is silently ignored by
+    # sops 3.13.3 (measured: still "failed to get the data key"); `SOPS_AGE_KEY_CMD` works. It gets
+    # a wrapper script rather than an inline command because systemd splits `Environment=` values
+    # on spaces, which truncates `ssh-to-age -i … -private-key` to the binary path alone.
     systemd.services.kdn-llm-leaf-key = {
       description = "Decrypt brys LLM leaf private key into /run/secrets";
       wantedBy = [ "caddy.service" ];
@@ -457,21 +462,14 @@ in
         pkgs.sops
         pkgs.coreutils
       ];
+      environment.SOPS_AGE_KEY_CMD = pkgs.writeShellScript "brys-sops-age-identity" ''
+        exec ${pkgs.ssh-to-age}/bin/ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key
+      '';
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         User = "root";
         Group = "root";
-        # `sops decrypt` finds no identity on this host: it looks for an SSH key at
-        # `$HOME/.ssh/id_*`, and brys' root home has none, so the unit failed on every boot with
-        # "no master key was able to decrypt". `SOPS_AGE_SSH_PRIVATE_KEY_FILE` is silently ignored
-        # by this sops build (3.13.3, measured: still "failed to get the data key"), while
-        # `SOPS_AGE_KEY_CMD` works. The command is the repo's own conversion of the SSH host key to
-        # an age identity (`ssh-to-age -private-key`), and that host key is the recipient enrolled
-        # as `ssh-brys`.
-        Environment = [
-          "SOPS_AGE_KEY_CMD=${pkgs.ssh-to-age}/bin/ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key"
-        ];
       };
       script = ''
         set -euo pipefail
