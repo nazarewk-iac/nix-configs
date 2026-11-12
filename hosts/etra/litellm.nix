@@ -113,11 +113,10 @@ let
         };
         model_info = {
           id = "${host}-${name}";
-          # (#1) A cheap, SHORT probe: the egress relay to a blackholed host HANGS its
-          # upstream connect for minutes, so the probe must time out fast (well under
-          # health_check_interval) or the deployment never flips unhealthy.
-          health_check_timeout = 5;
-          health_check_max_tokens = 1;
+          # No per-model health probe. A deployment probe is a real completion, and
+          # llama-swap keeps one model resident, so a probe would evict it. Health is a
+          # host property here: `litellm-host-probe` polls the backend's `/health`
+          # endpoint, which never loads a model. See `general_settings` below.
           # The curated client budget (see the `let` above). Advertised, not enforced.
           max_input_tokens = ctx;
           max_output_tokens = maxOut;
@@ -163,8 +162,7 @@ let
       };
       model_info = {
         id = "brys-chat-fast-${baseId}";
-        health_check_timeout = 5;
-        health_check_max_tokens = 1;
+        # No per-model health probe; health is a host property (see `general_settings`).
         # Same curated budget as the alias groups (min(pi.contextWindow, native)).
         max_input_tokens = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow);
         max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens)
@@ -261,13 +259,20 @@ let
       # master-key check.
       custom_auth = "auth.user_api_key_auth";
       custom_auth_run_common_checks = true;
-      # (#1) background health checks + routing: a blackholed host is filtered out
-      # of the candidates BEFORE any connect, so a client request never pays a
-      # connect timeout. Probe cheaply and detect fast.
-      background_health_checks = true;
-      health_check_interval = 30;
-      health_check_staleness_threshold = 120;
-      enable_health_check_routing = true;
+      # (#1) Health is a HOST property, not a model property. A per-deployment probe is a
+      # real completion, and llama-swap keeps one model resident (`--models-max 1`), so
+      # probing every deployment evicts the resident model to answer it. Measured on brys
+      # 2026-11-12: 37 deployments at a 30 s interval produced about one completion per
+      # second and a model-swap storm on every tick. So the per-model probes are off, and
+      # the health signal comes from three places that never load a model:
+      #   * `litellm-host-probe` (this host) polls each backend's llama-swap `GET /health`
+      #     over NetBird and writes host-health.json;
+      #   * `probe.host_probe` drops every deployment of a host that failed that probe,
+      #     BEFORE any connect;
+      #   * a real failed request still cools its deployment (`allowed_fails`,
+      #     `cooldown_time`).
+      background_health_checks = false;
+      enable_health_check_routing = false;
       # /metrics carries no secrets (counters/latency) and is scraped by the
       # containerised Prometheus. `litellm_settings` sets the switch that makes it
       # unauthenticated (public_routes alone is overridden for /metrics).
@@ -496,15 +501,17 @@ in
   # safe, so we only guarantee the file is present at boot).
   systemd.tmpfiles.rules = [ "f /var/lib/litellm/host-health.json 0644 root root -" ];
 
-  # --- Host-side reachability prober (#2) -------------------------------------
+  # --- Host-side health prober (#1) -------------------------------------------
   #
-  # Connects to each host's llama-swap over NetBird DIRECTLY (a real connect
-  # timeout, unlike the relay path) and writes host-health.json for the container
-  # callback to read. Only the two known hosts; extend the map as hosts join.
+  # Polls each host's llama-swap `GET /health` over NetBird DIRECTLY (a real connect
+  # timeout, unlike the relay path). `/health` answers `OK` without loading a model, so
+  # the probe never evicts a resident model. It writes host-health.json for the
+  # container callback (`probe.host_probe`) to read. Only the two known hosts; extend
+  # the map as hosts join.
   systemd.services.litellm-host-probe = {
-    description = "Probe brys/oams llama-swap reachability over NetBird";
+    description = "Probe brys/oams llama-swap /health over NetBird";
     wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.coreutils pkgs.bash ];
+    path = [ pkgs.bash pkgs.coreutils pkgs.curl ];
     serviceConfig = {
       Type = "oneshot";
       # Cheap, idempotent writer driven by the timer below.
@@ -515,7 +522,13 @@ in
       set -eu
       f=/var/lib/litellm/host-health.json
       tmp="$f.tmp"
-      probe() { if timeout 3 bash -c "exec 3<>/dev/tcp/$1/39704" 2>/dev/null; then printf true; else printf false; fi; }
+      probe() {
+        if [ "$(curl -fsS -m 3 "http://$1:39704/health" 2>/dev/null)" = "OK" ]; then
+          printf true
+        else
+          printf false
+        fi
+      }
       printf '{"brys": %s, "oams": %s}\n' "$(probe ${brysHost})" "$(probe ${oamsHost})" > "$tmp"
       mv "$tmp" "$f"
     '';

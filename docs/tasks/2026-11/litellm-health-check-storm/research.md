@@ -125,3 +125,6 @@ enable_health_check_routing = false;
 
 Keep `num_retries = 1`, `cooldown_time = 30`, `allowed_fails = 2` and the host probe. A real
 failure then cools the deployment, and a dead host is still filtered before the connect.
+
+The host probe itself changed from a bare TCP connect to `GET /health` on llama-swap, which answers
+`OK` without loading a model. See [done.md](done.md).

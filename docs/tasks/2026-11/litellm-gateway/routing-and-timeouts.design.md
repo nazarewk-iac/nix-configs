@@ -41,6 +41,13 @@ for the small fast models), keep `enable_weighted_failover: true`. Move to
 
 ## #1 Health checks / blackholed backend (VERIFIED)
 
+> **Superseded 2026-11-12.** The per-deployment probes are off. Each probe was a real completion,
+> and llama-swap keeps one model resident, so a 30 s probe of every deployment evicted the resident
+> model about once per second on brys. The signal now comes from the host probe (`GET /health` on
+> llama-swap, no model load) plus `probe.host_probe`. See
+> [`../litellm-health-check-storm/done.md`](../litellm-health-check-storm/done.md). The analysis
+> below records what was measured when the probes were on.
+
 `enable_health_check_routing: true` + `background_health_checks: true` makes the
 provider a **pre-selection candidate filter**: a deployment that failed its last
 probe is dropped **before any connect**, so a client request never pays the connect

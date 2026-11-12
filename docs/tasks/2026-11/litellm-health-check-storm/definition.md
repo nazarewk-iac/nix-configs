@@ -1,7 +1,7 @@
 ---
 type: Task
-description: Identify every client and poller that reaches the llama-swap servers on brys and oams, and stop the LiteLLM background health checks from forcing a model swap every 30 seconds.
-status: in-progress
+description: Identify every client and poller that reaches the llama-swap servers on brys and oams, and replace the LiteLLM per-model health probes with a host-level `/health` probe that never loads a model.
+status: done
 authored_by: agent
 timestamp: 2026-11-12T13:20:00+01:00
 ---
@@ -52,11 +52,14 @@ a model swap every 30 s.
 
 1. Set `general_settings.background_health_checks = false` and
    `enable_health_check_routing = false` in `hosts/etra/litellm.nix`. Keep `num_retries`,
-   `cooldown_time` and `allowed_fails`, so a real failed request still cools a deployment, and keep
-   the host probe as the pre-selection filter.
-2. Do not use `background_health_check_model_groups` as the fix: a single scoped group still probes
-   one model per host every 30 s, which still evicts the resident model.
-3. Keep `llm-stats` and the Prometheus scrape; they are cheap read-only polls.
+   `cooldown_time` and `allowed_fails`, so a real failed request still cools a deployment.
+2. Move the health signal to the host level: `litellm-host-probe` polls each backend's
+   llama-swap `GET /health` over NetBird. That endpoint answers `OK` without loading a model,
+   and the existing `probe.host_probe` callback already drops every deployment of a host that
+   fails it. No model is touched.
+3. Do not use `background_health_check_model_groups` as the fix: a single scoped group still
+   probes one model per host every 30 s, which still evicts the resident model.
+4. Keep `llm-stats` and the Prometheus scrape; they are cheap read-only polls.
 
 ## Acceptance
 
@@ -64,8 +67,8 @@ a model swap every 30 s.
 - A model stays resident across a quiet period (no health-check-driven `Executing start command`).
 - A stopped host still fails over through `probe.host_probe`, and a stopped model still cools
   after a real failure.
+- `litellm-host-probe` keeps writing `{"brys": true, "oams": true}`.
 
 ## Solution
 
-Not applied yet. The change is one `general_settings` edit; it needs the gateway restarted and the
-two acceptance observations above.
+[done.md](done.md)
