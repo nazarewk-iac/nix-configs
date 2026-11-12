@@ -41,7 +41,7 @@ keys:
     # converting SSH key to `age` identity:
     #  ssh-to-age </etc/ssh/ssh_host_ed25519_key.pub
     #  ssh-keyscan moss.kdn.im | grep ' ssh-ed25519 ' | ssh-to-age
-    briv: {age: [&ssh-briv age1fvzlv8tvmlsmes0apyrf4fwrcsyj5c959tnq36njfm2ng464a5sq7akkat]}
+    briv: {age: [&ssh-briv age1seqfkdaveldwus90jaqrn7cj5dld0rd670ur7w98807ja9se63lqfxe2vw]}
     brys:
       age:
         # Derived from brys' LIVE host key:
@@ -58,14 +58,14 @@ keys:
         # /persist/sops/tpm-identity.txt on the host; back it up off-host, and never
         # `tpm2_clear` (that destroys the owner hierarchy and makes the blob useless).
         - &tpm-brys age1tag1q2l557j0rr8x5ez5fatt6rnrrqcwawnz0590yx7el59024l2alcv7xmuzuk
-    etra: {age: [&ssh-etra age1mjjz7t44e777szehss7ywv2lpwu53mjnvzvrqsyt27apwpew6fsqxqt3cj]}
+    etra: {age: [&ssh-etra age14eerc475urhzjj0eqv2u4y9ydpmj0lx8q35jec0rlv9wf0vst4uq2mrs2g]}
     faro: {age: [&ssh-faro age1sxyd3g9gg79vgdw2gpt9v4tjqaz9pfmyer39n2wwmelsutp7d4vqf4rrxm]}
-    moss: {age: [&ssh-moss age1n32gwqk35302kl4k2q2rwys2dzwasza596zknrfgp2nwvpt2rqms4xzc9n]}
-    oams: {age: [&ssh-oams age1apym9pk5y5nvem3whc0zm5apnjw9ycxp490kspdj7m45qs7zqacsnne7yr]}
+    moss: {age: [&ssh-moss age17pv7gnjtfdvz2205hgzaxsk3sant26pxmlumzcakk7ljcm6z9u6sepkscx]}
+    oams: {age: [&ssh-oams age1tnf66h28tp9n96ttr94qy3zf67rjppfs0mqjd33mcgwljvvptq9s7m3dpr]}
     obler: {age: [&ssh-obler age15ecsjjt9j7fz5lqpe3e0d3u7uwzghwrfugv6725rn253e92hjagqzqk7t9]}
     pryll: {age: [&ssh-pryll age1lw083cnx8c5u29kvr3q8v90pkuapmfxxqvr8khzjmzxpfrjs8c8qvs3y7q]}
     orr: {age: [&ssh-orr age1dy6sqmcm7gqqfxly26pm5cmkwddjpzdu8et74p27hklyxgxnp9nq3tvn9a]}
-    anji: {age: [&ssh-anji age1cs6nsft2xt6zzgxx4jf492p8pkdv3khsdnw6esq7wfzmh3a0hvjq2ek67x]}
+    anji: {age: [&ssh-anji age19knr86eyd8phtyv80sseh6p452de3jaqyuf26k5e2v9ldvynyg2s3ara9p]}
     anji-linux-builder: {age: [&ssh-anji-linux-builder age17gguyxg8f9m4mdm6ymcgkmszdesk3rdrddjp9cx5nf4z3cfhaffsec9v0g]}
     pwet: {age: [&ssh-pwet age17kqq6wnlf94p5hcy2ycmz44tuafnglvk8rtv4g3udwc0d9y2z55s8jmjly]}
     turo: {age: [&ssh-turo age13lmms4tjhygj4x7x0v6vuls3exx06mj9my5wuy720frxd79gcdkspu752v]}
