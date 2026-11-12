@@ -110,6 +110,39 @@ denTests.checks
   # age identity, so the suite signs with no YubiKey. See design § 8.1.
   kdn-certs-test-ca = pkgs.kdn.kdn-certs.passthru.tests.go-test-ca;
 
+  # The committed certificate-expiry summary must match the certificates. The script decodes them
+  # in the sandbox and compares the result with `data/certs/expiry.json`; a certificate renewed
+  # without re-running `hack/certs-expiry.py` fails here instead of drifting silently until the
+  # shell reminder is wrong. The fileset keeps the copy small: the summary, the script, the CA and
+  # the SSH host certificates, nothing else.
+  kdn-certs-expiry =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.unions [
+          ../hack/certs-expiry.py
+          ../data/certs/expiry.json
+          (pkgs.lib.fileset.fileFilter (file: file.hasExt "crt") ../data/ca)
+          (pkgs.lib.fileset.fileFilter (file: pkgs.lib.hasSuffix "-cert.pub" file.name) ../hosts)
+        ];
+      };
+    in
+    pkgs.runCommand "check-kdn-certs-expiry"
+      {
+        nativeBuildInputs = [
+          pkgs.python3
+          pkgs.openssh
+          pkgs.openssl
+        ];
+      }
+      ''
+        cp -r ${src} src
+        chmod -R u+w src
+        cd src
+        python3 hack/certs-expiry.py --check
+        touch $out
+      '';
+
   # jj-experiments harness: runs the isolated 3-repo pytest suite headless. The
   # rendered fork slot config is passed in through JJ_FORK_CONFIG_TOML so the
   # tests resolve the real revset aliases without a devenv shell.

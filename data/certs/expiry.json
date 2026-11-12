@@ -1,75 +1,75 @@
 {
-  "generated": "2026-11-12T21:20:34+00:00",
+  "generated": "2026-11-12T21:24:20+00:00",
   "earliest": {
     "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
     "kind": "ssh-host",
-    "notAfter": "2027-01-11T06:45:44"
+    "notAfter": "2027-01-11T05:45:44+00:00"
   },
   "certificates": [
     {
       "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-11T06:45:44"
+      "notAfter": "2027-01-11T05:45:44+00:00"
     },
     {
       "path": "hosts/anji/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-13T09:44:40"
+      "notAfter": "2027-01-13T08:44:40+00:00"
     },
     {
       "path": "hosts/briv/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-13T09:44:40"
+      "notAfter": "2027-01-13T08:44:40+00:00"
     },
     {
       "path": "hosts/etra/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-13T09:44:40"
+      "notAfter": "2027-01-13T08:44:40+00:00"
     },
     {
       "path": "hosts/moss/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-13T09:44:40"
+      "notAfter": "2027-01-13T08:44:40+00:00"
     },
     {
       "path": "hosts/oams/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-01-13T09:44:40"
+      "notAfter": "2027-01-13T08:44:40+00:00"
     },
     {
       "path": "hosts/briv/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T19:52:20"
+      "notAfter": "2027-02-10T18:52:20+00:00"
     },
     {
       "path": "hosts/anji/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T20:11:14"
+      "notAfter": "2027-02-10T19:11:14+00:00"
     },
     {
       "path": "hosts/brys/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T20:17:09"
+      "notAfter": "2027-02-10T19:17:09+00:00"
     },
     {
       "path": "hosts/etra/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T20:17:09"
+      "notAfter": "2027-02-10T19:17:09+00:00"
     },
     {
       "path": "hosts/moss/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T20:17:09"
+      "notAfter": "2027-02-10T19:17:09+00:00"
     },
     {
       "path": "hosts/oams/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
-      "notAfter": "2027-02-10T20:17:09"
+      "notAfter": "2027-02-10T19:17:09+00:00"
     },
     {
       "path": "data/ca/kdn.crt",
       "kind": "ca",
-      "notAfter": "2036-09-22T20:47:15"
+      "notAfter": "2036-09-22T20:47:15+00:00"
     }
   ]
 }

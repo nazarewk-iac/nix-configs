@@ -45,7 +45,9 @@ def ssh_cert_not_after(path: pathlib.Path) -> dt.datetime:
             continue
         _, _, window = line.partition("from ")
         _, _, valid_to = window.partition(" to ")
-        return dt.datetime.fromisoformat(valid_to.strip())
+        # `ssh-keygen -L` prints a LOCAL wall-clock time with no zone. Convert it so the summary is
+        # the same on a CET workstation and in a UTC build sandbox.
+        return dt.datetime.fromisoformat(valid_to.strip()).astimezone(dt.timezone.utc)
     raise SystemExit(f"{path}: no validity window in ssh-keygen output")
 
 
@@ -57,7 +59,8 @@ def x509_not_after(path: pathlib.Path) -> dt.datetime:
         check=True,
     ).stdout.strip()
     _, _, stamp = out.partition("=")
-    return dt.datetime.strptime(stamp.strip(), "%b %d %H:%M:%S %Y %Z")
+    # `openssl x509 -enddate` prints GMT explicitly; `%Z` does not carry it into the datetime.
+    return dt.datetime.strptime(stamp.strip(), "%b %d %H:%M:%S %Y %Z").replace(tzinfo=dt.timezone.utc)
 
 
 def collect() -> dict:
@@ -104,13 +107,16 @@ def check() -> int:
         print(f"{SUMMARY.relative_to(ROOT)} is missing; run hack/certs-expiry.py", file=sys.stderr)
         return 1
     committed = json.loads(SUMMARY.read_text())
-    if committed.get("certificates") != fresh["certificates"]:
-        print(
-            f"{SUMMARY.relative_to(ROOT)} is stale; run hack/certs-expiry.py",
-            file=sys.stderr,
-        )
-        return 1
-    return 0
+    if committed.get("certificates") == fresh["certificates"]:
+        return 0
+    print(f"{SUMMARY.relative_to(ROOT)} is stale; run hack/certs-expiry.py", file=sys.stderr)
+    # Say which entries differ, so a stale summary in CI is actionable without a local rerun.
+    before = {entry["path"]: entry["notAfter"] for entry in committed.get("certificates", [])}
+    after = {entry["path"]: entry["notAfter"] for entry in fresh["certificates"]}
+    for path in sorted(set(before) | set(after)):
+        if before.get(path) != after.get(path):
+            print(f"  {path}: committed {before.get(path)}, actual {after.get(path)}", file=sys.stderr)
+    return 1
 
 
 def remind() -> int:

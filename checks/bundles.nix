@@ -108,6 +108,7 @@ in
   bundle-pkgs = mkBundle "pkgs" [
     "kdn-certs-test"
     "kdn-certs-test-ca"
+    "kdn-certs-expiry"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];
