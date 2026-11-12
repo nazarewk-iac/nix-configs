@@ -265,6 +265,20 @@ let
             description = "A store path to the committed public certificate, `<repoRoot>/<directory>/<certFile>`.";
           };
 
+          options.deployedCertPath = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            readOnly = true;
+            description = ''
+              The runtime path of the public certificate of an `ssh-host` leaf,
+              `<deployedDirectory>/<certFile>`. `null` for every other type, which reads its
+              certificate from `certPath`.
+
+              sshd must read the certificate from a path that outlives a rebuild, or every renewal
+              would need one. `kdnctl host ensure ssh-host-certs` writes this path from the repo
+              and reloads sshd, so a renewed certificate takes effect without a rebuild.
+            '';
+          };
+
           options.keyPath = lib.mkOption {
             type = lib.types.path;
             readOnly = true;
@@ -272,6 +286,8 @@ let
           };
 
           config.certPath = "${toString repoRoot}/${config.directory}/${config.certFile}";
+          config.deployedCertPath =
+            if config.type == "ssh-host" then "${config.deployedDirectory}/${config.certFile}" else null;
           config.keyPath = keyPathFor {
             config = outerConfig;
             inherit name;

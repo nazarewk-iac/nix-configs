@@ -533,6 +533,12 @@ in
                     mode = "0600";
                     inInitrd = true;
                   }
+                  # Deployed public host certificate (no store path, so renewal needs no rebuild).
+                  {
+                    file = "/etc/ssh/ssh_host_ed25519-cert.pub";
+                    how = "symlink";
+                    mode = "0644";
+                  }
                 ];
               };
               kdn.disks.persist."sys/config" = {

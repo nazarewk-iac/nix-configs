@@ -591,6 +591,13 @@
                 mode = "0600";
                 inInitrd = true;
               }
+              # The public host certificate is deployed, not read from the store, so a renewal
+              # needs no rebuild. Public: mode 0644.
+              {
+                file = "/etc/ssh/ssh_host_ed25519-cert.pub";
+                how = "symlink";
+                mode = "0644";
+              }
             ];
           };
           kdn.disks.persist."sys/config" = {

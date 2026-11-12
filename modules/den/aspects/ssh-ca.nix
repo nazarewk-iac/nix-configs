@@ -235,7 +235,9 @@ in
             path = hostCert.keyPath;
           }
         ];
-        services.openssh.settings.HostCertificate = toString hostCert.certPath;
+        # The certificate is deployed next to the key, not read from the store: a renewal must not
+        # need a rebuild. `kdnctl host ensure ssh-host-certs` writes it and reloads sshd.
+        services.openssh.settings.HostCertificate = hostCert.deployedCertPath;
         # The client half below installs the CA fragment per user through home-manager. Root and
         # the nix daemon read none of that, so a den host could not verify a fleet host
         # certificate from a root shell, from `nix copy`, or from a builder connection. Install the
@@ -280,7 +282,7 @@ in
       config = lib.mkIf (sshCa != null && hostCert != null) {
         services.openssh.extraConfig = serverDirectives (mkSshCaPubKey pkgs (
           caCertPath config sshCa
-        )) hostCert.keyPath (toString hostCert.certPath);
+        )) hostCert.keyPath hostCert.deployedCertPath;
       };
     };
 
