@@ -13,6 +13,9 @@ type Cert struct {
 	SANs              []string `json:"sans"`
 	Principals        []string `json:"principals"`
 	Directory         string   `json:"directory"`
+	// KeyDirectory holds the private key. It is empty for leaves that keep the key next to the
+	// certificate, which is every non-SSH leaf; `KeyPath` then falls back to `Directory`.
+	KeyDirectory      string   `json:"keyDirectory"`
 	CertFile          string   `json:"certFile"`
 	KeyFile           string   `json:"keyFile"`
 	KeySource         string   `json:"keySource"`

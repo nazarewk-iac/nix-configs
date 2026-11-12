@@ -41,7 +41,7 @@
     ];
     directory = "hosts/brys/certs";
     certFile = "ssh_host_ed25519-cert.pub";
-    keyFile = "ssh_host_ed25519.key";
+    keyFile = "ssh_host_ed25519_key";
     keySource = "managed";
   };
 }

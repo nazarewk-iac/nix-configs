@@ -20,7 +20,11 @@
 # Per-host helper scripts (e.g. hosts/etra/litellm_auth.py, the LiteLLM custom-auth hook).
 !/*/*.py
 # SOPS-encrypted links
-!/*/ssh-keys/ssh_host_*_key.{sops,pub}
+# SSH host keys, in both the OpenSSH-style name (`ssh_host_ed25519_key.sops`) and the repo's
+# `<keyFile>.sops` form (`ssh_host_ed25519.key.sops`, see `keyDirectory`). Two lines, not one:
+# .gitignore has no brace expansion, so `*.{sops,pub}` matches nothing.
+!/*/ssh-keys/ssh_host_*.sops
+!/*/ssh-keys/ssh_host_*.pub
 !/*/luks/*.sops.header
 
 # per-host certs (e.g. brys LLM leaf)

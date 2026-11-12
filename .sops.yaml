@@ -180,13 +180,13 @@ creation_rules:
   # (`data/ca/*.key.sops`). A shared rule would grant every listed host SSH access to every other
   # host's key. This covers the SSH host key (`ssh_host_ed25519.key.sops`) and the leaf keys
   # (`zellij.key.sops`, `llm.key.sops`).
-  - path_regex: 'hosts/oams/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/oams/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-oams
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/brys/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/brys/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-brys
@@ -195,25 +195,25 @@ creation_rules:
           # The TPM identity: hardware-bound, no user present. This is what lets the
           # boot-time decrypt drop its `pcscd`/YubiKey dependency.
           - *tpm-brys
-  - path_regex: 'hosts/etra/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/etra/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-etra
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/moss/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/moss/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-moss
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/anji/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/anji/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-anji
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/briv/certs/.*\.key\.sops$'
+  - path_regex: 'hosts/briv/(certs/.*\.key\.sops|ssh-keys/.*\.sops)$'
     key_groups:
       - age:
           - *ssh-briv

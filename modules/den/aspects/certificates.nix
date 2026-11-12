@@ -17,8 +17,12 @@
 # ## The storage rule
 #
 # The public certificate is `<repoRoot>/<directory>/<certFile>`, plain and committed. The private key
-# is `<repoRoot>/<directory>/<keyFile>.sops`, a raw/binary SOPS file, committed. This aspect declares
-# paths only. It never decrypts the key and never reads the file content.
+# is `<repoRoot>/<keyDirectory>/<keyFile>.sops`, a raw/binary SOPS file, committed. This aspect
+# declares paths only. It never decrypts the key and never reads the file content.
+#
+# The two directories are separate so a secret and a public artefact cannot be confused. For an
+# `ssh-host` leaf the key defaults to `hosts/<hostName>/ssh-keys` and the certificate to
+# `hosts/<hostName>/certs`; every other leaf keeps both in `directory`.
 #
 # ## The repository root
 #
@@ -48,11 +52,12 @@
 # primitive (`sops decrypt --output-type binary`). A devenv shell owns no system activation, so it
 # cannot run the sops-nix installer.
 #
-# ## The `directory` default
+# ## The `directory` and `keyDirectory` defaults
 #
-# `directory` defaults to `hosts/<hostName>/certs`. The default reads `kdn.hostName`, so this aspect
-# imports `../common/host-name.nix` by path. The module system dedupes an import by path, so many
-# aspects load together and the option keeps one declaration.
+# `directory` defaults to `hosts/<hostName>/certs`, and `keyDirectory` to
+# `hosts/<hostName>/ssh-keys` for `ssh-host` leaves (to `directory` otherwise). The defaults read
+# `kdn.hostName`, so this aspect imports `../common/host-name.nix` by path. The module system dedupes
+# an import by path, so many aspects load together and the option keeps one declaration.
 #
 # ## The three rules this tree holds for every aspect
 #
@@ -167,6 +172,21 @@ let
             description = "The repo-relative directory of the leaf files.";
           };
 
+          options.keyDirectory = lib.mkOption {
+            type = lib.types.str;
+            default = if config.type == "ssh-host" then "hosts/${hostName}/ssh-keys" else config.directory;
+            description = ''
+              The repo-relative directory that holds the private key
+              (`<keyDirectory>/<keyFile>.sops`). Defaults to `hosts/<hostName>/ssh-keys` for
+              `ssh-host` leaves and to `directory` otherwise.
+
+              SSH host keys live apart from their certificates on purpose: the key is a secret that
+              must never leave the host unencrypted, while the certificate is public and is read by
+              the signing tool, the inventory that generates `known_hosts`, and anything that pins
+              the host. Keeping the two in one directory made it easy to commit the wrong one.
+            '';
+          };
+
           options.certFile = lib.mkOption {
             type = lib.types.str;
             default = "${name}.pub";
@@ -275,7 +295,7 @@ let
               lib.nameValuePair (secretName name) (
                 {
                   format = "binary";
-                  sopsFile = "${toString repoRoot}/${cert.directory}/${cert.keyFile}.sops";
+                  sopsFile = "${toString repoRoot}/${cert.keyDirectory}/${cert.keyFile}.sops";
                 }
                 // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
               )

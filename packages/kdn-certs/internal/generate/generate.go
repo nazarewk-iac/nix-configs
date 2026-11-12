@@ -113,7 +113,14 @@ func Run(cas decl.CAs, result dedup.Result, deps Deps) (Result, error) {
 
 		certRel := filepath.Join(cert.Directory, cert.CertFile)
 		certAbs := deps.absPath(certRel)
-		keyRel := filepath.Join(cert.Directory, cert.KeyFile+".sops")
+		// The key may live in its own directory: an `ssh-host` leaf keeps the secret under
+		// `hosts/<host>/ssh-keys` while the certificate stays in `hosts/<host>/certs`. An empty
+		// `keyDirectory` means "next to the certificate", which is every other leaf.
+		keyDir := cert.KeyDirectory
+		if keyDir == "" {
+			keyDir = cert.Directory
+		}
+		keyRel := filepath.Join(keyDir, cert.KeyFile+".sops")
 		keyAbs := deps.absPath(keyRel)
 
 		existing, err := certinfo.Read(certAbs)
