@@ -37,35 +37,43 @@ Target: one screen, under a second, no manual opening of files.
 
 ## Proposal
 
-### 1. A predictable board shape
+### 1. A predictable board shape, in OKF
 
-Keep Markdown and keep it readable by a human without the script. Add a small fixed skeleton:
+Follow [Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format):
+Markdown with YAML frontmatter, `type` required, unknown keys allowed. A board is one concept file
+in the session bundle, not a private format:
 
 ```markdown
 ---
-board: ssh-ca            # the track, or "session" for the main board
+type: Board
+title: SSH CA follow-up
+description: Where the host-key work stands.
 updated: 2026-11-12T17:23:00+01:00
-status: active           # active | blocked | done
+status: active # active | blocked | done (an extension key, OKF allows it)
+tags: [session, ssh-ca]
 ---
 
-## Now
-- [ ] short item, one line, with the file or command it concerns
+## Status
 
-## Next
-- [ ] item
+- [x] done item
+- [ ] open item
 
 ## Blocked
 
 - item — what it waits for
 
 ## Notes
-free prose, ignored by the script
+free prose
 ```
 
-Rules: `## Now`, `## Next`, `## Blocked` are the machine-read sections; `- [ ]` / `- [x]` are the
-item markers; the frontmatter carries the track, the timestamp and a coarse status. Everything
-else stays prose. A board without the skeleton must still parse — fall back to "no structured
-items", never to an error.
+Parsing uses **headings**, not new keywords: the script reads `## Status` / `## Now` /
+`## Next` / `## Blocked` and treats `- [ ]` / `- [x]` as item markers. Everything else is prose.
+OKF's conventional headings are a superset of this, so a future consumer can read the bundle
+without our script.
+
+A board without the skeleton must still parse — fall back to "no structured items", never to an
+error. The session directory can carry an OKF `index.md` listing its boards; the script accepts
+one but does not require it.
 
 ### 2. The script
 
