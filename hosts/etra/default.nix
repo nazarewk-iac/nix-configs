@@ -560,6 +560,19 @@ in
         keyFile = "ssh_host_ed25519_key";
         keySource = "managed";
       };
+
+    # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
+    kdn.certificates.certs.ssh-host-etra-pq = {
+      ca = "kdn";
+      type = "ssh-host";
+      commonName = "etra";
+      principals = (import ../../data/net/ssh-host-identities.nix).etra.names;
+      directory = "hosts/etra/certs";
+      certFile = "ssh_host_mldsa44_ed25519-cert.pub";
+      keyFile = "ssh_host_mldsa44_ed25519_key";
+      keyType = "mldsa44-ed25519";
+      keySource = "managed";
+    };
     }
     {
       kdn.programs.zellij.web = {

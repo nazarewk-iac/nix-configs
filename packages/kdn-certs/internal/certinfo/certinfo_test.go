@@ -69,6 +69,28 @@ func TestReadSSHHostCertificatePadded(t *testing.T) {
 
 // TestReadMissingFileStaysNil documents that the "no certificate yet" signal is unchanged: a missing
 // file is nil, nil. The SSH branch must not turn a missing file into a parse error.
+// TestIsSshCertificateRecognisesBothSpellings covers the classical `-cert-v01@openssh.com` type and
+// the post-quantum `ssh-mldsa44-ed25519-cert` type, which has no suffix at all.
+func TestIsSshCertificateRecognisesBothSpellings(t *testing.T) {
+	cases := []struct {
+		name string
+		line string
+		want bool
+	}{
+		{"classical", sshHostCert, true},
+		{"post-quantum", "ssh-mldsa44-ed25519-cert AAAAB3NzaC1rZXk= kdn@oams\n", true},
+		{"plain key", "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI kdn@oams\n", false},
+		{"x509", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isSshCertificate([]byte(tc.line)); got != tc.want {
+				t.Errorf("isSshCertificate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadMissingFileStaysNil(t *testing.T) {
 	info, err := Read(filepath.Join(t.TempDir(), "absent.pub"))
 	if err != nil {

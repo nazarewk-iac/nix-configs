@@ -94,6 +94,19 @@
         keyFile = "ssh_host_ed25519_key";
         keySource = "managed";
       };
+
+    # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
+    kdn.certificates.certs.ssh-host-moss-pq = {
+      ca = "kdn";
+      type = "ssh-host";
+      commonName = "moss";
+      principals = (import ../../data/net/ssh-host-identities.nix).moss.names;
+      directory = "hosts/moss/certs";
+      certFile = "ssh_host_mldsa44_ed25519-cert.pub";
+      keyFile = "ssh_host_mldsa44_ed25519_key";
+      keyType = "mldsa44-ed25519";
+      keySource = "managed";
+    };
     }
     {
       kdn.programs.zellij.web = {

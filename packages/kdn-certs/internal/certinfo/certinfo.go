@@ -75,14 +75,22 @@ func Read(path string) (*Info, error) {
 }
 
 // isSshCertificate reports whether the file is an OpenSSH certificate line, for example
-// `ssh-ed25519-cert-v01@openssh.com AAAA...`. The marker `-cert-v01@openssh.com` only ever appears in
-// an OpenSSH certificate key type.
+// `ssh-ed25519-cert-v01@openssh.com AAAA...` or `ssh-mldsa44-ed25519-cert AAAA...`.
+//
+// Two spellings exist. The classical type carries the `-cert-v01@openssh.com` suffix; the
+// post-quantum type the fleet signs (`ssh-mldsa44-ed25519-cert`) has no suffix at all, so a
+// suffix-only test misses it and the file falls through to the PEM parser.
 func isSshCertificate(raw []byte) bool {
-	head := raw
-	if len(head) > 64 {
-		head = head[:64]
+	fields := bytes.Fields(raw)
+	if len(fields) == 0 {
+		return false
 	}
-	return bytes.HasPrefix(head, []byte("ssh-")) && bytes.Contains(raw, []byte("-cert-v01@openssh.com"))
+	keyType := fields[0]
+	if !bytes.HasPrefix(keyType, []byte("ssh-")) {
+		return false
+	}
+	return bytes.Contains(keyType, []byte("-cert-v01@openssh.com")) ||
+		bytes.HasSuffix(keyType, []byte("-cert"))
 }
 
 // readSSH parses the OpenSSH certificate wire format enough to recover `valid_after` and the
