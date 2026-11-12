@@ -577,6 +577,10 @@
                 directory = "/var/lib/private";
                 mode = "0700";
               }
+              # The deployed SSH host keys: `kdn.certs` puts `ssh-host` leaves here, and
+              # `kdnctl host ensure ssh-host-keys` writes them from an operator machine. The
+              # directory is not a sops secret, so it must survive a reboot on its own.
+              "/etc/ssh/kdn"
             ];
             files = [
               {

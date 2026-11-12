@@ -73,6 +73,15 @@ let
   # `/run/secrets/kdn/certificates/<name>.key`, the path the design § 4.1 states.
   secretName = name: "kdn/certificates/${name}.key";
 
+  # Where the decrypted private key of one leaf lives. A sops-nix class reads the runtime path it
+  # declares; an `ssh-host` leaf is never a sops secret, so it reads the path `kdnctl` deploys to.
+  keyPathForClass =
+    { config, name, cert }:
+    if cert.type == "ssh-host" then
+      "${cert.deployedDirectory}/${cert.keyFile}"
+    else
+      config.sops.secrets.${secretName name}.path;
+
   # One target module factory. `sopsModule` is the sops-nix module of the class, or `null` for the
   # `devenv` class, which carries no sops-nix. `keyPathFor` reads the decrypted runtime path of one
   # key from the outer target config. `ownerSupport` records whether the class's sops module declares
@@ -228,6 +237,25 @@ let
             '';
           };
 
+          options.deployedDirectory = lib.mkOption {
+            type = lib.types.str;
+            default = "/etc/ssh/kdn";
+            description = ''
+              The runtime directory that holds the decrypted private key of an `ssh-host` leaf.
+              `keyPath` is `<deployedDirectory>/<keyFile>` for that type.
+
+              An SSH host key is never delivered by sops-nix. It is the host's identity, and on
+              this fleet it is also going to be a SOPS age identity, so a host that could decrypt
+              its own key from the repository would make the key's custody circular. The key is
+              encrypted to operator identities only (see `.sops.yaml`) and written to this
+              directory by `kdnctl host ensure ssh-host-keys`, which runs on an operator machine
+              with the YubiKey present. The directory is preserved across reboots.
+
+              The other types keep reading the sops-nix runtime path, because a service on the
+              host decrypts those at boot.
+            '';
+          };
+
           options.certPath = lib.mkOption {
             type = lib.types.path;
             readOnly = true;
@@ -244,6 +272,7 @@ let
           config.keyPath = keyPathFor {
             config = outerConfig;
             inherit name;
+            cert = config;
           };
         };
     in
@@ -281,6 +310,9 @@ let
       # The sops-nix wiring. It runs only when a certificate is declared, so an empty option set
       # stays a true no-op. The `devenv` class carries no sops-nix module, so it writes no secret.
       #
+      # `ssh-host` leaves are skipped on purpose: a host must not be able to decrypt its own
+      # identity. Their key is written to `deployedDirectory` by `kdnctl`, out of band.
+      #
       # `owner` is written only when the leaf names one and the class's sops module declares the
       # option. The `nixos` module then derives the group from the owner (`users.<owner>.group`);
       # the `darwin` module defaults the group to `staff`. `mode` stays `0400`. A service that runs
@@ -299,7 +331,7 @@ let
                 }
                 // lib.optionalAttrs (ownerSupport && cert.owner != null) { owner = cert.owner; }
               )
-            ) cfg.certs;
+            ) (lib.filterAttrs (_: cert: cert.type != "ssh-host") cfg.certs);
           }
         ))
         # CA trust is INDEPENDENT of declaring a leaf: a pure CLIENT host still needs to
@@ -315,27 +347,21 @@ in
     sopsModule = inputs.sops-nix.nixosModules.sops;
     ownerSupport = true;
     trustCAs = true;
-    keyPathFor =
-      { config, name }:
-      config.sops.secrets.${secretName name}.path;
+    keyPathFor = keyPathForClass;
   };
 
   kdn.certificates.darwin = mkTarget {
     sopsModule = inputs.sops-nix.darwinModules.default;
     ownerSupport = true;
     trustCAs = true;
-    keyPathFor =
-      { config, name }:
-      config.sops.secrets.${secretName name}.path;
+    keyPathFor = keyPathForClass;
   };
 
   kdn.certificates.homeManager = mkTarget {
     sopsModule = inputs.sops-nix.homeManagerModules.sops;
     trustCAs = true;
     trustClass = "home";
-    keyPathFor =
-      { config, name }:
-      config.sops.secrets.${secretName name}.path;
+    keyPathFor = keyPathForClass;
   };
 
   # The `devenv` class carries no sops-nix module. The CLI decrypt primitive fills this path.
@@ -343,7 +369,10 @@ in
     trustCAs = true;
     trustClass = "devenv";
     keyPathFor =
-      { name, ... }:
-      "/run/secrets/kdn/certificates/${name}.key";
+      { cert, name, ... }:
+      if cert.type == "ssh-host" then
+        "${cert.deployedDirectory}/${cert.keyFile}"
+      else
+        "/run/secrets/kdn/certificates/${name}.key";
   };
 }

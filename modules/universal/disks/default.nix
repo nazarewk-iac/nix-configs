@@ -519,6 +519,8 @@ in
                     directory = "/var/lib/private";
                     mode = "0700";
                   }
+                  # Deployed SSH host keys (`kdn.certificates` `ssh-host` leaves).
+                  "/etc/ssh/kdn"
                 ];
                 files = [
                   {
