@@ -48,6 +48,9 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
+	// A runtime failure (a host that did not answer, a key that did not decrypt) is not a usage
+	// error, and printing the whole flag list after it buries the message.
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if err = log.Reconfigure(logFiles, logLevel); err != nil {
 			return err

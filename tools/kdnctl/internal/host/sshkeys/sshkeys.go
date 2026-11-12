@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/exec"
@@ -29,10 +30,13 @@ import (
 // but the installer generates both and an operator may still connect with an RSA client.
 var defaultKeyTypes = []string{"ed25519", "rsa"}
 
-// fallbackTargetDir is where sshd reads the key on a host without preservation (the `briv`
-// sd-card image, `oams`): a plain directory. An impermanence host symlinks the file into
-// `/nix/persist/sys/data/etc/ssh` instead, and `resolveTargetDir` follows that link.
-const fallbackTargetDir = "/etc/ssh"
+// fallbackTargetDir is where the managed key lives on a host: `kdn.certificates.*.deployedDirectory`.
+const fallbackTargetDir = "/etc/ssh/kdn"
+
+// persistTargetDir is the same directory as the impermanence module backs it. The deployed
+// directory is a bind mount, so a write before the first activation would land on the ephemeral
+// root and be hidden by the mount. The backing directory is the durable location in both states.
+const persistTargetDir = "/nix/persist/sys/data/etc/ssh/kdn"
 
 // Options tunes where the keys come from and which of them to sync.
 type Options struct {
@@ -41,29 +45,66 @@ type Options struct {
 	SecretDir string
 	// KeyTypes defaults to ed25519 and rsa.
 	KeyTypes []string
-	// TargetDir is the remote directory that holds the keys. Empty means "detect": the
-	// preservation path when it exists, `/etc/ssh` otherwise.
+	// TargetDir is the remote directory that holds the keys. Empty means "detect": follow
+	// `/etc/ssh/kdn`, so a symlink into `/nix/persist` is written at its target.
 	TargetDir string
 }
 
-// resolveTargetDir picks the remote directory that sshd actually reads. It follows
-// `/etc/ssh/ssh_host_ed25519_key`: on an impermanence host that is a symlink into
-// `/nix/persist/sys/data/etc/ssh`, and the key must be written at the target, because writing
-// through the link would replace it (the upload renames a temporary file over the destination).
-// A host without preservation (the `briv` sd-card image, `oams`) keeps a plain file, and `/etc/ssh`
-// is then both the path and the storage.
+// resolveTargetDir picks the remote directory to write. The deployed directory is a bind mount on
+// an impermanence host, and a bind mount is not a symlink, so it cannot be followed. Prefer the
+// persistence backing directory when the host has one: a deploy that happens before the mount
+// exists then still lands in durable storage instead of the ephemeral root.
 func resolveTargetDir(h *host.Host, opts Options, sshOptions []string) (string, error) {
 	if opts.TargetDir != "" {
 		return opts.TargetDir, nil
 	}
-	out, err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "readlink", "-f", "/etc/ssh/ssh_host_ed25519_key").Output()
-	if err == nil {
-		resolved := strings.TrimSpace(string(out))
-		if strings.HasPrefix(resolved, "/nix/persist/") {
-			return filepath.Dir(resolved), nil
+	if out, err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "readlink", "-f", fallbackTargetDir).Output(); err == nil {
+		if resolved := strings.TrimSpace(string(out)); resolved != "" && resolved != fallbackTargetDir {
+			return resolved, nil
 		}
 	}
+	if err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "test", "-d", filepath.Dir(persistTargetDir)).Run(); err == nil {
+		return persistTargetDir, nil
+	}
 	return fallbackTargetDir, nil
+}
+
+// HostsWithKeys lists, in sorted order, the hosts that have a committed SSH host key in the
+// repository, and separately the hosts whose key is only a symlink into the local `secrets/`
+// store. It is the "all hosts" set of `host ensure ssh-host-keys`: the committed state decides
+// which hosts are in scope, so a host without a key is never touched. A symlinked key is the older
+// local-only layout — it works with an explicit `--hostname`, but it is not part of the fleet state
+// this command reconciles, and such a host is usually retired.
+func HostsWithKeys(repoRoot string) (hosts []string, localOnly []string, err error) {
+	matches, err := filepath.Glob(filepath.Join(repoRoot, "hosts", "*", "ssh-keys", "*.sops"))
+	if err != nil {
+		return nil, nil, err
+	}
+	seen := make(map[string]bool, len(matches))
+	seenLocal := make(map[string]bool, len(matches))
+	for _, match := range matches {
+		// `<root>/hosts/<name>/ssh-keys/<file>.sops`
+		name := filepath.Base(filepath.Dir(filepath.Dir(match)))
+		info, statErr := os.Lstat(match)
+		if statErr != nil {
+			return nil, nil, statErr
+		}
+		if !info.Mode().IsRegular() {
+			if !seenLocal[name] {
+				seenLocal[name] = true
+				localOnly = append(localOnly, name)
+			}
+			continue
+		}
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		hosts = append(hosts, name)
+	}
+	sort.Strings(hosts)
+	sort.Strings(localOnly)
+	return hosts, localOnly, nil
 }
 
 // equalKey compares two key files. For a public key only the type and the base64 body matter: the
@@ -173,15 +214,19 @@ func Ensure(r *repo.Repo, h *host.Host, s secrets.SecretStorage, upload bool, op
 			{remotePrivate + ".pub", wantPublic, true},
 		}
 		for _, half := range halves {
-			have, err := exec.GetRemoteFile(h.Address, sshOptions, half.remote)
+			have, exists, err := exec.GetRemoteFileIfExists(h.Address, sshOptions, half.remote)
 			if err != nil {
 				return fmt.Errorf("Ensure(%s): reading %s: %w", h.Name, half.remote, err)
 			}
-			if equalKey(have, half.want, half.public) {
+			if exists && equalKey(have, half.want, half.public) {
 				fmt.Printf("%s: %s in sync (%s)\n", h.Name, half.remote, shortHash(half.want))
 				continue
 			}
-			fmt.Printf("%s: %s DIFFERS (host %s, repo %s)\n", h.Name, half.remote, shortHash(have), shortHash(half.want))
+			if !exists {
+				fmt.Printf("%s: %s MISSING\n", h.Name, half.remote)
+			} else {
+				fmt.Printf("%s: %s DIFFERS (host %s, repo %s)\n", h.Name, half.remote, shortHash(have), shortHash(half.want))
+			}
 			if !upload {
 				continue
 			}

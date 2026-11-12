@@ -25,12 +25,17 @@ var hostCmd = &cobra.Command{
 		}
 		hostName := viper.GetString("hostname")
 
+		if hostName == "" {
+			// `--all` replaces the single host with the set of hosts that have a committed key, so
+			// the subcommand runs once per host and `host` stays nil.
+			if all, _ := cmd.Flags().GetBool("all"); all {
+				return nil
+			}
+			return fmt.Errorf("host: no hostname configured; pass --hostname before the subcommand or set `hostname` in the config file")
+		}
 		address := viper.GetString("address")
 		if address == "" {
 			address = hostName
-		}
-		if hostName == "" {
-			return fmt.Errorf("host: no hostname configured; pass --hostname before the subcommand or set `hostname` in the config file")
 		}
 		host = hostmod.New(hostName, address)
 		return
@@ -48,9 +53,8 @@ func init() {
 	hostCmd.PersistentFlags().StringP("hostname", "n", "", "host's name")
 	hostCmd.PersistentFlags().StringP("address", "a", "", "host's address to handle")
 	aliases["name"] = "hostname"
-	if err := hostCmd.MarkPersistentFlagRequired("hostname"); err != nil {
-		panic(err)
-	}
+	// Not `MarkPersistentFlagRequired`: `--all` runs without a hostname, and the check lives in
+	// `PersistentPreRunE`, which can see the leaf's own flags.
 
 	// `SetGlobalNormalizationFunc` installs the alias on the inherited flag set too. Setting it
 	// with `Flags().SetNormalizeFunc` normalized only `host`'s own parse, so `--name` was unknown
