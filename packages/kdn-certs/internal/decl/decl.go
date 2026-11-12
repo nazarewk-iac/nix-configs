@@ -15,9 +15,12 @@ type Cert struct {
 	Directory  string   `json:"directory"`
 	// KeyDirectory holds the private key. It is empty for leaves that keep the key next to the
 	// certificate, which is every non-SSH leaf; `KeyPath` then falls back to `Directory`.
-	KeyDirectory      string  `json:"keyDirectory"`
-	CertFile          string  `json:"certFile"`
-	KeyFile           string  `json:"keyFile"`
+	KeyDirectory string `json:"keyDirectory"`
+	CertFile     string `json:"certFile"`
+	KeyFile      string `json:"keyFile"`
+	// KeyType is the OpenSSH key type of a managed SSH leaf (`ed25519`, `mldsa44-ed25519`).
+	// Empty means ed25519, the value every existing leaf uses.
+	KeyType           string  `json:"keyType"`
 	KeySource         string  `json:"keySource"`
 	MinGenerationDate *string `json:"minGenerationDate"`
 }

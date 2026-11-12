@@ -202,6 +202,19 @@ let
             description = "The public certificate filename. The file is `<directory>/<certFile>` under `repoRoot`, plain and committed.";
           };
 
+          options.keyType = lib.mkOption {
+            type = lib.types.enum [
+              "ed25519"
+              "mldsa44-ed25519"
+            ];
+            default = "ed25519";
+            description = ''
+              The OpenSSH key type of a managed `ssh-user` or `ssh-host` leaf. The default is the
+              classical ed25519 identity; `mldsa44-ed25519` adds a post-quantum identity next to
+              it. `kdn-certs` passes the value to `ssh-keygen -t`.
+            '';
+          };
+
           options.keyFile = lib.mkOption {
             type = lib.types.str;
             default = "${name}.key";

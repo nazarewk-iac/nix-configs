@@ -28,9 +28,9 @@ type Signer interface {
 // reads the CA private key directly and needs no `ca.json` and no provisioner. So an SSH sign works
 // with the same SOPS-sourced CA key the TLS signer uses.
 type SSHSigner interface {
-	// GenerateSSHKey writes a new unencrypted ed25519 private key to `keyOut`, with its public key
-	// at `keyOut+".pub"`.
-	GenerateSSHKey(keyOut string) error
+	// GenerateSSHKey writes a new unencrypted private key of `keyType` to `keyOut`, with its
+	// public key at `keyOut+".pub"`. An empty `keyType` means ed25519.
+	GenerateSSHKey(keyOut string, keyType string) error
 	// PublicFromPrivate derives the public key at `keyPath+".pub"` from an existing private key.
 	// A renewal signs the key that is already committed: an SSH key is the leaf's identity — its
 	// SOPS age recipient and its known_hosts pin — so a renewal must not mint a new one.
@@ -203,8 +203,11 @@ func (s StepCLI) CreateCA(req CARequest) error {
 // GenerateSSHKey writes an unencrypted ed25519 private key to `keyOut`, with its public key at
 // `keyOut+".pub"`. `ssh-keygen` is the OpenSSH-native tool, so the key is an OpenSSH key and the
 // user certificate can be presented by `ssh` with no conversion.
-func (s StepCLI) GenerateSSHKey(keyOut string) error {
-	return s.run("ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", keyOut)
+func (s StepCLI) GenerateSSHKey(keyOut string, keyType string) error {
+	if keyType == "" {
+		keyType = "ed25519"
+	}
+	return s.run("ssh-keygen", "-t", keyType, "-N", "", "-q", "-f", keyOut)
 }
 
 // PublicFromPrivate derives `<keyPath>.pub` from an existing private key with `ssh-keygen -y`.

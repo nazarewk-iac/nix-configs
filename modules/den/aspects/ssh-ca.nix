@@ -187,10 +187,9 @@ let
   # none, which keeps the whole body a no-op.
   findSshCa = cas: lib: lib.findFirst (ca: ca.ssh) null (lib.attrValues cas);
 
-  # The host certificate of one target: the first leaf with `type = "ssh-host"`. `null` when the
-  # consumer declares none.
-  findHostCert =
-    certs: lib: lib.findFirst (cert: cert.type == "ssh-host") null (lib.attrValues certs);
+  # Every leaf with `type = "ssh-host"`: a host may present a classical and a post-quantum
+  # identity at once. An empty list when the consumer declares none.
+  findHostCerts = certs: lib: lib.filter (cert: cert.type == "ssh-host") (lib.attrValues certs);
 
   # The repository root the consumer names. The CA DAG declares a repo-relative directory and a
   # filename, so the aspect joins them onto this root. A declared SSH CA needs the value, so a
@@ -229,11 +228,11 @@ in
     }:
     let
       sshCa = findSshCa config.kdn.ca-dag.cas lib;
-      hostCert = findHostCert config.kdn.certificates.certs lib;
+      hostCerts = findHostCerts config.kdn.certificates.certs lib;
     in
     {
       imports = [ declaration ];
-      config = lib.mkIf (sshCa != null && hostCert != null) {
+      config = lib.mkIf (sshCa != null && hostCerts != [ ]) {
         services.openssh.settings.TrustedUserCAKeys = toString (
           mkSshCaPubKey pkgs (caCertPath config sshCa)
         );
@@ -243,15 +242,19 @@ in
         # `kdnctl host ensure ssh-host-keys`, and it is also the host's SOPS identity
         # (`kdn.security.secrets.age` derives it from this path), so sshd and sops must read the
         # same file.
-        services.openssh.hostKeys = [
-          {
-            type = "ed25519";
-            path = hostCert.keyPath;
-          }
-        ];
-        # The certificate is deployed next to the key, not read from the store: a renewal must not
-        # need a rebuild. `kdnctl host ensure ssh-host-certs` writes it and reloads sshd.
-        services.openssh.settings.HostCertificate = hostCert.deployedCertPath;
+        # Every declared identity, classical and post-quantum. `hostKeys` replaces nixpkgs'
+        # default list, so the installer-generated keys stop being offered and generated.
+        services.openssh.hostKeys = map (cert: {
+          type = cert.keyType;
+          path = cert.keyPath;
+        }) hostCerts;
+        # The certificates are deployed next to the keys, not read from the store: a renewal must
+        # not need a rebuild. `kdnctl host ensure ssh-host-certs` writes them and reloads sshd.
+        # `settings.HostCertificate` takes a scalar, so the directives go through `extraConfig`,
+        # which appends and accepts one line per identity.
+        services.openssh.extraConfig = lib.concatMapStrings (cert: ''
+          HostCertificate ${cert.deployedCertPath}
+        '') hostCerts;
         # The client half below installs the CA fragment per user through home-manager. Root and
         # the nix daemon read none of that, so a den host could not verify a fleet host
         # certificate from a root shell, from `nix copy`, or from a builder connection. Install the
@@ -270,12 +273,10 @@ in
         # The declared principals and the inventory are the same list. A manual edit that diverges
         # fails the build instead of producing a certificate for names nobody pins.
         assertions = lib.optional (fleet ? ${config.kdn.hostName}) {
-          assertion = hostCert.principals == fleet.${config.kdn.hostName}.names;
+          assertion = lib.all (cert: cert.principals == fleet.${config.kdn.hostName}.names) hostCerts;
           message = ''
-            kdn.ssh-ca: the principals of the `ssh-host` leaf do not match
+            kdn.ssh-ca: the principals of an `ssh-host` leaf do not match
             `data/net/ssh-host-identities.nix`.${config.kdn.hostName}.names.
-            Declared: ${lib.concatStringsSep ", " hostCert.principals}
-            Inventory: ${lib.concatStringsSep ", " fleet.${config.kdn.hostName}.names}
           '';
         };
         # sshd reads the managed host KEY from its SOPS runtime path, so it must wait for the
@@ -302,14 +303,14 @@ in
     }:
     let
       sshCa = findSshCa config.kdn.ca-dag.cas lib;
-      hostCert = findHostCert config.kdn.certificates.certs lib;
+      hostCerts = findHostCerts config.kdn.certificates.certs lib;
     in
     {
       imports = [ declaration ];
-      config = lib.mkIf (sshCa != null && hostCert != null) {
-        services.openssh.extraConfig = serverDirectives (mkSshCaPubKey pkgs (
+      config = lib.mkIf (sshCa != null && hostCerts != [ ]) {
+        services.openssh.extraConfig = lib.concatMapStrings (cert: serverDirectives (mkSshCaPubKey pkgs (
           caCertPath config sshCa
-        )) hostCert.keyPath hostCert.deployedCertPath;
+        )) cert.keyPath cert.deployedCertPath) hostCerts;
         programs.ssh.knownHosts = fleetKnownHosts lib // {
           kdn-ssh-ca = {
             certAuthority = true;

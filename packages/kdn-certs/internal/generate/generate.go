@@ -33,7 +33,7 @@ type Signer interface {
 // `smallstep.SSHSigner`. `apply` reaches it for a leaf whose `type` is `ssh-user` or `ssh-host`;
 // the TLS `Signer` refuses those. See sub-task 008.
 type SSHSigner interface {
-	GenerateSSHKey(keyOut string) error
+	GenerateSSHKey(keyOut string, keyType string) error
 	PublicFromPrivate(keyPath string) error
 	SignSSH(req smallstep.SSHCertRequest) error
 }
@@ -247,7 +247,7 @@ func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 		if err := deps.SSHSigner.PublicFromPrivate(leafKeyPlain); err != nil {
 			return fmt.Errorf("renew %q: deriving the public key: %w", cert.Name, err)
 		}
-	} else if err := deps.SSHSigner.GenerateSSHKey(leafKeyPlain); err != nil {
+	} else if err := deps.SSHSigner.GenerateSSHKey(leafKeyPlain, cert.KeyType); err != nil {
 		return err
 	}
 

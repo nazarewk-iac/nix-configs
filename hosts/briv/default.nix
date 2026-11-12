@@ -100,6 +100,22 @@
         keyFile = "ssh_host_ed25519_key";
         keySource = "managed";
       };
+      # The post-quantum identity, offered IN ADDITION to ed25519, never instead: a client that
+      # cannot handle `ssh-mldsa44-ed25519-cert` still has the classical path. The CA signs it
+      # with the same ECDSA key; the certificate type is `ssh-mldsa44-ed25519-cert` (no
+      # `@openssh.com` suffix). Measured 2026-11-12: `ssh-keygen -t`/`-s` produce it, sshd serves
+      # it, and a client verifies it through `@cert-authority`.
+      kdn.certificates.certs.ssh-host-briv-pq = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "briv";
+        principals = (import ../../data/net/ssh-host-identities.nix).briv.names;
+        directory = "hosts/briv/certs";
+        certFile = "ssh_host_mldsa44_ed25519-cert.pub";
+        keyFile = "ssh_host_mldsa44_ed25519_key";
+        keyType = "mldsa44-ed25519";
+        keySource = "managed";
+      };
     }
   ];
 }

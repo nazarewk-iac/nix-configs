@@ -95,7 +95,7 @@ func runSSHLogin(app *App, host string, opts sshLoginOptions) error {
 		if err := os.MkdirAll(filepath.Dir(keyPath), 0o700); err != nil {
 			return fmt.Errorf("create %s: %w", filepath.Dir(keyPath), err)
 		}
-		if err := app.sshSigner().GenerateSSHKey(keyPath); err != nil {
+		if err := app.sshSigner().GenerateSSHKey(keyPath, ""); err != nil {
 			return err
 		}
 	}

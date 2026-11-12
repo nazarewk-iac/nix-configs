@@ -49,7 +49,7 @@ func TestSignSSHAgainstTestCA(t *testing.T) {
 
 	// A user certificate.
 	userKey := filepath.Join(root, "id_ed25519")
-	if err := signer.GenerateSSHKey(userKey); err != nil {
+	if err := signer.GenerateSSHKey(userKey, ""); err != nil {
 		t.Fatalf("GenerateSSHKey: %v", err)
 	}
 	if err := signer.SignSSH(smallstep.SSHCertRequest{
@@ -73,7 +73,7 @@ func TestSignSSHAgainstTestCA(t *testing.T) {
 
 	// A host certificate.
 	hostKey := filepath.Join(root, "ssh_host_ed25519_key")
-	if err := signer.GenerateSSHKey(hostKey); err != nil {
+	if err := signer.GenerateSSHKey(hostKey, ""); err != nil {
 		t.Fatalf("GenerateSSHKey host: %v", err)
 	}
 	if err := signer.SignSSH(smallstep.SSHCertRequest{

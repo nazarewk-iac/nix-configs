@@ -17,7 +17,7 @@ type fakeSSHSigner struct {
 	signed    []smallstep.SSHCertRequest
 }
 
-func (f *fakeSSHSigner) GenerateSSHKey(keyOut string) error {
+func (f *fakeSSHSigner) GenerateSSHKey(keyOut string, keyType string) error {
 	f.generated = append(f.generated, keyOut)
 	if err := os.MkdirAll(filepath.Dir(keyOut), 0o700); err != nil {
 		return err
