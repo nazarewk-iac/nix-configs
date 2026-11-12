@@ -34,6 +34,7 @@ type Signer interface {
 // the TLS `Signer` refuses those. See sub-task 008.
 type SSHSigner interface {
 	GenerateSSHKey(keyOut string) error
+	PublicFromPrivate(keyPath string) error
 	SignSSH(req smallstep.SSHCertRequest) error
 }
 
@@ -202,9 +203,11 @@ func sshDecryptedCA(deps Deps, ca decl.CA, tmpDir string) (string, error) {
 // generateSSH signs an `ssh-user` or `ssh-host` leaf with the SSH CA using the OpenSSH-native
 // `ssh-keygen` path that `ssh login` already proves.
 //
-// The leaf key must be `managed`: `ssh login` owns the interactive `external` case, and `apply`
-// generates the key here so the private key can be SOPS-encrypted the same way a TLS leaf's is. The
-// declared CA must sign SSH (`ssh = true`), exactly as `ssh login` requires.
+// The leaf key must be `managed`: `ssh login` owns the interactive `external` case. On the first
+// issue the key is generated here and SOPS-encrypted like a TLS leaf's. On a renewal the committed
+// key is decrypted and re-signed instead: an SSH key is the leaf's identity (its SOPS age recipient
+// and its known_hosts pin), so only a missing key may mint a new one. The declared CA must sign SSH
+// (`ssh = true`), exactly as `ssh login` requires.
 func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs string) error {
 	if !ca.SSH {
 		return fmt.Errorf("ssh leaf %q: CA %q does not sign SSH certificates (`ssh = true` is not set)", cert.Name, ca.Name)
@@ -231,10 +234,20 @@ func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 		return err
 	}
 
-	// The leaf key: an ed25519 pair at `<tmpDir>/leaf.key` and `.pub`. `ssh-keygen -s` writes the
-	// certificate at `<tmpDir>/leaf.key-cert.pub`.
+	// The leaf key. A renewal signs the key that is ALREADY committed: an SSH key is the leaf's
+	// identity — its SOPS age recipient and its known_hosts pin — so only a missing key may mint a
+	// new one. `--force` re-signs the certificate; it does not re-key. Delete the `.sops` file to
+	// rotate the identity deliberately.
 	leafKeyPlain := filepath.Join(tmpDir, "leaf.key")
-	if err := deps.SSHSigner.GenerateSSHKey(leafKeyPlain); err != nil {
+	reuseKey := fileExists(keyAbs)
+	if reuseKey {
+		if err := deps.Decryptor.Decrypt(keyAbs, leafKeyPlain); err != nil {
+			return fmt.Errorf("renew %q: decrypting %s: %w", cert.Name, keyAbs, err)
+		}
+		if err := deps.SSHSigner.PublicFromPrivate(leafKeyPlain); err != nil {
+			return fmt.Errorf("renew %q: deriving the public key: %w", cert.Name, err)
+		}
+	} else if err := deps.SSHSigner.GenerateSSHKey(leafKeyPlain); err != nil {
 		return err
 	}
 
@@ -256,11 +269,22 @@ func generateSSH(deps Deps, ca decl.CA, cert decl.Cert, certAbs string, keyAbs s
 		return err
 	}
 
-	if err := deps.Encryptor.Encrypt(leafKeyPlain, keyAbs); err != nil {
-		return err
+	// The key is written only when it is new. Re-encrypting an unchanged key would rewrite a
+	// committed file with a fresh ciphertext on every renewal, for no gain.
+	if !reuseKey {
+		if err := deps.Encryptor.Encrypt(leafKeyPlain, keyAbs); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// fileExists reports whether `path` names an existing file. A missing key means "first issue";
+// an existing one means "renew".
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // sshPrincipals returns the principals to sign into an SSH certificate.

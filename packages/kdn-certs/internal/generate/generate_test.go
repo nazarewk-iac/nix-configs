@@ -1,6 +1,7 @@
 package generate_test
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -360,6 +361,90 @@ func TestGenerateSSHHostAgainstTestCA(t *testing.T) {
 		t.Errorf("second run generated %d, want 0 (idempotent)", second.Generated)
 	}
 	assertNoTempLeftovers(t, root)
+}
+
+// TestGenerateSSHRenewKeepsKey proves the renewal primitive: a forced re-sign issues a new
+// certificate and keeps the committed key. The key IS the leaf identity — its SOPS age recipient
+// and its known_hosts pin — so rotating it on renewal would break decryption and every pin.
+func TestGenerateSSHRenewKeepsKey(t *testing.T) {
+	if os.Getenv("KDN_CERTS_TEST_CA") == "" {
+		t.Skip("set KDN_CERTS_TEST_CA=1; the kdn-certs-test-ca check does")
+	}
+	requireTool(t, "ssh-keygen")
+	requireTool(t, "openssl")
+
+	root, cas, ageKeyFile := setupTestCA(t)
+	t.Setenv("SOPS_AGE_KEY_FILE", ageKeyFile)
+
+	ca := cas["kdn"]
+	ca.SSH = true
+	cas["kdn"] = ca
+
+	cert := sshTestCert()
+	result := dedup.Result{Certs: map[string]decl.Cert{cert.DedupKey(): cert}}
+
+	deps := generate.Deps{
+		Root:      root,
+		Signer:    smallstep.StepCLI{},
+		SSHSigner: smallstep.StepCLI{},
+		Decryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Encryptor: sops.CLI{ConfigPath: filepath.Join(root, ".sops.yaml")},
+		Logf:      t.Logf,
+	}
+
+	if _, err := generate.Run(cas, result, deps); err != nil {
+		t.Fatalf("first generate.Run: %v", err)
+	}
+
+	certPath := filepath.Join(root, "hosts/test/ssh/id_host-cert.pub")
+	keyPath := filepath.Join(root, "hosts/test/ssh/id_host.sops")
+
+	firstKey := decryptKey(t, deps.Decryptor, keyPath)
+	firstCert, err := os.ReadFile(certPath)
+	if err != nil {
+		t.Fatalf("read first certificate: %v", err)
+	}
+
+	// Force the renewal. The certificate is re-signed; the key must stay byte for byte.
+	deps.Force = true
+	out, err := generate.Run(cas, result, deps)
+	if err != nil {
+		t.Fatalf("renew generate.Run: %v", err)
+	}
+	if out.Generated != 1 {
+		t.Fatalf("renewal generated %d certificates, want 1", out.Generated)
+	}
+
+	if second := decryptKey(t, deps.Decryptor, keyPath); !bytes.Equal(firstKey, second) {
+		t.Fatal("renewal rotated the SSH key; the key is the leaf identity and must not change")
+	}
+	secondCert, err := os.ReadFile(certPath)
+	if err != nil {
+		t.Fatalf("read renewed certificate: %v", err)
+	}
+	if bytes.Equal(firstCert, secondCert) {
+		t.Error("the certificate was not re-signed")
+	}
+	// The renewed certificate still parses as a host certificate for the declared principal.
+	list := runCapture(t, root, nil, "ssh-keygen", "-L", "-f", certPath)
+	if !strings.Contains(list, "host certificate") || !strings.Contains(list, "host.example.invalid") {
+		t.Errorf("renewed certificate lost its shape:\n%s", list)
+	}
+	assertNoTempLeftovers(t, root)
+}
+
+// decryptKey decrypts a committed key into a temporary file and returns its bytes.
+func decryptKey(t *testing.T, d generate.Decryptor, sopsFile string) []byte {
+	t.Helper()
+	out := filepath.Join(t.TempDir(), "key")
+	if err := d.Decrypt(sopsFile, out); err != nil {
+		t.Fatalf("decrypt %s: %v", sopsFile, err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read decrypted key: %v", err)
+	}
+	return data
 }
 
 // TestGenerateSSHRefusesNonSSHCA is the hard error when an ssh leaf names a CA that does not

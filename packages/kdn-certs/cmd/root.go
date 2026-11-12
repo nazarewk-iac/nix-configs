@@ -115,7 +115,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 	flags := root.PersistentFlags()
 	flags.StringVar(&app.Options.Flake, "flake", ".", "the flake to walk")
 	flags.BoolVar(&app.Options.DryRun, "dry-run", false, "print the actions and change nothing")
-	flags.BoolVar(&app.Options.Force, "force", false, "regenerate every certificate")
+	flags.BoolVar(&app.Options.Force, "force", false, "re-sign every certificate (an SSH key is the leaf identity and is kept; delete its .sops to rotate it)")
 	flags.BoolVar(&app.Options.JSON, "json", false, "print machine-readable output")
 	flags.BoolVar(&app.Options.Verbose, "verbose", false, "print each nix eval and each step command")
 

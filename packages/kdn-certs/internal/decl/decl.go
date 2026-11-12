@@ -6,20 +6,20 @@ package decl
 
 // Cert is one leaf certificate, from `kdn.certificates.certs.<name>`.
 type Cert struct {
-	Name              string   `json:"-"`
-	CA                string   `json:"ca"`
-	Type              string   `json:"type"`
-	CommonName        string   `json:"commonName"`
-	SANs              []string `json:"sans"`
-	Principals        []string `json:"principals"`
-	Directory         string   `json:"directory"`
+	Name       string   `json:"-"`
+	CA         string   `json:"ca"`
+	Type       string   `json:"type"`
+	CommonName string   `json:"commonName"`
+	SANs       []string `json:"sans"`
+	Principals []string `json:"principals"`
+	Directory  string   `json:"directory"`
 	// KeyDirectory holds the private key. It is empty for leaves that keep the key next to the
 	// certificate, which is every non-SSH leaf; `KeyPath` then falls back to `Directory`.
-	KeyDirectory      string   `json:"keyDirectory"`
-	CertFile          string   `json:"certFile"`
-	KeyFile           string   `json:"keyFile"`
-	KeySource         string   `json:"keySource"`
-	MinGenerationDate *string  `json:"minGenerationDate"`
+	KeyDirectory      string  `json:"keyDirectory"`
+	CertFile          string  `json:"certFile"`
+	KeyFile           string  `json:"keyFile"`
+	KeySource         string  `json:"keySource"`
+	MinGenerationDate *string `json:"minGenerationDate"`
 }
 
 // CA is one node of the CA graph, from `kdn.ca-dag.cas.<name>`.

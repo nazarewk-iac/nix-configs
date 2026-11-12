@@ -31,6 +31,10 @@ type SSHSigner interface {
 	// GenerateSSHKey writes a new unencrypted ed25519 private key to `keyOut`, with its public key
 	// at `keyOut+".pub"`.
 	GenerateSSHKey(keyOut string) error
+	// PublicFromPrivate derives the public key at `keyPath+".pub"` from an existing private key.
+	// A renewal signs the key that is already committed: an SSH key is the leaf's identity — its
+	// SOPS age recipient and its known_hosts pin — so a renewal must not mint a new one.
+	PublicFromPrivate(keyPath string) error
 	// SignSSH signs the public key at `req.PubKeyPath` and writes the certificate next to it.
 	SignSSH(req SSHCertRequest) error
 }
@@ -201,6 +205,23 @@ func (s StepCLI) CreateCA(req CARequest) error {
 // user certificate can be presented by `ssh` with no conversion.
 func (s StepCLI) GenerateSSHKey(keyOut string) error {
 	return s.run("ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", keyOut)
+}
+
+// PublicFromPrivate derives `<keyPath>.pub` from an existing private key with `ssh-keygen -y`.
+// Renewal uses it so the committed key keeps serving: the certificate is re-signed, the identity
+// is not replaced.
+func (s StepCLI) PublicFromPrivate(keyPath string) error {
+	if s.Verbose && s.Logf != nil {
+		s.Logf("ssh-keygen -y -f %s", keyPath)
+	}
+	out, err := exec.Command("ssh-keygen", "-y", "-f", keyPath).Output()
+	if err != nil {
+		return fmt.Errorf("ssh-keygen -y -f %s: %w", keyPath, err)
+	}
+	if err := os.WriteFile(keyPath+".pub", out, 0o644); err != nil {
+		return fmt.Errorf("writing %s.pub: %w", keyPath, err)
+	}
+	return nil
 }
 
 // SignSSH signs the public key at `req.PubKeyPath` with the SSH CA key at `req.CAKeyPath`.

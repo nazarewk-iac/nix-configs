@@ -28,6 +28,10 @@ func (f *fakeSSHSigner) GenerateSSHKey(keyOut string) error {
 	return os.WriteFile(keyOut+".pub", []byte("ssh-ed25519 AAAA fake\n"), 0o644)
 }
 
+func (f *fakeSSHSigner) PublicFromPrivate(keyPath string) error {
+	return os.WriteFile(keyPath+".pub", []byte("ssh-ed25519 AAAA fake\n"), 0o644)
+}
+
 func (f *fakeSSHSigner) SignSSH(req smallstep.SSHCertRequest) error {
 	f.signed = append(f.signed, req)
 	certPath := strings.TrimSuffix(req.PubKeyPath, ".pub") + "-cert.pub"
