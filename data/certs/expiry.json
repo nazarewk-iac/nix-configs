@@ -1,0 +1,75 @@
+{
+  "generated": "2026-11-12T21:20:34+00:00",
+  "earliest": {
+    "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
+    "kind": "ssh-host",
+    "notAfter": "2027-01-11T06:45:44"
+  },
+  "certificates": [
+    {
+      "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-11T06:45:44"
+    },
+    {
+      "path": "hosts/anji/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-13T09:44:40"
+    },
+    {
+      "path": "hosts/briv/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-13T09:44:40"
+    },
+    {
+      "path": "hosts/etra/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-13T09:44:40"
+    },
+    {
+      "path": "hosts/moss/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-13T09:44:40"
+    },
+    {
+      "path": "hosts/oams/certs/ssh_host_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-01-13T09:44:40"
+    },
+    {
+      "path": "hosts/briv/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T19:52:20"
+    },
+    {
+      "path": "hosts/anji/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T20:11:14"
+    },
+    {
+      "path": "hosts/brys/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T20:17:09"
+    },
+    {
+      "path": "hosts/etra/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T20:17:09"
+    },
+    {
+      "path": "hosts/moss/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T20:17:09"
+    },
+    {
+      "path": "hosts/oams/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "kind": "ssh-host",
+      "notAfter": "2027-02-10T20:17:09"
+    },
+    {
+      "path": "data/ca/kdn.crt",
+      "kind": "ca",
+      "notAfter": "2036-09-22T20:47:15"
+    }
+  ]
+}

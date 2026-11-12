@@ -89,6 +89,9 @@
 # private key is committed as raw/binary SOPS, encrypted to the two unattended YubiKey identities.
 !/data/ca/kdn.crt
 !/data/ca/kdn.key.sops
+# The generated certificate-expiry summary. `hack/certs-expiry.py` writes it and the devenv shell
+# reads it, so no certificate is decoded on shell entry.
+!/data/certs/expiry.json
 !/hosts/*/certs/*.pub
 !/hosts/*/certs/*.key.sops
 

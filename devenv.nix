@@ -168,7 +168,17 @@ in
       # which is a stable name, instead of a `/nix/store/...` path that a rebuild would move.
       # `treefmt.nix` enables the same program for `nix fmt`.
       pkgs.prettier
+      # The `hack/*.py` helpers, including the certificate-expiry summary the shell entry reads.
+      pkgs.python3
     ];
+
+    # Certificate expiry reminder. `hack/certs-expiry.py` decodes the certificates ONCE and
+    # commits the result to `data/certs/expiry.json`; shell entry only loads that small JSON, so
+    # nothing decodes a certificate on activation. Re-run the script to refresh it, and
+    # `--check` fails when the committed summary is stale.
+    enterShell = ''
+      python3 hack/certs-expiry.py --remind || true
+    '';
 
     # pi-orchestrator's config, generated so the engaged parent keeps `measure` and `fleet-status`
     # beside `delegate`. See `orchestratorJsonc` above for why it lives in `.pi/`.
