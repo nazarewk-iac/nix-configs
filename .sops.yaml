@@ -44,7 +44,14 @@ keys:
     briv: {age: [&ssh-briv age1fvzlv8tvmlsmes0apyrf4fwrcsyj5c959tnq36njfm2ng464a5sq7akkat]}
     brys:
       age:
-        - &ssh-brys age1ysq2nvh5vkxra8gj74meqvfpc6axh5nv9sxn62s3mj3lz9987exqweqp0p
+        # Derived from brys' LIVE host key:
+        #   ssh-keyscan -t ed25519 brys | awk $2,$3 | ssh-to-age
+        # The previous value was derived from an older key and went stale: brys decrypts nothing
+        # at boot with it (`kdn-llm-leaf-key` failed with "no master key was able to decrypt").
+        # The host now runs the key the repo's own host certificate covers
+        # (`hosts/brys/certs/ssh_host_ed25519-cert.pub`, fingerprint SHA256:LTZdYQxm0WAgYLMFQ…),
+        # so this identity and that certificate agree.
+        - &ssh-brys age1jg4gde9r0mcu6my04t86wskg83zttxwn7glrlqa528ncey0cd9psw8plmw
         # A hardware-bound age identity derived from brys' TPM 2.0 (`age-plugin-tpm`).
         # It decrypts with no user present, which is what lets `sops-install-secrets`
         # drop the `pcscd.socket` edge. The identity blob is

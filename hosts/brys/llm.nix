@@ -462,6 +462,16 @@ in
         RemainAfterExit = true;
         User = "root";
         Group = "root";
+        # `sops decrypt` finds no identity on this host: it looks for an SSH key at
+        # `$HOME/.ssh/id_*`, and brys' root home has none, so the unit failed on every boot with
+        # "no master key was able to decrypt". `SOPS_AGE_SSH_PRIVATE_KEY_FILE` is silently ignored
+        # by this sops build (3.13.3, measured: still "failed to get the data key"), while
+        # `SOPS_AGE_KEY_CMD` works. The command is the repo's own conversion of the SSH host key to
+        # an age identity (`ssh-to-age -private-key`), and that host key is the recipient enrolled
+        # as `ssh-brys`.
+        Environment = [
+          "SOPS_AGE_KEY_CMD=${pkgs.ssh-to-age}/bin/ssh-to-age -i /etc/ssh/ssh_host_ed25519_key -private-key"
+        ];
       };
       script = ''
         set -euo pipefail
