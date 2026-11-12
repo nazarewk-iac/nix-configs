@@ -382,12 +382,7 @@ in
         ca = "kdn";
         type = "ssh-host";
         commonName = "anji";
-        principals = [
-          "anji"
-          "anji.lan.etra.net.int.kdn.im"
-          "anji.priv.nb.net.int.kdn.im"
-          "anji.netbird.cloud"
-        ];
+        principals = (import ../../data/net/ssh-host-identities.nix).anji.names;
         directory = "hosts/anji/certs";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";

@@ -554,13 +554,7 @@ in
         ca = "kdn";
         type = "ssh-host";
         commonName = "etra";
-        principals = [
-          "etra"
-          "etra.lan.etra.net.int.kdn.im"
-          "etra.lan.drek.net.int.kdn.im"
-          "etra.priv.nb.net.int.kdn.im"
-          "etra.netbird.cloud"
-        ];
+        principals = (import ../../data/net/ssh-host-identities.nix).etra.names;
         directory = "hosts/etra/certs";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";

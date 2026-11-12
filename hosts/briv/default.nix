@@ -94,12 +94,7 @@
         ca = "kdn";
         type = "ssh-host";
         commonName = "briv";
-        principals = [
-          "briv"
-          "briv.lan.etra.net.int.kdn.im"
-          "briv.priv.nb.net.int.kdn.im"
-          "briv.netbird.cloud"
-        ];
+        principals = (import ../../data/net/ssh-host-identities.nix).briv.names;
         directory = "hosts/briv/certs";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";

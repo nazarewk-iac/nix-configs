@@ -32,13 +32,7 @@
     ca = "kdn";
     type = "ssh-host";
     commonName = "brys";
-    principals = [
-      "brys"
-      "brys.lan.etra.net.int.kdn.im"
-      "brys.lan.drek.net.int.kdn.im"
-      "brys.priv.nb.net.int.kdn.im"
-      "brys.netbird.cloud"
-    ];
+    principals = (import ../../data/net/ssh-host-identities.nix).brys.names;
     directory = "hosts/brys/certs";
     certFile = "ssh_host_ed25519-cert.pub";
     keyFile = "ssh_host_ed25519_key";

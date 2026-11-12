@@ -64,6 +64,20 @@
 # 3. **No custom module argument.** Each target module below takes `config`, `lib` and `pkgs` only.
 { kdn, ... }:
 let
+  # The fleet's per-host SSH identity: the certificate principals and the committed public key of
+  # the deployed host key. One source, so a principal list and a pin cannot drift apart.
+  fleet = import ../../../data/net/ssh-host-identities.nix;
+
+  # One `known_hosts` entry per fleet host, generated from the committed public key. A host that is
+  # missing from the inventory gets no generated pin and keeps whatever its own declaration says.
+  fleetKnownHosts = lib: lib.mapAttrs' (
+    name: host:
+    lib.nameValuePair "kdn-host-${name}" {
+      hostNames = host.names;
+      publicKeyFile = host.publicKeyFile;
+    }
+  ) fleet;
+
   # Declared in every class: a consumer sets it from a host file (nixos) or from a home module, and
   # each class is a separate evaluation.
   declaration =
@@ -246,10 +260,23 @@ in
         # `programs.ssh.knownHosts`, not `environment.etc."ssh/ssh_known_hosts"`: the nixpkgs ssh
         # module always defines that path (empty when it has no entries), so a competing `source`
         # silently loses and the file comes out 1 byte long (measured 2026-11-12 on pryll).
-        programs.ssh.knownHosts.kdn-ssh-ca = {
-          certAuthority = true;
-          hostNames = [ "*" ];
-          publicKeyFile = mkSshCaPubKey pkgs (caCertPath config sshCa);
+        programs.ssh.knownHosts = fleetKnownHosts lib // {
+          kdn-ssh-ca = {
+            certAuthority = true;
+            hostNames = [ "*" ];
+            publicKeyFile = mkSshCaPubKey pkgs (caCertPath config sshCa);
+          };
+        };
+        # The declared principals and the inventory are the same list. A manual edit that diverges
+        # fails the build instead of producing a certificate for names nobody pins.
+        assertions = lib.optional (fleet ? ${config.kdn.hostName}) {
+          assertion = hostCert.principals == fleet.${config.kdn.hostName}.names;
+          message = ''
+            kdn.ssh-ca: the principals of the `ssh-host` leaf do not match
+            `data/net/ssh-host-identities.nix`.${config.kdn.hostName}.names.
+            Declared: ${lib.concatStringsSep ", " hostCert.principals}
+            Inventory: ${lib.concatStringsSep ", " fleet.${config.kdn.hostName}.names}
+          '';
         };
         # sshd reads the managed host KEY from its SOPS runtime path, so it must wait for the
         # secrets. A `requires` here is a fault-amplifier though: the target is
@@ -283,6 +310,13 @@ in
         services.openssh.extraConfig = serverDirectives (mkSshCaPubKey pkgs (
           caCertPath config sshCa
         )) hostCert.keyPath hostCert.deployedCertPath;
+        programs.ssh.knownHosts = fleetKnownHosts lib // {
+          kdn-ssh-ca = {
+            certAuthority = true;
+            hostNames = [ "*" ];
+            publicKeyFile = mkSshCaPubKey pkgs (caCertPath config sshCa);
+          };
+        };
       };
     };
 

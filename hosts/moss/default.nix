@@ -88,12 +88,7 @@
         ca = "kdn";
         type = "ssh-host";
         commonName = "moss";
-        principals = [
-          "moss"
-          "moss.kdn.im"
-          "moss.priv.nb.net.int.kdn.im"
-          "moss.netbird.cloud"
-        ];
+        principals = (import ../../data/net/ssh-host-identities.nix).moss.names;
         directory = "hosts/moss/certs";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";

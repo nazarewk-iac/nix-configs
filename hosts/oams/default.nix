@@ -469,13 +469,7 @@ in
         ca = "kdn";
         type = "ssh-host";
         commonName = "oams";
-        principals = [
-          "oams"
-          "oams.lan.etra.net.int.kdn.im"
-          "oams.lan.drek.net.int.kdn.im"
-          "oams.priv.nb.net.int.kdn.im"
-          "oams.netbird.cloud"
-        ];
+        principals = (import ../../data/net/ssh-host-identities.nix).oams.names;
         directory = "hosts/oams/certs";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";
