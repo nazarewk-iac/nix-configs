@@ -135,6 +135,13 @@ creation_rules:
           - *yk-brys-unattended
           - *yk-oams-unattended
           - *tpm-brys
+          # anji is a darwin host that enables `kdn.profile.default-secrets`, so this file is in
+          # its manifest. Its identity is `ssh-anji` (the generator derives it from the Mac's
+          # `/etc/ssh/ssh_host_ed25519_key`, measured 2026-11-12). The generic
+          # `*.unattended.sops.*` rule below already grants it, but sops uses the FIRST matching
+          # rule, so without this line anji's activation died at
+          # "0 successful groups required, got 0".
+          - *ssh-anji
   - path_regex: '\.unattended\.sops\.[^.]+$'
     key_groups:
       - age:

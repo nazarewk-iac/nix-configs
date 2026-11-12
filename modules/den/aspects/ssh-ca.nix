@@ -230,6 +230,19 @@ in
           HostKey ${hostCert.keyPath}
           HostCertificate ${toString hostCert.certPath}
         '';
+        # The client half below installs the CA fragment per user through home-manager. Root and
+        # the nix daemon read none of that, so a den host could not verify a fleet host
+        # certificate from a root shell, from `nix copy`, or from a builder connection. Install the
+        # same fragment system-wide.
+        #
+        # `programs.ssh.knownHosts`, not `environment.etc."ssh/ssh_known_hosts"`: the nixpkgs ssh
+        # module always defines that path (empty when it has no entries), so a competing `source`
+        # silently loses and the file comes out 1 byte long (measured 2026-11-12 on pryll).
+        programs.ssh.knownHosts.kdn-ssh-ca = {
+          certAuthority = true;
+          hostNames = [ "*" ];
+          publicKeyFile = mkSshCaPubKey pkgs (caCertPath config sshCa);
+        };
         # sshd reads the managed host KEY from its SOPS runtime path, so it must wait for the
         # secrets. A `requires` here is a fault-amplifier though: the target is
         # `BindsTo=sops-install-secrets`, so ONE failed decrypt elsewhere deleted the sshd job and
@@ -283,13 +296,18 @@ in
         # The certificate is scoped to the hosts the fleet owns. A top-level `CertificateFile` is
         # global, so `ssh` would present the CA user certificate to every destination, including a
         # public host; the `Host` block is what keeps it to the fleet.
+        #
+        # `UserKnownHostsFile` is the opposite case: it must be GLOBAL. Inside the `Host` block it
+        # only applied to the fleet patterns, so short names and `kdn-*` aliases never saw the CA
+        # fragment — `ssh -G briv` listed only `~/.ssh/known_hosts` (measured 2026-11-12), and
+        # `ssh briv` therefore could not verify a host certificate. Additive, so the live file
+        # keeps whatever the user appends.
         home.file.${dropInPath}.text = ''
+          Host *
+              UserKnownHostsFile ~/.ssh/known_hosts ~/${knownHostsPath}
+
           Host ${lib.concatStringsSep " " (effectivePatterns lib config)}
               CertificateFile ${userCertPath}
-
-          # Additive, so it stays global: the managed fragment carries the CA's
-          # `@cert-authority` line and the live file keeps whatever the user appends.
-          UserKnownHostsFile ~/.ssh/known_hosts ~/${knownHostsPath}
         '';
         home.file.${knownHostsPath}.source = mkKnownHosts pkgs (
           mkSshCaPubKey pkgs (caCertPath config sshCa)

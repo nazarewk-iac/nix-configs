@@ -294,6 +294,22 @@ in
               chmod -R go+r /run/configs
             '';
           })
+          {
+            # nix-darwin has no `programs.ssh.knownHostsFiles` — that is a NixOS option — so the
+            # Mac installed no `/etc/ssh/ssh_known_hosts` at all and trusted no CA. Measured on
+            # `anji` 2026-11-12: the file did not exist, so every certificate the fleet presents
+            # was unverifiable there. The NixOS branch hands these two files to
+            # `knownHostsFiles`; darwin concatenates them into the same system file.
+            #
+            # nix-darwin's own `programs.ssh.knownHosts` writes this path only when it has
+            # entries (`<nix-darwin>/modules/programs/ssh.nix:170`), and this repo sets none, so
+            # there is no conflict. Keep it that way: adding a `programs.ssh.knownHosts` entry
+            # here would define `environment.etc."ssh/ssh_known_hosts"` twice.
+            environment.etc."ssh/ssh_known_hosts".text = ''
+              ${builtins.readFile ./ssh_kdn_ca_known_hosts}
+              ${builtins.readFile ./ssh_known_hosts}
+            '';
+          }
         ]
       ))
       # nixos
