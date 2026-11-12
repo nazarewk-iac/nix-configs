@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -28,9 +29,10 @@ import (
 // but the installer generates both and an operator may still connect with an RSA client.
 var defaultKeyTypes = []string{"ed25519", "rsa"}
 
-// targetDir is where the host keeps the keys between reboots. It matches what
-// `kdnctl host bootstrap` writes and what the host configuration links from /etc/ssh.
-const targetDir = "/nix/persist/sys/data/etc/ssh"
+// fallbackTargetDir is where sshd reads the key on a host without preservation (the `briv`
+// sd-card image, `oams`): a plain directory. An impermanence host symlinks the file into
+// `/nix/persist/sys/data/etc/ssh` instead, and `resolveTargetDir` follows that link.
+const fallbackTargetDir = "/etc/ssh"
 
 // Options tunes where the keys come from and which of them to sync.
 type Options struct {
@@ -39,6 +41,64 @@ type Options struct {
 	SecretDir string
 	// KeyTypes defaults to ed25519 and rsa.
 	KeyTypes []string
+	// TargetDir is the remote directory that holds the keys. Empty means "detect": the
+	// preservation path when it exists, `/etc/ssh` otherwise.
+	TargetDir string
+}
+
+// resolveTargetDir picks the remote directory that sshd actually reads. It follows
+// `/etc/ssh/ssh_host_ed25519_key`: on an impermanence host that is a symlink into
+// `/nix/persist/sys/data/etc/ssh`, and the key must be written at the target, because writing
+// through the link would replace it (the upload renames a temporary file over the destination).
+// A host without preservation (the `briv` sd-card image, `oams`) keeps a plain file, and `/etc/ssh`
+// is then both the path and the storage.
+func resolveTargetDir(h *host.Host, opts Options, sshOptions []string) (string, error) {
+	if opts.TargetDir != "" {
+		return opts.TargetDir, nil
+	}
+	out, err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "readlink", "-f", "/etc/ssh/ssh_host_ed25519_key").Output()
+	if err == nil {
+		resolved := strings.TrimSpace(string(out))
+		if strings.HasPrefix(resolved, "/nix/persist/") {
+			return filepath.Dir(resolved), nil
+		}
+	}
+	return fallbackTargetDir, nil
+}
+
+// equalKey compares two key files. For a public key only the type and the base64 body matter: the
+// comment differs (`root@briv` on the host, nothing from `ssh-keygen -y`), and comparing whole
+// lines would report a difference on every run.
+func equalKey(a, b []byte, public bool) bool {
+	left, right := strings.TrimSpace(string(a)), strings.TrimSpace(string(b))
+	if !public {
+		return left == right
+	}
+	l, r := strings.Fields(left), strings.Fields(right)
+	if len(l) < 2 || len(r) < 2 {
+		return false
+	}
+	return l[0] == r[0] && l[1] == r[1]
+}
+
+// derivePublicKey returns the OpenSSH public line of a private key. `ssh-keygen` reads a file, so
+// the key goes through a private temporary file that is removed before returning.
+func derivePublicKey(private []byte) ([]byte, error) {
+	dir, err := os.MkdirTemp("", "kdnctl-sshkey-")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+
+	path := filepath.Join(dir, "key")
+	if err := os.WriteFile(path, private, 0o600); err != nil {
+		return nil, err
+	}
+	out, err := exec.LocalCommand("ssh-keygen", "-y", "-f", path).Output()
+	if err != nil {
+		return nil, fmt.Errorf("ssh-keygen -y: %w", err)
+	}
+	return bytes.TrimSpace(out), nil
 }
 
 func secretPath(h *host.Host, opts Options, keyType, suffix string) string {
@@ -55,56 +115,80 @@ func Ensure(r *repo.Repo, h *host.Host, s secrets.SecretStorage, upload bool, op
 	if len(keyTypes) == 0 {
 		keyTypes = defaultKeyTypes
 	}
+	targetDir, err := resolveTargetDir(h, opts, sshOptions)
+	if err != nil {
+		return fmt.Errorf("Ensure(%s): resolving the remote key directory: %w", h.Name, err)
+	}
 
 	for _, keyType := range keyTypes {
-		for _, suffix := range []string{"", ".pub"} {
-			path := secretPath(h, opts, keyType, suffix)
-			remotePath := fmt.Sprintf("%s/ssh_host_%s_key%s", targetDir, keyType, suffix)
+		privatePath := secretPath(h, opts, keyType, "")
+		remotePrivate := fmt.Sprintf("%s/ssh_host_%s_key", targetDir, keyType)
 
-			if !s.Exists(path) {
-				if suffix == ".pub" {
-					// Not every source stores the public half; it is derivable from the private one.
-					fmt.Printf("%s: %s not in the store, skipped\n", h.Name, path)
-					continue
-				}
-				// First run for this host: adopt what the machine already uses, so the repo
-				// records the identity that clients have in their known_hosts. Publishing the key
-				// would otherwise change the host identity on every reinstall.
-				if !upload {
-					return fmt.Errorf("Ensure(%s): %s is not in the secret store; run again with --upload to import the host's current key", h.Name, path)
-				}
-				have, err := exec.GetRemoteFile(h.Address, sshOptions, remotePath)
-				if err != nil {
-					return fmt.Errorf("Ensure(%s): importing %s from the host: %w", h.Name, remotePath, err)
-				}
-				if err := s.EncryptBytes(path, have); err != nil {
-					return fmt.Errorf("Ensure(%s): storing %s in the secret store: %w", h.Name, path, err)
-				}
-				fmt.Printf("%s: imported %s into the secret store (%s)\n", h.Name, remotePath, shortHash(have))
+		// The private half is the source of truth. When the store does not have it yet, adopt what
+		// the machine already uses, so the repo records the identity that clients have in their
+		// known_hosts. Publishing the key would otherwise change the host identity on a reinstall.
+		var wantPrivate []byte
+		if !s.Exists(privatePath) {
+			if !upload {
+				return fmt.Errorf("Ensure(%s): %s is not in the secret store; run again with --upload to import the host's current key", h.Name, privatePath)
+			}
+			have, err := exec.GetRemoteFile(h.Address, sshOptions, remotePrivate)
+			if err != nil {
+				return fmt.Errorf("Ensure(%s): importing %s from the host: %w", h.Name, remotePrivate, err)
+			}
+			if err := s.EncryptBytes(privatePath, have); err != nil {
+				return fmt.Errorf("Ensure(%s): storing %s in the secret store: %w", h.Name, privatePath, err)
+			}
+			fmt.Printf("%s: imported %s into the secret store (%s)\n", h.Name, remotePrivate, shortHash(have))
+			wantPrivate = have
+		} else {
+			wantPrivate, err = s.DecryptBytes(privatePath)
+			if err != nil {
+				return fmt.Errorf("Ensure(%s): decrypting %s: %w", h.Name, privatePath, err)
+			}
+		}
+
+		// A key pair must never be half-deployed: a stale `.pub` next to a fresh private key is a
+		// misleading file on the host. Derive the public half when the store does not carry it.
+		publicPath := secretPath(h, opts, keyType, ".pub")
+		var wantPublic []byte
+		if s.Exists(publicPath) {
+			wantPublic, err = s.DecryptBytes(publicPath)
+			if err != nil {
+				return fmt.Errorf("Ensure(%s): decrypting %s: %w", h.Name, publicPath, err)
+			}
+		} else {
+			wantPublic, err = derivePublicKey(wantPrivate)
+			if err != nil {
+				return fmt.Errorf("Ensure(%s): deriving the public half of %s: %w", h.Name, privatePath, err)
+			}
+		}
+
+		halves := []struct {
+			remote string
+			want   []byte
+			public bool
+		}{
+			{remotePrivate, wantPrivate, false},
+			{remotePrivate + ".pub", wantPublic, true},
+		}
+		for _, half := range halves {
+			have, err := exec.GetRemoteFile(h.Address, sshOptions, half.remote)
+			if err != nil {
+				return fmt.Errorf("Ensure(%s): reading %s: %w", h.Name, half.remote, err)
+			}
+			if equalKey(have, half.want, half.public) {
+				fmt.Printf("%s: %s in sync (%s)\n", h.Name, half.remote, shortHash(half.want))
 				continue
 			}
-			want, err := s.DecryptBytes(path)
-			if err != nil {
-				return fmt.Errorf("Ensure(%s): decrypting %s: %w", h.Name, path, err)
-			}
-
-			have, err := exec.GetRemoteFile(h.Address, sshOptions, remotePath)
-			if err != nil {
-				return fmt.Errorf("Ensure(%s): reading %s: %w", h.Name, remotePath, err)
-			}
-
-			if bytes.Equal(bytes.TrimSpace(have), bytes.TrimSpace(want)) {
-				fmt.Printf("%s: %s in sync (%s)\n", h.Name, remotePath, shortHash(want))
-				continue
-			}
-			fmt.Printf("%s: %s DIFFERS (host %s, repo %s)\n", h.Name, remotePath, shortHash(have), shortHash(want))
+			fmt.Printf("%s: %s DIFFERS (host %s, repo %s)\n", h.Name, half.remote, shortHash(have), shortHash(half.want))
 			if !upload {
 				continue
 			}
-			if err := uploadKey(h, sshOptions, remotePath, want); err != nil {
+			if err := uploadKey(h, sshOptions, half.remote, half.want); err != nil {
 				return err
 			}
-			fmt.Printf("%s: %s uploaded\n", h.Name, remotePath)
+			fmt.Printf("%s: %s uploaded\n", h.Name, half.remote)
 		}
 	}
 	return nil

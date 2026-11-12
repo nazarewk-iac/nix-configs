@@ -85,14 +85,15 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().StringVarP(&configFile, "config-file", "c", "", fmt.Sprintf("config file (default locations: ., $HOME/.config/%s/)", CLIName))
-	rootCmd.Flags().StringP("repo-remote", "r", "https://github.com/nazarewk-iac/nix-configs.git", "")
-	rootCmd.Flags().StringP("repo-path", "p", filepath.Join(xdg.Home, "dev/github.com/nazarewk-iac/nix-configs"), "")
-	rootCmd.Flags().StringVarP(&logLevel, "log-level", "l", "info", "log level")
-	rootCmd.Flags().StringSliceVarP(&logFiles, "log-file", "o", []string{"-"}, "log file, `-` for stderr")
+	//
+	// Persistent, not local: `kdnctl` is a container for subcommands, so every real invocation is
+	// `kdnctl <group> <verb> ...`. A local flag is parsed only for the bare `kdnctl`, and a
+	// subcommand then rejects it with "unknown flag" (the same trap `host --hostname` had).
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config-file", "c", "", fmt.Sprintf("config file (default locations: ., $HOME/.config/%s/)", CLIName))
+	rootCmd.PersistentFlags().StringP("repo-remote", "r", "https://github.com/nazarewk-iac/nix-configs.git", "")
+	rootCmd.PersistentFlags().StringP("repo-path", "p", filepath.Join(xdg.Home, "dev/github.com/nazarewk-iac/nix-configs"), "")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "log level")
+	rootCmd.PersistentFlags().StringSliceVarP(&logFiles, "log-file", "o", []string{"-"}, "log file, `-` for stderr")
 }
 
 func initializeConfig(cmd *cobra.Command) (err error) {

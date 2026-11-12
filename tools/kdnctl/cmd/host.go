@@ -41,14 +41,21 @@ func init() {
 	aliases := make(map[string]string)
 	rootCmd.AddCommand(hostCmd)
 
-	hostCmd.Flags().StringP("hostname", "n", "", "host's name")
-	hostCmd.Flags().StringP("address", "a", "", "host's address to handle")
+	// Persistent, not local: `host` is only a grouping command, so every real invocation is a
+	// subcommand (`host ensure ssh-host-keys`, `host bootstrap`, ...). A flag registered on
+	// `hostCmd.Flags()` is parsed only for `kdnctl host` itself, and a subcommand then rejects it
+	// with "unknown flag: --hostname".
+	hostCmd.PersistentFlags().StringP("hostname", "n", "", "host's name")
+	hostCmd.PersistentFlags().StringP("address", "a", "", "host's address to handle")
 	aliases["name"] = "hostname"
-	if err := hostCmd.MarkFlagRequired("hostname"); err != nil {
+	if err := hostCmd.MarkPersistentFlagRequired("hostname"); err != nil {
 		panic(err)
 	}
 
-	hostCmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	// `SetGlobalNormalizationFunc` installs the alias on the inherited flag set too. Setting it
+	// with `Flags().SetNormalizeFunc` normalized only `host`'s own parse, so `--name` was unknown
+	// to the subcommands that actually run.
+	hostCmd.SetGlobalNormalizationFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
 		if alias, ok := aliases[name]; ok {
 			name = alias
 		}
