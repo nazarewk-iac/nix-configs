@@ -223,13 +223,19 @@ in
         services.openssh.settings.TrustedUserCAKeys = toString (
           mkSshCaPubKey pkgs (caCertPath config sshCa)
         );
-        # `HostKey` and `HostCertificate` travel together in `extraConfig`. Setting
-        # `services.openssh.settings.HostKey` would override nixpkgs' own `HostKey` list;
-        # `extraConfig` appends, so the existing host identities stay.
-        services.openssh.extraConfig = ''
-          HostKey ${hostCert.keyPath}
-          HostCertificate ${toString hostCert.certPath}
-        '';
+        # The managed key is the ONLY host identity. `hostKeys` replaces nixpkgs' default
+        # list (rsa, ed25519, mldsa44), so the installer-generated keys stop being offered and
+        # stop being generated. The file is deployed out of band by
+        # `kdnctl host ensure ssh-host-keys`, and it is also the host's SOPS identity
+        # (`kdn.security.secrets.age` derives it from this path), so sshd and sops must read the
+        # same file.
+        services.openssh.hostKeys = [
+          {
+            type = "ed25519";
+            path = hostCert.keyPath;
+          }
+        ];
+        services.openssh.settings.HostCertificate = toString hostCert.certPath;
         # The client half below installs the CA fragment per user through home-manager. Root and
         # the nix daemon read none of that, so a den host could not verify a fleet host
         # certificate from a root shell, from `nix copy`, or from a builder connection. Install the

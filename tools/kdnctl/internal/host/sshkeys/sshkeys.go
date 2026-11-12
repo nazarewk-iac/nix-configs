@@ -30,17 +30,13 @@ import (
 // but the installer generates both and an operator may still connect with an RSA client.
 var defaultKeyTypes = []string{"ed25519", "rsa"}
 
-// fallbackTargetDir is where the managed key lives on a host: `kdn.certificates.*.deployedDirectory`.
-const fallbackTargetDir = "/etc/ssh/kdn"
+// fallbackTargetDir is where the managed key lives on a host:
+// `kdn.certificates.*.deployedDirectory`, which is also the path sshd reads and the path the
+// host's SOPS identity is derived from.
+const fallbackTargetDir = "/etc/ssh"
 
-// persistTargetDir is the same directory as the impermanence module backs it. The deployed
-// directory is a bind mount, so a write before the first activation would land on the ephemeral
-// root and be hidden by the mount. The backing directory is the durable location in both states.
-const persistTargetDir = "/nix/persist/sys/data/etc/ssh/kdn"
-
-// persistBaseDir is the mount point the backing directory lives under. It is checked as a mount
-// point before the backing path is trusted.
-const persistBaseDir = "/nix/persist/sys/data"
+// probeKeyFile names the file whose symlink tells us where the directory really is.
+const probeKeyFile = "ssh_host_ed25519_key"
 
 // Options tunes where the keys come from and which of them to sync.
 type Options struct {
@@ -54,36 +50,19 @@ type Options struct {
 	TargetDir string
 }
 
-// resolveTargetDir picks the remote directory to write.
-//
-// The deployed directory is a bind mount on an impermanence host, and a bind mount cannot be
-// followed. So: write through the mount when it exists, and before the first activation write to
-// the persistence backing directory — but only when that backing directory is itself a mount
-// point. `oams` has a leftover `/nix/persist/sys/data` tree on its root filesystem with no mount,
-// and trusting the path alone put the key outside the deployed directory there (measured
-// 2026-11-12).
-func resolveTargetDir(h *host.Host, opts Options, sshOptions []string) (string, error) {
-	if opts.TargetDir != "" {
-		return opts.TargetDir, nil
+// resolveRemotePath follows a symlinked key file to its target. `/etc/ssh/ssh_host_ed25519_key`
+// is a symlink into `/nix/persist` on an impermanence host, and the upload renames a temporary
+// file over the destination — writing through the link would replace it. The public half is an
+// ordinary file, so it stays in `/etc/ssh`; each path is resolved on its own for that reason.
+func resolveRemotePath(h *host.Host, sshOptions []string, path string) string {
+	out, err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "readlink", "-f", path).Output()
+	if err != nil {
+		return path
 	}
-	if out, err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "readlink", "-f", fallbackTargetDir).Output(); err == nil {
-		if resolved := strings.TrimSpace(string(out)); resolved != "" && resolved != fallbackTargetDir {
-			return resolved, nil
-		}
+	if resolved := strings.TrimSpace(string(out)); resolved != "" {
+		return resolved
 	}
-	if isMountPoint(h, sshOptions, fallbackTargetDir) {
-		return fallbackTargetDir, nil
-	}
-	if isMountPoint(h, sshOptions, persistBaseDir) {
-		return persistTargetDir, nil
-	}
-	return fallbackTargetDir, nil
-}
-
-// isMountPoint reports whether the remote path is a mount point. `-M` is exact; `-T` would match
-// any path that merely lives inside a mount.
-func isMountPoint(h *host.Host, sshOptions []string, path string) bool {
-	return exec.RemoteCommand(h.Address, sshOptions, "findmnt", "-n", "-M", path).Run() == nil
+	return path
 }
 
 // HostsWithKeys lists, in sorted order, the hosts that have a committed SSH host key in the
@@ -173,14 +152,19 @@ func Ensure(r *repo.Repo, h *host.Host, s secrets.SecretStorage, upload bool, op
 	if len(keyTypes) == 0 {
 		keyTypes = defaultKeyTypes
 	}
-	targetDir, err := resolveTargetDir(h, opts, sshOptions)
-	if err != nil {
-		return fmt.Errorf("Ensure(%s): resolving the remote key directory: %w", h.Name, err)
+	targetDir := opts.TargetDir
+	if targetDir == "" {
+		targetDir = fallbackTargetDir
 	}
+	var err error
 
 	for _, keyType := range keyTypes {
 		privatePath := secretPath(h, opts, keyType, "")
-		remotePrivate := fmt.Sprintf("%s/ssh_host_%s_key", targetDir, keyType)
+		deployedPrivate := filepath.Join(targetDir, "ssh_host_"+keyType+"_key")
+		// Resolve each half from the DEPLOYED path. Deriving the public path from the resolved
+		// private one moves the public half into `/nix/persist` too, where nothing reads it.
+		remotePrivate := resolveRemotePath(h, sshOptions, deployedPrivate)
+		remotePublic := resolveRemotePath(h, sshOptions, deployedPrivate+".pub")
 
 		// The private half is the source of truth. When the store does not have it yet, adopt what
 		// the machine already uses, so the repo records the identity that clients have in their
@@ -228,7 +212,7 @@ func Ensure(r *repo.Repo, h *host.Host, s secrets.SecretStorage, upload bool, op
 			public bool
 		}{
 			{remotePrivate, wantPrivate, false},
-			{remotePrivate + ".pub", wantPublic, true},
+			{remotePublic, wantPublic, true},
 		}
 		for _, half := range halves {
 			have, exists, err := exec.GetRemoteFileIfExists(h.Address, sshOptions, half.remote)

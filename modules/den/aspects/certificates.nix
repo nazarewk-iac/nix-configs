@@ -239,10 +239,13 @@ let
 
           options.deployedDirectory = lib.mkOption {
             type = lib.types.str;
-            default = "/etc/ssh/kdn";
+            default = "/etc/ssh";
             description = ''
               The runtime directory that holds the decrypted private key of an `ssh-host` leaf.
-              `keyPath` is `<deployedDirectory>/<keyFile>` for that type.
+              `keyPath` is `<deployedDirectory>/<keyFile>` for that type, which puts the deployed
+              key at `/etc/ssh/ssh_host_ed25519_key` — the path sshd reads and the path
+              `kdn.security.secrets.age` derives the host's SOPS identity from. One file is both
+              the host identity and the identity that decrypts the host's secrets.
 
               An SSH host key is never delivered by sops-nix. It is the host's identity, and on
               this fleet it is also going to be a SOPS age identity, so a host that could decrypt
