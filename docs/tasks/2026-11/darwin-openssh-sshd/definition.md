@@ -33,8 +33,12 @@ The consequences measured on 2026-11-12:
 
 ## Goal
 
-`anji` runs `${pkgs.openssh}/bin/sshd` as the system SSH daemon on port 22, with the same
-`/etc/ssh/sshd_config` nix-darwin generates today, and Apple's Remote Login disabled.
+`anji` runs `${pkgs.openssh}/bin/sshd` as the SSH daemon for the booted system, **without
+disabling Remote Login**, and the post-boot SSH service still presents the post-quantum host
+identity.
+
+The original goal — replace Apple's sshd on port 22 and switch Remote Login off — is **blocked**;
+see the constraint below.
 
 ## Why
 
@@ -44,21 +48,44 @@ The consequences measured on 2026-11-12:
 - `services.openssh.settings` would become usable on darwin, removing the `extraConfig` special
   case from the `ssh-ca` aspect.
 
+## The constraint: remote FileVault unlock (research, 2026-11-12)
+
+`anji` is macOS 27.0.1 (build 26A434), FileVault On, Remote Login On. macOS 26 added FileVault
+unlock over SSH at the unified login screen, and the system's own manual states the rule:
+
+```
+$ man apple_ssh_and_filevault
+The macOS version of OpenSSH stores all of its configuration files, both system-wide and
+per-account, in the data volume. Therefore, the usually configured authentication methods and
+shell access are not available during this time. However, when Remote Login is enabled, it is
+possible to perform password authentication using SSH even in this situation.
+```
+
+Three consequences:
+
+- The pre-boot SSH is **Apple's OpenSSH from the sealed system volume**. It cannot read `/etc/ssh`
+  or a nixpkgs binary: both live on the data volume, which is still locked. Replacing the running
+  system's sshd does not reach it.
+- It is gated on **Remote Login** and authenticates with the account **password** (per-account
+  `authorized_keys` are on the locked volume too).
+- Therefore the original approach — disable Remote Login to free port 22 — would very likely
+  remove the only remote unlock path for a Mac with no physical access. **A failed test is
+  unrecoverable remotely**, so the change is blocked rather than merely risky.
+
+The feature needs Apple Silicon, macOS 26+, FileVault and Remote Login, all of which `anji` has.
+
 ## Approaches, in order of preference
 
-1. **A launchd job that owns port 22.** Disable Apple's Remote Login
-   (`sudo systemsetup -setremotelogin off`) so `com.openssh.sshd` stops, then load a nix-darwin
-   `launchd.daemons` entry running `sshd -D -f /etc/ssh/sshd_config` with `Sockets` on port 22.
-   launchd holds the socket, so the two daemons cannot both own 22 — Apple's must be off first,
-   and the switch is one-way until it is re-enabled.
-2. **Keep Apple's on 22 and run nixpkgs sshd on another port.** No ownership conflict, but every
-   client and the `known_hosts`/pin story changes. Rejected unless (1) proves impossible.
-3. **A launchd socket-activated job with a different label on 22.** Same constraint as (1): only
-   one job can hold the port.
+1. **Keep Apple's sshd on 22 and Remote Login on; run nixpkgs sshd on another port.** The pre-boot
+   unlock keeps working, and the fleet reaches the PQ identity on the alternate port. Cost: two
+   daemons, two configurations, and a port change in the inventory and `Host` blocks.
+2. **A launchd job that owns port 22.** Requires Remote Login off, which is now known to remove
+   the pre-boot unlock. Blocked.
+3. **Keep only Apple's sshd** (status quo). No PQ identity on `anji`, no port change, no risk.
 
 ## Risks
 
-- **Lockout.** `anji` is remote. The change must be applied with a second shell already open, or a
+- **Lockout, and the pre-boot unlock is the only way back.** `anji` is remote. The change must be applied with a second shell already open, or a
   scheduled `launchctl bootstrap` of Apple's original plist as a revert, and it must be tested
   with `sshd -t` before the switch. Record the exact revert command in the task before running it.
 - **macOS updates** may re-enable Remote Login and take port 22 back. The task must state how to
@@ -70,8 +97,9 @@ The consequences measured on 2026-11-12:
 
 ## Acceptance
 
-1. `launchctl print system/<job>` shows the `${pkgs.openssh}` binary, and
-   `launchctl print system/com.openssh.sshd` is absent or `state = not running`.
+1. `launchctl print system/<job>` shows the `${pkgs.openssh}` binary, Remote Login stays On, and
+   the pre-boot unlock survives a reboot (verified by rebooting `anji` while a second SSH session
+   and a rollback plan are ready).
 2. `ssh anji 'sudo sshd -V'` (or the daemon's binary path) reports the fleet's pinned OpenSSH.
 3. `ssh -o HostKeyAlgorithms=ssh-mldsa44-ed25519-cert anji true` negotiates
    `ssh-mldsa44-ed25519-cert`, and `sshd -T` shows one `HostKey` per declared identity.
