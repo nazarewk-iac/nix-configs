@@ -30,6 +30,11 @@
     {
       services.caddy.enable = true;
 
+      # No public ACME on a host that trusts only the KDN CA. Automatic HTTPS starts an ACME
+      # order for every site address with no `tls` directive; `auto_https off` stops that for
+      # the whole process. A consumer's vhost must load its leaf with `tls <cert> <key>`.
+      services.caddy.globalConfig = "auto_https off";
+
       environment.systemPackages = filterPackages [ config.services.caddy.package ];
 
       networking.firewall.allowedTCPPorts = [

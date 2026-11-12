@@ -21,6 +21,10 @@ in
           config.services.caddy.package
         ];
         services.caddy.enable = true;
+        # No public ACME: the hosts trust only the KDN CA. Caddy's automatic HTTPS starts an
+        # ACME order for every site address that carries no `tls` directive, so turn it off for
+        # the whole process. A consumer's vhost must load its leaf with `tls <cert> <key>`.
+        services.caddy.globalConfig = "auto_https off";
 
         networking.firewall.allowedTCPPorts = [
           80

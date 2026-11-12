@@ -51,6 +51,11 @@
         example = "grafana.example.com";
         description = ''
           The host name Caddy serves Grafana under. An empty string adds no Caddy virtual host.
+
+          The vhost carries no TLS line of its own, so it serves plain HTTP. No public
+          certificate is ever requested: the `service-caddy` and `web-exposure` aspects set
+          `auto_https off`. For HTTPS, name Grafana in `kdn.web.exposure.services` with the
+          host's internal-CA leaf, or write the `tls <cert> <key>` line yourself.
         '';
       };
 

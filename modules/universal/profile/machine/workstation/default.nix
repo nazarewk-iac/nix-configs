@@ -29,7 +29,12 @@ in
         kdn.desktop.sway.remote.enable = lib.mkDefault true;
         kdn.development.android.enable = lib.mkDefault true;
         kdn.development.kernel.enable = false;
-        kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.${config.kdn.hostName}.kdn.im";
+        # No `kdn.monitoring.prometheus-stack.caddy.grafana` write: the very next line disables
+        # the stack, so the vhost pointed at a Grafana that does not run. Worse, the vhost carried
+        # no `tls` line, so Caddy's automatic HTTPS tried Let's Encrypt for a name that resolves
+        # nowhere (measured on brys and oams, 2026-11-12: ACME http-01 and tls-alpn-01 attempts
+        # every few hours, then Let's Encrypt rate limiting). A host that wants Grafana behind
+        # Caddy names it in `kdn.web.exposure.services` with the internal-CA leaf instead.
         kdn.monitoring.prometheus-stack.enable = false;
         kdn.profile.machine.desktop.enable = lib.mkDefault true;
         kdn.profile.machine.dev.enable = lib.mkDefault true;

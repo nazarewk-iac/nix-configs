@@ -142,6 +142,14 @@
         { services.caddy.enable = true; }
 
         {
+          # This host trusts one CA: the KDN root (`data/ca/ca.pub`). Every vhost below loads a
+          # leaf from `kdn.certificates.certs`, so no name may ever reach a public ACME directory.
+          # Caddy's automatic HTTPS is the one thing that would: it starts an ACME order for any
+          # site address that carries no `tls` directive (measured on brys and oams, 2026-11-12).
+          # Turn it off for the whole process, so a vhost added later cannot start one by accident.
+          # A vhost with an explicit `tls <cert> <key>` keeps serving HTTPS.
+          services.caddy.globalConfig = "auto_https off";
+
           systemd.services.caddy.serviceConfig.LoadCredential = [
             "web-key:${cert.keyPath}"
           ];
