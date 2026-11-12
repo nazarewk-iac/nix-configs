@@ -1,3 +1,36 @@
+/*
+  OFFLINE as of 2026-11-12 — none of the SSH-CA work below has been applied to the running host.
+
+  Since this host was last switched, the fleet moved SSH host keys out of the sops-nix boot path:
+
+    * the managed host key is the only sshd identity AND the host's SOPS age identity,
+      deployed out of band to /etc/ssh/ssh_host_ed25519_key by
+      `kdnctl host ensure ssh-host-keys`, and preserved across reboots;
+    * `hosts/<host>/ssh-keys/` holds that key encrypted to the two unattended YubiKeys only —
+      a host must not be able to decrypt its own identity;
+    * the installer-generated rsa, ed25519 and mldsa44 keys are no longer in
+      `services.openssh.hostKeys`;
+    * every `ssh-<host>` anchor in `.sops.yaml` names the managed key, and the certificates are
+      signed by the fleet CA and trusted through `@cert-authority`.
+
+  This host is outside that story: it declares no `kdn.certificates.certs` leaf, has no
+  `ssh-host` certificate, no pin in `ssh_known_hosts`, and its key exists only in the local,
+  uncommitted `secrets/hosts/pwet/ssh-keys/`. The symlinks that used to expose it under
+  `hosts/pwet/ssh-keys/` were removed on 2026-11-12, because they dangled for anyone without
+  that local store.
+
+  To bring it up to date, decide first whether it joins the CA fleet. If it does:
+
+    1. add `kdn.certificates.certs.ssh-host-pwet` with its principals, mirroring
+       `hosts/briv/default.nix`;
+    2. run `kdnctl host -n pwet ensure ssh-host-keys --upload` to write the key to the host;
+    3. re-anchor `ssh-pwet` in `.sops.yaml` to the managed key's age form and run
+       `sops updatekeys` on every file that lists the old one;
+    4. build, switch, and verify with a strict `ssh pwet true`.
+
+  Until then it keeps decrypting `*.unattended.sops.*` with the installer key its anchor still
+  names.
+*/
 {
   config,
   lib,
