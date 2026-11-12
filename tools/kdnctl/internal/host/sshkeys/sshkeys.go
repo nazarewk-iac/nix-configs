@@ -38,6 +38,10 @@ const fallbackTargetDir = "/etc/ssh/kdn"
 // root and be hidden by the mount. The backing directory is the durable location in both states.
 const persistTargetDir = "/nix/persist/sys/data/etc/ssh/kdn"
 
+// persistBaseDir is the mount point the backing directory lives under. It is checked as a mount
+// point before the backing path is trusted.
+const persistBaseDir = "/nix/persist/sys/data"
+
 // Options tunes where the keys come from and which of them to sync.
 type Options struct {
 	// SecretDir is the repo-relative directory holding the encrypted keys
@@ -50,10 +54,14 @@ type Options struct {
 	TargetDir string
 }
 
-// resolveTargetDir picks the remote directory to write. The deployed directory is a bind mount on
-// an impermanence host, and a bind mount is not a symlink, so it cannot be followed. Prefer the
-// persistence backing directory when the host has one: a deploy that happens before the mount
-// exists then still lands in durable storage instead of the ephemeral root.
+// resolveTargetDir picks the remote directory to write.
+//
+// The deployed directory is a bind mount on an impermanence host, and a bind mount cannot be
+// followed. So: write through the mount when it exists, and before the first activation write to
+// the persistence backing directory — but only when that backing directory is itself a mount
+// point. `oams` has a leftover `/nix/persist/sys/data` tree on its root filesystem with no mount,
+// and trusting the path alone put the key outside the deployed directory there (measured
+// 2026-11-12).
 func resolveTargetDir(h *host.Host, opts Options, sshOptions []string) (string, error) {
 	if opts.TargetDir != "" {
 		return opts.TargetDir, nil
@@ -63,10 +71,19 @@ func resolveTargetDir(h *host.Host, opts Options, sshOptions []string) (string, 
 			return resolved, nil
 		}
 	}
-	if err := exec.RemoteCommand(h.Address, sshOptions, "sudo", "test", "-d", filepath.Dir(persistTargetDir)).Run(); err == nil {
+	if isMountPoint(h, sshOptions, fallbackTargetDir) {
+		return fallbackTargetDir, nil
+	}
+	if isMountPoint(h, sshOptions, persistBaseDir) {
 		return persistTargetDir, nil
 	}
 	return fallbackTargetDir, nil
+}
+
+// isMountPoint reports whether the remote path is a mount point. `-M` is exact; `-T` would match
+// any path that merely lives inside a mount.
+func isMountPoint(h *host.Host, sshOptions []string, path string) bool {
+	return exec.RemoteCommand(h.Address, sshOptions, "findmnt", "-n", "-M", path).Run() == nil
 }
 
 // HostsWithKeys lists, in sorted order, the hosts that have a committed SSH host key in the
