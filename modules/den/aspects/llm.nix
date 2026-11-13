@@ -535,8 +535,11 @@
       # capacity check. See sets.research.md risk R1.
       coTiers = builtins.filter (t: t != [ ]) cfg.swap.coResidentTiers;
       coTierIds = lib.unique (lib.concatLists coTiers);
-      coResidentSet = lib.optionalAttrs (coTiers != [ ] && frontierIds != [ ]) {
-        with_co = lib.concatMapStringsSep " & " setExpr coTiers + " & " + setExpr frontierIds;
+      # The frontier suffix is optional: with no frontier model (all retired), an
+      # empty group renders as "()" and llama-swap's matrix parser rejects it.
+      frontierSuffix = lib.optionalString (frontierIds != [ ]) (" & " + setExpr frontierIds);
+      coResidentSet = lib.optionalAttrs (coTiers != [ ]) {
+        with_co = lib.concatMapStringsSep " & " setExpr coTiers + frontierSuffix;
       };
 
       matrixSets =
@@ -556,7 +559,7 @@
               in
               lib.optionalAttrs (gruntIds != [ ]) {
                 name = "with_${rname}";
-                value = setExpr gruntIds + " & " + setExpr frontierIds;
+                value = setExpr gruntIds + frontierSuffix;
               }
             ) enabledRouters
           )

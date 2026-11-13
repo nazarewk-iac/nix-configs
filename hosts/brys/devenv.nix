@@ -7,7 +7,6 @@
 #
 # It enables the in-devenv opencode capability with the brys-specific model wiring:
 #   - requesty via the DSML proxy (:9526, forwardClientAuth), hardcoding no model
-#   - the local llama-swap model routed through a local DSML proxy (:9533)
 #
 # Only the host whose hostname is `brys` auto-activates this profile, so the rich
 # provider/model config is scoped to brys and every other host keeps the benign global
@@ -36,20 +35,6 @@
         options = {
           baseURL = "http://127.0.0.1:9532/v1";
           apiKey = "{env:REQUESTY_API_KEY}";
-        };
-      };
-      # Local llama-swap model via the local DSML proxy; no auth.
-      local-llm-proxy = {
-        npm = "@ai-sdk/openai-compatible";
-        name = "Qwen3.8-Flash-Next (local llama-swap via DSML proxy)";
-        options = {
-          baseURL = "http://127.0.0.1:9533/v1";
-          apiKey = "dummy";
-        };
-        models."qwen3.8-flash-next" = {
-          name = "qwen3.8-flash-next (local)";
-          limit.context = 1048576;
-          limit.output = 32768;
         };
       };
     };
@@ -94,16 +79,11 @@
     };
   };
 
-  # The model proxies, run as devenv processes on brys.
+  # The model proxy, run as a devenv process on brys.
   kdn.llm.proxy.instances.requesty = {
     enable = true;
     upstreamUrl = "https://router.requesty.ai";
     port = 9526;
     forwardClientAuth = true;
-  };
-  kdn.llm.proxy.instances.local = {
-    enable = true;
-    upstreamUrl = "http://127.0.0.1:39703";
-    port = 9533;
   };
 }

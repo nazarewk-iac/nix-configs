@@ -170,6 +170,12 @@ The swap-mode options (all inert until `swap.enable` is set):
 
 ### Matrix routing on brys
 
+> **Retired 2026-11-13:** the last frontier model, `qwen3.8-flash-next`, left brys on
+> electricity grounds (2.36 tok/s decode, below the 10 tok/s floor). The `main` router is now
+> empty and brys serves no persistent model. The text below describes the two-frontier era
+> (DeepSeek V4 Flash + Qwen3.8-Flash-Next) and stays for the mechanism and the measurements;
+> the plan/review depth it carried now runs on Requesty SaaS through the etra gateway.
+
 With `swap.routerEngine = "matrix"` brys sets two persistent models,
 `deepseek-v4-flash` and `qwen3.8-flash-next`. The engine gives each model an
 `evict_costs` entry — **1000** for a persistent (frontier) model, **1** for a

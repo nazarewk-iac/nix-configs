@@ -49,9 +49,8 @@ Task { subagent_type: "chat-std-fast", prompt: "..." }
 ```
 
 Use a concrete alias, never a family (`qwen-*` is not a valid `subagent_type`).
-The raw-model agents `qwen-<level>` and `ds4-<level>` also exist for a caller
-that wants to pin a base model and thinking depth. A subagent with no `model`
-inherits the caller's model, so always name one. Full design:
+A subagent with no `model` inherits the caller's model, so always name one.
+Full design:
 [opencode-subagent-model-routing/done.md](../../../docs/tasks/2026-10/opencode-subagent-model-routing/done.md).
 
 
@@ -65,25 +64,19 @@ Pick the alias by intent, not by model. Current assignments:
 | `chat-std-fast` | normal chat/assistant | lfm2.5-24b-a2b | 23 |
 | `chat-std-mid` | normal chat, more quality | qwen3.5-35b-a3b | 23 |
 | `chat-std-mid-long` | long-context chat | nemotron-3-nano-30b-a3b | 12 |
-| `chat-deep-slow` | hard/creative questions | qwen3.8-flash-next | 2.4 |
 | `code-quick-fast` | tiny code edits | qwen3.5-4b | 61 |
-| `code-std-fast` | normal coding | north-mini-code-1.0 | 18 |
-| `code-deep-slow` | hard coding | qwen3.8-flash-next | 2.4 |
+| `code-std-fast` | normal coding | qwen3.5-4b | 61 |
 | `vision-std-fast` | images, general | qwen3-vl-30b-a3b | 15.7 |
 | `vision-deep-slow` | hard image tasks / dense text | ornith-1.5-35b-a3b | 8.8 |
 | `audio-std-mid` | speech in (audio+vision+text) | qwen3-omni-30b-a3b | 8.8 |
 | `reason-quick-fast` | cheap step-by-step | mellum-2.1-12b-a2.5b-thinking | 14.8 |
 | `reason-std-fast` | reasoning, long context | nemotron-3-nano-30b-a3b | 12.1 |
-| `reason-deep-slow` | hard reasoning | qwen3.8-flash-next | 2.4 |
 | `tools-dumb-fast` | mechanical tool calls | granite-4.2-3b | 85 |
 | `tools-std-fast` | agent tools, RAG, terminal | lfm2.5-24b-a2b | 23 |
-| `tools-deep-slow` | hard agent tasks | qwen3.8-flash-next | 2.4 |
 | `embed-std-fast` | embeddings (RAG) | qwen3-embedding-4b | — |
 | `rank-std-fast` | reranking (RAG) | qwen3-reranker-4b | — |
 | `tiny-dumb-fast` | routing/classification | qwen3.5-0.8b | 208 |
 | `tiny-quick-fast` | fastest general | qwen3.5-4b | 61 |
-| `orchestrate-deep-slow` | plan/review, 1M ctx, vision | qwen3.8-flash-next | 2.5 |
-| `orchestrate-deep-slow-alt` | plan/review, 320K ctx | deepseek-v4-flash | 1.5 |
 
 Each slot also has an `-alt` id where one exists (`tiny-dumb-fast-alt`,
 `chat-dumb-fast-alt`, `tools-std-fast-alt`, `vision-std-fast-alt`,
@@ -98,11 +91,11 @@ Rules of thumb:
   instructions and fail (confidently) on ambiguity.
 - **`embed-*` and `rank-*` are not chat models.** They use `/v1/embeddings` and
   `/v1/rerank`.
-- **The two `orchestrate-deep-slow*` models are heavy** and only one fits in RAM
-  at a time. Reaching one evicts the other.
-- **Only the two frontier models run `--parallel 4`.** Every other model runs
-  `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
-  *different* aliases, not many calls to one.
+- **No frontier model runs on brys** (retired 2026-11-13). Every alias maps to
+  a grunt/surveyed model, and every model runs `--parallel 1`, so concurrent
+  calls to one alias queue. Fan a fleet out across *different* aliases, not
+  many calls to one. Hard plan/review depth runs on the Requesty SaaS models
+  (Frontier below), not on the local fleet.
 - **Some aliases share one process.** `chat-dumb-fast`, `code-quick-fast`,
   `tiny-quick-fast` and `grunt` are all `qwen3.5-4b` on the W6600 GPU: one
   process, one queue, no CPU-bandwidth cost. Treat them as a single worker.
@@ -112,11 +105,17 @@ Rules of thumb:
 Everything below is served; most carry no alias and are reachable by their base
 id. Speeds are measured decode tok/s on brys.
 
-- **Frontier / orchestrate**: `qwen3.8-flash-next` (1M ctx, vision), `deepseek-v4-flash` (320K).
+- **Frontier / orchestrate**: none on brys since 2026-11-13 (retired on
+  electricity grounds: 2.36 tok/s decode is below the 10 tok/s floor). The deep
+  tier runs on Requesty SaaS through the etra gateway:
+  `requesty/alibaba/qwen3.8-flash` (1M ctx, 128K out, vision — the pi harness
+  default), `requesty/tensorx/qwen3.8-flash-next` (256K/256K), and
+  `requesty/deepinfra/deepseek-v4.1-flash-1017` (plan/review depth for the pi
+  orchestrator's planner and reviewer). All three take a top-level
+  `reasoning_effort`, not `chat_template_kwargs`.
 - **Fast 24-35B MoE (20-23 t/s)**: `qwen3.5-35b-a3b`, `qwen3.6-35b-a3b`, `glm-4.7-flash`, `nemotron-3.5-lightning-30b`, `lfm2.5-24b-a2b`.
-- **Quality 27-36B dense (1.7-2.3 t/s)**: this whole class was dropped on 2026-11-04 — `qwen3.8-27b`, `qwen3.6-27b` (1.8), `granite-4.2-30b` (2.1), `gemma-4-31b` (1.7), `olmo-3.1-32b` (2.3), `seed-oss-36b` (2.0). All are dense, CPU-only, and slower than the 1M-context flash-next (2.36), which also has a far larger window. Use `qwen3.8-flash-next` for that tier.
+- **Quality 27-36B dense (1.7-2.3 t/s)**: this whole class was dropped on 2026-11-04 — `qwen3.8-27b`, `qwen3.6-27b` (1.8), `granite-4.2-30b` (2.1), `gemma-4-31b` (1.7), `olmo-3.1-32b` (2.3), `seed-oss-36b` (2.0). All are dense, CPU-only, and slower than the 1M-context flash-next (2.36), which also has a far larger window. For that tier use the Requesty SaaS frontier (above).
 - **Multimodal**: `qwen3-vl-30b-a3b` (fast workhorse, 15.7), `ornith-1.5-35b-a3b` (**best at dense terminal text**, 8.8), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio). `qwen3.8-flash-next` has vision DISABLED (2026-11-04): the projector cost ~0.8 GB and its CPU prefill made a 256px icon take 259 s and a 2560px screenshot exceed 900 s. `vision-quick-fast` and `qwen3-vl-8b-instruct` are retired.
-- **Code**: `north-mini-code-1.0`.
 - **Reasoning**: `mellum-2.1-12b-a2.5b-thinking`, `nemotron-3-nano-30b-a3b`, `ministral-3-3b-reasoning`.
 - **Tools**: `granite-4.2-3b`, `granite-4.2-8b`.
 - **Retrieval**: `qwen3-embedding-4b`, `qwen3-reranker-4b`.
@@ -137,10 +136,10 @@ and
 
 **Pick the smallest model that fits the task.** Match the model to the task:
 `dumb`/`quick` slots for extraction, classification, and transforms; `std` for
-chat and tools; `deep` for hard reasoning and code. On a plain desktop, 7-8B is
-the general floor and about 20B the practical ceiling; brys is a 128 GB box, so
-it serves larger models, fast when MoE and slow when dense. Reach for the
-`orchestrate` frontier only for long-horizon, open, or high-stakes work. Do
+chat and tools. On a plain desktop, 7-8B is the general floor and about 20B the
+practical ceiling; brys is a 128 GB box, so it serves larger models, fast when
+MoE. The `deep` tier is SaaS only now (Frontier above): reach for it only for
+long-horizon, open, or high-stakes work. Do
 **not** hand a long unsupervised agent loop to a small model; that is where it
 loops and drifts.
 
@@ -209,12 +208,12 @@ Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#observability-and-
 This skill is a **living document**. Update it as we learn, in the same change
 that changes the fleet. Record:
 
-- **Eviction behaviour**: which models evict which. brys holds one frontier
-  model at a time; the two `orchestrate` models evict each other. Note any
-  grunt that evicts the frontier (it should not: grunts are `evict_cost = 1`).
+- **Eviction behaviour**: which models evict which. brys holds no frontier
+  model since 2026-11-13; the co-residency tiers in `data/llm.nix` are the
+  whole eviction story.
 - **What co-resides well**: which models can run together without halving speed.
-  A CPU grunt beside the frontier competes for the same ~40 GB/s of RAM
-  bandwidth; a GPU grunt does not.
+  A CPU model beside a big GPU model competes for the same ~40 GB/s of RAM
+  bandwidth; a GPU grunt beside another does not.
 - **Alias changes**: when an alias is re-pointed, update the table above and the
   date. An alias that no longer matches its `speed` field is a bug.
 - **Load/start behaviour**: cold-load time, warm-start reuse, first-request

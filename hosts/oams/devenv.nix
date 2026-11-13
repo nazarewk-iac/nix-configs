@@ -17,80 +17,7 @@
   ...
 }:
 let
-  # The common thinking levels. Every model gets one opencode subagent per level,
-  # named `<prefix>-<level>`, so a caller picks a model and a thinking depth in
-  # one name.
-  thinkingLevels = [
-    "off"
-    "low"
-    "medium"
-    "high"
-  ];
-
-  # Per-model mapping from a level to that model's own `chat_template_kwargs`.
-  # opencode sends an agent's `options` object verbatim in the request body, so
-  # these reach llama-server unchanged.
-  #
-  # Qwen's template accepts the `reasoning_effort` values `xhigh`, `medium` and
-  # `low` (there is no `none`). `high` maps to the template's `xhigh`.
-  qwenThinking = {
-    off = {
-      enable_thinking = false;
-    };
-    low = {
-      enable_thinking = true;
-      reasoning_effort = "low";
-    };
-    medium = {
-      enable_thinking = true;
-      reasoning_effort = "medium";
-    };
-    high = {
-      enable_thinking = true;
-      reasoning_effort = "xhigh";
-    };
-  };
-
-  # The server shares one KV pool per model (unified KV, 4 slots). The pool is
-  # usage-proportional: a request only occupies the tokens it actually sends, so a
-  # small request is automatically small and a large one reaches the full window.
-  # There is deliberately no server-side per-slot cap (`--kv-unified-per-slot`),
-  # and llama-swap has no per-alias context either, so a model's context cannot be
-  # limited per client. Each request therefore runs at the model's real maximum
-  # (Qwen at 1M). Discovery reads that maximum from the server (see
-  # `kdn.llm.client.upstreams.brys` below); no tier aliases are used.
-  #
-  # One opencode subagent per (model, level). The agent's `options` carry that
-  # model's `chat_template_kwargs`; the provider model id is the base model id.
-  mkAgents =
-    {
-      prefix,
-      modelLabel,
-      modelId,
-      thinking,
-    }:
-    lib.listToAttrs (
-      map (
-        level:
-        lib.nameValuePair "${prefix}-${level}" {
-          description = "${modelLabel} on brys, thinking ${level}.";
-          mode = "subagent";
-          model = "brys/${modelId}";
-          options.chat_template_kwargs = thinking.${level};
-        }
-      ) thinkingLevels
-    );
-
-  qwenAgents = mkAgents {
-    prefix = "qwen";
-    modelLabel = "Qwen3.8-Flash-Next";
-    modelId = "qwen3.8-flash-next";
-    thinking = qwenThinking;
-  };
-  # Qwen's `high` is the template's `xhigh`.
-  tierAgents = qwenAgents;
-
-  # One opencode subagent per brys purpose alias (chat-std-fast, code-deep-slow,
+  # One opencode subagent per brys purpose alias (chat-std-fast, code-std-fast,
   # ...), derived from `data/llm.nix` so the client follows the server when an
   # alias moves. A caller that names an intent gets the model the fleet serves for
   # it, with no base-model id in the client. See
@@ -118,14 +45,13 @@ in
   # Requesty cloud provider (auth from auth.json, hardcodes no model) and its credential,
   # plus the local brys fleet reached through `kdn.llm.client.upstreams.brys` below.
   kdn.opencode.settings.provider.requesty = { };
-  # The subagent set. Two families:
-  #   * `tierAgents` — one agent per (base model, thinking level): `qwen-high`,
-  #     ... A caller pins a model and a depth explicitly.
-  #   * `aliasAgents` — one agent per purpose alias: `chat-std-fast`,
-  #     `code-deep-slow`, ... A caller names an intent; the server decides the
-  #     model. This is the family to prefer for routine work, so the served
-  #     model can move without a client change.
-  kdn.opencode.settings.agent = tierAgents // aliasAgents;
+  # One subagent per purpose alias (`chat-std-fast`, `code-std-fast`, ...): the
+  # caller names an intent and the server decides the model, so the served model
+  # can move without a client change. The old `qwen-<level>` family (one agent
+  # per thinking level on the local frontier Qwen) retired with the model on
+  # 2026-11-13: depth is now a server-side alias, not a client-side level
+  # matrix.
+  kdn.opencode.settings.agent = aliasAgents;
   kdn.opencode.allowedPaths = [
     "/nix/store/**"
     "~/dev/**"

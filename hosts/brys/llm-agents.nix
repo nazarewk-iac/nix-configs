@@ -19,10 +19,11 @@
 #
 # ## The frontier models are not sub-agents
 #
-# The models on the `main` router (DeepSeek, Qwen3.8-Flash-Next) are the
-# orchestrator itself; registering them as sub-agents would only let a turn
-# recurse into the same slow model. Only the grunt/surveyed intent models become
-# agents.
+# The models on the `main` router are the orchestrator itself; registering them
+# as sub-agents would only let a turn recurse into the same slow model. The
+# frontier (DeepSeek V4 Flash, then Qwen3.8-Flash-Next) is since 2026-11-13
+# retired from brys, so `main` is empty and every served model is a
+# grunt/surveyed intent model that becomes an agent.
 #
 # ## The name of one agent
 #

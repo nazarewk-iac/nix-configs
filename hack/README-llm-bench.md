@@ -66,7 +66,7 @@ load at the start of the run.
 llm-bench.sh --model tmax-2b --steps decode,prefill
 llm-bench.sh --model tmax-2b --prompt-tokens 4096 --json
 llm-bench.sh --model tmax-2b --steps vram
-llm-bench.sh --model frontier --steps cold-start,decode,prefill
+llm-bench.sh --model gemma-4-e4b --steps cold-start,decode,prefill
 ```
 
 ## Caveats
@@ -79,5 +79,6 @@ llm-bench.sh --model frontier --steps cold-start,decode,prefill
   request. The probe loads the model when it is not resident. The `vram` step
   reads sysfs directly and does not load a model.
 - A cold-start number is only truly cold when the model was evicted first. The
-  box holds one frontier model at a time.
+  frontier retired from brys on 2026-11-13, so bench a grunt/surveyed id like
+  `gemma-4-e4b`; the `frontier` alias no longer resolves.
 - A row records the host load, so a reader can judge the run.

@@ -15,24 +15,19 @@ useful for LLMs). CPU-only local LLM serving.
 ## Local LLM serving
 
 brys runs several local LLMs through the standalone `kdn.llm.local` slot
-(backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`,
-DSpark speculative decoding on DeepSeek V4 Flash). The DeepSeek frontier runs
-four slots over one unified 320K KV pool; the small-model set is spun out to its
-own boot entry so it never competes with DS4 for RAM. Qwen3.8-Flash-Next runs at
-1M context (YaRN x4) with the MTP draft head on the CPU and a 37 GiB prompt
-cache (`perf.cacheRam`, set to stop the constant evictions of ~5.7 GiB entries).
+(backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`).
+The grunt and surveyed sets co-reside on the W6600 by tier; the frontier
+(Qwen3.8-Flash-Next at 1M context, YaRN x4) retired from the fleet on
+2026-11-13 on electricity grounds, so the `main` router is empty.
 
-Four boot-selected appliance specialisations exist (normally selected from the
+One boot-selected appliance specialisation exists (normally selected from the
 bootloader; `nixos-rebuild switch --specialisation <name>` also activates one in
 place):
 
-- `llm-ds4` (`llm-ds4.nix`) — DeepSeek V4 Flash alone, whole box.
-- `llm-small` (`llm-small.nix`) — the small-model router alone, no DS4.
-- `llm-qwen` (`llm-qwen.nix`) — Qwen3.8-Flash-Next alone, whole box.
-- `llms-frontier` (`llms-frontier.nix`) — DS4 and Qwen in one router with
-  `--models-max 1`, so a request swaps the resident model without a reboot.
+- `llms` (`llms-frontier.nix`) — the whole fleet on one llama-swap process,
+  plus the isolcpus/ARC kernel tuning the desktop profile does not apply.
 
-All four share `llm-appliance.nix` and `llm.nix`.
+It shares `llm-appliance.nix` and `llm-config.nix` with the main profile.
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in

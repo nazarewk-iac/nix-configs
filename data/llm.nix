@@ -170,7 +170,6 @@ in
           ]
           [ "qwen3.5-35b-a3b" ]
         ];
-        persistentModels = [ "qwen3.8-flash-next" ];
         vulkanDeviceSelect = "1002:73e3!";
       };
 
@@ -275,20 +274,38 @@ in
       };
       contextSize = 1024 * K;
     };
+    # A cloud model: served by Requesty, not by any local host. `endpoint` keeps it out of the
+    # local fleet and its serving arithmetic; the id is Requesty's canonical aggregate name
+    # (`alibaba/qwen3.8-flash`), which the direct `requesty` endpoint routes and the gateway
+    # serves as `requesty/alibaba/qwen3.8-flash`. Enabled on the account 2026-11-13 as the
+    # cheaper sibling of `tensorx/qwen3.8-flash-next`; it is the pi harness default (see
+    # modules/den/aspects/pi-client.nix). No `reasoning` block: the deployment takes the
+    # upstream `reasoning_effort` pass-through (verified 2026-11-13), so no client-side map.
+    "qwen3.8-flash" = {
+      endpoint = "requesty";
+      capabilities = {
+        operation = "remote";
+      };
+      # Native 1M window and 128K max output (Requesty `alibaba/qwen3.8-flash`), vision.
+      vision = true;
+      pi = {
+        contextWindow = 1024 * K;
+        maxTokens = 16 * K;
+      };
+      contextSize = 1048576;
+    };
     "qwen3.8-flash-next" = {
-      # The deep aliases landed here when qwen3.8-27b was dropped. Measured on 2026-11-04 on
-      # the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next on 16 threads
-      # 2.36 tok/s. The dense 27b was three times slower AND had a smaller window (131k vs
-      # 1M), so it bought nothing for a deep tier and cost a model slot.
-      aliases = [
-        "frontier"
-        "qwen"
-        "orchestrate-deep-slow"
-        "chat-deep-slow"
-        "code-deep-slow"
-        "reason-deep-slow"
-        "tools-deep-slow"
-      ];
+      # RETIRED 2026-11-13: `set = "retired"`, aliases dropped, no longer a persistent model.
+      # The local frontier left the fleet on electricity grounds — 2.36 tok/s decode is far
+      # below the 10 tok/s floor for a served model, and it pinned ~14 GiB in RAM. The plan
+      # and review depth it carried now runs on `deepseek-v4.1-flash-1017` (Requesty, through
+      # the gateway), and the harness default is its Requesty sibling `qwen3.8-flash`. The
+      # full registration stays so the measurements and a one-word re-enable survive.
+      #
+      # History: the deep aliases landed here when qwen3.8-27b was dropped. Measured on
+      # 2026-11-04 on the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next
+      # on 16 threads 2.36 tok/s. The dense 27b was three times slower AND had a smaller
+      # window (131k vs 1M), so it bought nothing for a deep tier and cost a model slot.
       capabilities = {
         # Measured throughput (docs/local-llms.md). Decode 2.36 t/s on 16 CPU threads;
         # warm prefill ~30 t/s, but a COLD 1M-token prefill is hours, so the derived
@@ -324,7 +341,7 @@ in
       # screenshot did not finish in 900 s. Use the VL models for images.
       contextSize = 1048576;
       hosts.brys = {
-        set = "main";
+        set = "retired";
         servedContext = 1048576;
         common = {
           download = {
