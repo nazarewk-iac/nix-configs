@@ -186,6 +186,9 @@ let
     "deepinfra/deepseek-v4.1-flash-1017"
     "runware/deepseek-v4.1-flash-1017"
     "tensorx/qwen3.8-flash-next"
+    # The cheaper sibling the user enabled on Requesty (2026-11-13); 1M context,
+    # 128K max output, vision. The tensorx deployment above is 256K/256K.
+    "alibaba/qwen3.8-flash"
   ];
   requestyDeployments = map (
     mid:

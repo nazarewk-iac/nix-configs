@@ -29,10 +29,16 @@ model's full window.
 Pick a model per run with `--model`:
 
 ```bash
-pi --model brys/code-std-fast                    # a stable purpose alias
-pi --model brys/qwen3.8-flash-next --thinking high   # frontier + depth
-pi --model brys/qwen3.8-flash-next-longest       # the 1M-context tier
+pi --model brys/code-std-fast                                             # a stable purpose alias
+pi --model litellm-dynamic/requesty/tensorx/qwen3.8-flash-next --thinking high  # SaaS frontier + depth
 ```
+
+A bare `pi` (no `--model`) starts on `litellm-dynamic/requesty/alibaba/qwen3.8-flash`, the
+gateway route to Requesty's `alibaba/qwen3.8-flash` (1M context, 128K max output, vision), with
+thinking at the model default (`medium`). The default is
+`defaultProvider`/`defaultModel` in `modules/den/aspects/pi-client.nix`. pi resolves that pair by
+exact provider+id match, so both halves must name a model the runtime holds, else pi falls back to
+the first available model.
 
 Use an **alias** (`chat-std-fast`, `code-deep-slow`), not a base model id: the server decides
 which model serves that intent, so an alias keeps working when the fleet changes. Inside a

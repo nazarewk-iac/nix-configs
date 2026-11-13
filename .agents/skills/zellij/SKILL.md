@@ -170,7 +170,7 @@ zellij-llm list
 # g. run -i — the INTERACTIVE mode. Runs the argv command directly in a new pane so a TUI
 #    process gets a real pty (run -b pipes a script on stdin, which makes a TUI exit). Use it
 #    for pi, opencode, or an editor; use run -b for one-shot commands.
-zellij-llm run -i --pane pi -- pi --provider brys --model brys/qwen3.8-flash-next
+zellij-llm run -i --pane pi -- pi
 ```
 
 Do not poll with `sleep N; zellij-llm peek`. Use `wait`, `watch`, or `run --wait` instead. A
@@ -188,7 +188,7 @@ command.
 
 ```bash
 # start OpenCode in a pane (devenv-wrapped when the project has one)
-zellij-llm opencode spawn --pane opencode --model brys/qwen3.8-flash-next
+zellij-llm opencode spawn --pane opencode --model requesty/qwen3.8-flash
 
 # type a prompt and submit it (--no-submit types without pressing Enter)
 zellij-llm opencode send --pane opencode --text 'continue the work'

@@ -36,11 +36,20 @@
           (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson
             { host = config.kdn.hostName; };
 
-        # pi has no per-provider default for `brys` or `requesty`, so without this it falls back to
-        # the first entry in models.json, which is alphabetical (measured: `gemma-4-12b`).
+        # pi resolves the default by an EXACT provider+id lookup (findInitialModel), so the pair
+        # must name a model the runtime actually holds. `litellm-dynamic` is the provider the
+        # model-discovery extension registers for the gateway, whose live entries include the
+        # Requesty SaaS ids; the id is the gateway deployment for Requesty's
+        # `alibaba/qwen3.8-flash` (enabled 2026-11-13, the cheaper sibling of
+        # `tensorx/qwen3.8-flash-next`), so a bare `pi` starts on it with thinking at the model
+        # default (`medium`). The pair resolves only while the gateway serves that deployment:
+        # with the extension absent (bare pi, no wrapper), the gateway down at startup, or
+        # before the deployment is live, pi degrades to the first available model — a previous
+        # mis-pairing (requesty/deepseek-v4.1-flash-1017, not a static entry) did exactly that
+        # and silently ran `gemma-4-12b` (measured 2026-11-13).
         settings = {
-          defaultProvider = "requesty";
-          defaultModel = "deepseek-v4.1-flash-1017";
+          defaultProvider = "litellm-dynamic";
+          defaultModel = "requesty/alibaba/qwen3.8-flash";
           # A store symlink is read-only; keep the settings file free of churn it would try to
           # persist (changelog version, telemetry ids).
           enableInstallTelemetry = false;
