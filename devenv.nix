@@ -78,6 +78,12 @@ let
       "session_detail"
       "session_grep"
     ];
+    # Children load the model-discovery extension: the planner/reviewer `model:` pins name
+    # `litellm-dynamic` ids (the gateway's live catalog), which a spawned child cannot see
+    # without it — the wrapper's --extension flags do not reach it, and pi's own discovery
+    # finds nothing on disk. A non-empty list means the child runs --no-extensions plus this
+    # one source, so it stays lean.
+    childExtensions = [ (toString ext.model-discovery) ];
   };
 
   piWrapped =
@@ -276,14 +282,14 @@ in
     ];
     kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
 
-    # brys-specific profile: feeds the local provider/model config and the model proxy
-    # (local llama-swap :9533). Auto-activated only on a host whose hostname
-    # is "brys"; every other host keeps the benign global opencode skeleton.
+    # brys-specific profile: feeds the requesty provider config and the requesty
+    # DSML proxy (:9526). Auto-activated only on a host whose hostname is
+    # "brys"; every other host keeps the benign global opencode skeleton.
     profiles.hostname."brys".module = import ./hosts/brys/devenv.nix;
 
-    # oams-specific profile: opencode pointed at the LAN llama-server on brys over HTTPS
-    # (shared /run/configs/llms cert + API key). Auto-activated only on a host whose hostname
-    # is "oams".
+    # oams-specific profile: opencode pointed at the etra LiteLLM gateway plus
+    # oams' own local llama-swap loopback. Auto-activated only on a host whose
+    # hostname is "oams".
     profiles.hostname."oams".module = import ./hosts/oams/devenv.nix;
   };
 }

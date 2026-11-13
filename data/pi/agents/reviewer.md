@@ -1,8 +1,8 @@
 ---
 name: reviewer
-description: Read-only code review for defects and convention violations, on the capable frontier qwen, with a fresh context.
+description: Read-only code review for defects and convention violations, on DS4.1 Flash (Requesty, via the gateway), with a fresh context.
 tools: read, grep, find, ls, bash
-model: brys/qwen
+model: litellm-dynamic/requesty/deepinfra/deepseek-v4.1-flash-1017
 isolated: true
 ---
 
