@@ -17,11 +17,26 @@ let
 
   hostNames = builtins.attrNames data.servers;
 
-  # A host serves a model when its serving block leaves it enabled. `qwen3.5-9b` is declared with
-  # `enable = false`, so it is not advertised to a client even though its file is still described.
-  # A remote model (a cloud endpoint) has no `hosts` block at all, so the check must not assume one.
-  enabledOn = host: m: (m.hosts or { }) ? ${host} && (m.hosts.${host}.common.enable or true);
-  isServed = m: lib.any (host: enabledOn host m) hostNames;
+  # A host serves a model when it sits on one of that host's boot-profile `sets` AND
+  # its serving block leaves it enabled. `set` decides which router runs the model — a
+  # `retired` model (or any set no profile lists) is NOT served even with `enable =
+  # true`; enable only governs the serving block (download, perf), the profile governs
+  # the router. Same predicate the gateway uses (hosts/etra/litellm.nix folds
+  # `mkServerModels` over the profiles), so the client advertises exactly what a host
+  # can boot. `qwen3.5-9b` (enable = false) is therefore not advertised either. A
+  # remote model (a cloud endpoint) has no `hosts` block at all, so the check must not
+  # assume one.
+  servedOn =
+    host: m:
+    let
+      h = m.hosts or { };
+    in
+    (h ? ${host})
+    && (h.${host}.common.enable or true)
+    && lib.any (
+      prof: builtins.elem h.${host}.set data.servers.${host}.profiles.${prof}.sets
+    ) (builtins.attrNames data.servers.${host}.profiles);
+  isServed = m: lib.any (host: servedOn host m) hostNames;
 
   # The models a client or catalog may name: only those served somewhere.
   servedModels = lib.filterAttrs (_: m: isServed m) data.models;
@@ -112,8 +127,8 @@ let
               if epName == "litellm" then
                 servedModels
               else if data.servers ? ${epName} then
-                # A direct host endpoint lists only the models THAT host serves.
-                lib.filterAttrs (_: m: enabledOn epName m) data.models
+                # A direct host endpoint lists only the models THAT host serves (profile sets).
+                lib.filterAttrs (_: m: servedOn epName m) data.models
               else
                 modelsForEndpoint epName
             )
