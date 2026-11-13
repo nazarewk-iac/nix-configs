@@ -45,8 +45,9 @@
         # default (`medium`). The pair resolves only while the gateway serves that deployment:
         # with the extension absent (bare pi, no wrapper), the gateway down at startup, or
         # before the deployment is live, pi degrades to the first available model — a previous
-        # mis-pairing (requesty/deepseek-v4.1-flash-1017, not a static entry) did exactly that
-        # and silently ran `gemma-4-12b` (measured 2026-11-13).
+        # mis-pairing (requesty/deepseek-v4.1-flash-1017, which was not then a static entry: the
+        # static requesty ids were the wire-invalid aliases `ds4`/`remote`) did exactly that and
+        # silently ran `gemma-4-12b` (measured 2026-11-13).
         settings = {
           defaultProvider = "litellm-dynamic";
           defaultModel = "requesty/alibaba/qwen3.8-flash";

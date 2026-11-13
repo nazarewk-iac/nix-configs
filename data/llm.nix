@@ -256,10 +256,9 @@ in
     # local fleet and its serving arithmetic; `contextSize` is only the client budget.
     "deepseek-v4.1-flash-1017" = {
       endpoint = "requesty";
-      aliases = [
-        "ds4"
-        "remote"
-      ];
+      # No aliases: the pi static `requesty` provider uses the entry id as the wire
+      # name, and Requesty only accepts canonical ids — the old aliases `ds4`/`remote`
+      # were 400 on a direct call (dropped 2026-11-13).
       capabilities = {
         operation = "remote";
       };
