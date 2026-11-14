@@ -350,3 +350,34 @@ True KeePassXC-style merge needs a per-item revision (timestamp + host, or a sma
 diverged versions can be ordered; for opaque secrets the realistic outcomes are "newest wins" or
 "both versions surfaced". That is ~1 extra day on top of the estimates above and is a product
 decision, not a storage-layer one.
+
+## 16. Running with the stock OpenSSH agent (rosec SSH feature off)
+
+Decision context: eventual consistency (a ~1 minute window is acceptable), one agent only,
+YubiKey keys handled by the stock FIDO2-capable OpenSSH agent.
+
+- **Turn rosec's SSH feature off**: `[service] ssh_fuse = false` (`rosec-core/src/config.rs:98`,
+  consumed at `rosecd/src/main.rs:174`). This disables the agent socket, the FUSE tree, the
+  `config.d` snippets and the generated `allowed_signers` in one switch. No fork.
+- **Keep the vault unlocked**: `[autolock]` policy plus `unlock_timeout_secs` (default 30 s;
+  set a long value, e.g. 86400, or disable the idle/max lock) so the feeder can read items.
+- **Feeder** (a systemd user service + timer, ~0.5–1 day including tests):
+  1. `rosec search type=ssh-key` → item ids (AND-attribute filters; `type` is a common attribute
+     name).
+  2. For each id: `rosec get <id>` → 0600 temp file → `ssh-keygen -y -f` for the public key →
+     `ssh-add -t <ttl> <temp>`; shred the temp.
+  3. On each run, remove keys the feeder previously managed (`ssh-add -d <pub>`) before re-adding,
+     so deleted/rotated items disappear within one interval. Keep a small state file of managed
+     fingerprints.
+  4. Regenerate `allowed_signers` from the fetched public keys (`<principal> <pub>`) into the file
+     `gpg.ssh.allowedSignersFile` points at; truncate it when the vault is locked (fail-closed).
+  5. If `rosec get` fails (provider locked), remove the managed keys — the same eventual-
+     consistency window applies.
+- **YubiKey keys**: store the sk key **handle** (`id_ed25519_sk`, credential handle + public key,
+  no secret) as an ssh-key item; the feeder loads it into the stock agent with `ssh-add`, and
+  signing still touches the YubiKey. No rosec sk-ssh support needed.
+- **What is lost vs rosec's own agent**: automatic revocation on lock (replaced by the timer),
+  the FUSE `config.d` host snippets (replace with a static `~/.ssh/config` or the feeder writes
+  them), and the signing-confirmation policy (the stock agent has none).
+- **Alternative**: keep rosec's agent and run both (rosec's for vault keys, stock for FIDO2) —
+  automatic revocation for free, but two sockets and `IdentityAgent` routing.
