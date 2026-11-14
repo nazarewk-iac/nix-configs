@@ -707,6 +707,31 @@ jj rebase -s @ -d main@<upstream-remote>    # onto the freshly fetched tip
 
 ---
 
+## Concurrent sessions: always pass your files
+
+More than one agent session can work in this repository at once on non-overlapping tasks. All
+sessions share one working-copy commit, `@`, so a path-less jj command is a cross-session write.
+`jj split`, `jj squash`, `jj absorb`, `jj commit`, `jj restore`, `jj status` and `jj diff` all
+accept filesets. Pass the complete list of files your session owns on every one of them:
+
+```bash
+jj status -- packages/kdn-journal docs/tasks/2026-11/agent-journal-summary
+jj diff -- packages/kdn-journal docs/tasks/2026-11/agent-journal-summary
+jj split -m 'feat(journal): add the CLI' -- packages/kdn-journal
+jj absorb -- packages/kdn-journal/internal/board
+jj squash --from @ --into <change-id> -- packages/kdn-journal/internal/board
+jj commit -m 'docs(journal): record the CLI design' -- docs/tasks/2026-11/agent-journal-summary
+jj restore -- packages/kdn-journal/internal/board/broken.go
+```
+
+Keep the list in one place — the session board — and reuse it verbatim. A repeated file list costs
+one line; a path-less command can commit another session's unfinished work. A path-less command is
+allowed only when the working copy is exclusively yours, which means an isolated `jj workspace`,
+never the shared trunk checkout.
+
+`jj describe` takes revsets, not filesets. Carve a change out by path first, then describe that
+change by revision.
+
 ## Split changes
 
 `jj split` is the primary tool to carve accumulated work into separate commits. It opens an

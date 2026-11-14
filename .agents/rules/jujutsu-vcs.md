@@ -36,6 +36,27 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > `jj squash` — they open an editor by default. `jj split` accepts multiple `-- path1 path2 ...`.
 > **Never `jj edit` to read a file** — use `jj file show --revision <id> <path>`.
 
+> **Concurrent sessions: always pass every file your session owns.** More than one agent session can
+> work in this repo at once on non-overlapping tasks, and all of them share one `@`. A path-less
+> `jj split`, `jj squash`, `jj absorb`, `jj commit`, `jj restore`, `jj status` or `jj diff` sees
+> **every** session's edits and can sweep another session's work into your commit. Keep the session's
+> file list on its board and repeat it explicitly on every path-taking command:
+>
+> ```sh
+> jj status -- <files>
+> jj diff -- <files>
+> jj split -m 'feat: …' -- <files>
+> jj absorb -- <files>
+> jj squash --from @ --into <id> -- <files>
+> jj commit -m 'feat: …' -- <files>
+> jj restore -- <files>
+> ```
+>
+> A path-less command is allowed only when the working copy is exclusively yours — an isolated
+> `jj workspace`, never the shared trunk checkout. `jj describe` takes revsets, not filesets, so
+> describe only a change you already carved out by path. When in doubt, list the files again; a
+> repeated file list is cheap, a swept-in sibling session is not.
+
 > **Never redirect into the file a `jj` read is reading.** `jj file show -r <rev> x | … > x`
 > truncates `x` **before** the read starts. `jj file show` then snapshots the empty file into `@`,
 > and jj rebases that empty file into every descendant — so the read returns nothing and the file
