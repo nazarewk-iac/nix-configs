@@ -381,3 +381,58 @@ YubiKey keys handled by the stock FIDO2-capable OpenSSH agent.
   them), and the signing-confirmation policy (the stock agent has none).
 - **Alternative**: keep rosec's agent and run both (rosec's for vault keys, stock for FIDO2) —
   automatic revocation for free, but two sockets and `IdentityAgent` routing.
+
+## 17. Store shape, KeePassXC provider access, and Secret Service structure
+
+### 17.1 Local vault shape (source: `rosec-vault/src/types.rs`)
+
+On disk (`<id>.vault`, JSON): `version`, `wrapping_entries[]` (`id`, `label`, `kdf{salt,
+iterations}`, `wrapped_vault_key`, `wrapped_key_hmac`), `encrypted_data` (base64 AES-256-CBC
+payload), `hmac`. Decrypted payload (`VaultData`): `items[]`, each `VaultItemData` = `id`,
+`label`, `attributes: map<string,string>` (public), `secrets: map<string,string>` (**named
+secrets**, e.g. `password`, `private_key`, `totp`), `content_types: map`, `created`, `modified`.
+**There are no collections in the vault** — items are flat; collections are a Secret Service-level
+concept. The `.meta` sidecar holds `id`, `label`, attribute **hashes**, `secret_names`,
+timestamps.
+
+### 17.2 KeePassXC provider (source: `rosec-keepassxc-file/`)
+
+- Kind `keepassxc-file`, options `path` (required) and `key_file` (optional); the master password
+  is the unlock input. Read-only ("unlock decrypts via `keepass-rs`, but the plugin never
+  writes"), path-scoped to the one file (`filesystem.allowed_files`), and it registers a watch so
+  KeePassXC saves are picked up.
+- **Any entry is exposed** — every group/entry in the database, recursively.
+- Item ID = the entry **UUID** (hyphenated). Attributes: `username`, `uri`, `folder`
+  (`Group/Subgroup` path, root omitted), `tag.N`, custom **unprotected** strings, plus
+  `rosec:type`, `rosec:provider`, `rosec:keepassxc:folder`, `rosec:keepassxc:uuid`,
+  `rosec:totp`, `xdg:schema`. Secrets: `password`, `notes`, `totp` (when present), custom
+  **protected** strings, and `private_key` for KeeAgent SSH entries. The protected/unprotected
+  flag from the KDBX is honoured. KeeAgent SSH keys and FIDO2 credentials are also surfaced
+  (`list_ssh_keys`/`resolve_ssh_private_key`, FIDO2 meta).
+- Type heuristic: SSH entry → `ssh-key`; password → `login`; notes → `note`; else `generic`.
+
+### 17.3 Secret Service structure
+
+The daemon exposes **one virtual collection** (label "default") plus the `default` and `login`
+aliases; items from all providers are flattened into it with **provider-scoped D-Bus paths**
+(`make_item_path(provider_id, item_id)`), and a path resolves back to `(provider, item_id)` for
+reads. So "collections" are a view, not a storage concept; the provider's own grouping (KDBX
+groups, vault labels) appears as attributes (`rosec:keepassxc:folder`) rather than D-Bus
+collections.
+
+### 17.4 Runtime verification attempt (KDBX)
+
+A throwaway KDBX (2 entries, one nested group) was created with `keepassxc-cli` and the upstream
+`rosec-provider-keepassxc-file-0.0.40.wasm` was installed with its policy and minisig. Result:
+
+- ✅ provider **signature verified** by the daemon (`WASM plugin signature verified`), provider
+  kind recognised, config accepted.
+- ❌ provider **instantiation failed** in this environment:
+  `mmap(4362076160, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE) = -1 EAGAIN`
+  (wasmtime's 4 GB memory reservation). Reproduced in the container and on the host, with both
+  the musl and gnu builds; the same mapping succeeds from a plain shell (`ctypes` test), and
+  `ulimit -v`/cgroups/overcommit are unlimited — i.e. the **agent sandbox** blocks it, not
+  rosec. FUSE mounts are likewise denied (`fusermount3: mount failed: Operation not permitted`).
+- Consequence: the KDBX **entry mapping above is source-verified, not runtime-verified** here.
+  Run the same script outside the sandbox (or with the wasmtime reservation reduced) to complete
+  it. The test scripts and KDBX are in the session journal (`poc/rosec/kpxc-*`).
