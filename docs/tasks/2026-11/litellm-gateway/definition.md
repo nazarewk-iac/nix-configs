@@ -1,12 +1,14 @@
 ---
 type: Task
 description: Deploy LiteLLM as a NixOS container on etra as the single entrypoint for the local LLM fleet, fully declaratively (no DB, no Web UI), register brys as a backend, expose Prometheus metrics, and define how unreachable backends are handled.
-status: in-progress
+status: done
 authored_by: agent
 timestamp: 2026-11-05T09:49:54+01:00
 ---
 
 # LiteLLM gateway on etra
+
+> **Done.** See [done.md](done.md) for the solution and follow-ups.
 
 ## Context
 

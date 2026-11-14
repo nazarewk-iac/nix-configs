@@ -1,12 +1,14 @@
 ---
 type: Task
 description: Add DB-less, model-scoped client API keys to the LiteLLM gateway (custom auth) and a Requesty backend, and establish whether Pi can discover Requesty models through LiteLLM.
-status: in-progress
+status: done
 authored_by: agent
 timestamp: 2026-11-07T22:46:17+01:00
 ---
 
 # LiteLLM client API keys and Requesty backend
+
+> **Done.** See [done.md](done.md) for the solution and follow-ups.
 
 ## Goal
 
