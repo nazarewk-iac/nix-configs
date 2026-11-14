@@ -4,7 +4,9 @@
 #
 # The devshell wrapper used to install `models.json` by COPYING it once, so the file on disk drifted
 # after every fleet change. Home-manager's `programs.pi-coding-agent` writes `models.json` and
-# `settings.json` as store symlinks: the file IS the derivation, so it cannot go stale.
+# `settings.json` as store symlinks, and this aspect's `home.file` does the same for the sub-agent
+# definitions under `~/.pi/agent/agents/`: the file IS the derivation, so it cannot go stale. Nothing
+# under `~/.pi` is ever copied there by hand.
 #
 # `package = null` on purpose. The binary comes from the devshell wrapper (which adds
 # `--append-system-prompt` and `--extension`) or from `kdn.apps.pi`; this aspect owns configuration
@@ -25,6 +27,17 @@
 {
   kdn.pi-client.homeManager =
     { config, lib, ... }:
+    let
+      # Sub-agent definitions are installed by home-manager, never copied out of the repo by hand.
+      # pi's discoverAgents reads `$PI_CODING_AGENT_DIR/agents/*.md` (~/.pi/agent/agents/); each
+      # *.md under data/pi/agents/ becomes one store symlink beside models.json/settings.json, so
+      # a file cannot drift (a manual `cp` goes stale on the next repo change — the bug this
+      # replaces). Add an agent by adding a file to data/pi/agents/.
+      agentsDir = ../../../data/pi/agents;
+      agentFiles = lib.filterAttrs
+        (name: type: type == "regular" && lib.hasSuffix ".md" name)
+        (builtins.readDir agentsDir);
+    in
     {
       programs.pi-coding-agent = {
         enable = true;
@@ -60,5 +73,11 @@
           collapseChangelog = true;
         };
       };
+
+      # One symlink per agent definition (planner, reviewer, consultant, ...). This is the only
+      # channel that touches ~/.pi/agent/agents/ — nothing is ever copied there by hand.
+      home.file = lib.mapAttrs' (name: _: lib.nameValuePair ".pi/agent/agents/${name}" {
+        source = agentsDir + "/${name}";
+      }) agentFiles;
     };
 }
