@@ -109,10 +109,11 @@ id. Speeds are measured decode tok/s on brys.
   electricity grounds: 2.36 tok/s decode is below the 10 tok/s floor). The deep
   tier runs on Requesty SaaS through the etra gateway:
   `requesty/deepinfra/deepseek-v4.1-flash-1017` (the pi harness default and the
-  primary, 1M ctx), plus the two qwen auxiliaries the pi `planner` and `reviewer`
-  sub-agents use: `requesty/alibaba/qwen3.8-flash` (1M ctx, 128K out, vision —
-  planning) and `requesty/tensorx/qwen3.8-flash-next` (256K/256K — review). All
-  three take a top-level `reasoning_effort`, not `chat_template_kwargs`.
+  primary, 1M ctx), plus the two qwen auxiliaries the pi `planner`, `reviewer`
+  and `consultant` sub-agents use: `requesty/alibaba/qwen3.8-flash` (1M ctx,
+  128K out, vision — planning) and `requesty/tensorx/qwen3.8-flash-next`
+  (256K/256K — review and brainstorming). All three take a top-level
+  `reasoning_effort`, not `chat_template_kwargs`.
 - **Fast 24-35B MoE (20-23 t/s)**: `qwen3.5-35b-a3b`, `qwen3.6-35b-a3b`, `glm-4.7-flash`, `nemotron-3.5-lightning-30b`, `lfm2.5-24b-a2b`.
 - **Quality 27-36B dense (1.7-2.3 t/s)**: this whole class was dropped on 2026-11-04 — `qwen3.8-27b`, `qwen3.6-27b` (1.8), `granite-4.2-30b` (2.1), `gemma-4-31b` (1.7), `olmo-3.1-32b` (2.3), `seed-oss-36b` (2.0). All are dense, CPU-only, and slower than the 1M-context flash-next (2.36), which also has a far larger window. For that tier use the Requesty SaaS frontier (above).
 - **Multimodal**: `qwen3-vl-30b-a3b` (fast workhorse, 15.7), `ornith-1.5-35b-a3b` (**best at dense terminal text**, 8.8), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio). `qwen3.8-flash-next` has vision DISABLED (2026-11-04): the projector cost ~0.8 GB and its CPU prefill made a 256px icon take 259 s and a 2560px screenshot exceed 900 s. `vision-quick-fast` and `qwen3-vl-8b-instruct` are retired.

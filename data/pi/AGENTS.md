@@ -16,6 +16,9 @@ Local models are cheap and fast; your own context is the expensive resource. So:
 - **Mechanical edits go to a sub-agent** (`worker`) with ONE exact task per call: "rewrite
   attribute X to Y", not "improve the config". A vague task to a fast model fails confidently.
 - **Hard reasoning goes to a sub-agent** (`planner`) before a multi-step change.
+- **Open questions go to a sub-agent** (`consultant`) when you need options, not an answer: a
+  design fork, an approach that is not working, a feature to size. It brainstorms several
+  directions and recommends one; it changes nothing.
 - **Pick the cheapest tier that fits.** Pass `model:"brys/<alias>"` per task when you want a
   specific one; otherwise the agent's default applies. The `kdn-llms` skill lists the tiers.
 - **Bound your own recon.** If you have made five tool calls without an edit or a delegate, stop
