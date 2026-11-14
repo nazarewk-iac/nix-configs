@@ -8,7 +8,7 @@
 # | Check | It forces | It proves |
 # |---|---|---|
 # | `universal-eval-keepassxc` | `kdn.env.packages` of the keepassxc module | a platform test guards the Linux-only package, in both contexts |
-# | `universal-eval-containers` | `containersConf.settings` of the containers module | the Home Manager branch reads the parent through `osConfig` |
+# | `universal-eval-containers` | `containersConf.settings` and the rendered `storage.conf` of the containers module | the Home Manager branch reads the parent through `osConfig`, and the per-user store names no `~` |
 #
 # Each check evaluates one module file, not a whole host. `_module.check = false` tolerates every
 # definition that names an option of another module, so the evaluation stays small. A stub
@@ -175,6 +175,31 @@ let
   standalone = containersSettings null;
   emptyParent = containersSettings { };
 
+  # The rendered per-user `storage.conf`, from the same module instance as `containersSettings`.
+  # A `~` in `graphroot` is the regression this guards: the engine expands `$HOME` and
+  # `$XDG_RUNTIME_DIR` in a path and expands no `~`. Home Manager declares `xdg.configFile`, and
+  # this check loads one module file, so a stub declares it: the check reads `source` only.
+  rootlessStorage = builtins.readFile (
+    (lib.evalModules {
+      modules = [
+        { _module.check = false; }
+        ../modules/universal/virtualisation/containers
+        {
+          options.xdg.configFile = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.submodule { options.source = lib.mkOption { }; });
+            default = { };
+          };
+        }
+        { kdn.virtualisation.containers.enable = true; }
+      ];
+      specialArgs = {
+        pkgs = linuxPkgs;
+        kdnConfig = hmMeta "nixos";
+        osConfig = osStub;
+      };
+    }).config.xdg.configFile."containers/storage.conf".source
+  );
+
   containersAssertions = [
     {
       name = "the hook package comes from the parent config, not from the Home Manager config";
@@ -213,6 +238,26 @@ let
         engine = builtins.attrNames withParent.engine;
         cniPluginDirs = map (dir: lib.hasSuffix "/bin" dir) withParent.network.cni_plugin_dirs;
         initPath = lib.hasSuffix "/bin/catatonit" withParent.engine.init_path;
+      };
+    }
+    {
+      # The universal tree renders the file through `rootlessSettings`. A copy of the den check's
+      # path assertion: `~` here alone would pass every other check, and fail every rootless
+      # command on the host.
+      name = "the rendered storage.conf names the expanded per-user store";
+      expected = {
+        graphroot = true;
+        runroot = true;
+        driver = true;
+        noLiteralTilde = true;
+        noSystemStore = true;
+      };
+      actual = {
+        graphroot = lib.hasInfix ''graphroot = "$HOME/.local/share/containers/storage"'' rootlessStorage;
+        runroot = lib.hasInfix ''runroot = "$XDG_RUNTIME_DIR/containers"'' rootlessStorage;
+        driver = lib.hasInfix ''driver = "overlay"'' rootlessStorage;
+        noLiteralTilde = !(lib.hasInfix ''= "~'' rootlessStorage);
+        noSystemStore = !(lib.hasInfix "/var/lib/containers" rootlessStorage);
       };
     }
   ];

@@ -440,9 +440,31 @@ AuthProvider provider=kpxc`.
 
 Environment note: the first attempts failed with
 `mmap(4362076160, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE) = -1 EAGAIN` (wasmtime's
-4 GB reservation). Cause: the user manager's hard `RLIMIT_MEMLOCK` is 4 MB on this host, and
-rosec's `harden()` calls `mlockall(MCL_FUTURE)`, so every later mapping is charged to the locked
-memory budget (the shipped unit expects `LimitMEMLOCK=infinity`, which the user manager cannot
-raise past its own hard limit). The test passed with a test-only `LD_PRELOAD` shim that
-neutralizes `mlockall` (the code base already has `harden_no_memlock()` for this exact reason).
-The system-level fix (raise the user memlock limit) is tracked separately.
+4 GB reservation). Cause: rosec's `harden()` calls `mlockall(MCL_FUTURE)`, so every later mapping
+is charged to `RLIMIT_MEMLOCK`, and the 4362076160-byte (4.06 GiB) reservation alone overruns the
+cap. The shipped unit expects `LimitMEMLOCK=infinity`, which the user manager cannot raise past its
+own hard limit. The test passed with a test-only `LD_PRELOAD` shim that neutralizes `mlockall`
+(the code base already has `harden_no_memlock()` for this exact reason). The system-level fix
+(raise the user memlock limit) is tracked separately.
+
+The numbers on this host (`oams`, measured 2026-11-14):
+
+| Where | `RLIMIT_MEMLOCK` | How it was measured |
+| --- | --- | --- |
+| `user@31893.service` property, as `systemd` *declares* it | `8388608` = **8 MiB** | `systemctl show user@31893.service -p LimitMEMLOCK` |
+| the live `systemd --user` process, and every unit it starts | `4294967296` = **4 GiB** soft and hard | `/proc/6592/limits`; a `systemd-run --user` probe inherited the same value |
+| a login shell | `4294967296` = **4 GiB** soft and hard | `resource.getrlimit(RLIMIT_MEMLOCK)` in a login shell |
+
+The first row is a trap, not the limit in force. `systemctl show` reports the property the unit
+*file* declares, and `user@.service` in systemd 262 carries systemd's own default of 8 MiB. The
+live process does not run with it: `pam_limits` is `session required` in `/etc/pam.d/systemd-user`
+*after* `pam_systemd`, and it applies `@pipewire - memlock 4194304` (the `kdn` user is in the
+`pipewire` group, uid 31893, gid 323) from
+`/nix/store/…-limits.conf`. That row raises the limit **to** 4 GiB and is expressed in **KiB**, so
+`ulimit -l` prints `4194304` — 4194304 KiB, not 4194304 bytes. Reading that number as 4 MB is the
+unit error that produced the "hard limit is 4 MB" claim; it is 4 GiB.
+
+So the blocker is the **4 GiB** cap, not 8 MiB and not 4 MB: measured under `mlockall(MCL_FUTURE)`,
+a process hits `EAGAIN` after about 3.75 GiB of locked memory, and wasmtime's single 4.06 GiB
+reservation crosses that on its own. Raising `LimitMEMLOCK` above 4 GiB, or leaving `mlockall` out
+of the hardened path, is what unblocks it.
