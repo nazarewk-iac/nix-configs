@@ -118,7 +118,10 @@ in
       home-manager.sharedModules =
         (kdnConfig.self.denLib.imports {
           class = "homeManager";
-          aspects = [ "ssh-ca" "pi-client" ];
+          aspects = [
+            "ssh-ca"
+            "pi-client"
+          ];
         })
         ++ [
           # The home-manager copy of the option trees resolves the CA path the same way, so it
@@ -426,6 +429,13 @@ in
     }
     {
       kdn.fs.zfs.containers.fsname = "oams-main/containers/storage";
+      # The rootless store has its own `fs/home/kdn/.local/share/containers` dataset (see
+      # `hosts/oams/disko.nix`), so it needs no `kdn.disks.persist` write. `null` keeps the
+      # module from adding one. That bucket would be inert here anyway: this host sets
+      # `kdn.fs.disko.luks-zfs.enable`, which is mutually exclusive with `kdn.disks.enable`, so
+      # `preservation.enable` is false and no bucket reaches `preservation.preserveAt`. The
+      # dataset, not this option, is what survives a rollback.
+      kdn.virtualisation.containers.storage.rootlessPersistBase = null;
     }
     {
       kdn.services.samba.enable = true;
@@ -476,18 +486,18 @@ in
         keySource = "managed";
       };
 
-    # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
-    kdn.certificates.certs.ssh-host-oams-pq = {
-      ca = "kdn";
-      type = "ssh-host";
-      commonName = "oams";
-      principals = (import ../../data/net/ssh-host-identities.nix).oams.names;
-      directory = "hosts/oams/certs";
-      certFile = "ssh_host_mldsa44_ed25519-cert.pub";
-      keyFile = "ssh_host_mldsa44_ed25519_key";
-      keyType = "mldsa44-ed25519";
-      keySource = "managed";
-    };
+      # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
+      kdn.certificates.certs.ssh-host-oams-pq = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "oams";
+        principals = (import ../../data/net/ssh-host-identities.nix).oams.names;
+        directory = "hosts/oams/certs";
+        certFile = "ssh_host_mldsa44_ed25519-cert.pub";
+        keyFile = "ssh_host_mldsa44_ed25519_key";
+        keyType = "mldsa44-ed25519";
+        keySource = "managed";
+      };
     }
     {
       kdn.programs.zellij.web = {

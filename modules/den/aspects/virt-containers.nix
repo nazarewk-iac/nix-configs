@@ -209,6 +209,12 @@
         description = ''
           The data directories this aspect wants on persistent storage, relative to the home
           directory. The consumer wires the list into its own persistence option.
+
+          This list names no persistence bucket. The old module
+          (`modules/universal/virtualisation/containers`) writes the same directory into the
+          bucket its `storage.rootlessPersistBase` option names (`usr/data` by default, `null` to
+          write nothing), so the bucket stays a decision of the NixOS consumer here too. See
+          `docs/den-universal-mapping.md`.
         '';
       };
 

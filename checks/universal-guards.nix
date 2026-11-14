@@ -161,7 +161,7 @@ let
       specialArgs = {
         pkgs = linuxPkgs;
         kdnConfig = hmMeta "nixos";
-        inherit osConfig;
+        osConfig = osConfig;
       };
     }).config.kdn.virtualisation.containers.containersConf.settings;
 
@@ -208,6 +208,115 @@ let
   # A root Home Manager profile must render no container file: `sudo podman` reads
   # `/etc/containers/`, and a per-user file there redirects the privileged engine.
   rootHome = rootlessConfig "root";
+
+  /*
+    The `rootlessPersistBase` write. The module reads the bucket in its NixOS branch and passes
+    it to Home Manager as a literal key, so a dynamic read inside the Home Manager module would
+    re-enter that module's own config and raise `infinite recursion encountered`. This check
+    evaluates the NixOS branch and forces the write, which proves the fix and the silence of a
+    wrong value alike.
+
+    The same evaluation renders the containers' *NixOS* branch, which writes its own persist
+    entries for the system store. So `kdn.disks.persist` also holds them, and the check reads
+    the Home Manager value back from `home-manager.sharedModules` instead: exactly the value
+    Home Manager receives.
+  */
+  # One host shape: the option values a host would set. `assertions` and
+  # `home-manager.sharedModules` belong to the NixOS class, and the module *writes* them rather
+  # than declaring them, so a stub declares them and the value comes back through `config`.
+  persistWrite =
+    hostConfig:
+    (lib.evalModules {
+      modules = [
+        { _module.check = false; }
+        ../modules/universal/virtualisation/containers
+        {
+          options.assertions = lib.mkOption {
+            type = lib.types.listOf (
+              lib.types.submodule {
+                options.assertion = lib.mkOption { type = lib.types.bool; };
+                options.message = lib.mkOption { type = lib.types.str; };
+              }
+            );
+            default = [ ];
+          };
+          options.home-manager.sharedModules = lib.mkOption {
+            type = lib.types.listOf lib.types.unspecified;
+            default = [ ];
+          };
+          # The host's buckets. The assertion probes this option, so it must exist here.
+          options.kdn.disks.base = lib.mkOption {
+            type = lib.types.attrsOf (lib.types.attrsOf lib.types.anything);
+            default = { };
+          };
+        }
+        { kdn.virtualisation.containers.enable = true; }
+        hostConfig
+      ];
+      specialArgs = {
+        pkgs = linuxPkgs;
+        kdnConfig = hostMeta "nixos";
+      };
+    }).config;
+
+  # The write as one shape: which buckets of this Home Manager user name the rootless store, and
+  # whether every assertion of the host passes. A stray bucket is a visible extra attribute.
+  persistBuckets =
+    hostConfig:
+    let
+      result = persistWrite hostConfig;
+      persist =
+        (lib.evalModules {
+          modules = [
+            { _module.check = false; }
+            {
+              options.kdn.disks.persist = lib.mkOption {
+                type = lib.types.attrsOf (
+                  lib.types.submodule {
+                    options.directories = lib.mkOption {
+                      type = lib.types.listOf lib.types.str;
+                      default = [ ];
+                    };
+                  }
+                );
+                default = { };
+              };
+            }
+          ]
+          ++ result.home-manager.sharedModules;
+          specialArgs = {
+            pkgs = linuxPkgs;
+            kdnConfig = hmMeta "nixos";
+            osConfig = { };
+          };
+        }).config.kdn.disks.persist;
+      holders = builtins.filter (n: builtins.elem ".local/share/containers" persist.${n}.directories) (
+        builtins.attrNames persist
+      );
+    in
+    {
+      buckets = holders;
+      directories = lib.concatMap (n: persist.${n}.directories) holders;
+      guardPasses = builtins.all (a: a.assertion) result.assertions;
+    };
+
+  # The three host shapes that declare `kdn.disks.base`: oams (`null`), brys (`"usr/data"`) and a
+  # typo. A consumer with no `kdn.disks.base` at all (a den target, an adopter) cannot reach this
+  # branch: it declares no `preservation.enable` either, so the NixOS branch writes persist
+  # entries that nothing reads. The `base == null` arm of the assertion covers a shifted naming
+  # that still evaluates the branch.
+  persistNull = {
+    kdn.virtualisation.containers.storage.rootlessPersistBase = null;
+    kdn.disks.base."usr/data" = { };
+  };
+  persistUsrData = {
+    kdn.virtualisation.containers.storage.rootlessPersistBase = "usr/data";
+    kdn.disks.base."usr/data" = { };
+  };
+  persistTypo = {
+    kdn.virtualisation.containers.storage.rootlessPersistBase = "usr/datax";
+    kdn.disks.base."usr/data" = { };
+  };
 
   rootlessStorage = builtins.readFile kdnHome.xdg.configFile."containers/storage.conf".source;
   rootlessStorageDropin =
@@ -300,6 +409,34 @@ let
       name = "a root home profile renders no container file";
       expected = [ ];
       actual = builtins.attrNames rootHome.xdg.configFile;
+    }
+    {
+      # `null` is the oams shape: the home dataset is already persistent, so no write and no
+      # stray bucket. A recursion in the shared module would fail here rather than answer.
+      name = "rootlessPersistBase null writes no persist bucket";
+      expected = {
+        buckets = [ ];
+        directories = [ ];
+        guardPasses = true;
+      };
+      actual = persistBuckets persistNull;
+    }
+    {
+      name = "rootlessPersistBase usr/data writes exactly the home-relative store";
+      expected = {
+        buckets = [ "usr/data" ];
+        directories = [ ".local/share/containers" ];
+        guardPasses = true;
+      };
+      actual = persistBuckets persistUsrData;
+    }
+    {
+      # A typo creates a bucket that no `kdn.disks.base` declares, and `preservation.preserveAt`
+      # is built from the base names, so the store silently stops being preserved. The value is
+      # still unknown before activation, hence the assertion rather than a type.
+      name = "a bucket that kdn.disks.base does not declare fails the assertion";
+      expected = true;
+      actual = !(persistBuckets persistTypo).guardPasses;
     }
   ];
 in

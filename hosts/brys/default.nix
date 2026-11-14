@@ -54,7 +54,10 @@ in
     {
       imports = kdnConfig.self.denLib.imports {
         class = "nixos";
-        aspects = [ "llm" "web-exposure" ];
+        aspects = [
+          "llm"
+          "web-exposure"
+        ];
       };
     }
   ];
@@ -173,6 +176,12 @@ in
         uuid = "53513d1d-233f-4c6b-b1ea-eeb40062e580";
         headerSpec.partNum = 3;
       };
+    }
+    {
+      # The rootless container store is bind-mounted from the persistent `usr/data` base
+      # (`brys-main/brys/impermanence/usr/data`), never from the disposable home: that base is
+      # wiped at every boot, so `disposable` would erase the store.
+      kdn.virtualisation.containers.storage.rootlessPersistBase = "usr/data";
     }
     {
       kdn.hw.nanokvm.enable = true;
@@ -412,12 +421,14 @@ in
             # `inheritParentConfig = false` does not inherit `nixpkgs.pkgs`, so pin this boot entry
             # to the SAME per-system pkgs as the main host — no second nixpkgs instantiation and an
             # identical package set. (`imports`, not `config`, so nothing has to inherit it.)
-            ({ kdnConfig, lib, ... }:
+            (
+              { kdnConfig, lib, ... }:
               lib.mkIf (kdnConfig != null) {
                 nixpkgs.pkgs = kdnConfig.self.pkgs.${kdnConfig.system}.default;
                 nixpkgs.overlays = lib.mkForce [ ];
                 nixpkgs.config = lib.mkForce { };
-              })
+              }
+            )
           ];
         };
       };

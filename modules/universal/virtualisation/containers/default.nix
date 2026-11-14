@@ -83,6 +83,23 @@ in
           `storage.graphroot` also states `driver` and `runroot`, or the rendered file loses them.
         '';
       };
+      # The `kdn.disks.persist` bucket that backs the home-relative rootless container store.
+      # `null` disables the write for a host whose home is already persistent.
+      rootlessPersistBase = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default = "usr/data";
+        description = ''
+          The `kdn.disks.persist` bucket that backs the home-relative rootless container store
+          (`~/.local/share/containers`). `null` disables the persist write for a host whose home
+          already lives on a persistent dataset (oams: `fs/home/kdn/.local/share/containers` is
+          its own ZFS dataset). The value must name a `kdn.disks.base` entry (`usr/data`, ...),
+          and a NixOS assertion holds it to that: a bucket that no base declares produces an
+          empty `preservation.preserveAt` entry, so a typo would disable the write in silence.
+
+          Do not name `disposable`: that base is wiped at every boot, so the container store
+          there would be lost.
+        '';
+      };
     };
     registries = lib.mkOption {
       type = with lib.types; attrsOf (listOf anything);
@@ -127,11 +144,46 @@ in
         kdn.disks.persist."usr/data".directories = [
           "/var/lib/containers/storage"
         ];
+        # The bucket name is read in this NixOS context and passed to Home Manager as a literal
+        # key. Reading it inside the Home Manager module forces that module's own config during
+        # evaluation, and the dynamic key re-enters it: `error: infinite recursion encountered`.
+        # The key is substituted before `kdn.disks.persist` is evaluated, so no read remains.
         home-manager.sharedModules = [
           {
             kdn.virtualisation.containers.enable = true;
           }
+          (lib.optionalAttrs (cfg.storage.rootlessPersistBase != null) {
+            kdn.disks.persist.${cfg.storage.rootlessPersistBase}.directories = [
+              ".local/share/containers"
+            ];
+          })
         ];
+
+        /*
+          A bucket that `kdn.disks.base` does not declare is inert: `disks/config.nix` builds
+          `preservation.preserveAt` from the base names alone, so the write lands in a bucket that
+          no base reads, and the store silently stops being preserved. `nullOr str` accepts any
+          string, hence this assertion. `kdn.disks.base` may be absent or shifted in another
+          module set (a den target or an adopter), so the probe tests the option first.
+        */
+        assertions =
+          let
+            base = config.kdn.disks.base or null;
+            persistBase = cfg.storage.rootlessPersistBase;
+          in
+          [
+            {
+              assertion = persistBase == null || base == null || base ? ${persistBase};
+              message = ''
+                kdn.virtualisation.containers.storage.rootlessPersistBase is "${toString persistBase}",
+                which is not a `kdn.disks.base` bucket. Known buckets:
+                ${lib.concatStringsSep ", " (builtins.attrNames (if base == null then { } else base))}.
+                A bucket that no base declares never reaches `preservation.preserveAt`, so the
+                rootless container store would not be preserved. Use `null` for a host whose home
+                is already persistent.
+              '';
+            }
+          ];
       }
     ))
     (kdnConfig.util.ifHM (
@@ -196,7 +248,6 @@ in
               else
                 "${pkgs.skopeo.policy}/default-policy.json";
           })
-          { kdn.disks.persist."usr/data".directories = [ ".local/share/containers" ]; }
         ]
       )
     ))

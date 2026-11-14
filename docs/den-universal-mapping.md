@@ -405,6 +405,17 @@ One option name diverges in this row: the old module calls the per-user store
 `storage.conf.d/99-user.conf` drop-in, and both gate the files on a non-root Home Manager user. An
 adopter that moves from the old option name drops the `rootless` infix and nothing else.
 
+A second divergence sits in the same row, in the persistence of the rootless store. The old module
+parametrises the persistence **bucket** with `storage.rootlessPersistBase` (`"usr/data"` by
+default, `null` to write nothing), reads it in its NixOS branch, and passes it to Home Manager as a
+literal key, so the module itself decides where `.local/share/containers` is preserved. The aspect
+publishes a bucket-less list (`kdn.virtualisation.containers.persist.usrData =
+[ ".local/share/containers" ]`) and leaves the bucket to the consumer, which wires it as
+`kdn.disks.persist."usr/data".directories = config.kdn.virtualisation.containers.persist.usrData;`.
+An aspect cannot carry the knob: a per-host bucket is an entity-shaped input, which rule 1 of the
+aspect tree forbids. The divergence is deliberate, and the consumer states the bucket once, for
+every aspect it wires, instead of once per aspect.
+
 ## The deliberate exclusions
 
 | Old module                              | Reason                                                                                                                                                                                                                               |
