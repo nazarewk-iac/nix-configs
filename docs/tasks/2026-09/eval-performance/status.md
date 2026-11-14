@@ -147,3 +147,29 @@ demand). The full note is [hm-split.md](hm-split.md).
   [hm-split.md](hm-split.md) § "The measurement that would work".
 - **Correction:** the `useGlobalPkgs = false` row in [research.md](research.md) is stale. Commit
   `ed3517329` (2026-11-09) turned it on. The row now says so.
+
+## Update 2026-11-16 — persistence without reading Home Manager
+
+The persistence read-back is now designed, in [design-persistence.md](design-persistence.md). No
+code changed.
+
+- **The read is smaller than the first inventory said.** The parent reads
+  `hmConfig.kdn.disks.persist.<bucket>.{files,directories}`, not `home.file`. No Home Manager code
+  ever reads that option, and nothing reads `kdn.disks.enable` either.
+- **Every app entry for `usr/*` is already inside an XDG directory.** `kdn.apps` prefixes `dirs.cache`
+  with `.cache`, `dirs.config` with `.config`, `dirs.data` with `.local/share`, `dirs.state` with
+  `.local/state` (`apps/default.nix:60-71`). So a host that persists the four XDG directories needs
+  no per-app list at all.
+- **Recommended design — R1:** persist the four XDG dirs, the media dirs, `.ssh` and `.gnupg` per
+  user, all host data, plus a per-module host-branch entry for the roughly ten paths outside XDG
+  (`.aws`, `.java`, the shell histories, `dev`, `Games`). `userDefaults.persist` already exists in
+  den; universal only needs the port.
+- **The migration is mostly deletion.** About twelve `kdn.apps` lists and thirty-five in-XDG writes
+  go away; about ten exceptions move to a host branch. The two `home-manager.users` name reads and
+  the service-ordering read move to `cfg.users`, which already feeds the home-directory creation
+  (`disks/config.nix:211-239`).
+- **Atuin is a free win.** Its unit script resolves `xdg.dataHome` at evaluation time; it can read
+  `${XDG_DATA_HOME:-$HOME/.local/share}` at runtime instead, removing one of the five read-backs
+  with no design decision.
+- **The proof is the same A/B that failed:** empty `home-manager.users` must evaluate. It does not
+  today; it dies at `atuin:268`.

@@ -113,4 +113,6 @@ universal tree, compare option values or compare the closure of the built system
   the one identified check-speed lever.
 - [hm-split.md](hm-split.md) — the parent/Home Manager split as an idea, with the two-way dependency
   inventory that blocks it and the deploy-tooling sketch.
+- [design-persistence.md](design-persistence.md) — how to remove the persistence read-back: a
+  bucket-level base directory policy on the host instead of reading the user's persist lists.
 - [status.md](status.md) — where the work is parked, and the named blocker.

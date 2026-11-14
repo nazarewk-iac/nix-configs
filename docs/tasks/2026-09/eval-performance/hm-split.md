@@ -82,18 +82,19 @@ write user config.
 A read is worse than a write for a split, because it forces Home Manager from the parent
 evaluation.
 
-| Site                                               | Reads                                                       | Forced by                                       |
-| -------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
-| `modules/universal/disks/config.nix:71`            | every user's `home.file` and `home.directories`             | the disko layout, and `kdn.disks` generally     |
-| `modules/universal/disks/config.nix:135`           | `builtins.attrNames` of `home-manager.users`                | `kdn.disks.users`                               |
-| `modules/universal/disks/config.nix:136-146`       | each user's `home.username`                                 | `systemd.services.home-manager-<user>` ordering |
-| `modules/universal/programs/atuin/default.nix:268` | `home-manager.users.<user>.xdg.dataHome`                    | the autologin unit's script text                |
-| `modules/den/aspects/disks.nix:73`                 | `config.home-manager.users or { }` and `.kdn.disks.persist` | persistence, even after the den port            |
+| Site                                               | Reads                                                        | Forced by                                       |
+| -------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| `modules/universal/disks/config.nix:71`            | each user's `kdn.disks.persist.<bucket>.{files,directories}` | the `preservation.preserveAt` user entries      |
+| `modules/universal/disks/config.nix:135`           | `builtins.attrNames` of `home-manager.users`                 | `kdn.disks.users`                               |
+| `modules/universal/disks/config.nix:136-146`       | each user's `home.username`                                  | `systemd.services.home-manager-<user>` ordering |
+| `modules/universal/programs/atuin/default.nix:268` | `home-manager.users.<user>.xdg.dataHome`                     | the autologin unit's script text                |
+| `modules/den/aspects/disks.nix:73`                 | `config.home-manager.users or { }` and `.kdn.disks.persist`  | persistence, even after the den port            |
 
 The den tree kept this read on purpose. `modules/den/common/persist.nix:17` and
 `modules/den/aspects/disks-persist.nix:7` state it: the host reads the user's persist paths back
 through `home-manager.users.<name>.kdn.disks.persist`. That is the one edge the den port did not
-remove.
+remove. [design-persistence.md](design-persistence.md) designs its removal: a bucket-level base
+policy on the host, so the parent never needs the user's persist lists.
 
 ### 3. Home Manager → parent: the user config reads the system config
 
@@ -215,8 +216,9 @@ The tooling is the small part, and it is worth designing now because the output 
 4. **Silent standalone branches.** Firefox policies, Thunderbird policies, the containers seccomp
    hook, and stylix all take a different branch with no parent. Each is a behaviour change, not a
    crash.
-5. **The persistence model.** `kdn.disks.users`, `home.file` → disko, and `kdn.disks.persist` read
-   users from the parent. Invert them to explicit data, or the parent still forces Home Manager.
+5. **The persistence model.** The per-user preserve lists, `kdn.disks.users`, and the
+   `home-manager-<user>` ordering read from the parent. [design-persistence.md](design-persistence.md)
+   designs the inversion to explicit host data.
 6. **Darwin.** Home Manager as a module rides `darwin-rebuild`'s activation. A standalone
    `home-manager switch` on darwin activates through its own launchd path. The two paths are not the
    same code.
@@ -258,7 +260,8 @@ already holds the rule and the output shape:
 
 1. **Finish the den user route.** Wire one real `hosts-den` host to a den user entity and one
    `denHomeConfigurations` entry. That is the first end-to-end pair, with no universal edits.
-2. **Invert the persistence read-back.** It is the only leftover parent → user read in den.
+2. **Invert the persistence read-back.** It is the only leftover parent → user read in den; the
+   design is in [design-persistence.md](design-persistence.md).
 3. **Prototype the wrapper** against that one host and one user. The wrapper is about 150 lines and
    reuses the remote and builder handling of `nixos-rebuild.sh`.
 4. **Measure B and C** with the stub harness, then decide whether the universal tree pays for the
