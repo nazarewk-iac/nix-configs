@@ -26,10 +26,59 @@ expect {
   timeout { exit 1 }
 }
 log kdn-keepassxc "wait to be ready"
+
+# Ready means: an UNLOCKED database, not "some KeePassXC window exists".
+# A half-loaded KeePassXC shows an "Unlock Database" modal whenever a Secret Service search
+# arrives during the load (upstream keepassxc PR #13321); the console password never takes
+# effect and the instance waits for a human forever. Matching the first window by app_id
+# accepted that dialog as success and lied to systemd (measured on oams, cold boot
+# 2026-11-14: two SIGSEGV attempts plus a wedged dialog attempt).
+# Poll the sway tree until keepassxc has a window and the "Unlock Database" dialog is gone.
+# If it never unlocks, exit 1 so `Restart=on-failure` retries with a warmer YubiKey and a
+# quieter D-Bus; the timeout is generous because a cold Argon2id load with a hardware-key
+# challenge can take most of a minute.
 if {[info exists ::env(SWAYSOCK)]} {
-  spawn bash -c { swaymsg -t subscribe -m '["window"]' | gron --stream --monochrome }
-  expect -i $spawn_id {*app_id = "org.keepassxc.KeePassXC";} { close -i $spawn_id }
-  log sway {"org.keepassxc.KeePassXC" window created}
+  # KEEPASS_UNLOCK_DEADLINE_SECONDS is a test knob; the unit never sets it (default 120).
+  set deadline_seconds 120
+  if {[info exists ::env(KEEPASS_UNLOCK_DEADLINE_SECONDS)]} {
+    set deadline_seconds $::env(KEEPASS_UNLOCK_DEADLINE_SECONDS)
+  }
+  set unlock_deadline [expr {[clock seconds] + $deadline_seconds}]
+  while {1} {
+    expect {
+      -i $keepassxc_spawn_id
+      -timeout 2
+      eof {
+        log kdn-keepassxc "keepassxc exited before unlocking"
+        exit 1
+      }
+    }
+    if {![catch {exec swaymsg -t get_tree} tree]} {
+      if {[string match {*org.keepassxc.KeePassXC*} $tree]
+        && ![string match {*Unlock Database - KeePassXC*} $tree]} {
+        log sway {"org.keepassxc.KeePassXC" database unlocked}
+        break
+      }
+    }
+    if {[clock seconds] > $unlock_deadline} {
+      log kdn-keepassxc "not unlocked after ${deadline_seconds}s; killing PID=$keepassxc_pid for a unit restart"
+      # The wedged instance ignores SIGTERM (measured on oams 2026-11-14: TERM was swallowed
+      # while the modal dialog loop ran, and the unit stayed "active" with the locked instance).
+      # Wait for the pty to close; escalate to SIGKILL so MainPID really dies and
+      # `Restart=on-failure` fires.
+      catch {exec kill $keepassxc_pid}
+      expect {
+        -i $keepassxc_spawn_id
+        -timeout 10
+        eof {}
+        timeout {
+          log kdn-keepassxc "SIGTERM ignored; escalating to SIGKILL"
+          catch {exec kill -9 $keepassxc_pid}
+        }
+      }
+      exit 1
+    }
+  }
 }
 if {[info exists ::env(NOTIFY_SOCKET)]} {
   system systemd-notify --ready

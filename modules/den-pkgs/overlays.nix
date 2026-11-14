@@ -149,4 +149,22 @@ in
       buildInputs = old.buildInputs ++ [ final.oniguruma ];
     });
   })
+
+  # `keepassxc` 2.8.0 dies or wedges when a Secret Service `SearchItems` call arrives while its
+  # database is still loading. Two faces of one race, both measured on `oams` cold boot
+  # 2026-11-14: `Collection::searchItems` walks the not-yet-populated group tree and SIGSEGVs in
+  # `Group::groupsRecursive` with a null `this`; or the "unlock before search" prompt opens a
+  # modal "Unlock Database" dialog during the load window, which blocks the automatic unlock
+  # from `kdn-keepass` forever.
+  #
+  # Upstream carries the fix in keepassxreboot/keepassxc#13321, unmerged as of 2026-11-14
+  # (related `--pw-stdin` work is milestoned for 2.9.0). The patch in `patches/` applies to 2.8.0
+  # without edits. Drop this overlay once an upstream release contains the fix.
+  # It lives HERE, not in `nixpkgs.overlays`: a pinned host sets `nixpkgs.pkgs`, which makes
+  # `nixpkgs.overlays` inert.
+  (final: prev: {
+    keepassxc = prev.keepassxc.overrideAttrs (old: {
+      patches = old.patches ++ [ ./patches/keepassxc-13321-secret-service-load-window.patch ];
+    });
+  })
 ]

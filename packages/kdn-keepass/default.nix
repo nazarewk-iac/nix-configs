@@ -8,6 +8,7 @@ pkgs.writeShellApplication {
     coreutils
     expect
     findutils
+    gawk
     gnugrep
     gron
     keepassxc

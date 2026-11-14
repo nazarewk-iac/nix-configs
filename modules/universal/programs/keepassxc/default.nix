@@ -87,7 +87,10 @@ in
                    - Enable ... integration
                  - Secret Service Integration
                    - Enable ... integration
-                   - untick all except `Prompt to unlock database before searching`
+                   - leave every "ask" checkbox OFF: `kdn-keepass` enforces
+                     `UnlockBeforeSearch/ConfirmAccessItem/ConfirmDeleteItem=false` in the ini at
+                     each start — a dialog nobody can click would wedge the login unlock or a
+                     headless client (cold boot oams, 2026-11-14)
                  - General
                    - Startup
                      - disable remembering previous databases
