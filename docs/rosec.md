@@ -24,9 +24,9 @@ repository.
 | Module (classic) | `modules/universal/services/rosec/default.nix`                                              |
 | Module (den)     | `modules/den/aspects/service-rosec.nix`                                                     |
 | Host config      | `hosts/oams/default.nix` (`kdn.services.rosec`)                                             |
-| Provider config  | rendered to `~/.config/rosec/config.toml`                                                   |
+| Provider config  | rendered to `~/.config/rosec/config.toml` whenever `enable` or `conflictNotification.enable` is on |
 | Store            | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/`                             |
-| Conflict report  | `rosec-conflicts` script, path unit + timer, state in `~/.local/state/rosec/conflicts.json` |
+| Conflict report  | `rosec-conflicts` script, timer (1 min) + best-effort path unit, state in `~/.local/state/rosec/conflicts.json` |
 
 ## Options
 
@@ -52,7 +52,7 @@ targets `homeManager` only.
 2. **Bump the input** in this repository:
 
    ```sh
-   nix flake lock --update-input rosec
+   nix flake update rosec
    git diff flake.lock   # confirm the new rev
    ```
 
@@ -72,12 +72,28 @@ targets `homeManager` only.
    systemctl --user status rosec-conflicts.path rosec-conflicts.timer
    ```
 
-   While `enable = false` (before the migration), test the provider against a **private bus**:
+   `systemd.user.startServices` is `"suggest"` in this tree, so a switch **enables** a new unit
+   but does not start it. Start the conflict units once after the first switch (a logout/login
+   does it automatically):
 
    ```sh
-   rosecd --socket /tmp/rosec-test/bus --no-migrate &
-   DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/rosec-test/bus \
-     secret-tool store --label=poc service poc k v   # then lookup
+   systemctl --user reset-failed rosec-conflicts.path 2>/dev/null || true
+   systemctl --user start rosec-conflicts.path rosec-conflicts.timer
+   ```
+
+   While `enable = false` (before the migration), test the provider against a **private bus**.
+   The Secret Service unlock prompt uses `SSH_ASKPASS` when there is no TTY; the sops provider
+   ignores the input, so a stub is enough for a headless test:
+
+   ```sh
+   mkdir -p /tmp/rosec-test
+   printf '#!/bin/sh\necho test-unlock-input\n' >/tmp/rosec-test/askpass
+   chmod +x /tmp/rosec-test/askpass
+   SSH_ASKPASS=/tmp/rosec-test/askpass rosecd --socket /tmp/rosec-test/bus --no-migrate &
+   export DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/rosec-test/bus
+   printf 'secret-value\n' | secret-tool store --label=poc service poc
+   secret-tool lookup service poc        # prints secret-value
+   secret-tool clear service poc
    ```
 
    After the migration (`enable = true`), the live session bus serves the same clients.
@@ -91,7 +107,10 @@ The provider resolves a conflict by **latest `modified` wins** and never deletes
 - the item carries `rosec:sops-unresolved-conflict` until the marker is resolved.
 
 The `rosec-conflicts` script notifies once per new conflict (swaync + desktop notification) and
-records it in `~/.local/state/rosec/conflicts.json`. Resolve with the provider CLI:
+records it in `~/.local/state/rosec/conflicts.json`. The **timer** is the reliable route: a systemd
+path unit watches one directory and is not recursive, so a write inside `<collection>/` does not
+trigger it. The path unit stays as a best-effort root-level fast route; the timer rescans every
+minute. Resolve with the provider CLI:
 
 ```sh
 rosec-sops conflicts list
