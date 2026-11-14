@@ -6,8 +6,14 @@
 # ## What it does
 #
 # It installs four image tools, it points the system container storage at the standard paths, and it
-# renders four files under `~/.config/containers`: `containers.conf`, `storage.conf`,
-# `registries.conf` and `policy.json`.
+# renders five files under `~/.config/containers`: `containers.conf`, `storage.conf`,
+# `storage.conf.d/99-user.conf`, `registries.conf` and `policy.json`. The drop-in is the layer that
+# beats `/etc/containers/storage.conf.d/00-nixos.conf` — c/storage merges every `*.conf` in
+# file-name order, last writer wins per key, so `50-user.conf` won only by sorting late.
+#
+# A root Home Manager profile renders none of them. A privileged `podman` reads `/etc/containers/`,
+# and the per-user paths collapse under `sudo` (`runroot` becomes `/containers` at the filesystem
+# root), so the file block is gated on a non-root `home.username`.
 #
 # ## It defaults no container engine on
 #
@@ -125,6 +131,15 @@
       cfg = config.kdn.virtualisation.containers;
 
       filterPackages = import ../common/filter-packages.nix { inherit lib; };
+
+      /*
+        c/storage merges every `*.conf` file of every `storage.conf.d` directory on the search
+        path in file-name order, and the last file to set a key wins. The directory does not
+        establish precedence, so this name is load-bearing: it must sort after
+        `/etc/containers/storage.conf.d/00-nixos.conf`.
+      */
+      dropinName = "99-user.conf";
+      dropinPath = "containers/storage.conf.d/${dropinName}";
     in
     {
       options.kdn.virtualisation.containers.containersConf.cniPlugins = lib.mkOption {
@@ -144,6 +159,11 @@
         default = { };
         description = ''
           The `storage.conf` settings of the per-user container store.
+
+          The rootless engine reads this file, and it then merges every `storage.conf.d/*.conf` on
+          the search path in file-name order, last writer wins per key. The deciding layer is the
+          drop-in this aspect renders to `~/.config/containers/storage.conf.d/99-user.conf`, not
+          this file: `/etc/containers/storage.conf.d/00-nixos.conf` names the root-only store.
 
           A path in this file expands `$HOME` and `$XDG_RUNTIME_DIR`, and expands no `~`. A
           `graphroot` of `~/.local/share/containers/storage` becomes a directory relative to the
@@ -234,12 +254,34 @@
               hooks_dir = cfg.hooksDirs;
             };
           };
-
+        })
+        # Root keeps the system store. A privileged `podman` reads `/etc/containers/`, and a root
+        # Home Manager profile would otherwise render the per-user files below for it too: the
+        # `$HOME`/`$XDG_RUNTIME_DIR` paths then collapse (`sudo` sets no `XDG_RUNTIME_DIR`, so
+        # `runroot` becomes `/containers` at the filesystem root), and the rootful engine abandons
+        # `/var/lib/containers/storage`. Measured on both hosts with podman 6.1.4 on 2026-11-14.
+        (lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.home.username != "root") {
           xdg.configFile."containers/containers.conf".source =
             (pkgs.formats.toml { }).generate "containers.conf"
               cfg.containersConf.settings;
           xdg.configFile."containers/storage.conf".source =
             (pkgs.formats.toml { }).generate "storage.conf"
+              cfg.storage.settings;
+          # c/storage merges every `*.conf` of every `storage.conf.d` directory on the search path
+          # in one pass, **in file-name order**, and the last file to set a key wins. The directory
+          # does not establish precedence: a user drop-in named `00-aaa.conf` loses to
+          # `/etc/containers/storage.conf.d/00-nixos.conf`, and one named `99-user.conf` wins
+          # (measured with podman 6.1.4 on 2026-11-14). The NixOS drop-in names the root-only
+          # `/var/lib/containers/storage`, so the user `storage.conf` above loses to it, and this
+          # file's number is what beats it. A future `/etc` or `/usr/share` drop-in named above
+          # `99-` wins in turn.
+          #
+          # The base `storage.conf` is still read: only the keys a later file sets are replaced,
+          # so a base-file-only key survives the merge. Rendering the same settings twice is
+          # deliberate: `buildah` and `skopeo` work through the base file, and only the drop-in
+          # beats `/etc`.
+          xdg.configFile.${dropinPath}.source =
+            (pkgs.formats.toml { }).generate dropinName
               cfg.storage.settings;
           xdg.configFile."containers/registries.conf".source =
             (pkgs.formats.toml { }).generate "registries.conf"

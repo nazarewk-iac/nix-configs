@@ -8,7 +8,7 @@
 # | Check | It forces | It proves |
 # |---|---|---|
 # | `universal-eval-keepassxc` | `kdn.env.packages` of the keepassxc module | a platform test guards the Linux-only package, in both contexts |
-# | `universal-eval-containers` | `containersConf.settings` and the rendered `storage.conf` of the containers module | the Home Manager branch reads the parent through `osConfig`, and the per-user store names no `~` |
+# | `universal-eval-containers` | `containersConf.settings` and the rendered `storage.conf` and `99-user.conf` of the containers module | the Home Manager branch reads the parent through `osConfig`, the per-user store names no `~`, the drop-in sorts after the NixOS `00-` file, and a root profile renders no container file |
 #
 # Each check evaluates one module file, not a whole host. `_module.check = false` tolerates every
 # definition that names an option of another module, so the evaluation stays small. A stub
@@ -175,16 +175,21 @@ let
   standalone = containersSettings null;
   emptyParent = containersSettings { };
 
-  # The rendered per-user `storage.conf`, from the same module instance as `containersSettings`.
+  # The rendered per-user files, from the same module instance as `containersSettings`.
   # A `~` in `graphroot` is the regression this guards: the engine expands `$HOME` and
-  # `$XDG_RUNTIME_DIR` in a path and expands no `~`. Home Manager declares `xdg.configFile`, and
-  # this check loads one module file, so a stub declares it: the check reads `source` only.
-  rootlessStorage = builtins.readFile (
+  # `$XDG_RUNTIME_DIR` in a path and expands no `~`. Home Manager declares `xdg.configFile` and
+  # `home.username`, and this check loads one module file, so a stub declares them: the check
+  # reads `source` only. The gate on a non-root user reads `home.username`, so the caller states
+  # it, as a real Home Manager does (it has no default there).
+  rootlessConfig =
+    username:
     (lib.evalModules {
       modules = [
         { _module.check = false; }
         ../modules/universal/virtualisation/containers
         {
+          options.home.username = lib.mkOption { type = lib.types.str; };
+          config.home.username = username;
           options.xdg.configFile = lib.mkOption {
             type = lib.types.attrsOf (lib.types.submodule { options.source = lib.mkOption { }; });
             default = { };
@@ -197,8 +202,17 @@ let
         kdnConfig = hmMeta "nixos";
         osConfig = osStub;
       };
-    }).config.xdg.configFile."containers/storage.conf".source
-  );
+    }).config;
+
+  kdnHome = rootlessConfig "kdn";
+  # A root Home Manager profile must render no container file: `sudo podman` reads
+  # `/etc/containers/`, and a per-user file there redirects the privileged engine.
+  rootHome = rootlessConfig "root";
+
+  rootlessStorage = builtins.readFile kdnHome.xdg.configFile."containers/storage.conf".source;
+  rootlessStorageDropin =
+    builtins.readFile
+      kdnHome.xdg.configFile."containers/storage.conf.d/99-user.conf".source;
 
   containersAssertions = [
     {
@@ -259,6 +273,33 @@ let
         noLiteralTilde = !(lib.hasInfix ''= "~'' rootlessStorage);
         noSystemStore = !(lib.hasInfix "/var/lib/containers" rootlessStorage);
       };
+    }
+    {
+      # c/storage merges every `*.conf` of every `storage.conf.d` on the search path in file-name
+      # order, last writer wins per key. `99-user.conf` is what beats the NixOS
+      # `/etc/containers/storage.conf.d/00-nixos.conf`, which names the root-only store; without
+      # it the engine reads `/var/lib/containers/storage` there.
+      name = "the rendered user storage drop-in names the expanded per-user store";
+      expected = {
+        graphroot = true;
+        runroot = true;
+        driver = true;
+        noSystemStore = true;
+      };
+      actual = {
+        graphroot = lib.hasInfix ''graphroot = "$HOME/.local/share/containers/storage"'' rootlessStorageDropin;
+        runroot = lib.hasInfix ''runroot = "$XDG_RUNTIME_DIR/containers"'' rootlessStorageDropin;
+        driver = lib.hasInfix ''driver = "overlay"'' rootlessStorageDropin;
+        noSystemStore = !(lib.hasInfix "/var/lib/containers" rootlessStorageDropin);
+      };
+    }
+    {
+      # A root Home Manager profile renders nothing, so the privileged engine keeps
+      # `/var/lib/containers/storage` and `/run/containers/storage`. Every container file is
+      # checked, not only the drop-in: `containers.conf` and `storage.conf` redirect it too.
+      name = "a root home profile renders no container file";
+      expected = [ ];
+      actual = builtins.attrNames rootHome.xdg.configFile;
     }
   ];
 in

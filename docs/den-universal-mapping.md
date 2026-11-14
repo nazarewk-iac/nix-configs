@@ -399,6 +399,12 @@ Four more aspects come from this area and get no row, because each ports a file 
 | `modules/universal/virtualisation/microvm/host/default.nix`         | `kdn.virtualisation.microvm.host`         | `virt-microvm-host`         | `ported` |
 | `modules/universal/virtualisation/vagrant/default.nix`              | `kdn.virtualisation.vagrant`              | `virt-vagrant`              | `ported` |
 
+One option name diverges in this row: the old module calls the per-user store
+`kdn.virtualisation.containers.storage.rootlessSettings`, and the aspect calls it
+`kdn.virtualisation.containers.storage.settings`. Both render the same `storage.conf` and the
+`storage.conf.d/99-user.conf` drop-in, and both gate the files on a non-root Home Manager user. An
+adopter that moves from the old option name drops the `rootless` infix and nothing else.
+
 ## The deliberate exclusions
 
 | Old module                              | Reason                                                                                                                                                                                                                               |
