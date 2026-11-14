@@ -102,7 +102,55 @@ let
     text = builtins.readFile ./rosec-conflicts.sh;
   };
 
-  needsHomeManager = cfg.enable || cfg.conflictNotification.enable;
+  # The same generator the sops-nix setup uses (`age-plugin-yubikey`), filtered to the unattended
+  # slot. The full `keys.txt` carries slots 1, 2 and 3, and `sops` starts one plugin process per
+  # identity; the rosec key file therefore keeps only the slot the master is wrapped to.
+  keyGenScript = pkgs.writeShellApplication {
+    name = "rosec-age-gen-keys-yubikey";
+    runtimeInputs = [
+      cfg.providers.sops.agePluginYubikeyPackage
+      pkgs.gnugrep
+    ];
+    text = ''
+      age-plugin-yubikey --identity --slot ${toString cfg.providers.sops.keyGeneration.slot} \
+        | grep '^AGE-PLUGIN-YUBIKEY-' || :
+    '';
+  };
+
+  # The sops-nix pre-start merge, as a user service: keep every existing line, append what the
+  # generators print, sort and de-duplicate. The file is user-owned (0600), unlike the root-owned
+  # `/var/lib/sops-nix/key.txt`.
+  keyFileShell =
+    let
+      raw = cfg.providers.sops.keyGeneration.keyFile;
+    in
+    if lib.hasPrefix "~/" raw then
+      "\"$HOME/${lib.removePrefix "~/" raw}\""
+    else
+      lib.escapeShellArg raw;
+
+  keyMergeScript = pkgs.writeShellApplication {
+    name = "rosec-keys-merge";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnused
+    ];
+    text = ''
+      umask 077
+      keyFile=${keyFileShell}
+      mkdir -p "$(dirname "$keyFile")"
+      touch "$keyFile"
+      {
+        cat "$keyFile"
+      ${lib.concatMapStringsSep "\n" (script: "  ${lib.getExe script} || true") cfg.providers.sops.keyGeneration.scripts}
+      } | sed '/^[[:space:]]*$/d' | sort -u > "$keyFile.tmp"
+      mv "$keyFile.tmp" "$keyFile"
+      chmod 600 "$keyFile"
+    '';
+  };
+
+  needsHomeManager =
+    cfg.enable || cfg.conflictNotification.enable || cfg.providers.sops.keyGeneration.enable;
 
   # A systemd path unit takes an absolute path or a unit specifier, not a `~/` prefix. `%h` is the
   # home directory, so the option keeps the `~/` form that the provider itself expands.
@@ -193,6 +241,39 @@ in
         Where the unwrapped master identity is written while the provider is unlocked. Empty uses
         the provider default, `$XDG_RUNTIME_DIR/rosec/store-identity.age` (mode 0600). `lock`
         removes it.
+      '';
+    };
+
+    providers.sops.keyGeneration.enable = lib.mkEnableOption ''
+      merge the YubiKey age identities into the rosec key file, using the same
+      `age-plugin-yubikey` generator as the sops-nix setup
+    '';
+
+    providers.sops.keyGeneration.slot = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 3;
+      description = ''
+        The PIV slot of the unattended YubiKey identity. The repository's `yk-*-unattended`
+        recipients are slot 3.
+      '';
+    };
+
+    providers.sops.keyGeneration.keyFile = lib.mkOption {
+      type = lib.types.str;
+      default = cfg.providers.sops.key_file;
+      description = ''
+        Where the merged identities are written. Defaults to `key_file`. The service runs as the
+        user, so this is a user-owned file (mode 0600), not the root-owned sops-nix key file.
+      '';
+    };
+
+    providers.sops.keyGeneration.scripts = lib.mkOption {
+      type = with lib.types; listOf package;
+      default = [ keyGenScript ];
+      description = ''
+        One script per identity source. Each prints age private keys on stdout and nothing when its
+        source is absent. The default is the slot-3 YubiKey generator. Add the merged
+        `kdn.security.secrets.age.genScripts` package to also include the sops-nix sources.
       '';
     };
 
@@ -338,10 +419,12 @@ in
         # The `rosec` CLI and the conflict command reach the user profile, so a terminal can run
         # `rosec provider sops unlock` and `rosec-conflicts --list` without the daemon.
         {
-          kdn.env.packages = [
-            cfg.package
-            cfg.conflictScript
-          ];
+          kdn.env.packages =
+            [
+              cfg.package
+              cfg.conflictScript
+            ]
+            ++ lib.optional cfg.providers.sops.keyGeneration.enable keyGenScript;
         }
 
         # The provider config is also the CLI's config: `rosec-sops conflicts list|show|resolve`
@@ -352,6 +435,23 @@ in
           xdg.configFile."rosec/config.toml".source = rosecConfigFile;
         })
 
+        # The sops-nix analogue for the user-owned rosec key file: run the same
+        # `age-plugin-yubikey` generator and merge the identities on login, so a YubiKey plugged
+        # into this machine is discovered without a hand-written `rosec-keys.txt`.
+        (lib.mkIf cfg.providers.sops.keyGeneration.enable {
+          systemd.user.services.rosec-keys = {
+            Unit.Description = "merge the YubiKey age identities into the rosec key file";
+            # The merge is idempotent and the path unit already bounds a burst; the service's own
+            # start limit would turn a dock's device burst into a failed unit.
+            Unit.StartLimitIntervalSec = 0;
+            Service = {
+              Type = "oneshot";
+              ExecStart = lib.getExe keyMergeScript;
+            };
+            Install.WantedBy = [ "default.target" ];
+          };
+        })
+
         (lib.mkIf cfg.enable {
           systemd.user.services.rosecd = {
             Unit = {
@@ -360,7 +460,8 @@ in
               # Headless: no `graphical-session.target`. The daemon serves CLI clients over SSH and
               # in a TTY too, so it follows the user manager alone.
               PartOf = [ "default.target" ];
-              After = [ "default.target" ];
+              After = [ "default.target" ] ++ lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
+              Wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
             };
 
             Service = {
