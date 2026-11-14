@@ -22,7 +22,7 @@ let
   ];
 
   # Filled after the first build with `nix build .#kdn-journal`.
-  vendorHash = "sha256-GE80pA8oB68GAGKHaSexwEl0IwK42H4BY+rsgXIoQaI=";
+  vendorHash = "sha256-vPIFAZsoV/YZWdZ50DolbOYKqJJrODhAyKvwmil84HA=";
 in
 buildGoModule (finalAttrs: {
   pname = "kdn-journal";

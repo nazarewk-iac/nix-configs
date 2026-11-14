@@ -135,7 +135,9 @@ with a stable code, for example `status-missing` or `done-without-solution`.
 
 ### `tui`
 
-A bubbletea browser over the same models. Two tabs: **Tasks** and **Sessions**.
+A bubbletea browser over the same models. The list uses `bubbles/list` (filtering, pagination,
+status bar), the detail uses `bubbles/viewport` and `glamour`, and the footer uses `bubbles/help`.
+Two tabs: **Tasks** and **Sessions**.
 
 | Key           | Action                                                  |
 | ------------- | ------------------------------------------------------- |
@@ -143,6 +145,7 @@ A bubbletea browser over the same models. Two tabs: **Tasks** and **Sessions**.
 | `enter`       | Open the detail view of the selected item.              |
 | `esc`         | Return to the list.                                     |
 | `tab`         | Switch tab.                                             |
+| `1` / `2`     | Switch to Tasks or Sessions.                            |
 | `/`           | Enter filter mode. `enter` applies, `esc` cancels.      |
 | `e`           | Open the primary file in `$EDITOR` and refresh on exit. |
 | `r`           | Reload from disk.                                       |

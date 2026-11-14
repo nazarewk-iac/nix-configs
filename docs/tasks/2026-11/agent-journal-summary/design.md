@@ -132,8 +132,9 @@ packages/kdn-journal/
 The module path is `kdn-journal` (like `kdn-certs`). Go 1.25.2.
 
 Dependencies: `github.com/spf13/cobra`, `gopkg.in/yaml.v3`, `github.com/charmbracelet/bubbletea`,
-`github.com/charmbracelet/lipgloss`, `golang.org/x/term`. No other direct dependencies. The TUI uses
-a plain rune buffer for the filter, so it does not need `bubbles`. Tests use string fixtures, not `testdata/` files.
+`github.com/charmbracelet/bubbles`, `github.com/charmbracelet/lipgloss`,
+`github.com/charmbracelet/glamour`, `github.com/charmbracelet/x/ansi`, `golang.org/x/term`. No
+other direct dependencies. Tests use string fixtures, not `testdata/` files.
 
 ## 4. Core contracts
 
@@ -598,7 +599,9 @@ envelope and the command payload rather than a byte-for-byte golden, because `ro
 
 ## 6. TUI
 
-Bubbletea v1 and lipgloss. Two tabs: **Tasks** and **Sessions**.
+Bubbletea v1. The list pane is `bubbles/list` (filtering, pagination, status bar); the detail pane is
+`bubbles/viewport`; the footer is `bubbles/help` over `bubbles/key`; the detail Markdown is rendered
+by `glamour`; layout and styles are `lipgloss`. Two tabs: **Tasks** and **Sessions**.
 
 - Left pane: the filtered list. Tasks show status, month, slug and description. Sessions show
   date, harness, id and board count.

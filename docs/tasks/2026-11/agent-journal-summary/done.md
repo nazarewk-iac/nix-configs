@@ -29,17 +29,17 @@ discovery code are shaped around those facts, not around the ideal board.
 
 `packages/kdn-journal/` is a self-contained Go module (Go 1.25.2) with:
 
-| Package                | Responsibility                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `internal/frontmatter` | Tolerant YAML frontmatter; a line fallback for invalid YAML; `SetScalar` preserves every other byte.             |
-| `internal/markdown`    | One fence-aware line scanner: headings, bullets, ordered items, tables, prose.                                   |
-| `internal/board`       | Heading classification, date-headed tables, state phrases, inherited subsection kinds, counts, status inference. |
-| `internal/worklog`     | Dated entries; a date anywhere in the heading; `Tail`.                                                           |
-| `internal/task`        | Task tree discovery, parent/depth/month, selectors, stable validation codes.                                     |
-| `internal/journal`     | Session discovery, top-level-only `LastTouched`, duplicate-id selection, `index.md` order, task references.      |
-| `internal/render`      | Text output with width truncation, a 24-line summary cap and ANSI-aware colour.                                  |
-| `internal/tui`         | Bubbletea browser: Tasks and Sessions tabs, filter mode, detail view, `$EDITOR` hand-off.                        |
-| `cmd`                  | Cobra commands, JSON envelope, exit codes, safe `task set-status`.                                               |
+| Package                | Responsibility                                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `internal/frontmatter` | Tolerant YAML frontmatter; a line fallback for invalid YAML; `SetScalar` preserves every other byte.                                                                                                                     |
+| `internal/markdown`    | One fence-aware line scanner: headings, bullets, ordered items, tables, prose.                                                                                                                                           |
+| `internal/board`       | Heading classification, date-headed tables, state phrases, inherited subsection kinds, counts, status inference.                                                                                                         |
+| `internal/worklog`     | Dated entries; a date anywhere in the heading; `Tail`.                                                                                                                                                                   |
+| `internal/task`        | Task tree discovery, parent/depth/month, selectors, stable validation codes.                                                                                                                                             |
+| `internal/journal`     | Session discovery, top-level-only `LastTouched`, duplicate-id selection, `index.md` order, task references.                                                                                                              |
+| `internal/render`      | Text output with width truncation, a 24-line summary cap and ANSI-aware colour.                                                                                                                                          |
+| `internal/tui`         | Bubbletea browser: `bubbles/list` for the list/filter/pagination, `bubbles/viewport` for detail scrolling, `bubbles/help` and `key` for the footer, `glamour` for Markdown; Tasks and Sessions tabs, `$EDITOR` hand-off. |
+| `cmd`                  | Cobra commands, JSON envelope, exit codes, safe `task set-status`.                                                                                                                                                       |
 
 Commands: `summary`, `sessions`, `tasks`, `task`, `task set-status`, `board`, `worklog`, `doctor`,
 `tui`, `completion`, `version`. Every read command accepts `--json`; `--root`, `--width`,
@@ -131,13 +131,18 @@ width. `kdn-journal-parse` repeats the task-tree parse in the Nix sandbox.
 - `doctor` reports nine pre-existing `done-without-solution` errors in old tasks and ten warnings
   (seven `frontmatter-invalid` line fallbacks, two `status-file-while-open`, one other). They are
   outside this task; `doctor --parse-only` is the clean gate.
-- The TUI is verified by unit tests and by opening it under a PTY; the quit keys are covered by
-  the model tests. Its `$EDITOR` hand-off accepts an editor with arguments (`code -w`,
+- The TUI uses `bubbles/list` for the list, filtering, pagination and status bar;
+  `bubbles/viewport` for the detail scroll; `bubbles/help` and `bubbles/key` for the footer; and
+  `glamour` for the Markdown detail. The quit keys and filter capture are covered by the model
+  tests. The TUI was opened under tmux at 120x40: it rendered, `/` filtered the task list, and `q`
+  returned to the shell. Its `$EDITOR` hand-off accepts an editor with arguments (`code -w`,
   `nvim -u NONE`).
 - Text colour uses `golang.org/x/term` for TTY detection, so `/dev/null` is not mistaken for a
   terminal. `--no-color` and `NO_COLOR` both disable it.
 - The JSON shape is covered by shape tests, not byte-for-byte goldens: `root` and `generated_at`
   vary per run. Optional times are omitted instead of emitted as `0001-01-01`.
+- The TUI sets an explicit dark background before rendering, so `lipgloss` does not send an
+  OSC 11 background query. A late response cannot leak into the shell after the TUI exits.
 - Agent-facing use is documented in [`.agents/rules/kdn-journal.md`](../../../../.agents/rules/kdn-journal.md)
   and [docs/kdn-journal.md#for-agents](../../../kdn-journal.md#for-agents): JSON reads,
   explicit `--session`/`--root`, `doctor --parse-only` as the gate, and `task set-status` as the

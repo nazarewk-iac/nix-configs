@@ -2,9 +2,11 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -22,9 +24,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.height <= 0 {
 			m.height = defaultHeight
 		}
-		m.clampCursor(false)
-		m.ensureCursorVisible()
+		m.syncLayout()
+		m.syncDetail()
 		return m, nil
+	case list.FilterMatchesMsg:
+		// The active list filtering is asynchronous. Feed the result to both lists; the one that
+		// is filtering accepts it and the other ignores it.
+		var cmds []tea.Cmd
+		var cmd tea.Cmd
+		m.tasks, cmd = m.tasks.Update(msg)
+		cmds = append(cmds, cmd)
+		m.sessions, cmd = m.sessions.Update(msg)
+		cmds = append(cmds, cmd)
+		m.syncDetail()
+		return m, tea.Batch(cmds...)
 	case editorFinishedMsg:
 		return m.refresh(msg.err), nil
 	case tea.KeyMsg:
@@ -35,193 +48,94 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	if m.filterMode {
-		return m.handleFilterKey(msg, key)
+
+	// While the list filter is open, every key belongs to the list. This is what makes `q`, `j`,
+	// `k` and `tab` typeable. `ctrl+c` is the escape hatch.
+	if m.listModel().FilterState() == list.Filtering {
+		if key == "ctrl+c" {
+			return m, tea.Quit
+		}
+		return m, m.updateList(msg)
 	}
+
 	switch key {
 	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "tab":
-		return m.switchTab(), nil
-	case "shift+tab":
-		return m.switchTab(), nil
-	case "j", "down":
-		return m.moveCursor(1), nil
-	case "k", "up":
-		return m.moveCursor(-1), nil
-	case "g":
-		if m.fullDetail {
-			return m.scrollDetail(-1 << 20), nil
+	case "tab", "shift+tab":
+		m.switchTab()
+		return m, nil
+	case "1":
+		if m.tab != TabTasks {
+			m.tab = TabTasks
+			m.fullDetail = false
+			m.syncLayout()
+			m.syncDetail()
 		}
-		return m.jumpCursor(0), nil
-	case "G":
-		if m.fullDetail {
-			return m.scrollDetail(1 << 20), nil
+		return m, nil
+	case "2":
+		if m.tab != TabSessions {
+			m.tab = TabSessions
+			m.fullDetail = false
+			m.syncLayout()
+			m.syncDetail()
 		}
-		return m.jumpCursor(m.listLen() - 1), nil
+		return m, nil
 	case "enter":
-		if m.listLen() == 0 {
-			m.status = "nothing to open"
-			return m, nil
+		if !m.fullDetail {
+			m.toggleDetail()
 		}
-		m.fullDetail = true
-		m.detailScroll = 0
-		m.status = ""
 		return m, nil
 	case "esc":
 		switch {
 		case m.fullDetail:
-			m.fullDetail = false
-			m.detailScroll = 0
-			m.status = ""
-		case m.filter != "":
-			m.filter = ""
-			m.refilter()
-			m.status = "filter cleared"
+			m.toggleDetail()
+		case m.listModel().FilterState() == list.FilterApplied:
+			l := m.activeList()
+			l.ResetFilter()
+			m.syncDetail()
 		}
-		return m, nil
-	case "/":
-		m.filterMode = true
-		m.filterBefore = m.filter
-		m.status = ""
 		return m, nil
 	case "e":
 		return m.edit()
 	case "r":
 		return m.refresh(nil), nil
-	case "pgdown", "ctrl+f":
-		return m.scrollDetail(m.bodyHeight()), nil
-	case "pgup", "ctrl+b":
-		return m.scrollDetail(-m.bodyHeight()), nil
-	case "ctrl+d":
-		return m.scrollDetail(m.bodyHeight() / 2), nil
-	case "ctrl+u":
-		return m.scrollDetail(-m.bodyHeight() / 2), nil
-	}
-	return m, nil
-}
-
-// handleFilterKey routes a key while the filter prompt is open. Only enter and esc leave the mode,
-// so `q`, `j`, `k` and `tab` are typed into the query instead of acting on the model.
-func (m Model) handleFilterKey(msg tea.KeyMsg, key string) (tea.Model, tea.Cmd) {
-	switch key {
-	case "enter":
-		m.filterMode = false
-		m.filterBefore = ""
-		m.refilter()
-		m.clampCursor(true)
-		if m.filter == "" {
-			m.status = "filter cleared"
-		} else {
-			m.status = fmt.Sprintf("filter %q: %d of %d", m.filter, m.listLen(), len(m.allTasks)+len(m.allSessions))
+	case "pgup", "ctrl+b", "pgdown", "ctrl+f", "ctrl+u", "ctrl+d":
+		// Page keys always scroll the detail pane in split view.
+		return m, m.updateDetail(msg)
+	case "j", "down", "k", "up", "g", "G", "home", "end":
+		if m.fullDetail {
+			return m, m.updateDetail(msg)
 		}
-		return m, nil
-	case "esc":
-		m.filterMode = false
-		m.filter = m.filterBefore
-		m.filterBefore = ""
-		m.refilter()
-		m.status = "filter cancelled"
-		return m, nil
-	case "ctrl+c":
-		return m, tea.Quit
-	case "backspace":
-		if runes := []rune(m.filter); len(runes) > 0 {
-			m.filter = string(runes[:len(runes)-1])
+		return m, m.updateList(msg)
+	default:
+		if m.fullDetail {
+			return m, m.updateDetail(msg)
 		}
-		return m, nil
-	case "ctrl+u":
-		m.filter = ""
-		return m, nil
+		return m, m.updateList(msg)
 	}
-	if text, ok := typedText(msg); ok {
-		m.filter += text
-	}
-	return m, nil
 }
 
-// typedText extracts the printable text of a key message.
-func typedText(msg tea.KeyMsg) (string, bool) {
-	if msg.Type == tea.KeySpace {
-		return " ", true
-	}
-	if msg.Type != tea.KeyRunes || len(msg.Runes) == 0 {
-		return "", false
-	}
-	return string(msg.Runes), true
+// updateList sends a message to the active list and refreshes the detail after the selection or
+// filter changes.
+func (m *Model) updateList(msg tea.Msg) tea.Cmd {
+	l := m.activeList()
+	updated, cmd := l.Update(msg)
+	*l = updated
+	m.syncDetail()
+	return cmd
 }
 
-func (m Model) switchTab() Model {
-	if m.tab == TabTasks {
-		m.tab = TabSessions
-	} else {
-		m.tab = TabTasks
-	}
-	m.fullDetail = false
-	m.clampCursor(true)
-	m.ensureCursorVisible()
-	m.status = ""
-	return m
-}
-
-func (m Model) moveCursor(delta int) Model {
-	m.cursor += delta
-	m.clampCursor(false)
-	m.detailScroll = 0
-	m.ensureCursorVisible()
-	return m
-}
-
-func (m Model) jumpCursor(index int) Model {
-	if index < 0 {
-		index = 0
-	}
-	m.cursor = index
-	m.clampCursor(false)
-	m.detailScroll = 0
-	m.ensureCursorVisible()
-	return m
-}
-
-func (m Model) scrollDetail(delta int) Model {
-	height := m.bodyHeight()
-	content := len(m.detailForPane(m.paneWidth()))
-	limit := content - height
-	if limit < 0 {
-		limit = 0
-	}
-	m.detailScroll += delta
-	if m.detailScroll < 0 {
-		m.detailScroll = 0
-	}
-	if m.detailScroll > limit {
-		m.detailScroll = limit
-	}
-	return m
-}
-
-// ensureCursorVisible scrolls the list so the cursor row is inside the pane.
-func (m *Model) ensureCursorVisible() {
-	height := m.bodyHeight()
-	if height < 1 {
-		height = 1
-	}
-	if m.cursor < m.listOffset {
-		m.listOffset = m.cursor
-	}
-	if m.cursor >= m.listOffset+height {
-		m.listOffset = m.cursor - height + 1
-	}
-	if m.listOffset < 0 {
-		m.listOffset = 0
-	}
+func (m *Model) updateDetail(msg tea.Msg) tea.Cmd {
+	updated, cmd := m.detail.Update(msg)
+	m.detail = updated
+	return cmd
 }
 
 // edit hands the selected primary file to `$EDITOR`. It is a no-op with a status message when the
 // file is absent, so the TUI never writes a journal itself.
 func (m Model) edit() (tea.Model, tea.Cmd) {
 	path := m.primaryPath()
-	if path == "" {
+	if path == "" || !fileExists(path) {
 		m.status = "no editable file for this selection"
 		return m, nil
 	}
@@ -236,25 +150,29 @@ func (m Model) edit() (tea.Model, tea.Cmd) {
 }
 
 // refresh reloads the tree and the store from disk and reports the result.
-func (m Model) refresh(editorErr error) Model {
+func (m *Model) refresh(editorErr error) Model {
 	if m.deps.Reload == nil {
 		m.status = "reload is unavailable"
-		return m
+		return *m
 	}
 	tree, store, err := m.deps.Reload()
 	if err != nil {
 		m.status = "reload failed: " + err.Error()
-		return m
+		return *m
 	}
 	m.setTree(tree)
 	m.setStore(store)
-	m.refilter()
-	m.clampCursor(true)
-	m.ensureCursorVisible()
-	status := fmt.Sprintf("reloaded: %d tasks, %d sessions", len(m.allTasks), len(m.allSessions))
+	m.syncLayout()
+	m.syncDetail()
+	status := fmt.Sprintf("reloaded: %d items", len(m.tasks.Items())+len(m.sessions.Items()))
 	if editorErr != nil {
 		status = "editor: " + editorErr.Error() + " · " + status
 	}
 	m.status = status
-	return m
+	return *m
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
