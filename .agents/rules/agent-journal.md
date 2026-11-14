@@ -169,10 +169,11 @@ in for `title`.
 `kdn-journal` reads these files and prints the state. It never writes a journal.
 
 ```sh
-kdn-journal summary                    # newest session, one screen
-kdn-journal summary --task <task-dir>  # add one task pair
-kdn-journal tui                        # browse tasks and sessions
-kdn-journal doctor                     # validate the task tree and journals
+kdn-journal summary --session "$OPENCODE_SESSION_ID" --json
+kdn-journal summary --task <task-dir> --json
+kdn-journal doctor --parse-only --json
 ```
 
-Full command reference: [kdn-journal.md](../../docs/kdn-journal.md).
+Agents should use the JSON path and never call `tui`. The machine-readable contract, the JSON field
+table and the one safe write are in [kdn-journal.md](kdn-journal.md). The human command reference is
+[docs/kdn-journal.md](../../docs/kdn-journal.md).

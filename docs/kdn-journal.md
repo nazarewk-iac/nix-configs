@@ -241,6 +241,114 @@ Every read command supports `--json` and emits one envelope:
 Optional times are omitted, never a zero time. Internal fields such as line numbers and raw
 frontmatter maps stay out of the output. JSON ignores `--width` and color.
 
+## For agents
+
+The CLI works without a TTY. Use `--json`, never `tui`, and treat the exit code as the result.
+
+### Golden rules
+
+- **Never call `kdn-journal tui` from an agent.** It is interactive and needs a terminal.
+- **Use `--json` for every read.** The text output is for people; the JSON is the contract.
+- **Pass `--session` explicitly.** `$OPENCODE_SESSION_ID` is an OpenCode fallback only. In Pi,
+  Claude or Codex, pass the harness id, or let the CLI pick the newest session.
+- **Pass `--root` when the working directory is not the repository root**, for example in a jj
+  workspace or a script started from `/tmp`.
+- **Do not parse the human text.** Read `data`; read `issues` for findings.
+- **Gate edits with `doctor --parse-only`.** It exits 0 when every task, board and worklog parses.
+- **`doctor` without `--parse-only` can exit 1 on pre-existing findings.** Use `--parse-only`,
+  `--ignore <code>` for known codes, or accept the exit code and read `issues`.
+- **Do not mark a task done until `done.md` exists.** `task set-status` enforces this, and it
+  refuses `done` while `status.md` remains.
+- **The only write is `task set-status`.** Agents still write boards and worklogs themselves.
+
+### Recommended loop
+
+```sh
+# 1. Where does this run stand?
+kdn-journal summary --session "$OPENCODE_SESSION_ID" --json
+
+# 2. What is the task state?
+kdn-journal task "$TASK" --json
+
+# 3. Check the tree before and after an edit.
+kdn-journal doctor --parse-only --json
+
+# 4. Read one board or worklog when the summary is not enough.
+kdn-journal board "$TASK_DIR" --json
+kdn-journal worklog "$TASK_DIR" --json
+
+# 5. Update the status only after the lifecycle files are in place.
+kdn-journal task set-status "$TASK" in-progress --json
+```
+
+### JSON field reference
+
+Every command emits the same envelope:
+
+| Field            | Type   | Meaning                                                                                  |
+| ---------------- | ------ | ---------------------------------------------------------------------------------------- |
+| `schema_version` | number | `1`; a breaking change bumps it.                                                         |
+| `command`        | string | `summary`, `sessions`, `tasks`, `task`, `board`, `worklog`, `doctor`, `task set-status`. |
+| `root`           | string | Absolute repository root. Do not diff it.                                                |
+| `generated_at`   | string | RFC 3339. Do not diff it.                                                                |
+| `data`           | object | Command payload.                                                                         |
+| `issues`         | array  | Machine-readable findings; an empty array, never `null`.                                 |
+
+Payloads:
+
+| Command           | `data`                                                            |
+| ----------------- | ----------------------------------------------------------------- |
+| `summary`         | `session`, optional `task`; with `--all`, `sessions`.             |
+| `sessions`        | `sessions[]`.                                                     |
+| `tasks`           | `tasks[]`.                                                        |
+| `task`            | `task`.                                                           |
+| `board`           | `board`.                                                          |
+| `worklog`         | `worklog`.                                                        |
+| `doctor`          | `errors`, `warnings` (counts); the issue objects are in `issues`. |
+| `task set-status` | `task` (repo-relative path), `status`.                            |
+
+Key model fields:
+
+| Model   | Fields                                                                                                                                                                                                                                                                                                                    |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| session | `dir`, `rel_dir`, `name`, `harness`, `date`, `id`, `last_touched`, `boards[]`, `worklog`, `track_worklogs[]`, `task_refs[]`, `issues[]`                                                                                                                                                                                   |
+| board   | `path`, `title`, `description`, `status`, `updated`, `tags[]`, `sections[]`, `has_frontmatter`                                                                                                                                                                                                                            |
+| section | `title`, `level`, `kind` (`now`, `next`, `blocked`, `done`, `notes`, `other`), `items[]`                                                                                                                                                                                                                                  |
+| item    | `text`, `state`, `extra[]`, `done`, `blocked`, `dropped`, `checkbox`, `depth`, `section`                                                                                                                                                                                                                                  |
+| task    | `dir`, `rel_dir`, `month`, `slug`, `depth`, `parent_dir`, `definition_path`, `title`, `description`, `status`, `solution`, `authored_by`, `timestamp`, `files[]`, `has_board`, `has_worklog`, `board`, `worklog`, `subtasks[]`, `last_activity`, `open_items`, `done_items`, `blocked_items`, `dropped_items`, `issues[]` |
+| worklog | `path`, `entries[]`; an entry has `heading`, `timestamp` (omitted when absent), `has_timestamp`, `precise`, `body`                                                                                                                                                                                                        |
+| issue   | `severity`, `code`, `path`, `message`                                                                                                                                                                                                                                                                                     |
+
+### Stability and pitfalls
+
+- `schema_version` is the contract. New fields can appear; do not reject unknown fields.
+- `root` and `generated_at` change per run. Never use them as cache keys or golden output.
+- Optional times are omitted. A missing `timestamp` means "undated", not `0001-01-01`.
+- `issues` is always an array. `doctor` puts the full issue objects there and the counts in `data`.
+- Text output is truncated to `--width`; JSON ignores width and color.
+- `summary` is capped at 24 lines by default; `--full` removes the cap. Agents should read JSON, not
+  count text lines.
+- `summary` picks `$OPENCODE_SESSION_ID` when it matches, otherwise the newest session. A prefix
+  that matches distinct ids is ambiguous and exits 2.
+- `tasks --status` accepts only a value present in the tree, or `all`; anything else exits 2.
+- `task set-status` exits 2 on a refusal and leaves the file unchanged.
+
+### `jq` examples
+
+```sh
+# The current task's status and open items.
+kdn-journal task "$TASK" --json | jq '{status: .data.task.status, open: .data.task.open_items}'
+
+# Every in-progress task, newest first.
+kdn-journal tasks --status in-progress --json | jq -r '.data.tasks[] | [.slug, .last_activity] | @tsv'
+
+# The issue codes that make doctor fail.
+kdn-journal doctor --json | jq -r '.issues[] | select(.severity=="error") | .code' | sort -u
+
+# The main board's blocked items.
+kdn-journal board "$TASK_DIR" --json | jq -r '.data.board.sections[] | select(.kind=="blocked") | .items[].text'
+```
+
 ## Exit codes
 
 | Code | Meaning                                                   |
