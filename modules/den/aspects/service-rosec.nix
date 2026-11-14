@@ -85,6 +85,15 @@ in
       }
       // lib.optionalAttrs (cfg.providers.sops.age_recipient != null) {
         age_recipient = cfg.providers.sops.age_recipient;
+      }
+      // lib.optionalAttrs (cfg.providers.sops.identity_file != "") {
+        identity_file = cfg.providers.sops.identity_file;
+      }
+      // lib.optionalAttrs (cfg.providers.sops.identity_key_file != "") {
+        identity_key_file = cfg.providers.sops.identity_key_file;
+      }
+      // lib.optionalAttrs (cfg.providers.sops.runtime_identity_file != "") {
+        runtime_identity_file = cfg.providers.sops.runtime_identity_file;
       };
 
       rosecConfig = {
@@ -191,16 +200,49 @@ in
         providers.sops.key_file = lib.mkOption {
           type = lib.types.str;
           default = "~/.config/sops/age/keys.txt";
-          description = "The age identity file. The provider exports it as `SOPS_AGE_KEY_FILE`.";
+          description = ''
+            The age identity file. The provider exports it as `SOPS_AGE_KEY_FILE`. In `derived`
+            mode it is used only to unwrap the master identity, once per session.
+          '';
+        };
+
+        providers.sops.identity_file = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          description = ''
+            The sops-encrypted master identity of a `derived`-mode store (for example
+            `~/…/rosec-storage/.rosec-store-identity.sops.yaml`). Empty means `direct` mode.
+
+            The mode is recorded in `<store>/.rosec-store.yaml` and is fixed at creation; the
+            provider refuses a mismatch. Change modes only by migrating to a new store.
+          '';
+        };
+
+        providers.sops.identity_key_file = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          description = ''
+            The key used only to unwrap `identity_file`. Empty reuses `key_file`. A PGP/KMS master
+            rule ignores this age key file.
+          '';
+        };
+
+        providers.sops.runtime_identity_file = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          description = ''
+            Where the unwrapped master is written while unlocked. Empty uses
+            `$XDG_RUNTIME_DIR/rosec/store-identity.age` (mode 0600); `lock` removes it.
+          '';
         };
 
         providers.sops.age_recipient = lib.mkOption {
           type = with lib.types; nullOr str;
           default = null;
           description = ''
-            The recipient for new and changed files, comma-separated. `null` lets a `.sops.yaml` in
-            the store root choose. An update encrypts to the union of this list and the recipients
-            already in a file header, so this value adds access and never narrows it.
+            The recipient for new and changed files. `direct` mode: the unlock key recipient.
+            `derived` mode: the derived public key printed by `rosec-sops identity init`.
+            Comma-separated lists are allowed; `null` lets the store `.sops.yaml` decide.
           '';
         };
 

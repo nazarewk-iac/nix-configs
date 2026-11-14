@@ -41,6 +41,15 @@ let
   }
   // lib.optionalAttrs (cfg.providers.sops.age_recipient != null) {
     age_recipient = cfg.providers.sops.age_recipient;
+  }
+  // lib.optionalAttrs (cfg.providers.sops.identity_file != "") {
+    identity_file = cfg.providers.sops.identity_file;
+  }
+  // lib.optionalAttrs (cfg.providers.sops.identity_key_file != "") {
+    identity_key_file = cfg.providers.sops.identity_key_file;
+  }
+  // lib.optionalAttrs (cfg.providers.sops.runtime_identity_file != "") {
+    runtime_identity_file = cfg.providers.sops.runtime_identity_file;
   };
 
   rosecConfig = {
@@ -149,7 +158,41 @@ in
       default = "~/.config/sops/age/keys.txt";
       description = ''
         The age identity file. The provider exports it as `SOPS_AGE_KEY_FILE` for every `sops`
-        call it makes.
+        call it makes. In `derived` mode it is used **only** to unwrap the master identity, once
+        per session; item files then use the derived identity.
+      '';
+    };
+
+    providers.sops.identity_file = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        The sops-encrypted **master identity** file of a `derived`-mode store, relative to the
+        store root (for example `~/…/rosec-storage/.rosec-store-identity.sops.yaml`). Empty means
+        the store is `direct`: item files are encrypted to the unlock keys themselves.
+
+        The store mode is recorded in `<store>/.rosec-store.yaml` and is fixed at creation; the
+        provider refuses a mismatch between this option and the store metadata. Change modes only
+        by migrating to a new store (`rosec-sops store migrate`).
+      '';
+    };
+
+    providers.sops.identity_key_file = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        The key used **only** to unwrap `identity_file`. Empty reuses `key_file`. A PGP/KMS
+        master rule ignores this age key file; sops uses its own key source for that rule.
+      '';
+    };
+
+    providers.sops.runtime_identity_file = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        Where the unwrapped master identity is written while the provider is unlocked. Empty uses
+        the provider default, `$XDG_RUNTIME_DIR/rosec/store-identity.age` (mode 0600). `lock`
+        removes it.
       '';
     };
 
@@ -158,8 +201,10 @@ in
       default = null;
       example = "age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d";
       description = ''
-        The recipient for new and changed files. A comma-separated list is allowed. `null` lets a
-        `.sops.yaml` in the store root choose the recipients instead.
+        The recipient for new and changed files. In `direct` mode this is the YubiKey (or other
+        unlock key) recipient; in `derived` mode it is the **derived public key** printed by
+        `rosec-sops identity init`. A comma-separated list is allowed. `null` lets a `.sops.yaml`
+        in the store root choose the recipients instead.
 
         An update encrypts to the union of this list and the recipients already in a file header,
         so this value can add access but never narrow it.

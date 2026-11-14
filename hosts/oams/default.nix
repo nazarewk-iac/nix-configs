@@ -460,10 +460,17 @@ in
         enable = false;
         providers.sops = {
           path = "~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage";
-          key_file = "~/.config/sops/age/keys.txt";
-          # The `&yk-oams-unattended` recipient, line 3 of ~/.config/sops/age/keys.txt. It can add
-          # access to a file, never narrow the recipients already written into a header.
-          age_recipient = "age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d";
+          # The oams slot-3 identity only: one `age-plugin-yubikey` call at unlock instead of one
+          # per identity in `keys.txt`. Append the brys slot-3 identity to this file to unlock with
+          # the brys YubiKey on this host.
+          key_file = "~/.config/sops/age/rosec-keys.txt";
+          # The store is `derived`: this sops-encrypted master holds the derived identity, wrapped
+          # to both the oams and brys unattended YubiKeys. One unwrap per session; item reads then
+          # cost no YubiKey operation.
+          identity_file = "~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/.rosec-store-identity.sops.yaml";
+          # The derived public key printed by `rosec-sops identity init`; every item file is
+          # encrypted to it. The master above is the only file wrapped to the YubiKeys.
+          age_recipient = "age1v4y8577rs8374lu4lfw7sgpq9mu8acd0q0zel4aygtfsvcj7zy3sdmy6e9";
         };
         ssh_fuse = false;
         conflictNotification = {
