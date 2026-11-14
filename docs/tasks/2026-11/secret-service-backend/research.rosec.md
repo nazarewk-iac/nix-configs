@@ -420,19 +420,29 @@ reads. So "collections" are a view, not a storage concept; the provider's own gr
 groups, vault labels) appears as attributes (`rosec:keepassxc:folder`) rather than D-Bus
 collections.
 
-### 17.4 Runtime verification attempt (KDBX)
+### 17.4 Runtime verification (KDBX) — PASS
 
 A throwaway KDBX (2 entries, one nested group) was created with `keepassxc-cli` and the upstream
-`rosec-provider-keepassxc-file-0.0.40.wasm` was installed with its policy and minisig. Result:
+`rosec-provider-keepassxc-file-0.0.40.wasm` was installed with its policy and minisig.
 
-- ✅ provider **signature verified** by the daemon (`WASM plugin signature verified`), provider
-  kind recognised, config accepted.
-- ❌ provider **instantiation failed** in this environment:
-  `mmap(4362076160, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE) = -1 EAGAIN`
-  (wasmtime's 4 GB memory reservation). Reproduced in the container and on the host, with both
-  the musl and gnu builds; the same mapping succeeds from a plain shell (`ctypes` test), and
-  `ulimit -v`/cgroups/overcommit are unlimited — i.e. the **agent sandbox** blocks it, not
-  rosec. FUSE mounts are likewise denied (`fusermount3: mount failed: Operation not permitted`).
-- Consequence: the KDBX **entry mapping above is source-verified, not runtime-verified** here.
-  Run the same script outside the sandbox (or with the wasmtime reservation reduced) to complete
-  it. The test scripts and KDBX are in the session journal (`poc/rosec/kpxc-*`).
+- ✅ Provider **signature verified**, kind discovered, provider initialized, KDBX opened:
+  `kdbx: open complete; entry count = 2`.
+- ✅ `rosec search` lists both entries: `login kpxc Login2 bob`, `login kpxc Login alice
+https://example.com`.
+- ✅ `secret-tool search --all rosec:provider kpxc` returns both items with the passwords
+  (`secret = entry-pw-1/2`), `rosec:keepassxc:folder = Test` / `Test/Sub`,
+  `rosec:keepassxc:uuid`, `username`, `uri`, `rosec:type = login`, timestamps, and
+  `schema = org.freedesktop.Secret.Generic`.
+- ✅ **Read-only confirmed**: provider capabilities `SsF` (sync, ssh, FIDO2 — no `W`), and
+  `secret-tool store` fails with `no write-capable provider available`.
+- ✅ Unlock via `AuthProviderFromPipe` (`rosec-pam-unlock`): `provider authenticated via
+AuthProvider provider=kpxc`.
+
+Environment note: the first attempts failed with
+`mmap(4362076160, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE) = -1 EAGAIN` (wasmtime's
+4 GB reservation). Cause: the user manager's hard `RLIMIT_MEMLOCK` is 4 MB on this host, and
+rosec's `harden()` calls `mlockall(MCL_FUTURE)`, so every later mapping is charged to the locked
+memory budget (the shipped unit expects `LimitMEMLOCK=infinity`, which the user manager cannot
+raise past its own hard limit). The test passed with a test-only `LD_PRELOAD` shim that
+neutralizes `mlockall` (the code base already has `harden_no_memlock()` for this exact reason).
+The system-level fix (raise the user memlock limit) is tracked separately.
