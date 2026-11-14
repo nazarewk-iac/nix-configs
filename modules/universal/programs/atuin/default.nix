@@ -54,6 +54,10 @@ in
               update_check = false;
               sync.records = true;
               sync_frequency = "60";
+              # Atuin 18.24+ Threads: capture AI coding-agent sessions into the encrypted record
+              # store, so `atuin threads` and `atuin resume` can search and resume them. The daemon
+              # is already enabled above. Import existing sessions once with `atuin threads import`.
+              threads.capture = true;
               daemon = {
                 enabled = true;
                 # atuin refuses to rebuild the threads index inline: a `store pull`, `status` or
