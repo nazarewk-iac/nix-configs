@@ -444,6 +444,38 @@ in
       security.sudo.wheelNeedsPassword = false;
     }
     {
+      # rosec: a Secret Service daemon whose store is the sops-encrypted file tree under Nextcloud.
+      # The store, the age identity and the unattended YubiKey recipient (PIV slot 3, PIN never,
+      # touch never) were proven on this host on 2026-11-14 — see
+      # docs/tasks/2026-11/keepassxc-to-rosec-migration/.
+      #
+      # `enable` stays FALSE: KeePassXC claims `org.freedesktop.secrets` on this host, and two units
+      # cannot hold one bus name. The migration task flips this one line once its entries moved and
+      # the KDBX provider is retired:
+      #
+      #     kdn.services.rosec.enable = true;
+      #
+      # The conflict report is independent: it reads the store, not the daemon, so it may run now.
+      kdn.services.rosec = {
+        enable = false;
+        providers.sops = {
+          path = "~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage";
+          key_file = "~/.config/sops/age/keys.txt";
+          # The `&yk-oams-unattended` recipient, line 3 of ~/.config/sops/age/keys.txt. It can add
+          # access to a file, never narrow the recipients already written into a header.
+          age_recipient = "age1yubikey1q25g9xpunct74wnn29dgcgep78q666dkhpfg2flltg92fvyrew02j28464d";
+        };
+        ssh_fuse = false;
+        conflictNotification = {
+          enable = true;
+          # The host runs sway with swaync, so both the desktop notification and the control-centre
+          # poke work.
+          notify = true;
+          swaync = true;
+        };
+      };
+    }
+    {
       # Shared /run/configs/llms secrets (same mount as brys): HF token and
       # llama-server API keys. The leaf cert moved to hosts/brys/ (brys only).
       kdn.security.secrets.sops.files."llms" = {

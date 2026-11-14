@@ -102,6 +102,10 @@
   inputs.preservation-upstream.flake = false; # no need for upstream to be a flake
   inputs.preservation-upstream.url = "github:nix-community/preservation";
   inputs.preservation.url = "github:nazarewk-iac/preservation/nix-configs";
+  # The nazarewk-iac fork carries the native `rosec-sops` provider: a Secret Service daemon whose
+  # store is a sops-encrypted file tree. It is a flake with one package output (`packages.<system>.rosec`),
+  # so the module takes the package from the input instead of the user profile.
+  inputs.rosec.url = "github:nazarewk-iac/rosec";
   inputs.rpi-sbcshop-hat-ups.flake = false;
   inputs.rpi-sbcshop-hat-ups.url = "github:sbcshop/UPS-Hat-RPi";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
@@ -159,6 +163,7 @@
   inputs.nixos-crostini.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixos-generators.inputs.nixlib.follows = "nixpkgs-lib";
   inputs.nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.rosec.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.stylix.inputs.flake-parts.follows = "flake-parts";
@@ -261,30 +266,24 @@
         })
         # `scooter` 0.10.0 now depends on `onig_sys`, whose build script needs `pkg-config` +
         # `oniguruma`, which the package does not declare. Add them until nixpkgs does.
-        (
-          final: prev:
-          {
-            scooter = prev.scooter.overrideAttrs (old: {
-              nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.pkg-config ];
-              buildInputs = (old.buildInputs or [ ]) ++ [ prev.oniguruma ];
-            });
-          }
-        )
+        (final: prev: {
+          scooter = prev.scooter.overrideAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.pkg-config ];
+            buildInputs = (old.buildInputs or [ ]) ++ [ prev.oniguruma ];
+          });
+        })
         # `angle-grinder` 0.19.6's vendored `tikv-jemalloc-sys` build script panics because it gets
         # `JEMALLOC_OVERRIDE=nixpkgs.<LIB>` — not a real path after the newer rust toolchain. Drop
         # the override so it builds its own jemalloc. No upstream fix yet; remove when nixpkgs does.
-        (
-          final: prev:
-          {
-            # `tikv-jemalloc-sys` needs a jemalloc built with its `_rjem_` symbol prefix, which the
-            # system jemalloc is not. The nixpkgs cargo hook always sets JEMALLOC_OVERRIDE to a
-            # sentinel, so the crate never builds its own. Unset it in preBuild so the vendored
-            # build produces its own prefixed jemalloc (same as upstream's intent).
-            angle-grinder = prev.angle-grinder.overrideAttrs (old: {
-              preBuild = (old.preBuild or "") + "\nunset JEMALLOC_OVERRIDE\n";
-            });
-          }
-        )
+        (final: prev: {
+          # `tikv-jemalloc-sys` needs a jemalloc built with its `_rjem_` symbol prefix, which the
+          # system jemalloc is not. The nixpkgs cargo hook always sets JEMALLOC_OVERRIDE to a
+          # sentinel, so the crate never builds its own. Unset it in preBuild so the vendored
+          # build produces its own prefixed jemalloc (same as upstream's intent).
+          angle-grinder = prev.angle-grinder.overrideAttrs (old: {
+            preBuild = (old.preBuild or "") + "\nunset JEMALLOC_OVERRIDE\n";
+          });
+        })
         # `atuin` 18.23.0 fails its darwin e2e tests (`e2e_capture` and `e2e_pty`). That is
         # nixpkgs issue #573527. The tests drive an interactive bash in a pty, and they time out
         # on darwin. Skip the checks on darwin. Remove this entry when the package passes its
@@ -344,9 +343,7 @@
             repoPatched =
               repo != null
               && (
-                (repo.passthru.patched or false)
-                || repoPatches != [ ]
-                || builtins.pathExists (repoDir + "/PATCHED")
+                (repo.passthru.patched or false) || repoPatches != [ ] || builtins.pathExists (repoDir + "/PATCHED")
               );
             repoVer = if repo != null then versionOf repo else "0";
 

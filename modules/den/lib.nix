@@ -215,6 +215,7 @@ let
     service-postgresql = ./aspects/service-postgresql.nix;
     service-printing = ./aspects/service-printing.nix;
     service-rustdesk = ./aspects/service-rustdesk.nix;
+    service-rosec = ./aspects/service-rosec.nix;
     service-samba = ./aspects/service-samba.nix;
     service-syncthing = ./aspects/service-syncthing.nix;
     service-zammad = ./aspects/service-zammad.nix;
