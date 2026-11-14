@@ -1,7 +1,7 @@
 ---
 type: Rule
 description: "Every agent run keeps a session worklog and board, plus a task pair when a task exists: where the files live, how a parallel track appends safely, and how to turn the journals off."
-timestamp: 2026-11-10T09:05:00+01:00
+timestamp: 2026-11-15T19:48:57+01:00
 ---
 
 # Worklog and board
@@ -122,3 +122,57 @@ the history.
 Keep the tables readable in a terminal: run `hack/fmt-agent-docs.sh` after an edit. It formats every
 file under `.cache/agents/` (a tree-wide `nix fmt` skips that git-ignored directory) and pads the
 table cells so the pipes line up.
+
+## Board shape
+
+A board is an OKF file: Markdown with YAML frontmatter. This shape gives a reader the state without
+a second look:
+
+```markdown
+---
+type: Board
+title: SSH CA follow-up
+description: Where the host-key work stands.
+updated: 2026-11-12T17:23:00+01:00
+status: active # active | blocked | done
+tags: [session, ssh-ca]
+---
+
+## Status
+
+- [x] done item
+- [ ] open item
+
+## Next
+
+- item
+
+## Blocked
+
+- item — what it waits for
+
+## Done
+
+- item
+```
+
+Frontmatter keys: `type: Board`, `title`, `description`, `updated`, `status`, `tags`. Headings:
+`## Status`, `## Next`, `## Blocked`, `## Done`. Put free prose under `## Notes`.
+
+The shape is **recommended, not required**. A free-form board keeps parsing: a date-headed section
+and an `item | state` table also read as items, and a board with no known section still parses with
+counts. Frontmatter is optional too; the file mtime stands in for `updated`, and the first H1 stands
+in for `title`.
+
+## Catch up with kdn-journal
+
+`kdn-journal` reads these files and prints the state. It never writes a journal.
+
+```sh
+kdn-journal summary                    # newest session, one screen
+kdn-journal summary --task <task-dir>  # add one task pair
+kdn-journal tui                        # browse tasks and sessions
+kdn-journal doctor                     # validate the task tree and journals
+```
+
+Full command reference: [kdn-journal.md](../../docs/kdn-journal.md).

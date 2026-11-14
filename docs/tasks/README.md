@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: Convention for tracking repository tasks as one directory per task under docs/tasks/<YYYY-MM>/<slug>/, with recursive sub-tasks, a done-tag and a sibling solution file.
-timestamp: 2026-09-10T12:00:00+02:00
+timestamp: 2026-11-15T19:48:57+01:00
 ---
 
 # Tasks convention
@@ -105,6 +105,20 @@ the plain append when it does not.
 
 The user can turn both levels off for a session: a direct "no worklog" instruction wins, and
 `KDN_AGENT_WORKLOG=skip` is the scriptable fallback.
+
+### Reading the state with `kdn-journal`
+
+`kdn-journal` reads the task and session trees and prints where the work stands. It never edits a
+journal.
+
+```sh
+kdn-journal summary        # newest session: boards, tracks, worklog tail
+kdn-journal tasks          # every task, newest activity first
+kdn-journal task <slug>    # one task: files, board, worklog, sub-tasks
+kdn-journal tui            # browse tasks and sessions interactively
+```
+
+Full command reference: [kdn-journal.md](../kdn-journal.md).
 
 ## Never track the status of a work run as a task
 
