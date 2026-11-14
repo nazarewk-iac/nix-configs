@@ -98,17 +98,15 @@ Add `.cache/agents/<session>/session.json` (git-ignored) with:
 - Record `working_copy_change` at session start/end as a **pointer to the shared working copy**, not
   as proof of ownership.
 - Record explicit change IDs when the session creates or splits commits.
-- Optional VCS-native alternative: a `Session-Id:` and `Harness:` trailer in commit descriptions,
-  scanned by `kdn-journal changes --session <id>`. This is opt-in because it publishes session IDs
-  and can be lost or duplicated by split/squash.
-- LLM-assisted commits carry an `Assisted-by:` trailer with the tool name and primary model name
-  and version, as required by the Nixpkgs transparency policy. `Co-authored-by:` does not satisfy
-  that policy; it is optional attribution, not the disclosure trailer.
-- Provide a `kdn-journal commit` helper that appends the trailers to the message and calls
-  `jj commit`/`jj describe` with explicit paths, plus a `check-trailers` gate that scans a revset
-  and reports missing `Assisted-by:` trailers.
+- Commit attribution is delegated to **`jj-meta`** (see
+  [docs/tasks/2026-11/jj-meta](../jj-meta/definition.md)). That tool owns the trailer profiles,
+  mutable-only checks, deduplication and the `Assisted-by`/`Co-authored-by`/`Generated-by` policy.
+- This task owns the sidecar and the session mapping. `kdn-journal` calls
+  `jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when it
+  records a change, and reads `jj-meta show --json` when it displays attribution.
+- `kdn-journal` never edits commit descriptions itself and never duplicates the trailer policy.
 - Never claim that a change ID uniquely belongs to one session when `@` is shared.
-- Degrade gracefully when jj is absent or the repo is not a jj repo.
+- Degrade gracefully when jj or `jj-meta` is absent; the sidecar still records the mapping.
 
 ### 4. Atuin Threads integration
 
@@ -139,10 +137,12 @@ kdn-journal session record-commit <commit-id> [--json]
 kdn-journal session changes [--session <id>] [--json]
 kdn-journal session atuin [--session <id>] [--json]
 kdn-journal atuin list|show|search [--json]
-kdn-journal commit [--message <subject>] -- <paths>
-kdn-journal check-trailers [--revset <revset>] [--json]
 kdn-journal summary --atuin
 kdn-journal tui   # session detail shows the Atuin link
+
+# attribution is delegated to the separate tool:
+jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>
+jj-meta show <change-id> --json
 ```
 
 ## Non-goals
@@ -164,8 +164,9 @@ kdn-journal tui   # session detail shows the Atuin link
   cwd/time fallback; missing Atuin or capture-off produces a warning, not an error.
 - After `threads.capture = true` and `atuin threads import`, `atuin threads list` is non-empty and
   no longer prints the capture-off warning.
-- The trailer gate requires `Assisted-by:` and accepts an optional `Co-authored-by:`; a missing
-  `Assisted-by:` is an error.
+- `kdn-journal` delegates attribution to `jj-meta`; a fixture proves it calls the CLI with the
+  session/harness/model and reads back the trailers. The `Assisted-by` gate is tested in the
+  `jj-meta` task, not duplicated here.
 - `summary --atuin` and the TUI session detail show the Atuin UUID and message count.
 - No sidecar or session ID is committed by default.
 - Tests cover env detection, sidecar round-trip, jj template parsing with a fake runner, Atuin JSON

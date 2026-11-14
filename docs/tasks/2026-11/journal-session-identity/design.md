@@ -113,33 +113,20 @@ is absent, `exec.LookPath` fails and the integration reports `jj-unavailable`.
 - `session changes`: resolve every recorded ID with `jj log -r <id> -T ...`; print change ID,
   commit ID, description, author, timestamp and changed files. A missing ID is a warning.
 
-### 4.3 Commit trailers and transparency
+### 4.3 Commit attribution
 
-A commit may carry:
+Commit trailers are owned by the separate **`jj-meta`** tool (see
+[docs/tasks/2026-11/jj-meta](../jj-meta/design.md)):
 
-```
-Assisted-by: opencode (DeepSeek V4.1 Flash 1017)
-Co-authored-by: Krzysztof Nazarewski <gpg@kdn.im>
-Session-Id: ses_e1f8bbd08ffep6essAsRoa3wna
-Harness: opencode
-```
+- `jj-meta` owns the profile set (`portable`, `github`, `asf`, `full`), the mutable-only check, the
+  deduplication and the `Assisted-by`/`Co-authored-by`/`Generated-by` policy.
+- `kdn-journal` records the sidecar mapping and calls
+  `jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when a change
+  is recorded. It never edits a commit description itself.
+- `kdn-journal changes` reads `jj-meta show --json` when it needs to display attribution.
+- If `jj-meta` is absent, the sidecar still records the mapping and the journal reports a warning.
 
-- `Assisted-by:` is **required** for LLM-assisted commits by the Nixpkgs transparency policy; it
-  must name the tool and primary model name/version. `Co-authored-by:` does not satisfy the policy;
-  it is optional attribution only.
-- `Session-Id:` and `Harness:` are local extensions. They are opt-in because they publish the
-  session ID; a split/squash can duplicate or drop them.
-- `kdn-journal commit` appends the missing trailers to the message and calls `jj commit` or
-  `jj describe` with explicit paths. It never rewrites a commit body silently.
-- `kdn-journal check-trailers --revset <revset>` scans commits and reports a missing `Assisted-by:`
-  as an error, and a missing `Co-authored-by:` as a warning.
-- `kdn-journal changes --session <id>` scans `jj log` for `Session-Id:` and merges those changes with
-  the sidecar.
-- Jujutsu has no arbitrary per-change metadata. `jj metaedit` cannot set a custom key, and the
-  operation log is repo-global and has no public session annotation. The trailer is the portable
-  channel; the sidecar is the private one.
-- A split/squash can duplicate or lose a trailer; the helper re-adds it to the resulting commit
-  when the agent runs `kdn-journal commit` again.
+This keeps the trailer policy in one place and lets `kdn-journal` work without jj or Atuin.
 
 ## 5. Atuin integration
 
