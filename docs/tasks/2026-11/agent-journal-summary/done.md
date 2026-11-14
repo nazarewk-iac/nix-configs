@@ -141,8 +141,10 @@ width. `kdn-journal-parse` repeats the task-tree parse in the Nix sandbox.
   terminal. `--no-color` and `NO_COLOR` both disable it.
 - The JSON shape is covered by shape tests, not byte-for-byte goldens: `root` and `generated_at`
   vary per run. Optional times are omitted instead of emitted as `0001-01-01`.
-- The TUI sets an explicit dark background before rendering, so `lipgloss` does not send an
-  OSC 11 background query. A late response cannot leak into the shell after the TUI exits.
+- Bubble Tea v1 calls `lipgloss.HasDarkBackground()` in its package init, before `main`. The
+  packaged binary's wrapper sets `CI=1` so `termenv` skips the OSC 11 query; `main` restores `CI`
+  before the CLI runs, and the TUI sets an explicit dark background. Without the wrapper,
+  `kdn-journal version` can leave a late terminal response in the shell.
 - Agent-facing use is documented in [`.agents/rules/kdn-journal.md`](../../../../.agents/rules/kdn-journal.md)
   and [docs/kdn-journal.md#for-agents](../../../kdn-journal.md#for-agents): JSON reads,
   explicit `--session`/`--root`, `doctor --parse-only` as the gate, and `task set-status` as the

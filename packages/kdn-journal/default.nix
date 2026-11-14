@@ -12,6 +12,7 @@
   lib,
   buildGoModule,
   installShellFiles,
+  makeBinaryWrapper,
   ...
 }:
 let
@@ -30,7 +31,10 @@ buildGoModule (finalAttrs: {
 
   inherit src vendorHash;
 
-  nativeBuildInputs = [ installShellFiles ];
+  nativeBuildInputs = [
+    installShellFiles
+    makeBinaryWrapper
+  ];
 
   subPackages = [ "." ];
 
@@ -45,6 +49,16 @@ buildGoModule (finalAttrs: {
       --bash <("$out/bin/${finalAttrs.meta.mainProgram}" completion bash) \
       --fish <("$out/bin/${finalAttrs.meta.mainProgram}" completion fish) \
       --zsh <("$out/bin/${finalAttrs.meta.mainProgram}" completion zsh)
+  '';
+
+  # Bubble Tea v1 calls lipgloss.HasDarkBackground() in its package init. termenv skips that
+  # terminal query when CI is set, so the wrapper sets CI=1 for the process start; main() unsets
+  # it again before the CLI runs. Without this, `kdn-journal version` sends OSC 11 and a terminal
+  # that answers late prints the response into the shell.
+  postFixup = ''
+    wrapProgram "$out/bin/${finalAttrs.meta.mainProgram}" \
+      --set CI 1 \
+      --set KDN_JOURNAL_NO_OSC 1
   '';
 
   passthru.tests.go-test = buildGoModule {
