@@ -126,6 +126,12 @@ in
       '';
     };
 
+    providers.sops.id = lib.mkOption {
+      type = lib.types.str;
+      default = "sops";
+      description = "The provider id. It names the provider in `rosec provider <id> unlock`.";
+    };
+
     providers.sops.path = lib.mkOption {
       type = lib.types.str;
       example = "~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage";
@@ -221,11 +227,12 @@ in
 
     conflictNotification.interval = lib.mkOption {
       type = lib.types.str;
-      default = "15min";
+      default = "1min";
       description = ''
-        How often the polling timer rescans the store. A systemd path unit alone is unreliable on a
-        synced directory (`inotify` misses a rename made by the sync client), so a timer is the
-        backstop and the path unit is the fast route.
+        How often the polling timer rescans the store. The timer is the **reliable** route: a
+        systemd path unit watches one directory and is not recursive, so a write inside a
+        collection directory does not trigger it. The scan reads file names only, so one minute is
+        cheap even on a synced store.
       '';
     };
 
@@ -292,9 +299,15 @@ in
           ];
         }
 
-        (lib.mkIf cfg.enable {
+        # The provider config is also the CLI's config: `rosec-sops conflicts list|show|resolve`
+        # reads `~/.config/rosec/config.toml` when `--store` is absent. Render it whenever this
+        # module is active, not only when the daemon runs, or the CLI fails on a host that still
+        # keeps its password manager on the bus.
+        (lib.mkIf needsHomeManager {
           xdg.configFile."rosec/config.toml".source = rosecConfigFile;
+        })
 
+        (lib.mkIf cfg.enable {
           systemd.user.services.rosecd = {
             Unit = {
               Description = "rosec Secret Service daemon (sops file tree)";
@@ -361,16 +374,25 @@ in
             };
           };
 
-          # The fast route: the kernel reports a write to the store. A path unit also fires once on
-          # activation, so a conflict present at login is reported without waiting for the timer.
+          # Best-effort root-level fast route. `PathModified` covers `PathChanged` (it also fires
+          # on a simple write), so one directive is enough.
+          #
+          # A systemd path unit watches one directory and is **not recursive**: a write inside
+          # `<collection>/` changes that directory, not the store root, so the timer is the
+          # reliable route. This unit still catches a new collection directory or a root-level
+          # file, which is why it stays.
+          #
+          # Do not add `DirectoryNotEmpty`: it is level-triggered, and a store that holds any item
+          # is never empty. The unit then re-fires after every scan until it hits the trigger limit
+          # and fails, so the fast route dies on its first activation. A conflict present at login
+          # is the timer's job instead (`OnStartupSec`).
           systemd.user.paths.rosec-conflicts = {
             Unit.Description = "watch the rosec sops store for conflict archives";
             Path = {
-              DirectoryNotEmpty = [ (systemdUnitPath cfg.providers.sops.path) ];
-              PathChanged = [ (systemdUnitPath cfg.providers.sops.path) ];
               PathModified = [ (systemdUnitPath cfg.providers.sops.path) ];
-              # A burst of renames from the sync client must not queue a hundred scans.
-              TriggerLimitBurst = 5;
+              # A burst of renames from the sync client must not queue a hundred scans. The bound
+              # is wide enough for a normal sync and still stops a runaway loop.
+              TriggerLimitBurst = 30;
               TriggerLimitIntervalSec = "60s";
             };
             Install.WantedBy = [ "default.target" ];
@@ -382,7 +404,9 @@ in
           systemd.user.timers.rosec-conflicts = {
             Unit.Description = "periodic rosec sops-store conflict scan";
             Timer = {
-              OnStartupSec = "5min";
+              # A conflict present at login is reported within a minute, without waiting for the
+              # first periodic run.
+              OnStartupSec = "1min";
               OnUnitActiveSec = cfg.conflictNotification.interval;
               Unit = "rosec-conflicts.service";
             };

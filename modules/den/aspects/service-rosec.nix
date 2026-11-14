@@ -262,10 +262,12 @@ in
 
         conflictNotification.interval = lib.mkOption {
           type = lib.types.str;
-          default = "15min";
+          default = "1min";
           description = ''
-            How often the polling timer rescans the store. `inotify` misses a rename a sync client
-            makes through its own temporary file, so the timer is the backstop.
+            How often the polling timer rescans the store. The timer is the **reliable** route: a
+            systemd path unit watches one directory and is not recursive, so a write inside a
+            collection directory does not trigger it. The scan reads file names only, so one minute
+            is cheap even on a synced store.
           '';
         };
 
@@ -293,9 +295,15 @@ in
           ];
         }
 
-        (lib.mkIf cfg.use {
+        # The provider config is also the CLI's config: `rosec-sops conflicts list|show|resolve`
+        # reads `~/.config/rosec/config.toml` when `--store` is absent. Render it whenever this
+        # aspect is active, not only when the daemon runs, or the CLI fails on a host that still
+        # keeps its password manager on the bus.
+        (lib.mkIf (cfg.use || cfg.conflictNotification.use) {
           xdg.configFile."rosec/config.toml".source = rosecConfigFile;
+        })
 
+        (lib.mkIf cfg.use {
           systemd.user.services.rosecd = {
             Unit = {
               Description = "rosec Secret Service daemon (sops file tree)";
@@ -354,11 +362,17 @@ in
           systemd.user.paths.rosec-conflicts = {
             Unit.Description = "watch the rosec sops store for conflict archives";
             Path = {
-              DirectoryNotEmpty = [ (systemdUnitPath cfg.providers.sops.path) ];
-              PathChanged = [ (systemdUnitPath cfg.providers.sops.path) ];
+              # `PathModified` covers `PathChanged` (it also fires on a simple write), so one
+              # directive is enough. A path unit is **not recursive**: a write inside a collection
+              # directory changes that directory, not the store root, so the timer is the reliable
+              # route. This unit still catches a new collection or a root-level file.
+              #
+              # `DirectoryNotEmpty` is level-triggered: a store that holds any item is never empty,
+              # so the unit re-fires after every scan until it hits the trigger limit and fails.
               PathModified = [ (systemdUnitPath cfg.providers.sops.path) ];
-              # A burst of renames from the sync client must not queue a hundred scans.
-              TriggerLimitBurst = 5;
+              # A burst of renames from the sync client must not queue a hundred scans. The bound
+              # is wide enough for a normal sync and still stops a runaway loop.
+              TriggerLimitBurst = 30;
               TriggerLimitIntervalSec = "60s";
             };
             Install.WantedBy = [ "default.target" ];
@@ -367,7 +381,8 @@ in
           systemd.user.timers.rosec-conflicts = {
             Unit.Description = "periodic rosec sops-store conflict scan";
             Timer = {
-              OnStartupSec = "5min";
+              # A conflict present at login is reported within a minute.
+              OnStartupSec = "1min";
               OnUnitActiveSec = cfg.conflictNotification.interval;
               Unit = "rosec-conflicts.service";
             };

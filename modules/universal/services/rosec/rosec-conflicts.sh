@@ -253,14 +253,15 @@ body="Loser values kept as .superseded archives. Review: rosec-conflicts --list.
 
 if [ -n "$notify_command" ]; then
   # A missing notifier must not fail the unit: a headless session has none, and the state file is
-  # the durable record either way.
-  "$notify_command" "$title" "$body" || true
+  # the durable record either way. A stuck notifier must not block the unit either, so the call is
+  # bounded; a desktop notification daemon that never answers is a real failure mode.
+  timeout 5 "$notify_command" "$title" "$body" || true
 else
   if command -v notify-send >/dev/null 2>&1; then
-    notify-send --app-name=rosec --urgency=normal --expire-time=0 "$title" "$body" || true
+    timeout 5 notify-send --app-name=rosec --urgency=normal --expire-time=0 "$title" "$body" || true
   fi
   if command -v swaync-client >/dev/null 2>&1; then
-    swaync-client -t >/dev/null 2>&1 || true
+    timeout 5 swaync-client -t >/dev/null 2>&1 || true
   fi
 fi
 
