@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Give agent journals a predictable shape and a Go CLI plus TUI that prints where the work stands and browses repository tasks, session journals and task boards.
-status: in-progress
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-12T00:00:00+01:00
 ---
 
 # Agent journal CLI: structured boards and a one-command status
+
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 > Owner decision 2026-11-15: implement this as a Go CLI (with a TUI) under `packages/`, not as
 > `hack/board-summary.py`. The Python proposal below is kept only as history; the design document
@@ -24,7 +27,7 @@ sub-board, then the task board, then the tail of the worklog, and reconstructing
 The content is fine; the shape is not. Nothing tells the reader which section is current, and
 nothing lets a script answer "what is in progress, what is blocked, what is next".
 
-This session is the example: `.cache/agents/opencode-20261110-…/` holds `board.md` plus six
+This session is the example: `.cache/agents/opencode-20261110-…/` holds `board.md` plus seven
 `board-*.md` files, and a new `board-ssh-ca.md` was added for one plan.
 
 ## Goal
@@ -83,9 +86,10 @@ Parsing uses **headings**, not new keywords: the CLI reads `## Status` / `## Now
 OKF's conventional headings are a superset of this, so a future consumer can read the bundle
 without our tool.
 
-A board without the skeleton must still parse — fall back to "no structured items", never to an
-error. The session directory can carry an OKF `index.md` listing its boards; the CLI accepts one
-but does not require it.
+A board without the skeleton must still parse: its date-headed sections and `item | state` tables
+become items, and a board with no recognized section still reports counts instead of failing. The
+session directory can carry an OKF `index.md` listing its boards; the CLI accepts one but does not
+require it.
 
 ### 2. The CLI
 
@@ -98,14 +102,14 @@ but does not require it.
 - `sessions`: list sessions with board counts and last activity;
 - `tasks`: list repository tasks with status, activity and open items;
 - `task <dir|slug>`: one task, its files, board, worklog and sub-tasks;
-- `task status <dir|slug> <open|in-progress|done>`: update the frontmatter status safely;
+- `task set-status <dir|slug> <open|in-progress|done>`: update the frontmatter status safely;
 - `board <path>` / `worklog <path>`: parse one file or a directory's pair;
 - `doctor`: validate the task tree and journals, exit non-zero on errors;
 - `tui`: a bubbletea browser over the same models;
 - every read command accepts `--json`.
 
-The output is compact by default (three items per section, five worklog headings, terminal width)
-and `--full` removes the limits.
+The output is compact by default (three items per section, five worklog headings, a 24-line cap,
+the requested `--width`) and `--full` removes the limits.
 
 ### 3. Why Go
 
@@ -118,8 +122,8 @@ Python or a devenv shell.
 
 1. The skeleton is **recommended** in `.agents/rules/agent-journal.md`, not required. Existing
    free-form boards must keep parsing; the CLI degrades instead of failing.
-2. Frontmatter is **optional**. The file mtime is the fallback for `updated`; the first H1 is the
-   fallback for `title`.
+2. Frontmatter is **optional**. The `updated` key falls back to `timestamp`, then to the file
+   mtime; the first H1 is the fallback for `title`.
 3. Task `.board.md` files use the **same** skeleton and parser. The CLI shows the task pair when
    `--task` is given, and follows sub-task directories for the task browser.
 4. The summary runs from the owner's shell and from the devenv shell; the package is exposed in
@@ -132,7 +136,8 @@ Python or a devenv shell.
   board in this repo parses without an error (degraded output is fine).
 - `kdn-journal summary --task docs/tasks/2026-11/agent-journal-summary` also shows that task's
   state.
-- The output fits 40 lines for a session with three tracks.
+- The output fits 24 lines for the eight-board session that motivated the task, and every line
+  fits the requested width.
 - The test suite has one structured and one unstructured board, and covers the summary line count.
 - `kdn-journal tasks`, `kdn-journal task <slug>`, `kdn-journal sessions`, `kdn-journal doctor` and
   `kdn-journal tui` work against this repository.
