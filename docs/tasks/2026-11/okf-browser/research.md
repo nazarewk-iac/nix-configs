@@ -78,9 +78,14 @@ The first tool produced reusable evidence:
 
 ## 4. Design inputs
 
-- Use **goldmark** (already in the dependency graph through `glamour`) to extract headings, links
-  and code fences from the body. It is more reliable than a second regex parser and gives source
-  positions for `doctor`.
+- Use **goldmark** (already in the dependency graph through `glamour`) to extract headings, links,
+  code fences and GFM tables from the body. It is more reliable than a second regex parser and gives
+  text segments for a source line map.
+- Use goldmark as the **read/query** layer: `outline`, `section`, `context` and link extraction.
+  Keep a fence-aware line index for exact section boundaries, and never round-trip a hand-edited
+  file through a Markdown renderer. Goldmark is not a lossless editor.
+- Make the **section** the progressive-discovery unit: an agent reads an outline, then one heading
+  range, then a budgeted context, instead of loading a whole concept.
 - Use the proven **frontmatter** parser shape, with a line fallback and `FrontmatterError`.
 - Start with a **JSON index cache** and in-memory search. 1,000 concepts do not justify SQLite FTS5;
   keep the search backend behind an interface so `zk`-style FTS can arrive later.

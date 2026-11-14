@@ -38,7 +38,9 @@ One binary that answers, for any OKF bundle:
 - where it came from, who generated it, who verified it and whether it is stale;
 - what changed, from `log.md` and file activity;
 - what is malformed, from a conformance check;
-- the same answers as stable JSON for agents and scripts.
+- the same answers as stable JSON for agents and scripts;
+- a **progressive outline**: bundle → directory → concept → heading → section, so an agent can
+  fetch only the slice it needs instead of loading a whole document.
 
 Plus a TUI that makes the same model browsable: list, filter, preview rendered Markdown, follow
 links and backlinks, and open the source in `$EDITOR`.
@@ -93,6 +95,8 @@ optional family.
 - Keep the index format versioned; a version mismatch rebuilds.
 - Search the title, description, tags, headings and body. Start with case-insensitive substring
   and an exact/regex mode; design the backend so a full-text engine can replace it.
+- Build a **progressive outline** per concept: headings with line ranges, links, code blocks and
+  tables. The outline is the unit an agent reads first; `section` fetches one heading range.
 - Do not write into the bundle in v1.
 
 ### 5. CLI shape
@@ -106,7 +110,10 @@ okf list [--bundle PATH] [--type T] [--tag T] [--status S] [--trust T]
          [--limit N] [--json]
 okf show <concept> [--bundle PATH] [--json] [--raw] [--render]
 okf search <query> [--type T] [--tag T] [--status S] [--regex]
-           [--limit N] [--json]
+           [--scope title|heading|body] [--limit N] [--json]
+okf outline <bundle|concept> [--depth N] [--json]
+okf section <concept> <heading> [--max-lines N] [--json]
+okf context <concept> [--budget N] [--json]
 okf types [--bundle PATH] [--json]
 okf tags [--bundle PATH] [--json]
 okf links <concept> [--recursive] [--json]
@@ -187,6 +194,9 @@ the OKF index. Do not couple the two in this task.
 - Every existing OKF document in this repository indexes without a parse error.
 - `okf list`, `okf show`, `okf search`, `okf links`, `okf backlinks`, `okf orphans`, `okf broken`
   and `okf doctor --parse-only` work against a fixture bundle and this repository.
+- `okf outline` returns a heading tree with stable line ranges, `okf section` returns exactly one
+  heading range, and `okf context` fits a configurable budget. A 10,000-line fixture is readable
+  in chunks without loading the whole body.
 - A fixture bundle proves: bundle-absolute and relative links, fragments, external URLs, broken
   links, backlinks, orphan detection, `index.md`/`log.md` exclusion, unknown types, missing
   optional fields, invalid YAML fallback, and trust/staleness derivation.

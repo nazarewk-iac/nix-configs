@@ -126,6 +126,58 @@ type TrustTier int // Unverified, MachineConfirmed, HumanReviewed
 `Generated` falls back to legacy `timestamp`; `Sources` falls back to a legacy `# Citations`
 body list only for display, not for graph edges.
 
+### 3.1 Progressive discovery
+
+The discovery unit is a **section**, not a file. A large concept is read in widening steps:
+
+1. `outline` — a bundle/directory/concept tree with headings and line ranges.
+2. `section` — exactly one heading range, optionally capped.
+3. `context` — a compact summary: title, frontmatter, heading tree, first paragraph per section.
+4. `search` — hits point at a concept and a heading/line range, not a whole body.
+
+```go
+type Outline struct {
+    ConceptID  string
+    Title      string
+    Headings   []HeadingNode
+    Links      []LinkRef
+    CodeBlocks []CodeBlock
+    Tables     []TableRef
+}
+
+type HeadingNode struct {
+    Level     int
+    Text      string
+    StartLine int // 1-based, inclusive
+    EndLine   int // 1-based, inclusive
+    Children  []HeadingNode
+}
+
+type Section struct {
+    ConceptID string
+    Heading   string
+    StartLine int
+    EndLine   int
+    Markdown  string
+}
+```
+
+- Line ranges are 1-based and inclusive; they are recomputed after an edit.
+- `outline --depth N` caps the heading tree; the default is unlimited for one concept and 2 for a
+  bundle tree.
+- `section` returns the heading and its body up to the next heading of the same or a higher level;
+  `--max-lines` truncates with an explicit marker.
+- `context --budget N` fits a token/line budget; it prefers headings, descriptions and first
+  paragraphs over full bodies.
+- Goldmark supplies headings, links, tables and fenced code from the AST; a fence-aware line index
+  supplies the exact source ranges. Frontmatter is parsed separately.
+- `index.md` is read as a directory listing when present; the tool can synthesize the same view
+  without writing a file.
+- The CLI JSON is the v1 agent interface. An optional `atuin`-style MCP bridge can expose
+  `okf_outline`, `okf_section` and `okf_search` later.
+- Editing is out of scope for this layer: line ranges are read-only and never produced by a
+  lossy Markdown renderer.
+
 ## 4. Index and cache
 
 ### 4.1 Walk
@@ -185,7 +237,10 @@ Global flags: `--bundle`, `--json`, `--no-color`, `--width`, `--index <path>`, `
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `okf list`                                                 | Filter by type/tag/status/trust/stale/orphan/broken; sort by path/modified/title; `--limit`; `--json`.           |
 | `okf show <concept>`                                       | Frontmatter summary, body, links, backlinks, trust and staleness; `--raw`, `--render`, `--json`, `--print-path`. |
-| `okf search <query>`                                       | Title/description/tags/headings/body; `--regex`, `--exact`, `--limit`; `--json`.                                 |
+| `okf search <query>`                                       | Title/description/tags/headings/body; `--regex`, `--exact`, `--scope`, `--limit`; `--json`.                      |
+| `okf outline <bundle\|concept>`                            | Heading tree with line ranges, links, code blocks and tables; `--depth`; `--json`.                               |
+| `okf section <concept> <heading>`                          | Exactly one heading range; `--max-lines`; `--json`.                                                              |
+| `okf context <concept>`                                    | Budgeted summary plus heading tree and first paragraphs; `--budget`; `--json`.                                   |
 | `okf types`, `okf tags`                                    | Facet counts, sorted; `--json`.                                                                                  |
 | `okf links <concept>`                                      | Outgoing links; `--recursive`, `--max-distance`; `--json`.                                                       |
 | `okf backlinks <concept>`                                  | Incoming links; `--json`.                                                                                        |
@@ -251,6 +306,11 @@ Every read command emits:
 are omitted, never `0001-01-01`. `--json` ignores width and color. Shape tests cover each command;
 byte-for-byte goldens are not used because the bundle path and generation time vary.
 
+`data` payloads: `concepts` for `list`, `concept` for `show`, `hits` for `search` (each hit names a
+concept and a heading/line range), `outline` for `outline`, `section` for `section`, `context` for
+`context`, `threads`/`thread` for Atuin-backed reads, and `errors`/`warnings` counts for `doctor`.
+Line ranges are 1-based and inclusive.
+
 ## 9. Doctor issue codes
 
 | Code                                                         | Severity |
@@ -303,6 +363,8 @@ changes.
 - `links`: bundle-absolute, relative, fragments, external, broken, backlinks, orphans, recursive
   traversal.
 - `render`: text width, JSON shape, `show` Markdown.
+- `outline`/`section`/`context`: heading tree, exact line ranges, fence-aware boundaries, budget
+  truncation, a 10,000-line fixture, and a section slice that does not read the whole body.
 - `tui`: tabs/facets, list filtering, detail render, backlinks view, editor no-op, resize
   dimensions, non-TTY error.
 - Integration: the real `docs/` tree, a synthetic 1,000-concept bundle, and a fixture with every
