@@ -1781,11 +1781,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794686490,
-        "narHash": "sha256-yERvoH7Nr5e/KPiPpoheRK6L9uxw6ZBxck3vI3HFVo4=",
+        "lastModified": 1794688891,
+        "narHash": "sha256-GMQAbrxVS6k6qTcmrHarnK4ky+PXYw0IN07lsNm2fZ0=",
         "owner": "nazarewk-iac",
         "repo": "rosec",
-        "rev": "cdb8ddf1a3283b24373d78cb0f2260b829e4e509",
+        "rev": "bb44bb15e16bc17dd5d3fa88f4c35d14cb254323",
         "type": "github"
       },
       "original": {
