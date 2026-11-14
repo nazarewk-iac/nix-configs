@@ -303,3 +303,50 @@ methods); the extra days are metadata semantics, write/merge behaviour, and test
   own watcher.
 - Provider _config_ changes (`config.toml`) are hot-reloaded by the daemon; that is separate from
   data-file changes.
+
+## 15. Sync-on-read design (per-key reconciliation, no manual lock/unlock, no watcher)
+
+Requirement: per-item reconciliation (like KeePassXC merges entries, not whole files), no manual
+lock→unlock, reconciliation at **read/write time** rather than on a file watch.
+
+### 15.1 The design
+
+- **Layout**: one encrypted file per item — `store/<collection>/<item-id>.age` (or `.sops`),
+  containing the secret, label, attributes and `modified_at` + `host` metadata; one `_meta` per
+  collection; aliases in a single small file.
+- **Index**: in-memory `id → (mtime, size, sha256)`. On **every operation** (list, search, read,
+  write): `readdir` + `stat` the collection directory; re-read/decrypt only the files whose
+  stamp changed; drop removed entries; add new ones. Cost is a directory scan (microseconds for
+  hundreds of files), which is exactly the requested "sync upon reads and writes".
+- **Writes**: encrypt → temp file in the same directory → `fsync` → `rename` (atomic); update the
+  index. Per-item last-write-wins; `modified_at` + `host` detect concurrent edits.
+- **Conflicts**: opaque secrets cannot be semantically merged (KeePassXC merges a structured
+  database; a secret value has no merge). Per-item granularity makes conflicts rare and scoped;
+  a Syncthing conflict copy is surfaced as a separate item (`<id> (conflict <host>)`) or kept as
+  the newest with a log line — a policy choice, not a crypto problem.
+- **No lease, no global lock, no revision check.** `unlock` loads the identity (age identity /
+  wrapped key); `lock` drops it; `unlock_timeout` is provider-defined (return a long duration to
+  disable the daemon's 30 s auto-lock). The helper loads the identity at service start, so the
+  user never runs lock→unlock.
+- **No watcher.** Optional later; not needed for correctness.
+
+### 15.2 Where it fits
+
+| Base                                   | Fit                                                                                                                                                                                                | Work                                                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **grimsteel/pass-secret-service fork** | **best fit**: the D-Bus layer calls the `SecretStore` per operation (`list_secrets`, `search_collection`, `read_secret`, …) — **no daemon-wide cache**, so per-operation reconciliation is natural | new `SecretStore` impl + index/scan + conflict policy + tests: **4–7 days**                             |
+| rosec native provider                  | good, but the daemon's **`ItemCache`** serves metadata from memory and rebuilds on unlock/sync/TTL — values are read fresh per `get_secret_attr`, metadata can be stale                            | provider 4–7 days **+ a small daemon patch** to invalidate the cache per operation (fork): **5–9 days** |
+| rosec WASM provider                    | possible, but age-in-guest + file imports + policy signing                                                                                                                                         | **2–3 weeks**                                                                                           |
+| rosec local vault as-is                | not applicable: single file, no per-key reconciliation, manual re-unlock after external replacement                                                                                                | —                                                                                                       |
+
+**Conclusion:** for this requirement the **grimsteel fork is the better base** than rosec. It
+already has the right call pattern (per-operation store access), a clean `SecretStore` trait, and
+no metadata cache to invalidate. The rosec custom provider is a close second, but it needs a small
+daemon change to be truly sync-on-read.
+
+### 15.3 Merge caveat
+
+True KeePassXC-style merge needs a per-item revision (timestamp + host, or a small vector) so two
+diverged versions can be ordered; for opaque secrets the realistic outcomes are "newest wins" or
+"both versions surfaced". That is ~1 extra day on top of the estimates above and is a product
+decision, not a storage-layer one.
