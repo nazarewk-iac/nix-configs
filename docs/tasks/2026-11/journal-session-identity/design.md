@@ -113,18 +113,33 @@ is absent, `exec.LookPath` fails and the integration reports `jj-unavailable`.
 - `session changes`: resolve every recorded ID with `jj log -r <id> -T ...`; print change ID,
   commit ID, description, author, timestamp and changed files. A missing ID is a warning.
 
-### 4.3 Optional commit trailer
+### 4.3 Commit trailers and transparency
 
 A commit may carry:
 
 ```
+Assisted-by: opencode (DeepSeek V4.1 Flash 1017)
+Co-authored-by: Krzysztof Nazarewski <gpg@kdn.im>
 Session-Id: ses_e1f8bbd08ffep6essAsRoa3wna
 Harness: opencode
 ```
 
-`kdn-journal changes --session <id>` scans `jj log` for the trailer and merges those changes with
-the sidecar. This is opt-in because it publishes the session ID and a split/squash can duplicate or
-drop the trailer. The default write path never adds it.
+- `Assisted-by:` is **required** for LLM-assisted commits by the Nixpkgs transparency policy; it
+  must name the tool and primary model name/version. `Co-authored-by:` does not satisfy the policy;
+  it is optional attribution only.
+- `Session-Id:` and `Harness:` are local extensions. They are opt-in because they publish the
+  session ID; a split/squash can duplicate or drop them.
+- `kdn-journal commit` appends the missing trailers to the message and calls `jj commit` or
+  `jj describe` with explicit paths. It never rewrites a commit body silently.
+- `kdn-journal check-trailers --revset <revset>` scans commits and reports a missing `Assisted-by:`
+  as an error, and a missing `Co-authored-by:` as a warning.
+- `kdn-journal changes --session <id>` scans `jj log` for `Session-Id:` and merges those changes with
+  the sidecar.
+- Jujutsu has no arbitrary per-change metadata. `jj metaedit` cannot set a custom key, and the
+  operation log is repo-global and has no public session annotation. The trailer is the portable
+  channel; the sidecar is the private one.
+- A split/squash can duplicate or lose a trailer; the helper re-adds it to the resulting commit
+  when the agent runs `kdn-journal commit` again.
 
 ## 5. Atuin integration
 
@@ -158,10 +173,18 @@ atuin threads show <id> --style json
 atuin threads search <query> --harness <name> --limit <n> --style json
 ```
 
-and decodes the JSON. The exact field names are pinned in one adapter and covered by a fixture; a
-future Atuin schema change is isolated there. If `atuin` is absent, the daemon is down, or capture is
-off (`atuin threads list` returns `[]` with a warning), the integration reports `atuin-unavailable`
-or `atuin-empty` and continues.
+and decodes the JSON. `list --style json` is an array of objects with `atuin_id`, `harness`,
+`session_id`, `cwd`, `model`, `started_at`, `updated_at`, `message_count`, `title`, `preview`,
+`last_reply`, `children_atuin_ids` and token counts. The adapter pins those names and covers them
+with a fixture; a future Atuin schema change is isolated there.
+
+The repo config sets `[threads] capture = true` in both Atuin modules. The daemon is already
+enabled. Existing sessions are imported once with `atuin threads import`; on `oams` this imported
+766 threads (2026-11-16), including the current session. Capture then records new sessions as the
+agents run.
+
+If Atuin is absent, the daemon is down, or capture is off (`atuin threads list` returns `[]` with a
+warning), the integration reports `atuin-unavailable` or `atuin-empty` and continues.
 
 ### 5.2 Matching
 

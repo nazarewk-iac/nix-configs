@@ -101,11 +101,19 @@ Add `.cache/agents/<session>/session.json` (git-ignored) with:
 - Optional VCS-native alternative: a `Session-Id:` and `Harness:` trailer in commit descriptions,
   scanned by `kdn-journal changes --session <id>`. This is opt-in because it publishes session IDs
   and can be lost or duplicated by split/squash.
+- LLM-assisted commits carry an `Assisted-by:` trailer with the tool name and primary model name
+  and version, as required by the Nixpkgs transparency policy. `Co-authored-by:` does not satisfy
+  that policy; it is optional attribution, not the disclosure trailer.
+- Provide a `kdn-journal commit` helper that appends the trailers to the message and calls
+  `jj commit`/`jj describe` with explicit paths, plus a `check-trailers` gate that scans a revset
+  and reports missing `Assisted-by:` trailers.
 - Never claim that a change ID uniquely belongs to one session when `@` is shared.
 - Degrade gracefully when jj is absent or the repo is not a jj repo.
 
 ### 4. Atuin Threads integration
 
+- Enable capture in the repo config: `[threads] capture = true` in both Atuin modules. The daemon
+  is already enabled. Import existing sessions once with `atuin threads import`.
 - Match a journal session to an Atuin thread by the agent's native session ID (preferred), then by
   harness + cwd + start-time window as a fallback.
 - Store the Atuin UUID in `session.json` once matched.
@@ -131,6 +139,8 @@ kdn-journal session record-commit <commit-id> [--json]
 kdn-journal session changes [--session <id>] [--json]
 kdn-journal session atuin [--session <id>] [--json]
 kdn-journal atuin list|show|search [--json]
+kdn-journal commit [--message <subject>] -- <paths>
+kdn-journal check-trailers [--revset <revset>] [--json]
 kdn-journal summary --atuin
 kdn-journal tui   # session detail shows the Atuin link
 ```
@@ -152,6 +162,10 @@ kdn-journal tui   # session detail shows the Atuin link
 - A fixture proves the shared-`@` caveat is labelled, not hidden.
 - A fixture with `atuin threads list --style json` output maps a session by native ID and by the
   cwd/time fallback; missing Atuin or capture-off produces a warning, not an error.
+- After `threads.capture = true` and `atuin threads import`, `atuin threads list` is non-empty and
+  no longer prints the capture-off warning.
+- The trailer gate requires `Assisted-by:` and accepts an optional `Co-authored-by:`; a missing
+  `Assisted-by:` is an error.
 - `summary --atuin` and the TUI session detail show the Atuin UUID and message count.
 - No sidecar or session ID is committed by default.
 - Tests cover env detection, sidecar round-trip, jj template parsing with a fake runner, Atuin JSON

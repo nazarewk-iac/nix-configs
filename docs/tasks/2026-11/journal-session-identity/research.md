@@ -69,7 +69,37 @@ Atuin 18.24+ captures AI coding-agent sessions as **threads**. The installed ver
 3. **Atuin UUID**: once matched, store it in the sidecar so later lookups do not need heuristics.
 4. **No match**: leave `atuin` empty and report a warning; never fail the journal.
 
-## 5. Lessons from `kdn-journal`
+## 5. Commit trailers and transparency
+
+The Nixpkgs automation/AI policy requires an `Assisted-by:` Git commit trailer for LLM-assisted
+contributions. The trailer must name at least the tool and the primary model name and version.
+`Co-authored-by:` explicitly does **not** satisfy the policy; it is optional attribution, not the
+disclosure. Source:
+<https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md#transparency>.
+
+Git trailers are the last `Key: value` lines of a commit message. Jujutsu stores the commit
+description as the message, so trailers work with `jj describe -m` and `jj commit -m`. A practical
+shape:
+
+```
+feat(journal): add the session sidecar
+
+Assisted-by: opencode (DeepSeek V4.1 Flash 1017)
+Co-authored-by: Krzysztof Nazarewski <gpg@kdn.im>
+Session-Id: ses_e1f8bbd08ffep6essAsRoa3wna
+```
+
+`Session-Id:` is a local extension, not a Nixpkgs requirement. It publishes the session ID, so make
+it opt-in or keep it in the local sidecar instead.
+
+Jujutsu has no arbitrary per-change metadata key/value store. `jj metaedit` can change the
+description, author, committer, timestamps and change ID, but not a custom field. The operation log
+has operation descriptions and user/host/timestamp metadata, but no public command to attach a
+session ID to a specific change, and operations are repo-global rather than per-change. A commit
+trailer is the supported, portable channel today. Enforcement is also not native: jj has no
+commit-msg hook, so a helper command or a CI/doctor gate must add or check the trailer.
+
+## 6. Lessons from `kdn-journal`
 
 - The directory convention is already harness-agnostic; only the env detection is narrow.
 - The session pair is local and git-ignored; a `session.json` sidecar fits the same lifecycle.
@@ -79,7 +109,7 @@ Atuin 18.24+ captures AI coding-agent sessions as **threads**. The installed ver
 - The TUI already uses `bubbles/list`, `bubbles/viewport`, `glamour` and `lipgloss`; adding an
   Atuin line to the session detail does not need a new UI component.
 
-## 6. Sources
+## 7. Sources
 
 - Pi environment variables: <https://pi.dev/docs/latest/environment-variables>
 - Harness environment detection (Codex, Claude Code, Cursor, OpenCode, Pi):
