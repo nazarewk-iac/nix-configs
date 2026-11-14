@@ -121,3 +121,29 @@ here.
   [design-den-root.md](../../2026-11/pinned-pkgs-single-instantiation/design-den-root.md).
 - Blocker recorded: the **age `sops`-wrapper overlay is host-config-dependent** (only brys enables
   age), so brys cannot share a static per-system pkgs until that wrapper leaves `nixpkgs.overlays`.
+
+## Update 2026-11-16 — the parent/Home Manager split, as an inventory
+
+Idea recorded, no measurement: evaluate the parent system and every Home Manager user as **separate
+flake outputs**, and deploy both from one wrapper by default (`--parent-only`, `--home-only` on
+demand). The full note is [hm-split.md](hm-split.md).
+
+- **A naive measurement fails, and the failure is the finding.** `oams` with
+  `home-manager.users = lib.mkForce { }` dies at `modules/universal/programs/atuin/default.nix:268`,
+  which reads `config.home-manager.users.<user>.xdg.dataHome`. The dependency runs both ways.
+- **The inventory is the starting point.** Parent → Home Manager: **60 `ifHMParent` uses**,
+  **138 `home-manager.sharedModules` uses across 113 files**, **31 `home-manager.users` occurrences
+  in 20 files**. Parent reads Home Manager back at **5 sites** (`disks` ×3, `atuin` ×1, den `disks`
+  ×1). Home Manager → parent has **5 real `osConfig`/`kdnConfig.parent` reads** plus **3 dead
+  bindings** (kanshi's unused arg, two unused `sysCfg`).
+- **The den tree is the precedent.** It already removed the `osConfig` nixpkgs bridge, the Firefox
+  and Thunderbird policy reads, and the atuin `xdg.dataHome` read, and it already emits
+  `denHomeConfigurations`. Its one leftover is the persistence read-back.
+- **The tooling is the small part.** Sketch in [hm-split.md](hm-split.md) § "The deploy tooling":
+  discovery from `meta.json`, parent first, one lock, one exit code, and the host `pkgs` passed into
+  every user so no second nixpkgs instance appears.
+- **Order:** wire one `hosts-den` host with a den user and one standalone home config, invert the
+  persistence read-back, prototype the wrapper, then measure the three attributes of
+  [hm-split.md](hm-split.md) § "The measurement that would work".
+- **Correction:** the `useGlobalPkgs = false` row in [research.md](research.md) is stale. Commit
+  `ed3517329` (2026-11-09) turned it on. The row now says so.

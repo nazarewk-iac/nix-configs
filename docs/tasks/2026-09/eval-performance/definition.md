@@ -111,4 +111,6 @@ universal tree, compare option values or compare the closure of the built system
   205 aspects of the registry and every class each one emits, so a cut here pays back there too.
 - [design.md](design.md) — the design of the measurement harness, the runnable tree comparison and
   the one identified check-speed lever.
+- [hm-split.md](hm-split.md) — the parent/Home Manager split as an idea, with the two-way dependency
+  inventory that blocks it and the deploy-tooling sketch.
 - [status.md](status.md) — where the work is parked, and the named blocker.
