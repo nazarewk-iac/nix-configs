@@ -1,10 +1,17 @@
 ---
 type: Reference
-description: Full Open Knowledge Format (OKF) v0.1 spec summary as applied to this repo's markdown files.
-timestamp: 2026-07-10T15:00:00+02:00
+description: Open Knowledge Format summary as applied to this repository, with a pointer to the current v0.2 specification and its new trust, provenance and lifecycle fields.
+timestamp: 2026-11-16T08:00:00+01:00
 ---
 
 # Open Knowledge Format (OKF)
+
+> **OKF v0.2 is current.** The canonical specification now lives at
+> [GoogleCloudPlatform/open-knowledge-format](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md).
+> This file is a v0.1 summary kept for the repository's existing frontmatter convention. The v0.2
+> additions — `sources`, `generated`, `verified`, `status`, `stale_after`, Attested Computation
+> metadata and the actor convention — are summarized in
+> [docs/tasks/2026-11/okf-browser/research.md](tasks/2026-11/okf-browser/research.md).
 
 Spec source: [GoogleCloudPlatform/knowledge-catalog okf/](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf).
 
