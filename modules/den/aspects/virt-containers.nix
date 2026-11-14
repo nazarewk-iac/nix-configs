@@ -142,7 +142,18 @@
       options.kdn.virtualisation.containers.storage.settings = lib.mkOption {
         type = lib.types.attrsOf lib.types.anything;
         default = { };
-        description = "The `storage.conf` settings.";
+        description = ''
+          The `storage.conf` settings of the per-user container store.
+
+          A path in this file expands `$HOME` and `$XDG_RUNTIME_DIR`, and expands no `~`. A
+          `graphroot` of `~/.local/share/containers/storage` becomes a directory relative to the
+          working directory (measured with podman 6.1.4 on 2026-11-14). Write `$HOME`.
+
+          `pkgs.formats.toml` fails on a null value, so a consumer replaces a key with a real string
+          and never clears one with `null`. The type is `attrsOf anything`, which does not merge, so
+          an override at the leaf replaces the whole `storage` table: a consumer that writes
+          `storage.graphroot` also states `driver` and `runroot`, or the rendered file loses them.
+        '';
       };
 
       options.kdn.virtualisation.containers.registries = lib.mkOption {
@@ -184,6 +195,23 @@
       config = lib.mkMerge [
         {
           kdn.virtualisation.containers.persist.usrData = [ ".local/share/containers" ];
+
+          # The rootless engine reads this file before the system drop-ins. Without it, the
+          # engine takes `graphroot` and `runroot` from
+          # `/etc/containers/storage.conf.d/00-nixos.conf`, which names the root-only store at
+          # `/var/lib/containers/storage`, and every rootless command fails with
+          # `mkdir /var/lib/containers/storage/libpod: permission denied`. `$HOME` and
+          # `$XDG_RUNTIME_DIR` expand per user, so one file serves every user of the host. A `~`
+          # does NOT expand here: it becomes a directory relative to the working directory
+          # (measured with podman 6.1.4 on 2026-11-14).
+          kdn.virtualisation.containers.storage.settings = lib.mkDefault {
+            storage = {
+              driver = "overlay";
+              graphroot = "$HOME/.local/share/containers/storage";
+              runroot = "$XDG_RUNTIME_DIR/containers";
+              options.overlay.mountopt = "nodev";
+            };
+          };
         }
         (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
           home.packages = filterPackages (

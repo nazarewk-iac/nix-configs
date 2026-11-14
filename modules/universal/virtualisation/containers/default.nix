@@ -39,6 +39,35 @@ in
         default = { };
         description = "storage.conf settings";
       };
+      # Rootless podman reads its own store. It must not inherit the system paths below.
+      # See the option description for the two measured traps: an empty file, and a `~` path.
+      rootlessSettings = lib.mkOption {
+        type = with lib.types; attrsOf anything;
+        default = {
+          storage = {
+            driver = "overlay";
+            graphroot = "$HOME/.local/share/containers/storage";
+            runroot = "$XDG_RUNTIME_DIR/containers";
+            options.overlay.mountopt = "nodev";
+          };
+        };
+        description = ''
+          The `storage.conf` settings of the per-user container store.
+
+          The rootless engine reads this file first. Without it, the engine falls through to
+          `/etc/containers/storage.conf.d/`, which names the root-owned system store, and every
+          rootless command fails with `permission denied`.
+
+          A path in this file expands `$HOME` and `$XDG_RUNTIME_DIR`, and expands no `~`. A
+          `graphroot` of `~/.local/share/containers/storage` becomes a directory relative to the
+          working directory (measured with podman 6.1.4 on 2026-11-14). Write `$HOME`.
+
+          `pkgs.formats.toml` fails on a null value, so a consumer replaces a key with a real string
+          and never clears one with `null`. The type is `attrsOf anything`, which does not merge, so
+          an override at the leaf replaces the whole `storage` table: a consumer that writes
+          `storage.graphroot` also states `driver` and `runroot`, or the rendered file loses them.
+        '';
+      };
     };
     registries = lib.mkOption {
       type = with lib.types; attrsOf (listOf anything);
@@ -106,13 +135,14 @@ in
                 hooks_dir = [ osConfig.boot.kernelPackages.oci-seccomp-bpf-hook ];
               };
             };
-            # /home/kdn/.config/containers/storage.conf
+            # /home/kdn/.config/containers/containers.conf
             xdg.configFile."containers/containers.conf".source =
               (pkgs.formats.toml { }).generate "containers.conf"
                 cfg.containersConf.settings;
+            # /home/kdn/.config/containers/storage.conf
             xdg.configFile."containers/storage.conf".source =
               (pkgs.formats.toml { }).generate "storage.conf"
-                cfg.storage.settings;
+                cfg.storage.rootlessSettings;
             xdg.configFile."containers/registries.conf".source =
               (pkgs.formats.toml { }).generate "registries.conf"
                 {
