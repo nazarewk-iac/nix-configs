@@ -450,6 +450,22 @@ in
             };
             Install.WantedBy = [ "default.target" ];
           };
+
+          # `/dev/bus/usb` changes when a USB device node appears or disappears; that is the
+          # edge-triggered plug/unplug signal. Do not watch `/dev`: it is written every second
+          # (`/dev/null` and friends), so the non-recursive watch hits the trigger limit. Do not use
+          # `PathExistsGlob=/dev/hidraw*`: it is level-triggered and re-fires after every run.
+          systemd.user.paths.rosec-keys = {
+            Unit.Description = "watch the USB bus to discover a YubiKey";
+            Path = {
+              PathChanged = [ "/dev/bus/usb" ];
+              Unit = "rosec-keys.service";
+              # A hub or a dock can present several device nodes at once.
+              TriggerLimitBurst = 10;
+              TriggerLimitIntervalSec = "60s";
+            };
+            Install.WantedBy = [ "default.target" ];
+          };
         })
 
         (lib.mkIf cfg.enable {
