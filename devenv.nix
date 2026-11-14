@@ -163,6 +163,9 @@ in
       # (spec/show/plan/apply for any host's disko-declared ZFS datasets).
       inputs.nix-configs.inputs.disko-zfs.packages.${pkgs.stdenv.hostPlatform.system}.default
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-disko-zfs
+      # Browse docs/tasks and .cache/agents from the shell: summary, task list, boards,
+      # worklogs, doctor and the TUI. See docs/kdn-journal.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-journal
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)

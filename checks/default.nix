@@ -110,6 +110,31 @@ denTests.checks
   # age identity, so the suite signs with no YubiKey. See design § 8.1.
   kdn-certs-test-ca = pkgs.kdn.kdn-certs.passthru.tests.go-test-ca;
 
+  # The `kdn-journal` Go suite. Every case uses temp fixtures; the real-repository integration
+  # test skips when docs/tasks is absent, which is the case in the sandbox.
+  kdn-journal-test = pkgs.kdn.kdn-journal.passthru.tests.go-test;
+
+  # The parser gate over the real task tree. It copies docs/tasks into a temporary root and runs
+  # `kdn-journal doctor --parse-only`, so a broken definition or board fails a check even though
+  # .cache/agents is not in the flake source.
+  kdn-journal-parse =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (file: file.hasExt "md") ../docs/tasks;
+      };
+    in
+    pkgs.runCommand "check-kdn-journal-parse"
+      {
+        nativeBuildInputs = [ pkgs.kdn.kdn-journal ];
+      }
+      ''
+        mkdir -p "$TMPDIR/repo/docs"
+        cp -r ${src}/docs/tasks "$TMPDIR/repo/docs/tasks"
+        kdn-journal --root "$TMPDIR/repo" doctor --parse-only
+        touch "$out"
+      '';
+
   # The committed certificate-expiry summary must match the certificates. The script decodes them
   # in the sandbox and compares the result with `data/certs/expiry.json`; a certificate renewed
   # without re-running `hack/certs-expiry.py` fails here instead of drifting silently until the

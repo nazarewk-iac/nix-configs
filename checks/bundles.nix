@@ -109,6 +109,8 @@ in
     "kdn-certs-test"
     "kdn-certs-test-ca"
     "kdn-certs-expiry"
+    "kdn-journal-test"
+    "kdn-journal-parse"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];
