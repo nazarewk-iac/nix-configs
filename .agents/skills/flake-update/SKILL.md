@@ -15,6 +15,9 @@ Full reference (stable URLs — a consumer repo has no `docs/` directory):
 - [flake-update.fork.md](https://github.com/nazarewk-iac/nix-configs/blob/main/docs/flake-update.fork.md)
 - [flake-patches.md](https://github.com/nazarewk-iac/nix-configs/blob/main/docs/flake-patches.md)
 
+For a full dependency update (flake inputs **and** the separate rosec fork/input), start with the
+`deps-update` skill; it asks which groups to update and delegates each one.
+
 ## Quick summary (no fork)
 
 ```bash

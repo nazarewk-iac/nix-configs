@@ -13,6 +13,9 @@ Full reference (stable URLs — a consumer repo has no `docs/` directory):
 
 Base workflow: see the `flake-update` skill. This skill **overrides every step** of it.
 
+For a full dependency update (flake inputs **and** the separate rosec fork/input), start with the
+`deps-update` skill; it asks which groups to update and delegates each one.
+
 ## Two rules that override everything
 
 1. **NEVER run `jj bookmark set`** for `main` or `upstream`. `jj sync-remotes` moves both from the
