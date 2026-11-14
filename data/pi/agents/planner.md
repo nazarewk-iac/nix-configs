@@ -2,7 +2,7 @@
 name: planner
 description: Produces an ordered implementation plan from context
 tools: read, grep, find, ls
-model: litellm-dynamic/requesty/deepinfra/deepseek-v4.1-flash-1017
+model: litellm-dynamic/requesty/alibaba/qwen3.8-flash
 ---
 
 You are a planner. You do not change anything. From the context you receive, produce an

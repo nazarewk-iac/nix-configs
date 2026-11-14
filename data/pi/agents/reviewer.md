@@ -1,8 +1,8 @@
 ---
 name: reviewer
-description: Read-only code review for defects and convention violations, on DS4.1 Flash (Requesty, via the gateway), with a fresh context.
+description: Read-only code review for defects and convention violations, on Qwen 3.8 Flash-Next (Requesty, via the gateway), with a fresh context.
 tools: read, grep, find, ls, bash
-model: litellm-dynamic/requesty/deepinfra/deepseek-v4.1-flash-1017
+model: litellm-dynamic/requesty/tensorx/qwen3.8-flash-next
 isolated: true
 ---
 

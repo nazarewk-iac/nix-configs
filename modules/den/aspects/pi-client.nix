@@ -40,17 +40,19 @@
         # must name a model the runtime actually holds. `litellm-dynamic` is the provider the
         # model-discovery extension registers for the gateway, whose live entries include the
         # Requesty SaaS ids; the id is the gateway deployment for Requesty's
-        # `alibaba/qwen3.8-flash` (enabled 2026-11-13, the cheaper sibling of
-        # `tensorx/qwen3.8-flash-next`), so a bare `pi` starts on it with thinking at the model
-        # default (`medium`). The pair resolves only while the gateway serves that deployment:
-        # with the extension absent (bare pi, no wrapper), the gateway down at startup, or
-        # before the deployment is live, pi degrades to the first available model — a previous
-        # mis-pairing (requesty/deepseek-v4.1-flash-1017, which was not then a static entry: the
-        # static requesty ids were the wire-invalid aliases `ds4`/`remote`) did exactly that and
-        # silently ran `gemma-4-12b` (measured 2026-11-13).
+        # `deepseek-v4.1-flash-1017` (the deepinfra route; the runware sibling is served too), so
+        # a bare `pi` starts on it with thinking at the model default. DS4.1 Flash is the primary:
+        # the qwen SaaS pair that held the default first could not compact past ~240k context and
+        # tripped Alibaba's content filter on command output (observed 2026-11-14), so it no longer
+        # fits a long-running main session — both qwen models stay as the auxiliary depth for the
+        # planner/reviewer sub-agents instead. The pair resolves only while the gateway serves
+        # that deployment: with the extension absent (bare pi, no wrapper), the gateway down at
+        # startup, or before the deployment is live, pi degrades to the first available model — a
+        # previous mis-pairing did exactly that and silently ran `gemma-4-12b` (measured
+        # 2026-11-13).
         settings = {
           defaultProvider = "litellm-dynamic";
-          defaultModel = "requesty/alibaba/qwen3.8-flash";
+          defaultModel = "requesty/deepinfra/deepseek-v4.1-flash-1017";
           # A store symlink is read-only; keep the settings file free of churn it would try to
           # persist (changelog version, telemetry ids).
           enableInstallTelemetry = false;

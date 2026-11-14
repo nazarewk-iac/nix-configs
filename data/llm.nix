@@ -277,7 +277,8 @@ in
     # local fleet and its serving arithmetic; the id is Requesty's canonical aggregate name
     # (`alibaba/qwen3.8-flash`), which the direct `requesty` endpoint routes and the gateway
     # serves as `requesty/alibaba/qwen3.8-flash`. Enabled on the account 2026-11-13 as the
-    # cheaper sibling of `tensorx/qwen3.8-flash-next`; it is the pi harness default (see
+    # cheaper sibling of `tensorx/qwen3.8-flash-next`; it is the pi `planner` sub-agent's model
+    # (auxiliary; the pi harness default is `deepseek-v4.1-flash-1017` — see
     # modules/den/aspects/pi-client.nix). No `reasoning` block: the deployment takes the
     # upstream `reasoning_effort` pass-through (verified 2026-11-13), so no client-side map.
     "qwen3.8-flash" = {
@@ -297,9 +298,10 @@ in
       # RETIRED 2026-11-13: `set = "retired"`, aliases dropped, no longer a persistent model.
       # The local frontier left the fleet on electricity grounds — 2.36 tok/s decode is far
       # below the 10 tok/s floor for a served model, and it pinned ~14 GiB in RAM. The plan
-      # and review depth it carried now runs on `deepseek-v4.1-flash-1017` (Requesty, through
-      # the gateway), and the harness default is its Requesty sibling `qwen3.8-flash`. The
-      # full registration stays so the measurements and a one-word re-enable survive.
+      # and review depth it carried now runs on the Requesty SaaS qwen pair through the gateway
+      # (pi `planner` on `qwen3.8-flash`, `reviewer` on `tensorx/qwen3.8-flash-next`), and the
+      # harness default is `deepseek-v4.1-flash-1017`. The full registration stays so the
+      # measurements and a one-word re-enable survive.
       #
       # History: the deep aliases landed here when qwen3.8-27b was dropped. Measured on
       # 2026-11-04 on the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next

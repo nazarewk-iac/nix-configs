@@ -33,9 +33,10 @@ pi --model brys/code-std-fast                                             # a st
 pi --model litellm-dynamic/requesty/tensorx/qwen3.8-flash-next --thinking high  # SaaS frontier + depth
 ```
 
-A bare `pi` (no `--model`) starts on `litellm-dynamic/requesty/alibaba/qwen3.8-flash`, the
-gateway route to Requesty's `alibaba/qwen3.8-flash` (1M context, 128K max output, vision), with
-thinking at the model default (`medium`). The default is
+A bare `pi` (no `--model`) starts on `litellm-dynamic/requesty/deepinfra/deepseek-v4.1-flash-1017`,
+the gateway route to Requesty's `deepseek-v4.1-flash-1017` (1M context, vision), with thinking at
+the model default. DS4.1 Flash is the primary; the two qwen SaaS models are the auxiliary depth
+for the `planner`/`reviewer` sub-agents (planning and review). The default is
 `defaultProvider`/`defaultModel` in `modules/den/aspects/pi-client.nix`. pi resolves that pair by
 exact provider+id match, so both halves must name a model the runtime holds, else pi falls back to
 the first available model.
