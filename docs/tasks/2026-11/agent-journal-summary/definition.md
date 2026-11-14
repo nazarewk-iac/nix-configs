@@ -1,12 +1,16 @@
 ---
 type: Task
-description: Give agent journals a predictable shape and a script that prints where the work stands, so the owner reads one screen instead of four files.
-status: open
+description: Give agent journals a predictable shape and a Go CLI plus TUI that prints where the work stands and browses repository tasks, session journals and task boards.
+status: in-progress
 authored_by: agent
 timestamp: 2026-11-12T00:00:00+01:00
 ---
 
-# Board summary: structured boards and a one-command status
+# Agent journal CLI: structured boards and a one-command status
+
+> Owner decision 2026-11-15: implement this as a Go CLI (with a TUI) under `packages/`, not as
+> `hack/board-summary.py`. The Python proposal below is kept only as history; the design document
+> and the acceptance criteria are the current contract.
 
 ## Context
 
@@ -33,6 +37,9 @@ One command prints where the work stands:
 - the last few worklog entries, by heading only;
 - optionally a task directory (`--task docs/tasks/…`), which adds that task's pair.
 
+A second surface browses the same data interactively: repository tasks, their definitions, boards
+and worklogs, and every session journal.
+
 Target: one screen, under a second, no manual opening of files.
 
 ## Proposal
@@ -58,56 +65,82 @@ tags: [session, ssh-ca]
 - [x] done item
 - [ ] open item
 
+## Next
+
+- item
+
 ## Blocked
 
 - item — what it waits for
 
 ## Notes
+
 free prose
 ```
 
-Parsing uses **headings**, not new keywords: the script reads `## Status` / `## Now` /
-`## Next` / `## Blocked` and treats `- [ ]` / `- [x]` as item markers. Everything else is prose.
+Parsing uses **headings**, not new keywords: the CLI reads `## Status` / `## Now` / `## Next` /
+`## Blocked` / `## Done` and treats `- [ ]` / `- [x]` as item markers. Everything else is prose.
 OKF's conventional headings are a superset of this, so a future consumer can read the bundle
-without our script.
+without our tool.
 
 A board without the skeleton must still parse — fall back to "no structured items", never to an
-error. The session directory can carry an OKF `index.md` listing its boards; the script accepts
-one but does not require it.
+error. The session directory can carry an OKF `index.md` listing its boards; the CLI accepts one
+but does not require it.
 
-### 2. The script
+### 2. The CLI
 
-`hack/board-summary.py` (the repo already keeps Python helpers in `hack/`, e.g.
-`align-md-tables.py`, `eval-profile-rank.py`):
+`packages/kdn-journal`, binary `kdn-journal`:
 
-- default: the newest `.cache/agents/*/` directory, or `--session <dir|id>`;
-- `--track <name>`: one sub-board;
-- `--task <dir>`: add a task pair;
-- `--all`: every session directory, newest first;
-- output: a compact block per board, then the worklog headings.
+- `summary`: the newest session (or `$OPENCODE_SESSION_ID` when it names one), or `--session`;
+- `summary --track <name>`: one sub-board in full;
+- `summary --task <dir|slug>`: add a task pair;
+- `summary --all`: every session, newest first;
+- `sessions`: list sessions with board counts and last activity;
+- `tasks`: list repository tasks with status, activity and open items;
+- `task <dir|slug>`: one task, its files, board, worklog and sub-tasks;
+- `task status <dir|slug> <open|in-progress|done>`: update the frontmatter status safely;
+- `board <path>` / `worklog <path>`: parse one file or a directory's pair;
+- `doctor`: validate the task tree and journals, exit non-zero on errors;
+- `tui`: a bubbletea browser over the same models;
+- every read command accepts `--json`.
 
-A `kdnctl` subcommand is the alternative. Python is the smaller step: no Go build, and the file
-format is a script concern, not a fleet concern.
+The output is compact by default (three items per section, five worklog headings, terminal width)
+and `--full` removes the limits.
 
-## Open questions
+### 3. Why Go
 
-1. Does the skeleton belong in the rule (`.agents/rules/agent-journal.md`) so every harness writes
-   it, or in this task's own convention first?
-2. Should the frontmatter be required, or optional with the mtime as a fallback?
-3. Do task `.board.md` files get the same skeleton, and does the script follow `parent:` links?
-4. Where does the summary run: the owner's shell, or also a `kdnctl`/devenv command?
-5. Do we want a `--json` mode for a future TUI or web view, or is text enough?
+The owner prefers a compiled CLI under `packages/`. The repo already builds Go packages with
+`buildGoModule` (`kdn-certs`, `kdn-ssh-access`, `kdnctl`) and uses cobra plus the charmbracelet
+stack. A Go binary gives one artifact, a real TUI, JSON output, and a test suite that runs without
+Python or a devenv shell.
+
+## Decisions (answers to the earlier open questions)
+
+1. The skeleton is **recommended** in `.agents/rules/agent-journal.md`, not required. Existing
+   free-form boards must keep parsing; the CLI degrades instead of failing.
+2. Frontmatter is **optional**. The file mtime is the fallback for `updated`; the first H1 is the
+   fallback for `title`.
+3. Task `.board.md` files use the **same** skeleton and parser. The CLI shows the task pair when
+   `--task` is given, and follows sub-task directories for the task browser.
+4. The summary runs from the owner's shell and from the devenv shell; the package is exposed in
+   `devenv.nix`. No `kdnctl` subcommand.
+5. `--json` is part of the first version. The TUI consumes the same Go models, not the JSON.
 
 ## Acceptance
 
-- `hack/board-summary.py` prints the current session in one screen, and every existing free-form
+- `kdn-journal summary` prints the current session in one screen, and every existing free-form
   board in this repo parses without an error (degraded output is fine).
-- With `--task docs/tasks/2026-11/agent-journal-summary`, it also shows that task's state.
+- `kdn-journal summary --task docs/tasks/2026-11/agent-journal-summary` also shows that task's
+  state.
 - The output fits 40 lines for a session with three tracks.
-- The script has a test with one structured and one unstructured board.
+- The test suite has one structured and one unstructured board, and covers the summary line count.
+- `kdn-journal tasks`, `kdn-journal task <slug>`, `kdn-journal sessions`, `kdn-journal doctor` and
+  `kdn-journal tui` work against this repository.
+- `nix build .#kdn-journal` succeeds, and `go test ./...` passes inside and outside the Nix build.
 
 ## Out of scope
 
 - Changing where the journals live or what they contain.
 - Parsing the transcript.
-- A UI beyond the terminal.
+- A web UI.
+- Automatically editing a board from the TUI; the TUI opens the file in `$EDITOR` instead.
