@@ -243,3 +243,63 @@ independent external channels. Its custom-provider seam is real and clean (a cap
 trait plus a documented WASM contract), and a sops/age file-tree provider is a days-scale
 addition if the single-file vault ever becomes the limiting factor — but it is **not needed for
 the hard requirements**, which the local vault + external helper already meet.
+
+## 14. Extension estimates (YubiKey SSH, multi-file sync, reload)
+
+### 14.1 "No sk-ssh" — what it does and does not mean
+
+rosec's agent does **not** serve FIDO2 resident keys (`sk-ssh-ed25519@openssh.com`,
+`sk-ecdsa-sha2-nistp256@openssh.com`) and does not implement OpenSSH's
+`sk-provider@openssh.com` agent extension (`rosec-ssh-agent/src/session.rs` intercepts
+`Request::Extension` and returns failure). That is a limitation of **rosec's own agent**, not of
+the YubiKey: this tree already runs a FIDO2-capable OpenSSH agent
+(`kdn.home.ssh-agent.enable`, nixpkgs openssh linked with libfido2), and rosec's agent is a
+second, vault-driven agent. You choose per host with `IdentityAgent`, or run both sockets.
+
+**Option 1 — no fork, hours.** Store the sk key **handle** (the `id_ed25519_sk` file: credential
+handle + public key, no secret) as a vault item and feed it to the OpenSSH agent at unlock
+(`rosec get <item> > 0600 file && ssh-add file`). Signing still touches the YubiKey. Same shape as
+the gopass feeder; ~1–2 hours including the item and a unit hook.
+
+**Option 2 — fork rosec's agent, ~1–2 weeks.** The work:
+
+1. Handle the `sk-provider@openssh.com` extension in `rosec-ssh-agent/src/session.rs` (the
+   `Request::Extension` hook exists; the response format is documented in OpenSSH
+   `PROTOCOL.agent`) — 2–4 days.
+2. Signing path: shell out to `ssh-keygen -Y sign -f <handle> -n <namespace>` (drives libfido2,
+   prompts for touch) or link `ssh-key`/`libfido2` with the sk feature — 1–2 days.
+3. Key model: the provider `ssh` capability currently assumes a private key
+   (`get_ssh_private_key`); add an sk key kind (public key + credential id + application) and
+   list it from `RequestIdentities` — 1–2 days.
+4. Tests with a real YubiKey, confirmation policy, FUSE `allowed_signers` (unchanged — it lists
+   public keys) — 1–2 days.
+
+The "read-only from providers, no add/remove protocol" model needs **no change**; the extension is
+a sign-only path. Risk: `ssh-agent-lib`'s extension plumbing is usable (it exposes
+`Request::Extension` and a `Session::handle` override), but the protocol must be matched exactly.
+
+### 14.2 Multi-file storage syncable with Syncthing/Nextcloud
+
+| Option                             | Work                           | Properties                                                                                                                                 |
+| ---------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Single vault as-is                 | **hours** (ops only)           | Syncthing/Nextcloud sync `.vault` + `.meta`; `.lock` is inert; whole-file conflicts, last-write-wins; re-unlock after external replacement |
+| Native file-tree provider          | **3–6 days**                   | one age/sops-encrypted file per item; per-item conflicts; still last-write-wins per item; no watcher unless added                          |
+| WASM file-tree provider            | **3–6 days + guest packaging** | same, but gets `register_watch` (inotify) from the host → live reload on external change (the KeePassXC provider uses it)                  |
+| Native provider + watcher          | **+1–2 days**                  | `notify`-based reload on file change                                                                                                       |
+| Export/import script (no provider) | ~1 day                         | not live, fragile — not recommended                                                                                                        |
+
+The provider seam is the same one the grimsteel exercise measured (~330 lines for the core
+methods); the extra days are metadata semantics, write/merge behaviour, and tests.
+
+### 14.3 Does rosec reload providers on file changes?
+
+- **Local vault: no.** An external replacement is detected at write time by the SHA-256 revision
+  check — `rosec-vault/src/storage.rs:101-102` returns "vault changed on disk; lock and unlock it
+  again before writing" — and the `.lock` lease is held while unlocked. After Syncthing replaces
+  the file you must `rosec lock` + unlock (or restart the daemon). No automatic reload.
+- **WASM providers: yes, if they register a watch.** The host exposes `register_watch`
+  (`rosec-wasm/src/host_watch.rs`, `notify`/inotify, path-scoped, coalesced) — the KeePassXC
+  provider reloads on save. A WASM file-tree provider can do the same; a native one must add its
+  own watcher.
+- Provider _config_ changes (`config.toml`) are hot-reloaded by the daemon; that is separate from
+  data-file changes.
