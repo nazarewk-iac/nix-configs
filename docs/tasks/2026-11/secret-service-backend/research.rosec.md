@@ -1,0 +1,245 @@
+---
+type: Research
+description: Full evaluation of rosec as the headless Secret Service implementation, including its custom-provider (storage backend) seam.
+status: open
+authored_by: agent
+timestamp: 2026-11-14T12:00:00+01:00
+---
+
+# rosec — full evaluation
+
+Candidate: [jmylchreest/rosec](https://github.com/jmylchreest/rosec), evaluated at
+**v0.0.40** (released 2026-11-13). Companion material: the full source-level report in the
+session journal (`research/rosec.md`), the PoC results (`poc/results.md`, `poc/summary.md`),
+and the plan review (`poc/review-plan.md`). This file is the consolidated evaluation, with the
+PoC findings folded in and clearly marked.
+
+## 1. What it is
+
+| Item        | Value                                                                                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project     | Rust workspace: `rosecd` (daemon), `rosec` (CLI), `rosec-prompt`, `pam_rosec.so` + `rosec-pam-unlock`, `rosec-uhid` (optional FIDO2 passkey broker)                                             |
+| Scope       | `org.freedesktop.secrets` provider, its own SSH agent, TOTP files, optional FIDO2 passkeys, PAM unlock, FUSE tree                                                                               |
+| Version     | 0.0.40 (2026-11-13); repo created 2026-02-24; 653 commits                                                                                                                                       |
+| Licence     | MIT (the Proton Pass provider crate is GPL-3.0-or-later)                                                                                                                                        |
+| Maintenance | effectively solo (`jmylchreest` 623/633 commits), 47 stars, no SECURITY.md, no published advisories                                                                                             |
+| Packaging   | nixpkgs `pkgs.rosec` 0.0.34 (pinned here; **fails to build from source** on `zstd-sys`); AUR `rosec-bin` updated the same day as each release; no flake; upstream issue #2 tracks Nix packaging |
+| Size        | ~77k lines of Rust across the workspace (largest: secret-service 14k, wasm 9.5k, CLI 7.9k, core 6.7k, daemon 4.7k, vault 3.6k, ssh-agent 663)                                                   |
+
+## 2. Architecture
+
+- **`rosecd`** is the long-lived user daemon. It hosts the D-Bus service, the SSH agent, the
+  FUSE mounts and the provider registry. It claims `org.freedesktop.secrets` with
+  `DO_NOT_QUEUE` (fails loudly with owner info if taken) and the portal name
+  `org.freedesktop.impl.portal.desktop.rosec` (non-fatal).
+- **Start paths**: D-Bus activation (`org.freedesktop.secrets.service` written by `rosec enable`),
+  a socket unit (`rosecd.socket`), or a plain user unit. The shipped unit is `Type=dbus`,
+  `BusName=org.freedesktop.secrets`, `WantedBy=default.target` and is **deliberately not** ordered
+  after `graphical-session.target`.
+- **Session bus is optional**: the default `private-socket` feature embeds a D-Bus broker
+  (`busd`) at `$XDG_RUNTIME_DIR/rosec/bus` and migrates to the real session bus when it appears
+  (`session_bus_watcher`). The PoC used `--socket … --no-migrate` and needed no session bus at
+  all.
+- **Providers** are the storage backends (section 5). Native ones are registered in
+  `build_providers` (`rosecd/src/main.rs`); WASM ones are Extism guests with policy sidecars.
+- **`rosec enable`** writes user-local files only: the D-Bus activation file, the systemd user
+  units, and (with `--mask`) masks gnome-keyring. It is the only command that touches the host's
+  service directories; a PoC must not run it.
+
+## 3. Spec conformance
+
+| Interface / feature                                                                                                                          | Status | Notes                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Service`: `Collections`, `OpenSession`, `CreateCollection`, `SearchItems`, `Unlock`, `Lock`, `GetSecrets`, `ReadAlias`, `SetAlias`, signals | ✅     | verified in `rosec-secret-service` source                                                                                                                                                        |
+| `Collection`: `Items`, `Label`, `Locked`, `Created`, `Modified`, `Delete`, `SearchItems`, `CreateItem`, signals                              | ✅     | —                                                                                                                                                                                                |
+| `Collection`: `GetSecrets`, `ClearSecret`, `Lock`, `Unlock`                                                                                  | ❌     | missing (open issue #106); `GetSecrets` exists only on `Service`                                                                                                                                 |
+| `Item`: `Locked`, `Attributes`, `Label`, `Created`, `Modified`, `Delete`, `GetSecret`                                                        | ✅     | `GetSecret` is session-aware                                                                                                                                                                     |
+| `Item.SetSecret`                                                                                                                             | ⚠️     | present but always `NotSupported` ("use CreateItem with replace=true", issue #105)                                                                                                               |
+| `Session`: `Close`; `plain` + `dh-ietf1024-sha256-aes128-cbc-pkcs7`                                                                          | ✅     | spec DH: RFC 2409 group 2, HKDF-SHA256 no salt, AES-128-CBC/PKCS7; client public values range-checked and **variable-length accepted** (PR #90) — the reason it interops with libsecret 0.21.8.2 |
+| Session binding                                                                                                                              | ✅     | sessions bound to the caller's unique name, torn down on disconnect                                                                                                                              |
+| `SearchItems` semantics                                                                                                                      | ✅     | exact, AND-ed attribute equality on SHA-256 hashes; the special key `name` matches the label; a non-standard glob extension exists (`org.rosec.Search.SearchItemsGlob`)                          |
+| `default` + `login` aliases                                                                                                                  | ✅     | both registered; `CreateCollection` shim returns the default collection for `default`/`""` and `("/", "/")` for `login`/unknown (gnome-keyring quirk emulated)                                   |
+| `Prompt` objects                                                                                                                             | ✅     | full `Prompt`/`Dismiss`/`Completed`; bound to the initiating caller; per-provider serialization; max 3 attempts; 2FA; deferred create/delete; cancelled on client disconnect                     |
+| `Lock`/`Unlock`                                                                                                                              | ✅     | return Prompt objects; per-provider idle/max auto-lock; logind `PrepareForSleep` locks; session-lock/logout policies                                                                             |
+| `session` (volatile) collection                                                                                                              | ✅     | kernel-keyring backed                                                                                                                                                                            |
+
+**Assessment:** the spec surface is the most complete of the ready-made candidates, with two
+documented gaps (Collection-level methods, `Item.SetSecret`) that libsecret/`secret-tool`/`gh`/git
+credential helpers do not use. The PoC exercised store/lookup/search with both libsecret
+versions and the DH path 30/30 with 0.21.8.2.
+
+## 4. Headless behaviour
+
+- No display, no portal, no DE daemon needed. The unit is not tied to `graphical-session.target`;
+  the embedded private bus removes even the session-bus dependency.
+- **Prompt ladder** (source `rosec-secret-service/src/state.rs`): 1) `SSH_ASKPASS` from the
+  daemon's environment — the daemon runs the program with the prompt text as argv[1] and reads
+  one stdout line; 2) `[prompt] backend = "<binary>"` — a fully custom prompter (JSON request on
+  stdin, one JSON line on stdout); 3) `rosec-prompt --tty` (a sibling binary, rpassword); 4) a
+  built-in `/dev/tty` prompt; 5) a hard error (the message still names a stale `rosec auth`
+  command).
+- **Measured (PoC)**: with `SSH_ASKPASS` configured, a locked provider unlocked on demand in
+  **67 ms** and served the secret. With **no** helper and no TTY, the client blocked until the
+  20 s timeout (`rc=124`) — the ladder does not fail fast in that state. **Operational
+  consequence: the helper must always be configured in the unit** (`Environment=SSH_ASKPASS=…`,
+  or PAM); otherwise a locked read hangs the client.
+- The reviewer independently saw a Prompt/`Completed` result-type mismatch
+  (`received unexpected result type s … instead of expected o`) on a locked `store`; it did not
+  reproduce in the recorded run (which did not attempt a locked store). Treat the locked-write
+  prompt path as young and test it before relying on it.
+
+## 5. Providers and storage (the custom-backend seam)
+
+### Built-in providers
+
+| Provider                         | Storage                                                                                              | Notes                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **local** (native `rosec-vault`) | single JSON file `~/.local/share/rosec/providers/<id>.vault` + `<id>.vault.meta` + `<id>.vault.lock` | AES-256-CBC payload; vault key wrapped per password with PBKDF2-HMAC-SHA256 (200k default; docs claim 600k — drift) → AES-256-CBC + HMAC; integrity HMAC-SHA256 via HKDF; only the wrapped key on disk; atomic temp+fsync+rename writes; optimistic revision check; single-writer (external replacement forces re-unlock); `.meta` holds labels + **attribute hashes** (not values); `.lock` is a 0-byte fcntl lease |
+| Bitwarden PM/SM                  | WASM guest; host-managed offline cache + machine key                                                 | online only                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Proton Pass                      | WASM guest (GPL-3.0), read-only                                                                      | online only                                                                                                                                                                                                                                                                                                                                                                                                          |
+| KeePassXC `.kdbx`                | WASM guest reading an existing file                                                                  | experimental; write support unverified                                                                                                                                                                                                                                                                                                                                                                               |
+| GNOME Keyring                    | WASM guest, read-only                                                                                | migration path                                                                                                                                                                                                                                                                                                                                                                                                       |
+
+Local provider verdict: encrypted at rest, single file, no lock file with content, docs recommend
+Syncthing; the PoC confirmed the vault is ciphertext and a copied vault is readable. Single-writer
+is the operating rule.
+
+### The custom-provider contract (the differentiator)
+
+`rosec-core/src/lib.rs` defines `pub trait Provider: Send + Sync`:
+
+- **Required**: `id`, `name`, `kind`, `status`, `unlock`, `lock`, `list_items`, `search`,
+  `get_item_attributes`, `get_secret_attr`.
+- **Optional, gated by `capabilities()`** (default impls): `sync`/`check_remote_changed`,
+  `write` (create/update/delete), `ssh` (`list_ssh_keys`/`get_ssh_private_key`),
+  `key_wrapping` (add/remove/list passwords), `password_change`, `offline_cache`
+  (export/restore), `notifications` (WebSocket), TOTP/FIDO2.
+
+Two integration paths:
+
+1. **Native crate** implementing the trait, registered in `build_providers`. This is how `local`
+   is done; a native provider gets the SSH agent and FUSE tree "for free" if it implements the
+   `ssh` capability.
+2. **Extism WASM guest** (documented, sandboxed): JSON `plugin_fn` contract, path-scoped
+   `file_read` host import, a `*.policy.toml` sidecar, a `*.wasm.minisig` signature, host
+   allow-lists for network, trust via `[[service.wasm_trusted_key]]` or source-packaged hashes
+   (`ROSEC_PACKAGED_PROVIDERS`). More moving parts; suited to untrusted/third-party code.
+
+**What a sops/age file-tree provider would take:** implement the required methods in a native
+crate; in `unlock`, read the tree root and the password/key path from the provider config; decrypt
+each item on read (link `age` or shell out to `age`/`sops`); serve `list_items` and attributes
+from memory; implement `write` if the store must be writable; implement `ssh` if the vault keys
+should feed the agent. No D-Bus, prompt, session or agent code changes. The PoC's analogous
+exercise on the grimsteel fork measured the same shape at ~330 lines of ordinary Rust, so this is
+a **days-not-weeks** job — the effort is in metadata semantics and tests, not in the seam.
+
+**Trade-off vs the local vault:** the local vault is a single encrypted file (simple, atomic,
+single-writer); a file-tree provider gives per-item files (better sync granularity, inspectable
+tree, sops/age owns the crypto) but is new code you own. For this task the local vault + external
+helper already satisfies every hard requirement; the custom provider is a phase-2 option if sync
+granularity or reusing existing sops material becomes the priority.
+
+## 6. Unlock by an external helper
+
+| Channel                                                       | How                                                                                        | PoC                                                                                                      |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `org.rosec.Daemon.AuthProviderFromPipe(provider_id, pipe_fd)` | password through a pipe fd (SCM_RIGHTS), never on the D-Bus wire; used by the PAM helper   | ✅ `rosec-pam-unlock` with stdin password unlocked the vault (`provider authenticated via AuthProvider`) |
+| `SSH_ASKPASS` in the daemon env                               | the daemon runs the program, reads one stdout line                                         | ✅ 67 ms on-demand unlock after a lock                                                                   |
+| `[prompt] backend`                                            | custom binary, JSON request/response                                                       | source-verified                                                                                          |
+| `rosec unlock` / `rosec provider <id> unlock`                 | TTY fd-passing or `--gui`                                                                  | source-verified                                                                                          |
+| PAM                                                           | `pam_rosec.so` stashes at auth, replays at session; never blocks login                     | source-verified; not run                                                                                 |
+| Key wrapping                                                  | `rosec provider <id> password add` makes any helper-derived secret a valid unlock password | source-verified; the natural fit for a sops/age helper                                                   |
+
+Note: transports are line-based, so a raw 32-byte key must be base64/hex-encoded; the PBKDF2 input
+itself accepts arbitrary bytes.
+
+## 7. SSH agent
+
+- **Socket**: `$XDG_RUNTIME_DIR/rosec/agent.sock` (source; the README path `rosec/ssh/agent.sock`
+  is stale).
+- **Started by** `rosecd` (`ssh_fuse = true` default); degrades gracefully without `/dev/fuse`.
+- **Unlocked by** provider unlock/sync; **cleared** on lock, autolock, logout, sleep, shutdown.
+- **Key types**: ed25519, RSA, ECDSA, DSA, encrypted PEMs; **no FIDO2 `sk-ssh`, no certificates**,
+  no `ssh-add` Add/Remove/Lock commands (keys are vault-driven by design).
+- **FUSE tree**: read-only, in-memory: `keys/by-name`, `keys/by-fingerprint`, `keys/by-host`,
+  `config.d/*.conf` (`IdentityFile`/`IdentityAgent`/`IdentitiesOnly`), and `allowed_signers`
+  synthesized from `custom.ssh_signing_principal`, **fail-closed** when locked.
+- **Headless signing confirmation**: a per-key `ssh_confirm` policy allows the sign with a warning
+  when there is no display and no TTY.
+- **PoC status**: agent listing/commit signing was **not completed** (the `$EDITOR`-driven
+  `rosec item add --type ssh-key --generate-ssh-key` did not create the item non-interactively in
+  the container). Revocation-on-lock passed trivially (nothing loaded). Treat the SSH angle as
+  source-verified plus partially exercised, not proven.
+
+## 8. Sync and recovery
+
+- Single vault file + `.meta` + 0-byte `.lock` lease; docs recommend Syncthing/rsync; the PoC
+  copied the vault and a second "host" read it (the review noted the recorded B5 query matched the
+  original provider, so the copy read is not fully proven).
+- Single-writer: the revision check rejects saves after an external replacement; the supported
+  pattern is "last file wins + re-unlock on the other side".
+- Recovery: `rosec vault snapshot restore` (encrypted snapshots).
+
+## 9. Online binding and telemetry
+
+Local provider: strictly offline (no `sync` capability; the background loop skips it), no
+telemetry (grep-verified). Bitwarden and Proton are optional WASM providers with host-enforced
+allow-lists.
+
+## 10. Packaging and start at login
+
+- **nixpkgs 0.0.34** (pinned here): symlinkJoin of `rosec-unwrapped` + `pam_rosec.so` + optional
+  provider WASMs; `postInstall` runs `rosec enable` with the XDG dirs redirected into the store,
+  so the package ships the unit, D-Bus activation and portal registration. **The source build
+  currently fails here** (`zstd-sys` build-script error); the PoC used the upstream 0.0.40 static
+  musl release (`rosecd`, `rosec`, `rosec-prompt`, `rosec-pam-unlock`), which is not a package.
+- **AUR** tracks releases same-day; no flake upstream.
+- **Start without a display**: the shipped unit is already headless-correct (`WantedBy=default.target`);
+  D-Bus activation is the primary path. For a host that must serve before login, enable linger.
+- **Unit hardening constraint**: the template documents directives that must **not** be added
+  (NoNewPrivileges/fusermount interplay, `MemoryDenyWriteExecute` for the wasmtime JIT, FUSE
+  mount-namespace visibility). A NixOS module must keep the unit close to the template.
+
+## 11. PoC evidence summary (rosec)
+
+| Check                                                             | Result                                                            |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Owns the name on a private bus, no session bus, no display        | ✅                                                                |
+| `secret-tool` store/lookup with libsecret 0.21.7                  | ✅                                                                |
+| `secret-tool` store/lookup with libsecret **0.21.8.2** (deployed) | ✅ **30/30 DH sessions**                                          |
+| Vault ciphertext at rest, no plaintext                            | ✅                                                                |
+| Unlock via `AuthProviderFromPipe` (`rosec-pam-unlock`)            | ✅                                                                |
+| On-demand unlock via `SSH_ASKPASS`                                | ✅ 67 ms                                                          |
+| Locked read with **no** helper                                    | ❌ client blocked 20 s (no clean error)                           |
+| Vault copy readable on a second "host"                            | ⚠️ recorded query matched the original provider; not fully proven |
+| SSH agent listing + commit signing                                | ⚠️ item creation via `$EDITOR` failed non-interactively; unproven |
+| Real YubiKey through the daemon                                   | not run (stub identity only)                                      |
+
+## 12. Risks and blockers
+
+1. **Packaging gate** — 0.0.34 does not build from source here; 0.0.40 is a release binary. A
+   small derivation or a pinned flake input is required before deployment.
+2. **Helper-always-on** — without `SSH_ASKPASS`/PAM a locked read hangs the client (measured).
+3. **Young prompt path** — the reviewer saw a `Completed` result-type mismatch on a locked store;
+   test the locked-write flow before relying on it.
+4. **Bus factor** — solo maintainer, 0.0.x, 47 stars; MIT and source-buildable mitigate.
+5. **Spec gaps** — Collection-level `GetSecrets/ClearSecret/Lock/Unlock`, `Item.SetSecret`.
+6. **Doc/source drift** — agent socket path, PBKDF2 iteration count, stale `rosec auth` message.
+7. **SSH limits** — no FIDO2 `sk-ssh`, no certificates; item creation needs an attended or
+   scripted `$EDITOR` step.
+8. **FUSE dependency** — the `config.d`/`allowed_signers` surface needs `/dev/fuse`; the agent
+   socket works without it.
+9. **Dependency weight** — wasmtime/Extism in the closure even for local-only use; `ssh-key`
+   patched from a git branch (reproducible only via `Cargo.lock`).
+10. **Hardware unverified** — the real YubiKey chain was proven separately (sops+age) but not
+    through rosec.
+
+## 13. Verdict
+
+**Reuse rosec as the primary route, with three gates: packaging, always-on helper, and a
+real-YubiKey smoke test.** It is the only ready-made candidate that interoperates with the
+deployed libsecret (30/30 DH) and satisfies the headless unlock requirement through two
+independent external channels. Its custom-provider seam is real and clean (a capability-gated
+trait plus a documented WASM contract), and a sops/age file-tree provider is a days-scale
+addition if the single-file vault ever becomes the limiting factor — but it is **not needed for
+the hard requirements**, which the local vault + external helper already meet.
