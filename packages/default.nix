@@ -50,6 +50,7 @@ in
   jj-mcp = pkgs.callPackage ./jj-mcp { };
   kdn-jj-meta = pkgs.callPackage ./kdn-jj-meta { };
   kdn-okf = pkgs.callPackage ./kdn-okf { };
+  okf-agent-memory = pkgs.callPackage ./okf-agent-memory { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
   kdn-journal = pkgs.callPackage ./kdn-journal { };
