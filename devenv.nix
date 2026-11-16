@@ -166,6 +166,9 @@ in
       # Browse docs/tasks and .cache/agents from the shell: summary, task list, boards,
       # worklogs, doctor and the TUI. See docs/kdn-journal.md.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-journal
+      # Attribute a jj change to the agent session that produced it. The binary writes the
+      # Assisted-by/Session-Id/Harness/Model trailers. See docs/jj-meta.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.jj-meta
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)
