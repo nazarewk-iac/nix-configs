@@ -14,6 +14,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"kdn-journal/internal/atuin"
+	"kdn-journal/internal/jjmeta"
+	"kdn-journal/internal/jjrun"
 	"kdn-journal/internal/journal"
 	"kdn-journal/internal/render"
 	"kdn-journal/internal/task"
@@ -29,6 +32,13 @@ type App struct {
 	Out     io.Writer
 	Err     io.Writer
 	Now     func() time.Time
+	// Getenv reads the environment. Tests replace it.
+	Getenv func(string) string
+
+	// Integration seams. A nil field means the real implementation.
+	JJ     jjrun.Runner
+	Atuin  atuin.Runner
+	JJMeta jjmeta.Attributor
 }
 
 // ExitError carries an explicit process exit code.
@@ -68,6 +78,18 @@ func NewRootWithApp(app *App) *cobra.Command {
 	if app.Now == nil {
 		app.Now = time.Now
 	}
+	if app.Getenv == nil {
+		app.Getenv = os.Getenv
+	}
+	if app.JJ == nil {
+		app.JJ = &jjrun.CLI{}
+	}
+	if app.Atuin == nil {
+		app.Atuin = &atuin.CLI{}
+	}
+	if app.JJMeta == nil {
+		app.JJMeta = jjmeta.New("")
+	}
 	if app.Width <= 0 {
 		app.Width = 100
 	}
@@ -100,6 +122,8 @@ func NewRootWithApp(app *App) *cobra.Command {
 	root.AddCommand(
 		newSummaryCmd(app),
 		newSessionsCmd(app),
+		newSessionCmd(app),
+		newAtuinCmd(app),
 		newTasksCmd(app),
 		newTaskCmd(app),
 		newBoardCmd(app),

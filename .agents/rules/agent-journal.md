@@ -46,6 +46,10 @@ How to get the id:
 | `opencode` | `$OPENCODE_SESSION_ID` (`ses_…`)                                                     |
 | `pi`       | the UUID in the filename of the newest `~/.pi/agent/sessions/--<cwd-slug>--/*.jsonl` |
 
+`kdn-journal session init` detects these and the rest of the harness matrix
+(`CLAUDE_CODE_SESSION_ID`, `CODEX_THREAD_ID`, `CURSOR_CONVERSATION_ID`, `GEMINI_SESSION_ID`,
+`COPILOT_SESSION_ID`, `AGENT_SESSION_ID`) and names the directory for you.
+
 Write the directory **once**, at the start of the run, and keep using it. A second run of the same
 session (a resume the next day) gets a new directory with the new date and the same session id.
 
@@ -166,13 +170,26 @@ in for `title`.
 
 ## Catch up with kdn-journal
 
-`kdn-journal` reads these files and prints the state. It never writes a journal.
+`kdn-journal` reads these files and prints the state. Its only writes are the session sidecar
+(`session.json`, next to the board) and `task set-status`.
 
 ```sh
 kdn-journal summary --session "$OPENCODE_SESSION_ID" --json
 kdn-journal summary --task <task-dir> --json
 kdn-journal doctor --parse-only --json
 ```
+
+**Record the session identity once, then every change you commit.**
+
+```sh
+kdn-journal session init --task <task-dir> --json
+kdn-journal session record-change <change-id> --json
+```
+
+`session init` detects the harness and session from the environment and reuses the existing session
+directory. `session record-change` stores the jj mapping in the sidecar and calls `jj-meta`, so the
+change also gets its `Assisted-by` trailers. See [jj-meta.md](jj-meta.md). `session atuin` links the
+Atuin Thread when the harness is captured; it is optional.
 
 Agents should use the JSON path and never call `tui`. The machine-readable contract, the JSON field
 table and the one safe write are in [kdn-journal.md](kdn-journal.md). The human command reference is

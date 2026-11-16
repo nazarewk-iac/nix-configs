@@ -3,6 +3,7 @@ package journal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"kdn-journal/internal/board"
+	"kdn-journal/internal/sessionid"
 	"kdn-journal/internal/task"
 	"kdn-journal/internal/worklog"
 )
@@ -30,6 +32,7 @@ type Session struct {
 	Worklog       *worklog.Worklog   `json:"worklog,omitempty"`
 	TrackWorklogs []*worklog.Worklog `json:"track_worklogs,omitempty"`
 	TaskRefs      []string           `json:"task_refs,omitempty"`
+	Sidecar       *sessionid.Sidecar `json:"sidecar,omitempty"`
 	Issues        []task.Issue       `json:"issues,omitempty"`
 }
 
@@ -137,6 +140,17 @@ func loadSession(root, dir string) (*Session, error) {
 		}
 	}
 	session.TaskRefs = extractTaskRefs(root, dir)
+	sidecarPath := filepath.Join(dir, "session.json")
+	if sidecar, err := sessionid.Load(sidecarPath); err == nil {
+		session.Sidecar = sidecar
+	} else if !errors.Is(err, os.ErrNotExist) {
+		session.Issues = append(session.Issues, task.Issue{
+			Severity: "warning",
+			Code:     "sidecar-corrupt",
+			Path:     sidecarPath,
+			Message:  err.Error(),
+		})
+	}
 	return session, nil
 }
 
