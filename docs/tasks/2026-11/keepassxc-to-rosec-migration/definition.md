@@ -20,35 +20,38 @@ store). The migration moves the secrets that matter for the Secret Service clien
 
 ## Scope
 
-- Read the KDBX **read-only** (never write it during migration).
-- Map the KDBX structure to the provider's model:
-  - groups → collections (`<root>/<collection>/`);
-  - entries → items (`<id>.sops.yaml`) with `label`, `attributes`, `secrets`;
-  - `username`, `uri`, `folder`, `tag.*` → attributes; `password`, `notes`, `totp`, protected
-    custom fields, KeeAgent `private_key` → secrets;
-  - entry UUID → the item's `revision`/host metadata or a comment (the provider uses opaque
-    ids; keep the UUID as an attribute for traceability).
-- Skip or explicitly mark entries that cannot be represented (attachments, history, recycle bin,
-  TOTP seeds if the provider has no TOTP support yet).
-- Verify every migrated item: decrypt, compare the secret and attributes with the KDBX source;
-  a machine-readable report (counts, skipped, mismatches).
-- Keep KeePassXC running until the rosec provider has served the same clients for an agreed
-  period; then retire the KeePassXC unit and the KDBX from the Secret Service path (the KDBX can
-  stay as a backup).
+The source is the **live Secret Service**, not the whole KDBX. Measured on 2026-11-16: the
+`org.freedesktop.secrets` collection exposes **46 items**, and all 46 live in the KDBX group
+`drag0nius/secret-service`. The other ~985 KDBX entries are the personal vault (bank cards, CVVs,
+TOTP, notes, logins); the Secret Service never exposes them, so they stay in KeePassXC.
+
+- Read the live Secret Service **read-only** through D-Bus (`Item.Attributes`, `Item.Secret`), and
+  never write the KDBX.
+- Map one live item to one provider item: `label` from `Title`, **every public attribute copied
+  verbatim** (they are the clients' search contract and are already public on D-Bus), and the raw
+  secret bytes as the `password` secret.
+- Keep the `Uuid` attribute as the idempotency key: a re-run deletes the previous copy by `Uuid` and
+  imports again.
+- Verify every migrated item through the same client interface (`secret-tool lookup`, `Item
+  .Attributes`) and write a machine-readable report (counts, mismatches — never a secret value).
+- Keep KeePassXC running until the rosec provider has served the same clients for an agreed period;
+  then hand `org.freedesktop.secrets` to rosec and keep the KDBX as a backup for the vault.
+
+A follow-up task decides the future of the personal vault; this task does not move it.
 
 ## Hard requirements
 
-- No plaintext leaves the migration process; the source is read through the existing KeePassXC
-  path (CLI `keepassxc-cli show`/`export` or the D-Bus API), the destination is written through
-  the provider (or `sops` directly).
+- No plaintext leaves the migration process: the source is read through the live D-Bus API
+  (`Item.Attributes` + `Item.Secret` via `secret-tool`), and the destination is written through the
+  provider (`rosec item import`). No intermediate plaintext file.
 - Idempotent: re-running the migration updates existing items and does not duplicate them.
 - A dry-run mode and a `--check` mode (compare, no writes).
 - The migration must not disturb the live KeePassXC while it still serves clients.
 
 ## Acceptance
 
-- All in-scope entries present in the sops store, verified one by one.
-- A written report with counts and the list of skipped entries with reasons.
+- All 46 in-scope items present in the sops store, verified one by one through the client interface.
+- A written report with counts and mismatches; no secret value in the report.
 - The Secret Service clients work against rosec with the migrated items.
 - A rollback note (keep the KDBX, re-enable the KeePassXC unit).
 

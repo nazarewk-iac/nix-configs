@@ -295,16 +295,18 @@ canonical, then delete the orphan by hand. A retention policy is a possible foll
 ## Migrate from KeePassXC
 
 KeePassXC still serves `org.freedesktop.secrets` on this host. The migration task
-(`docs/tasks/2026-11/keepassxc-to-rosec-migration/definition.md`) reads the KDBX, writes the
-items through the provider, verifies them, and then flips the one line:
+(`docs/tasks/2026-11/keepassxc-to-rosec-migration/`) reads the **live Secret Service** — the 46
+items it exposes, not the whole KDBX — copies every attribute and secret through
+`hack/keepassxc-to-rosec.py`, verifies each item through `secret-tool`, and then flips the one line:
 
 ```nix
 kdn.services.rosec.enable = true;
 ```
 
-Only after that flip may the KeePassXC unit be retired; until then both units target the same bus
-name and systemd kills the loser. The store is already `derived`, so the migrated items are
-encrypted to the derived identity.
+The KeePassXC unit is disabled in the same change, and the `dbus-kdn-sway-secrets-service` name
+holder is pointed at the `rosecd` (two `Type=dbus` units cannot hold one bus name). The personal
+vault stays in KeePassXC. The store is already `derived`, so the migrated items are encrypted to the
+derived identity.
 
 ## Troubleshooting
 
