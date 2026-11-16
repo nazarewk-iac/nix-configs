@@ -637,6 +637,26 @@
             );
           };
           apps.colmena = inputs'.colmena.apps.default;
+          # Run every OKF gate on the memory bundle in the working tree. The checks run the same
+          # gates on a sandbox copy; this is the authoring loop. Pass a bundle path to check
+          # another one: `nix run .#okf-check -- path/to/bundle`.
+          apps.okf-check = {
+            type = "app";
+            program = lib.getExe (
+              pkgs.writeShellApplication {
+                name = "okf-check";
+                runtimeInputs = [
+                  pkgs.kdn.kdn-okf
+                  pkgs.kdn.okf-agent-memory
+                  pkgs.kdn.ai-xf
+                  pkgs.kdn.okf-rs
+                  pkgs.kdn.okflint
+                  pkgs.kdn.okph
+                ];
+                text = builtins.readFile ./hack/okf-check.sh;
+              }
+            );
+          };
           apps.nix-fast-build = {
             type = "app";
             program = lib.getExe inputs'.nix-fast-build.packages.default;

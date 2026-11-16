@@ -15,7 +15,7 @@ timestamp: 2026-09-11T20:45:00+02:00
 nix eval --raw '.#checks.aarch64-darwin' --apply 'x: toString (builtins.length (builtins.attrNames x))'
 ```
 
-Six of the 75 are the bundles, so 69 are real checks. The bare run measured **660.6 s** before the 30
+Seven of the 76 are the bundles, so 69 are real checks. The bare run measured **660.6 s** before the 30
 `dev-*` aspects landed. `den-eval-instantiate` then grew by 300 s, and 12 more checks landed after
 that run. So **960 s is a lower bound, not a measurement**. Nobody re-measures it: the measurement
 costs the same 15 minutes the rule exists to save. `bundle-slow` alone runs 710.6 s on a warm store.
@@ -31,10 +31,12 @@ One command per bundle; nix builds the members in parallel. Swap `aarch64-darwin
 `aarch64-linux` on those systems.
 
 ```bash
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'      # 11.1 s, after any edit
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'       # 108.0 s, modules/den/aspects/
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'      # 18.0 s, packages/nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'  # 43.7 s, a built artifact
-nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'      # 710.6 s, before a hand-off
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-core'         # 11.1 s, after any edit
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-den'          # 108.0 s, modules/den/aspects/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-pkgs'         # 18.0 s, packages/
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-agent-memory' # 16 s, .agents/knowledge or okf-*
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-artifact'     # 43.7 s, a built artifact
+nix build --no-eval-cache -L '.#checks.aarch64-darwin.bundle-slow'         # 710.6 s, before a hand-off
 ```
 
 `bundle-core` is the broad tripwire: the plumbing, the standalone rule and the cross-cutting set. Run it
@@ -112,6 +114,14 @@ joins.
 | `kdn-journal-parse`              | every `docs/tasks` definition, board and worklog parses in a sandbox copy                                   | pkgs     | 14.8  | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-journal-parse"`                     |
 | `kdn-jj-meta-test`               | the `kdn-jj-meta` Go suite: trailer parser, session table, profile builder and the jj runner fake           | pkgs     | 18.0  | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-jj-meta-test"`                      |
 | `kdn-jj-meta-attribute`          | the packaged binary against a temporary jj repository: attribute, idempotency, profiles, gate               | pkgs     | 5.4   | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-jj-meta-attribute"`                 |
+| `okf-guard-test`                 | the scanner passes clean text, blocks a known injection and a white-on-white PDF, and clears the bundle     | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.okf-guard-test"`                        |
+| `okf-memory-validate`            | the memory bundle passes `validate --strict --drift` and the `kdn-okf` parse gate                           | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.okf-memory-validate"`                   |
+| `ai-xf-validate`                 | the bundle holds AI-XF Level 2: ids, mirrored typed links and the manifest                                  | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.ai-xf-validate"`                        |
+| `okf-rs-check`                   | strict OKF v0.2, clean lint and no broken links, from the Rust toolkit                                      | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.okf-rs-check"`                          |
+| `okflint-validate`               | every concept matches the per-type profile in `okf-base.yaml`                                               | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.okflint-validate"`                      |
+| `okph-validate`                  | the graph gate, with relative links allowed                                                                 | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.okph-validate"`                         |
+| `kdn-okf-test`                   | the `kdn-okf` Go suite                                                                                      | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-okf-test"`                          |
+| `kdn-okf-parse`                  | the packaged browser reads a bundle in a sandbox copy                                                       | pkgs     | ‡     | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-okf-parse"`                         |
 | `den-eval-mcp`                   | one gateway per shell, every backend name in the YAML                                                       | den      | 4.5   | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-mcp"`                          |
 | `hello`                          | the `checks.<system>` plumbing builds end to end                                                            | core     | 4.3   | `nix build --no-eval-cache -L ".#checks.$SYS.hello"`                                 |
 | `den-eval-jj`                    | the repo config, the aliases, both hooks and the allowlist                                                  | den      | 4.2   | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-jj"`                           |
@@ -153,9 +163,10 @@ A `—` means the check needs a Linux builder, so this machine measured no time.
 landed after the timing run, so it carries no measured time yet; it is an eval-only assertion set, so
 it costs a few seconds. The four times over 40 s are plain builds against a warm store, so they are
 lower bounds. The last five names do not exist on `aarch64-darwin`, and `aarch64-linux` carries none
-of the ten per-system names. Three more entry points exist:
+of the ten per-system names. Four more entry points exist:
 
 ```bash
+nix run '.#okf-check'                              # every OKF gate on the working tree
 nix run '.#checks.aarch64-darwin.den-mvp.smoke'    # every den check, serial, PASS/FAIL per member
 nix run '.#jj-experiments-run' -- -k placement -x  # a subset of the jj suite, by pytest expression
 nix build '.#checks.aarch64-darwin.den-mvp.all'    # every den entity of every system

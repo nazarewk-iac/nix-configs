@@ -18,6 +18,29 @@ Three pinned tools sit around the memory bundle. Each answers a different questi
 `doctor` must run with no external binary, and its issue codes are its own. Run the external gates
 next to it.
 
+## Running the whole thing
+
+```sh
+nix run .#okf-check                       # the memory bundle, from the working tree
+nix run .#okf-check -- path/to/bundle     # any bundle with an okf-base.yaml
+```
+
+`nix run .#okf-check` runs every gate above in order and stops at the first failure. It reads the
+working tree, so it is the edit loop, and it needs no devenv shell. In the shell,
+`hack/okf-check.sh` is the same script.
+
+The Nix checks are the reproducible layer: each one copies the bundle into a sandbox and runs the
+same tools, so a local file or a stale cache cannot hide a problem. One command runs the package
+suites and every memory check:
+
+```sh
+nix build --no-eval-cache -L '.#checks.x86_64-linux.bundle-agent-memory'
+```
+
+A single check is `nix build --no-eval-cache -L '.#checks.x86_64-linux.okf-rs-check'`. The bundle
+holds `kdn-okf-test`, `kdn-okf-parse`, `okf-memory-validate`, `ai-xf-validate`, `okf-rs-check`,
+`okflint-validate`, `okph-validate` and `okf-guard-test`.
+
 ## `okf-rs`
 
 The pure-Rust OKF toolkit from [W4G1/okf](https://github.com/W4G1/okf). The package installs the

@@ -104,7 +104,8 @@ in
   # cross-cutting nor slow. A new aspect check joins by itself. This bundle is a declared exception to
   # the 60 s ceiling; the header comment holds the decision and its reasoning.
   bundle-den = mkBundle "den" (lib.subtractLists (crossCutting ++ slow) (byPrefix "den-eval-"));
-  # 18.0 s. The three package test suites that finish in seconds.
+  # 18.0 s. The package test suites that finish in seconds. The OKF toolchain moved to
+  # `bundle-agent-memory`.
   bundle-pkgs = mkBundle "pkgs" [
     "kdn-certs-test"
     "kdn-certs-test-ca"
@@ -113,6 +114,13 @@ in
     "kdn-journal-parse"
     "kdn-jj-meta-test"
     "kdn-jj-meta-attribute"
+    "kdn-slug-pytest"
+    "zellij-llm-pytest"
+  ];
+  # The OKF toolchain on the memory bundle: the browser, the memory validator, AI-XF, the Rust
+  # toolkit, the profile linter, the graph and the content scanner. One command for a change to
+  # `.agents/knowledge` or to any `okf-*` package.
+  bundle-agent-memory = mkBundle "agent-memory" [
     "kdn-okf-test"
     "kdn-okf-parse"
     "okf-memory-validate"
@@ -121,8 +129,6 @@ in
     "okflint-validate"
     "okph-validate"
     "okf-guard-test"
-    "kdn-slug-pytest"
-    "zellij-llm-pytest"
   ];
   # 43.7 s with the system closure already in the store; a cold store builds a system first, and that
   # costs minutes. Empty on `aarch64-linux`, which carries neither prefix.
