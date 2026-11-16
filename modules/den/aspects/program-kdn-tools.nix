@@ -1,6 +1,7 @@
-# The `kdn-journal` and `kdn-jj-meta` CLIs plus their agent skills, as a den aspect.
+# The agent-tooling CLIs and their skills, as a den aspect: `kdn-journal`, `kdn-jj-meta`,
+# `kdn-okf`, `okf-agent-memory`, `ai-xf` and `okf-guard`.
 #
-# The old tree installs the same pair in `modules/universal/profile/user/kdn/default.nix`. den has
+# The old tree installs the same set in `modules/universal/profile/user/kdn/default.nix`. den has
 # no `pkgs.kdn` package set, so each package comes through a plain `callPackage` with a path.
 #
 # The skill links are the cross-repo part: each tool ships a `SKILL.md` under
@@ -12,6 +13,8 @@ let
   kdn-jj-meta = pkgs.callPackage ../../../packages/kdn-jj-meta { };
   kdn-okf = pkgs.callPackage ../../../packages/kdn-okf { };
   okf-agent-memory = pkgs.callPackage ../../../packages/okf-agent-memory { };
+  ai-xf = pkgs.callPackage ../../../packages/ai-xf { };
+  okf-guard = pkgs.callPackage ../../../packages/okf-guard { };
 in
 {
   kdn.program-kdn-tools.homeManager =
@@ -22,6 +25,8 @@ in
         kdn-jj-meta
         kdn-okf
         okf-agent-memory
+        ai-xf
+        okf-guard
       ];
 
       home.file = lib.listToAttrs (

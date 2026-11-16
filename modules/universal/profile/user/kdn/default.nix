@@ -177,6 +177,8 @@ in
           pkgs.kdn.kdn-jj-meta
           pkgs.kdn.kdn-okf
           pkgs.kdn.okf-agent-memory
+          pkgs.kdn.okf-guard
+          pkgs.kdn.ai-xf
         ];
         # The two tools carry a SKILL.md each. Link it where the harnesses look: ~/.agents for
         # generic agents and OpenCode compatibility, ~/.config/opencode for OpenCode, and

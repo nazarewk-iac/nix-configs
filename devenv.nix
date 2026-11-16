@@ -178,6 +178,9 @@ in
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-agent-memory
       # The AI-XF validator and canonicaliser. The memory bundle is checked at Level 2.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.ai-xf
+      # Screen an external document for hidden content and prompt injection before its text
+      # reaches .agents/knowledge. See docs/okf-guard.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-guard
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)

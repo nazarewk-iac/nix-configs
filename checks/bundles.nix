@@ -117,6 +117,7 @@ in
     "kdn-okf-parse"
     "okf-memory-validate"
     "ai-xf-validate"
+    "okf-guard-test"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];

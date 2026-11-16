@@ -1,7 +1,7 @@
 ---
 type: Index
 title: "docs"
-description: "383 concepts: Task 143, Research 103, Solution 54, Reference 26, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories"
+description: "386 concepts: Task 143, Research 103, Solution 54, Reference 29, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories"
 generated: true
 ---
 
@@ -9,7 +9,7 @@ generated: true
 
 # docs
 
-383 concepts: Task 143, Research 103, Solution 54, Reference 26, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories
+386 concepts: Task 143, Research 103, Solution 54, Reference 29, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories
 
 [..](../index.md)
 
@@ -20,6 +20,9 @@ generated: true
 - **[`kdn-okf`](kdn-okf.md)** — The kdn-okf CLI and TUI that index, search and browse Open Knowledge Format v0.2 bundles — commands, JSON and JSONL output, selectors, trust and freshness, doctor codes and the TUI keys. · `Reference` · `stable` · `unverified`
 - **[`modules/universal` → `modules/den/aspects` mapping](den-universal-mapping.md)** — Maps every modules/universal module to its modules/den/aspects counterpart, with a port status per module and the gaps that remain. · `Reference` · `stable` · `unverified`
 - **[`nix-shell` shebang scripts](nix-shell-shebang.md)** — Use a nix-shell shebang so a script builds its own dependencies (or the package under test) onto PATH and runs standalone with no devenv shell. · `Reference` · `stable` · `unverified`
+- **[`okf-guard`](okf-guard.md)** — The content-safety scanner for OKF pipelines — hidden content and prompt-injection patterns, the intake procedure, exit codes, supported formats and the memory-bundle gate. · `Reference` · `stable` · `unverified`
+- **[Agent memory: `.agents/knowledge`](okf-memory.md)** — The writable agent memory bundle at .agents/knowledge — okf-agent-memory, the knowledge symlink, the one-writer rule, MCP tools, validation and the scorecard. · `Reference` · `stable` · `unverified`
+- **[AI-XF](ai-xf.md)** — AI-XF v0.5 at Level 2 for the agent memory bundle — stable ids, typed links mirrored by body links, the manifest, the validator and the canonicaliser. · `Reference` · `stable` · `unverified`
 - **[Container SaaS egress via an HTTP CONNECT proxy](litellm-connect-egress.md)** — How the LiteLLM container reaches a SaaS upstream (Requesty) through a bound HTTP CONNECT proxy instead of a raw TLS relay, why the relay failed, and how to reuse the pattern for any confined container that needs authenticated internet egress. · `Guide` · `stable` · `unverified`
 - **[Darwin quirks](darwin-quirks.md)** — General macOS-only behaviours that a Linux habit does not predict, with the mechanism and the fix. · `Reference` · `stable` · `unverified`
 - **[den aspects for an external adopter](den-for-adopters.md)** — How an external adopter imports this repository's den aspects as plain NixOS, nix-darwin, Home Manager or devenv modules. · `How-To` · `stable` · `unverified`
