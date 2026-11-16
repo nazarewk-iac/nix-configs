@@ -27,7 +27,7 @@
 !*.nix
 .*.nix
 # Go sources and module files of the repo's own tools (packages/kdn-certs,
-# packages/kdn-journal, packages/jj-meta). The `*` rule above ignores every `.go` file and every
+# packages/kdn-journal, packages/kdn-jj-meta). The `*` rule above ignores every `.go` file and every
 # `.mod`/`.sum` file, so each needs an allow line.
 !*.go
 .*.go

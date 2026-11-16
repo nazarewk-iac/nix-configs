@@ -105,13 +105,13 @@ slash command, which shells raw `git commit` internally. Never use `/commit` in 
 > so a workspace would silently overwrite whatever the trunk activated. A `switch` and a push are
 > always the user's call, from the trunk.
 
-> **Attribute every agent-assisted change.** Run `jj-meta attribute <change-id>` before you finish a
+> **Attribute every agent-assisted change.** Run `kdn-jj-meta attribute <change-id>` before you finish a
 > commit. It appends `Assisted-by: <harness>:<model>`, `Session-Id:`, `Harness:` and `Model:`,
 > deduplicates them, and never deletes or rewrites an existing trailer. `Assisted-by:` is the
 > Nixpkgs disclosure; `Co-authored-by:` is optional, names the agent, and is never the human
 > author; `Signed-off-by:` stays human-only. Attribute the described change you just created, never
-> the unnamed empty `@`. `jj-meta check --revset 'main..@'` is the pre-push gate, because jj has no
-> commit-msg hook. See [jj-meta.md](jj-meta.md) and [docs/jj-meta.md](../../docs/jj-meta.md).
+> the unnamed empty `@`. `kdn-jj-meta check --revset 'main..@'` is the pre-push gate, because jj has no
+> commit-msg hook. See [kdn-jj-meta.md](kdn-jj-meta.md) and [docs/kdn-jj-meta.md](../../docs/kdn-jj-meta.md).
 
 - **Commit and absorb as you go, into logical changesets — proactively, not on request.** The
   moment a piece of work is a self-contained change, carve it out with `jj split -m 'msg' --

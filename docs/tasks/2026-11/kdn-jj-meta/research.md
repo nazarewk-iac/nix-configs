@@ -115,7 +115,7 @@ values without splitting a combined string. They are cheap and single-valued.
 - A split/squash can duplicate or lose a trailer; the tool must be idempotent and re-add missing
   lines, never delete existing ones.
 
-## 6. What this means for `jj-meta`
+## 6. What this means for `kdn-jj-meta`
 
 - Default to `Assisted-by: <harness>:<model>`; this is the Nixpkgs-compliant disclosure.
 - Add `Session-Id:` when a session is known; it is the local attribution key. Make suppression easy.

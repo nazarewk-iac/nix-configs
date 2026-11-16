@@ -1,4 +1,4 @@
-// Package jj runs the jj commands jj-meta needs: read a change set and rewrite one description.
+// Package jj runs the jj commands kdn-jj-meta needs: read a change set and rewrite one description.
 //
 // The package uses only jj's documented machine-readable surface: the `json(self)` template for
 // reading, and `jj describe --stdin` for writing. It never parses the human log format.
@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-// Change is one jj change with the fields jj-meta needs.
+// Change is one jj change with the fields kdn-jj-meta needs.
 type Change struct {
 	ChangeID    string `json:"change_id"`
 	CommitID    string `json:"commit_id"`
@@ -22,7 +22,7 @@ type Change struct {
 	Immutable   bool   `json:"immutable"`
 }
 
-// Runner is the jj surface jj-meta depends on. Tests replace it with a fake.
+// Runner is the jj surface kdn-jj-meta depends on. Tests replace it with a fake.
 type Runner interface {
 	// Changes returns the changes the revset matches, with immutability resolved.
 	Changes(ctx context.Context, revset string) ([]Change, error)

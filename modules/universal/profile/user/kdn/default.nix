@@ -170,6 +170,34 @@ in
         kdn.programs.atuin.autologinUsers = [ "kdn" ];
         kdn.networking.netbird.admins = [ cfg.username ];
       }
+      (kdnConfig.util.ifHM {
+        # Browse the task/journal tree from any repository, not just a devenv shell.
+        home.packages = [
+          pkgs.kdn.kdn-journal
+          pkgs.kdn.kdn-jj-meta
+        ];
+        # The two tools carry a SKILL.md each. Link it where the harnesses look: ~/.agents for
+        # generic agents and OpenCode compatibility, ~/.config/opencode for OpenCode, and
+        # ~/.pi/agent for Pi.
+        home.file = lib.listToAttrs (
+          lib.concatMap
+            (root: [
+              {
+                name = "${root}/kdn-journal/SKILL.md";
+                value.source = "${pkgs.kdn.kdn-journal}/share/kdn-journal/skill/SKILL.md";
+              }
+              {
+                name = "${root}/kdn-jj-meta/SKILL.md";
+                value.source = "${pkgs.kdn.kdn-jj-meta}/share/kdn-jj-meta/skill/SKILL.md";
+              }
+            ])
+            [
+              ".agents/skills"
+              ".config/opencode/skills"
+              ".pi/agent/skills"
+            ]
+        );
+      })
       (lib.mkIf hasWorkstation {
         kdn.env.packages = with pkgs; [
           pkgs.kdn.klog-time-tracker

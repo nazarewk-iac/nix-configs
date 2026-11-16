@@ -1,12 +1,12 @@
 ---
 type: Task
-description: A separate jj-metadata tool that attributes mutable changes to an agent session by adding missing commit trailers, never deleting existing metadata, with Assisted-by as the default disclosure.
+description: A separate kdn-jj-metadata tool that attributes mutable changes to an agent session by adding missing commit trailers, never deleting existing metadata, with Assisted-by as the default disclosure.
 status: open
 authored_by: agent
 timestamp: 2026-11-16T09:10:00+01:00
 ---
 
-# `jj-meta`: attribute jj changes to agent sessions
+# `kdn-jj-meta`: attribute jj changes to agent sessions
 
 ## Context
 
@@ -16,8 +16,8 @@ field, and the journal should not be the tool that edits commit descriptions.
 
 This is a separate concern and a separate tool:
 
-- **`jj-meta`** owns jj commit metadata (trailers). It is generic; it does not read `.cache/agents`.
-- **`kdn-journal`** owns the session/task journal and calls `jj-meta` when it needs to attribute a
+- **`kdn-jj-meta`** owns jj commit metadata (trailers). It is generic; it does not read `.cache/agents`.
+- **`kdn-journal`** owns the session/task journal and calls `kdn-jj-meta` when it needs to attribute a
   change. The sidecar is local-first; Atuin is an optional transcript fallback.
 
 The Nixpkgs transparency policy requires an `Assisted-by:` trailer for LLM-assisted commits and
@@ -29,7 +29,7 @@ easy default, not make the user remember it.
 One command attributes a selected jj change to the current agent session:
 
 ```sh
-jj-meta attribute <change-id>
+kdn-jj-meta attribute <change-id>
 ```
 
 It discovers the harness/session from the environment, appends the missing trailers to the change
@@ -74,12 +74,15 @@ Model: <model>
 - `Generated-by:` is part of the default set through the `asf` profile. Narrow the set with
   `--profile nixpkgs` when the work is materially human-revised, or `--profile asf` when it is
   mostly machine-authored.
+- A change with an empty description is skipped unless `--allow-empty` is given. An empty `@` is
+  not a commit, and attributing it is the mistake the agent rule warns about.
+- `check` skips an empty description too, so a gate over `mutable()` passes while `@` is empty.
 - `Signed-off-by:` is never written by this tool. It is the human’s DCO certification.
 - Existing lines are preserved. The tool appends only missing `Key: value` lines.
 - Multi-valued keys (`Assisted-by`, `Co-authored-by`, `Generated-by`) deduplicate exact values and
   allow multiple distinct values. Single-valued keys (`Session-Id`, `Harness`, `Model`) are left
   alone when any value exists.
-- The default active set is `agent,nixpkgs,asf`; a repository can set `JJ_META_PROFILE` to another
+- The default active set is `agent,nixpkgs,asf`; a repository can set `KDN_JJ_META_PROFILE` to another
   comma-separated set. `--profile` replaces the set; explicit `--trailer` lines always win.
 
 ### 2. Mutable-only by default
@@ -106,14 +109,15 @@ Model: <model>
 ### 4. Commands
 
 ```
-jj-meta attribute [<change-id>|--revset <revset>] [--session <id>] [--harness <name>]
-                  [--model <name>] [--profile portable|github|asf|full]
+kdn-jj-meta attribute [<change-id>|--revset <revset>] [--session <id>] [--harness <name>]
+                  [--model <name>] [--profile agent,nixpkgs,asf|github|full]
                   [--trailer key=value] [--coauthor] [--coauthor-email <email>]
-                  [--generated] [--no-session] [--allow-immutable] [--dry-run] [--json]
-jj-meta show <change-id> [--json]
-jj-meta list [--revset <revset>] [--missing] [--json]
-jj-meta check [--revset <revset>] [--require coauthor] [--json]
-jj-meta version
+                  [--generated] [--no-session] [--allow-immutable] [--allow-empty]
+                  [--dry-run] [--json]
+kdn-jj-meta show <change-id> [--json]
+kdn-jj-meta list [--revset <revset>] [--missing] [--json]
+kdn-jj-meta check [--revset <revset>] [--require coauthor] [--json]
+kdn-jj-meta version
 ```
 
 - `attribute`: print the change ID, the added trailers and the skipped existing trailers; `--json`.
@@ -126,42 +130,42 @@ jj-meta version
 ### 5. Integration
 
 - `kdn-journal` writes `session.json` with the local session, jj change IDs/commits and optional
-  Atuin UUID. It calls `jj-meta attribute <change-id> --session <id> --harness <harness> --model
+  Atuin UUID. It calls `kdn-jj-meta attribute <change-id> --session <id> --harness <harness> --model
 <model>` when a change is recorded, or leaves the call to the agent.
 - `kdn-journal` never parses or edits jj metadata itself; it reads the trailers through
-  `jj-meta show --json` when it needs to display attribution.
+  `kdn-jj-meta show --json` when it needs to display attribution.
 - The sidecar remains the local source of truth. Atuin is an optional transcript fallback, not a
   requirement for attribution.
-- `jj-meta` is independent of `kdn-journal` and Atuin; it only needs `jj`.
+- `kdn-jj-meta` is independent of `kdn-journal` and Atuin; it only needs `jj`.
 
 ### 6. Agent VCS rule
 
 Add a rule to the agent VCS guidance:
 
-> Before an agent commits, run `jj-meta attribute <change-id>` (or let the commit helper call it).
+> Before an agent commits, run `kdn-jj-meta attribute <change-id>` (or let the commit helper call it).
 > Every agent-assisted commit carries `Assisted-by:` with the harness and model. Do not add
 > `Co-authored-by:` for the human author; the human is already the author. Do not add
 > `Signed-off-by:` on behalf of the agent.
 
-The commit helper can call `jj-meta` and then `jj commit`/`jj describe` with explicit paths.
+The commit helper can call `kdn-jj-meta` and then `jj commit`/`jj describe` with explicit paths.
 
 ## Acceptance
 
-- `jj-meta attribute` on a mutable change appends the selected profile's missing trailers
+- `kdn-jj-meta attribute` on a mutable change appends the selected profile's missing trailers
   (`Assisted-by`, `Session-Id`, `Harness`, `Model` by default), is idempotent, deduplicates exact
   trailers, and preserves the body and every existing trailer.
 - `--profile github` adds the agent `Co-authored-by` only when an agent email is supplied; the human
   author is never added.
 - `--profile asf`/`--generated` adds `Generated-by`; `--profile full` adds every supported field.
 - An immutable change is refused unless `--allow-immutable`.
-- `jj-meta check` exits 1 for a missing `Assisted-by` and 0 when present; `--json` is stable.
-- `jj-meta show` and `list` parse existing trailers without rewriting them.
+- `kdn-jj-meta check` exits 1 for a missing `Assisted-by` and 0 when present; `--json` is stable.
+- `kdn-jj-meta show` and `list` parse existing trailers without rewriting them.
 - A fixture covers: no description, description without trailers, existing `Assisted-by` with a
   different value, duplicate lines, `Co-authored-by` from another agent, CRLF, and an immutable
   change.
 - `kdn-journal` can attribute a recorded change through the CLI without importing the tool as a
   library.
-- `go test ./...`, `nix build .#jj-meta`, and the package check pass.
+- `go test ./...`, `nix build .#kdn-jj-meta`, and the package check pass.
 
 ## Out of scope
 
@@ -177,4 +181,4 @@ The commit helper can call `jj-meta` and then `jj commit`/`jj describe` with exp
 2. Should `Assisted-by` use `harness:model` or `harness (model)`? Pick one and keep it parseable.
 3. Should `Co-authored-by` be a per-project config rather than a global flag?
 4. Should the tool also write `Generated-by` for fully generated changes?
-5. Does the agent commit helper belong in `jj-meta` or `kdn-journal`?
+5. Does the agent commit helper belong in `kdn-jj-meta` or `kdn-journal`?

@@ -35,7 +35,7 @@ type spec struct {
 	modelVars []string
 }
 
-// specs is the detection table, in priority order. The table matches jj-meta's, so a session
+// specs is the detection table, in priority order. The table matches kdn-jj-meta's, so a session
 // recorded here resolves to the same harness there.
 var specs = []spec{
 	{harness: "opencode", idVars: []string{"OPENCODE_SESSION_ID"}, modelVars: []string{"OPENCODE_MODEL"}},
@@ -222,6 +222,56 @@ func (s *Sidecar) marshal() ([]byte, error) {
 		return nil, err
 	}
 	return append(out, '\n'), nil
+}
+
+// Entry is one session directory with its sidecar, when a sidecar exists.
+type Entry struct {
+	Dir     string
+	Sidecar *Sidecar
+	// Err holds a sidecar that exists but does not parse. The directory still counts as a session.
+	Err error
+}
+
+// LoadAll reads every `.cache/agents/*/session.json` under root. A missing agents directory is an
+// empty list; a corrupt sidecar becomes an Entry with Err set, so one bad file never hides the
+// rest.
+func LoadAll(root string) ([]Entry, error) {
+	agentsDir := filepath.Join(root, ".cache", "agents")
+	entries, err := os.ReadDir(agentsDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	out := make([]Entry, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		dir := filepath.Join(agentsDir, entry.Name())
+		sidecar, err := Load(filepath.Join(dir, "session.json"))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			out = append(out, Entry{Dir: dir, Err: err})
+			continue
+		}
+		out = append(out, Entry{Dir: dir, Sidecar: sidecar})
+	}
+	return out, nil
+}
+
+// MatchesChange reports whether the sidecar records id, exact or as a prefix. A record written
+// before the CLI resolved full change IDs holds a short ID, and a prefix still identifies it.
+func (s *Sidecar) MatchesChange(id string) bool {
+	for _, existing := range s.JJ.ChangeIDs {
+		if existing == id || strings.HasPrefix(id, existing) {
+			return true
+		}
+	}
+	return false
 }
 
 // AddChange records a jj change ID. It reports whether the ID was new.

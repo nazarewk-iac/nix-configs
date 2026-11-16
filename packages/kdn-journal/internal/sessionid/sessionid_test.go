@@ -161,3 +161,51 @@ func TestSidecarAddIsDeduplicated(t *testing.T) {
 		t.Fatal("an empty ID was recorded")
 	}
 }
+
+func TestLoadAllAndMatchesChange(t *testing.T) {
+	root := t.TempDir()
+	good := filepath.Join(root, ".cache", "agents", "opencode-20261116-ses_1")
+	if err := os.MkdirAll(good, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sidecar := &Sidecar{SchemaVersion: 1, Harness: "opencode", SessionID: "ses_1"}
+	sidecar.AddChange("abcdef123456")
+	if err := sidecar.Save(filepath.Join(good, "session.json")); err != nil {
+		t.Fatal(err)
+	}
+	// A directory without a sidecar is not an entry.
+	if err := os.MkdirAll(filepath.Join(root, ".cache", "agents", "pi-20261116-ses_2"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	corrupt := filepath.Join(root, ".cache", "agents", "claude-20261116-ses_3")
+	if err := os.MkdirAll(corrupt, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(corrupt, "session.json"), []byte("{broken"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := LoadAll(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("LoadAll() returned %d entries: %#v", len(entries), entries)
+	}
+	var loaded *Sidecar
+	for _, entry := range entries {
+		if entry.Sidecar != nil {
+			loaded = entry.Sidecar
+		} else if entry.Err == nil {
+			t.Fatalf("corrupt sidecar lost its error: %#v", entry)
+		}
+	}
+	if loaded == nil || !loaded.MatchesChange("abcdef123456") {
+		t.Fatalf("loaded = %#v", loaded)
+	}
+	if !loaded.MatchesChange("abcdef123456") {
+		t.Fatal("MatchesChange rejected the full change ID")
+	}
+	if loaded.MatchesChange("zzzzzz") {
+		t.Fatal("MatchesChange accepted an unknown ID")
+	}
+}

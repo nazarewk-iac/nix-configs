@@ -48,7 +48,7 @@ in
   basic-memory = pkgs.callPackage ./basic-memory { inherit __inputs__; };
   kdn-disko-zfs = pkgs.callPackage ./kdn-disko-zfs { inherit __inputs__; };
   jj-mcp = pkgs.callPackage ./jj-mcp { };
-  jj-meta = pkgs.callPackage ./jj-meta { };
+  kdn-jj-meta = pkgs.callPackage ./kdn-jj-meta { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
   kdn-journal = pkgs.callPackage ./kdn-journal { };

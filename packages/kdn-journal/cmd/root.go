@@ -34,6 +34,8 @@ type App struct {
 	Now     func() time.Time
 	// Getenv reads the environment. Tests replace it.
 	Getenv func(string) string
+	// Skill is the bundled SKILL.md.
+	Skill string
 
 	// Integration seams. A nil field means the real implementation.
 	JJ     jjrun.Runner
@@ -57,9 +59,10 @@ func (e *ExitError) Error() string {
 func (e *ExitError) Unwrap() error { return e.Err }
 
 // NewRoot builds the root command with the real output streams.
-func NewRoot(version string) *cobra.Command {
+func NewRoot(version, skill string) *cobra.Command {
 	return NewRootWithApp(&App{
 		Version: version,
+		Skill:   skill,
 		Out:     os.Stdout,
 		Err:     os.Stderr,
 		Width:   100,
@@ -109,7 +112,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 		app.JSON = jsonFlag
 		app.NoColor = noColorFlag
 		app.Width = widthFlag
-		if cmd.Name() == "version" || strings.HasPrefix(cmd.CommandPath(), "kdn-journal completion") {
+		if cmd.Name() == "version" || cmd.Name() == "skill" || strings.HasPrefix(cmd.CommandPath(), "kdn-journal completion") {
 			return nil
 		}
 		return app.resolveRoot()
@@ -129,6 +132,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 		newBoardCmd(app),
 		newWorklogCmd(app),
 		newDoctorCmd(app),
+		newSkillCmd(app),
 		newTUICmd(app),
 		newVersionCmd(app),
 	)

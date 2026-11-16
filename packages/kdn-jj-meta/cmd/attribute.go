@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"jj-meta/internal/attribution"
-	"jj-meta/internal/session"
-	"jj-meta/internal/trailer"
+	"kdn-jj-meta/internal/attribution"
+	"kdn-jj-meta/internal/session"
+	"kdn-jj-meta/internal/trailer"
 )
 
 type attributeOptions struct {
@@ -25,6 +25,7 @@ type attributeOptions struct {
 	noSession      bool
 	allowImmutable bool
 	dryRun         bool
+	allowEmpty     bool
 }
 
 type changeAttribution struct {
@@ -34,6 +35,7 @@ type changeAttribution struct {
 	Added    []string `json:"added"`
 	Skipped  []string `json:"skipped"`
 	Written  bool     `json:"written"`
+	Reason   string   `json:"reason,omitempty"`
 }
 
 type attributeData struct {
@@ -52,9 +54,9 @@ func newAttributeCmd(app *App) *cobra.Command {
 			"The default target is @. Every target is intersected with mutable(), so the command\n" +
 			"refuses immutable history. Existing trailers are never removed or rewritten; a second\n" +
 			"run adds nothing.",
-		Example: "  jj-meta attribute @\n" +
-			"  jj-meta attribute main..@ --profile github --coauthor-email bot@example.com\n" +
-			"  jj-meta attribute --revset 'main..@' --dry-run",
+		Example: "  kdn-jj-meta attribute @\n" +
+			"  kdn-jj-meta attribute main..@ --profile github --coauthor-email bot@example.com\n" +
+			"  kdn-jj-meta attribute --revset 'main..@' --dry-run",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			revset := opts.revset
@@ -78,11 +80,12 @@ func newAttributeCmd(app *App) *cobra.Command {
 	flags.StringArrayVar(&opts.profiles, "profile", nil, "active trailer profiles: agent, nixpkgs, asf, github, full; repeatable or comma-separated (default: agent,nixpkgs,asf)")
 	flags.StringArrayVar(&opts.trailers, "trailer", nil, "extra trailer as key=value; repeatable")
 	flags.BoolVar(&opts.coauthor, "coauthor", false, "also add the agent Co-authored-by line (needs an email)")
-	flags.StringVar(&opts.coauthorEmail, "coauthor-email", "", "agent email for Co-authored-by (default: JJ_META_COAUTHOR_EMAIL)")
+	flags.StringVar(&opts.coauthorEmail, "coauthor-email", "", "agent email for Co-authored-by (default: KDN_JJ_META_COAUTHOR_EMAIL)")
 	flags.BoolVar(&opts.generated, "generated", false, "also add Generated-by for mostly machine-authored work")
 	flags.BoolVar(&opts.noSession, "no-session", false, "do not write Session-Id")
 	flags.BoolVar(&opts.allowImmutable, "allow-immutable", false, "try an immutable change anyway (jj itself refuses to rewrite it)")
 	flags.BoolVar(&opts.dryRun, "dry-run", false, "print the plan and change nothing")
+	flags.BoolVar(&opts.allowEmpty, "allow-empty", false, "attribute a change with an empty description")
 	return cmd
 }
 
@@ -103,7 +106,7 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 	}
 	profileValues := opts.profiles
 	if len(profileValues) == 0 {
-		if env := a.Getenv("JJ_META_PROFILE"); strings.TrimSpace(env) != "" {
+		if env := a.Getenv("KDN_JJ_META_PROFILE"); strings.TrimSpace(env) != "" {
 			profileValues = []string{env}
 		}
 	}
@@ -117,7 +120,7 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 	}
 	email := opts.coauthorEmail
 	if email == "" {
-		email = a.Getenv("JJ_META_COAUTHOR_EMAIL")
+		email = a.Getenv("KDN_JJ_META_COAUTHOR_EMAIL")
 	}
 	sess := session.Detect(a.Getenv).Apply(opts.harness, opts.session, opts.model)
 	plan, err := attribution.Build(attribution.Options{
@@ -138,6 +141,21 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 	data := attributeData{Profiles: attribution.Names(profiles), Session: sess, DryRun: opts.dryRun}
 	var issues []Issue
 	for _, change := range changes {
+		if strings.TrimSpace(change.Description) == "" && !opts.allowEmpty {
+			result := changeAttribution{
+				ChangeID: change.ChangeID,
+				CommitID: change.CommitID,
+				Mutable:  !change.Immutable,
+				Added:    []string{},
+				Skipped:  []string{},
+				Reason:   "empty description",
+			}
+			data.Changes = append(data.Changes, result)
+			if !a.JSON {
+				fmt.Fprintf(a.Out, "%s: empty description; pass --allow-empty to attribute it\n", shortID(change.ChangeID))
+			}
+			continue
+		}
 		doc := trailer.Parse(change.Description)
 		updated, added, skipped := doc.Append(plan.Trailers)
 		result := changeAttribution{

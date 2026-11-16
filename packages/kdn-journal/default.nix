@@ -20,6 +20,7 @@ let
     ''^go\.(mod|sum)$''
     "^[^.]+$"
     ''.*\.go$''
+    ''.*\.md$''
   ];
 
   # Filled after the first build with `nix build .#kdn-journal`.
@@ -45,6 +46,7 @@ buildGoModule (finalAttrs: {
   ];
 
   postInstall = ''
+    install -Dm644 skill.md "$out/share/${finalAttrs.meta.mainProgram}/skill/SKILL.md"
     installShellCompletion --cmd ${finalAttrs.meta.mainProgram} \
       --bash <("$out/bin/${finalAttrs.meta.mainProgram}" completion bash) \
       --fish <("$out/bin/${finalAttrs.meta.mainProgram}" completion fish) \

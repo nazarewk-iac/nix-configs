@@ -174,6 +174,7 @@ let
     program-kdeconnect = ./aspects/program-kdeconnect.nix;
     program-keepass = ./aspects/program-keepass.nix;
     program-keepassxc = ./aspects/program-keepassxc.nix;
+    program-kdn-tools = ./aspects/program-kdn-tools.nix;
     program-logseq = ./aspects/program-logseq.nix;
     program-matrix = ./aspects/program-matrix.nix;
     program-midnight-commander = ./aspects/program-midnight-commander.nix;

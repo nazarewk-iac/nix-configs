@@ -97,6 +97,7 @@ in
     kdn.dev-terraform
     kdn.dev-web
     kdn.program-terminal-ide
+    kdn.program-kdn-tools
     kdn.virt-containers
     kdn.virt-containers-podman
   ];

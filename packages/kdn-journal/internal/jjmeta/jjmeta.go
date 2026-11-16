@@ -1,12 +1,13 @@
-// Package jjmeta calls the separate jj-meta binary.
+// Package jjmeta calls the separate kdn-jj-meta binary.
 //
 // kdn-journal never edits a commit description. It records the session mapping in its sidecar and
-// asks jj-meta to write the trailers, so the attribution policy lives in one place.
+// asks kdn-jj-meta to write the trailers, so the attribution policy lives in one place.
 package jjmeta
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -20,17 +21,24 @@ type Options struct {
 	Profile string
 }
 
-// Attributor is the jj-meta surface the journal depends on. Tests replace it.
+// Result is what one attribute call changed.
+type Result struct {
+	Added   []string `json:"added"`
+	Skipped []string `json:"skipped"`
+	Written bool     `json:"written"`
+}
+
+// Attributor is the kdn-jj-meta surface the journal depends on. Tests replace it.
 type Attributor interface {
 	// Available reports whether the binary can be found.
 	Available() bool
-	// Attribute appends the missing trailers to one change.
-	Attribute(ctx context.Context, changeID string, opts Options) error
+	// Attribute appends the missing trailers to one change and reports what changed.
+	Attribute(ctx context.Context, changeID string, opts Options) (Result, error)
 }
 
-// CLI runs the real jj-meta binary.
+// CLI runs the real kdn-jj-meta binary.
 type CLI struct {
-	// Bin is the executable. Empty means "jj-meta" from PATH.
+	// Bin is the executable. Empty means "kdn-jj-meta" from PATH.
 	Bin string
 }
 
@@ -41,7 +49,7 @@ func (c *CLI) bin() string {
 	if c.Bin != "" {
 		return c.Bin
 	}
-	return "jj-meta"
+	return "kdn-jj-meta"
 }
 
 // Available implements Attributor.
@@ -51,8 +59,8 @@ func (c *CLI) Available() bool {
 }
 
 // Attribute implements Attributor.
-func (c *CLI) Attribute(ctx context.Context, changeID string, opts Options) error {
-	args := []string{"attribute", changeID}
+func (c *CLI) Attribute(ctx context.Context, changeID string, opts Options) (Result, error) {
+	args := []string{"attribute", changeID, "--json"}
 	if opts.Session != "" {
 		args = append(args, "--session", opts.Session)
 	}
@@ -74,9 +82,20 @@ func (c *CLI) Attribute(ctx context.Context, changeID string, opts Options) erro
 		if message == "" {
 			message = err.Error()
 		}
-		return fmt.Errorf("jj-meta attribute: %s", message)
+		return Result{}, fmt.Errorf("kdn-jj-meta attribute: %s", message)
 	}
-	return nil
+	var envelope struct {
+		Data struct {
+			Changes []Result `json:"changes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		return Result{}, fmt.Errorf("parse kdn-jj-meta output: %w", err)
+	}
+	if len(envelope.Data.Changes) == 0 {
+		return Result{}, nil
+	}
+	return envelope.Data.Changes[0], nil
 }
 
 var _ Attributor = (*CLI)(nil)

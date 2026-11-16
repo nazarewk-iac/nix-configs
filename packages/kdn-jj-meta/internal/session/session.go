@@ -50,7 +50,7 @@ func Detect(getenv func(string) string) Session {
 				return Session{
 					Harness: s.harness,
 					ID:      id,
-					Model:   firstEnv(getenv, append(s.modelVars, "AGENT_MODEL", "JJ_META_MODEL")),
+					Model:   firstEnv(getenv, append(s.modelVars, "AGENT_MODEL", "KDN_JJ_META_MODEL")),
 					Source:  v,
 				}
 			}
@@ -64,18 +64,18 @@ func Detect(getenv func(string) string) Session {
 		return Session{
 			Harness: NormalizeHarness(harness),
 			ID:      id,
-			Model:   firstEnv(getenv, []string{"AGENT_MODEL", "JJ_META_MODEL"}),
+			Model:   firstEnv(getenv, []string{"AGENT_MODEL", "KDN_JJ_META_MODEL"}),
 			Source:  "AGENT_SESSION_ID",
 		}
 	}
 	if agent := firstEnv(getenv, []string{"AI_AGENT", "AGENT_HARNESS"}); agent != "" {
 		return Session{
 			Harness: NormalizeHarness(agent),
-			Model:   firstEnv(getenv, []string{"AGENT_MODEL", "JJ_META_MODEL"}),
+			Model:   firstEnv(getenv, []string{"AGENT_MODEL", "KDN_JJ_META_MODEL"}),
 			Source:  "AI_AGENT",
 		}
 	}
-	return Session{Model: firstEnv(getenv, []string{"AGENT_MODEL", "JJ_META_MODEL"}), Source: "none"}
+	return Session{Model: firstEnv(getenv, []string{"AGENT_MODEL", "KDN_JJ_META_MODEL"}), Source: "none"}
 }
 
 // NormalizeHarness maps the values harnesses export for themselves to the short names the table

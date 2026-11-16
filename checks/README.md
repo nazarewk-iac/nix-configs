@@ -8,15 +8,14 @@ timestamp: 2026-09-11T20:45:00+02:00
 
 # Checks
 
-**Do not run a bare `nix flake check`.** It builds all **65** attributes of `checks.<system>` on
-`aarch64-darwin` (63 counted 2026-09-11; two platform-independent `kdn-journal-*` checks were added
-2026-11-15), counted with:
+**Do not run a bare `nix flake check`.** It builds all **75** attributes of `checks.<system>` on
+`aarch64-darwin` and **83** on `x86_64-linux` (counted 2026-11-16), counted with:
 
 ```bash
 nix eval --raw '.#checks.aarch64-darwin' --apply 'x: toString (builtins.length (builtins.attrNames x))'
 ```
 
-Six of the 65 are the bundles, so 59 are real checks. The bare run measured **660.6 s** before the 30
+Six of the 75 are the bundles, so 69 are real checks. The bare run measured **660.6 s** before the 30
 `dev-*` aspects landed. `den-eval-instantiate` then grew by 300 s, and 12 more checks landed after
 that run. So **960 s is a lower bound, not a measurement**. Nobody re-measures it: the measurement
 costs the same 15 minutes the rule exists to save. `bundle-slow` alone runs 710.6 s on a warm store.
@@ -111,6 +110,8 @@ joins.
 | `kdn-slug-pytest`                | the `kdn-slug` package's own pytest suite                                                                   | pkgs     | 4.5   | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-slug-pytest"`                       |
 | `kdn-journal-test`               | the `kdn-journal` Go suite; unit tests plus the real-repository parser walk                                 | pkgs     | 16.5  | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-journal-test"`                      |
 | `kdn-journal-parse`              | every `docs/tasks` definition, board and worklog parses in a sandbox copy                                   | pkgs     | 14.8  | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-journal-parse"`                     |
+| `kdn-jj-meta-test`               | the `kdn-jj-meta` Go suite: trailer parser, session table, profile builder and the jj runner fake           | pkgs     | 18.0  | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-jj-meta-test"`                      |
+| `kdn-jj-meta-attribute`          | the packaged binary against a temporary jj repository: attribute, idempotency, profiles, gate               | pkgs     | 5.4   | `nix build --no-eval-cache -L ".#checks.$SYS.kdn-jj-meta-attribute"`                 |
 | `den-eval-mcp`                   | one gateway per shell, every backend name in the YAML                                                       | den      | 4.5   | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-mcp"`                          |
 | `hello`                          | the `checks.<system>` plumbing builds end to end                                                            | core     | 4.3   | `nix build --no-eval-cache -L ".#checks.$SYS.hello"`                                 |
 | `den-eval-jj`                    | the repo config, the aliases, both hooks and the allowlist                                                  | den      | 4.2   | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-jj"`                           |

@@ -114,18 +114,18 @@ denTests.checks
   # test skips when docs/tasks is absent, which is the case in the sandbox.
   kdn-journal-test = pkgs.kdn.kdn-journal.passthru.tests.go-test;
 
-  # The `jj-meta` Go suite: the trailer parser, the session table, the profile builder and the jj
+  # The `kdn-jj-meta` Go suite: the trailer parser, the session table, the profile builder and the jj
   # runner behind a fake. The two real-jj cases skip in the sandbox.
-  jj-meta-test = pkgs.kdn.jj-meta.passthru.tests.go-test;
+  kdn-jj-meta-test = pkgs.kdn.kdn-jj-meta.passthru.tests.go-test;
 
-  # The `jj-meta` binary against a temporary jj repository. It proves what the Go suite fakes: the
+  # The `kdn-jj-meta` binary against a temporary jj repository. It proves what the Go suite fakes: the
   # `json(self)` read, the `mutable()` gate, `describe --stdin` and idempotency. No network, no
   # user configuration, no remote.
-  jj-meta-attribute =
-    pkgs.runCommand "check-jj-meta-attribute"
+  kdn-jj-meta-attribute =
+    pkgs.runCommand "check-kdn-jj-meta-attribute"
       {
         nativeBuildInputs = [
-          pkgs.kdn.jj-meta
+          pkgs.kdn.kdn-jj-meta
           pkgs.jujutsu
         ];
       }
@@ -134,7 +134,7 @@ denTests.checks
         export JJ_CONFIG="$TMPDIR/jj.toml"
         mkdir -p "$HOME"
         cat > "$JJ_CONFIG" <<'EOF'
-        user.name = "jj-meta check"
+        user.name = "kdn-jj-meta check"
         user.email = "check@example.com"
         EOF
 
@@ -142,7 +142,7 @@ denTests.checks
         jj git init >/dev/null
         printf 'subject\n' | jj describe --no-pager -r @ --stdin >/dev/null 2>&1
 
-        jj-meta attribute @ --harness opencode --model test-model --session ses_check
+        kdn-jj-meta attribute @ --harness opencode --model test-model --session ses_check
         jj log --no-pager --no-graph -r @ -T 'description' > after-first.txt
         grep -q '^subject$' after-first.txt
         grep -q 'Assisted-by: opencode:test-model' after-first.txt
@@ -153,26 +153,31 @@ denTests.checks
 
         # A second run must not rewrite the description.
         cp after-first.txt before-second.txt
-        jj-meta attribute @ --harness opencode --model test-model --session ses_check
+        kdn-jj-meta attribute @ --harness opencode --model test-model --session ses_check
         jj log --no-pager --no-graph -r @ -T 'description' > after-second.txt
         diff before-second.txt after-second.txt
 
         # The github profile adds the agent, never the human author.
-        jj-meta attribute @ --profile github --coauthor-email bot@example.com \
+        kdn-jj-meta attribute @ --profile github --coauthor-email bot@example.com \
           --harness opencode --model test-model --session ses_check
         jj log --no-pager --no-graph -r @ -T 'description' > after-github.txt
         grep -q 'Co-authored-by: opencode <bot@example.com>' after-github.txt
 
-        # The gate passes on the attributed change and fails on a bare one.
-        jj-meta check @
+        # An empty @ is not a commit: attribute skips it and check still passes.
+        jj new >/dev/null 2>&1
+        kdn-jj-meta attribute @ --harness opencode --model test-model > empty.txt
+        grep -q 'empty description' empty.txt
+        kdn-jj-meta check @
+
+        # The gate fails on a described change without Assisted-by.
         jj new -m 'unattributed' >/dev/null 2>&1
-        if jj-meta check @; then
+        if kdn-jj-meta check @; then
           echo "check passed on an unattributed change" >&2
           exit 1
         fi
 
         # The agent profile writes only the local session key, not a disclosure.
-        jj-meta attribute @ --profile agent --harness opencode --model test-model --session ses_check
+        kdn-jj-meta attribute @ --profile agent --harness opencode --model test-model --session ses_check
         jj log --no-pager --no-graph -r @ -T 'description' > after-agent.txt
         grep -q 'Session-Id: ses_check' after-agent.txt
         if grep -q 'Assisted-by' after-agent.txt; then
@@ -181,7 +186,7 @@ denTests.checks
         fi
 
         # The root change is immutable and must be refused.
-        if jj-meta attribute 'root()' --harness opencode --model test-model; then
+        if kdn-jj-meta attribute 'root()' --harness opencode --model test-model; then
           echo "attribute accepted the immutable root change" >&2
           exit 1
         fi

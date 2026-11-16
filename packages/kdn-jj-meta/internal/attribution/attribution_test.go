@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"jj-meta/internal/session"
-	"jj-meta/internal/trailer"
+	"kdn-jj-meta/internal/session"
+	"kdn-jj-meta/internal/trailer"
 )
 
 func build(t *testing.T, opts Options) Plan {

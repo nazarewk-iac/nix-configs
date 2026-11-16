@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"jj-meta/internal/session"
-	"jj-meta/internal/trailer"
+	"kdn-jj-meta/internal/session"
+	"kdn-jj-meta/internal/trailer"
 )
 
 // Profile names one attribution convention.
@@ -160,7 +160,7 @@ func Build(opts Options) (Plan, error) {
 		email := strings.TrimSpace(opts.CoauthorEmail)
 		if email == "" {
 			return Plan{}, fmt.Errorf(
-				"the github profile and --coauthor need an agent email: pass --coauthor-email or set JJ_META_COAUTHOR_EMAIL")
+				"the github profile and --coauthor need an agent email: pass --coauthor-email or set KDN_JJ_META_COAUTHOR_EMAIL")
 		}
 		name := s.Harness
 		if name == "" {

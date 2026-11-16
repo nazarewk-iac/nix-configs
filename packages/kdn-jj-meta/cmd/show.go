@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"jj-meta/internal/trailer"
+	"kdn-jj-meta/internal/trailer"
 )
 
 type showData struct {

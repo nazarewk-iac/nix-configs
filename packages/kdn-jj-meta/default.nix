@@ -1,4 +1,4 @@
-# The `jj-meta` CLI. It attributes a jj change to the agent session that produced it: it appends
+# The `kdn-jj-meta` CLI. It attributes a jj change to the agent session that produced it: it appends
 # the missing `Assisted-by`, `Generated-by`, `Session-Id`, `Harness` and `Model` trailers to a
 # mutable change, deduplicates them, and never deletes or rewrites existing metadata.
 #
@@ -8,7 +8,7 @@
 #
 # The suite needs no jj and no repository: the jj runner sits behind an interface. The two
 # integration cases skip when `jj` is absent, which is the case in the Nix sandbox; the
-# `jj-meta-attribute` check runs the real binary against a temporary repository instead.
+# `kdn-jj-meta-attribute` check runs the real binary against a temporary repository instead.
 {
   lib,
   buildGoModule,
@@ -20,13 +20,14 @@ let
     ''^go\.(mod|sum)$''
     "^[^.]+$"
     ''.*\.go$''
+    ''.*\.md$''
   ];
 
-  # Filled after the first build with `nix build .#jj-meta`.
+  # Filled after the first build with `nix build .#kdn-jj-meta`.
   vendorHash = "sha256-7K17JaXFsjf163g5PXCb5ng2gYdotnZ2IDKk8KFjNj0=";
 in
 buildGoModule (finalAttrs: {
-  pname = "jj-meta";
+  pname = "kdn-jj-meta";
   version = "0.1.0";
 
   inherit src vendorHash;
@@ -42,6 +43,7 @@ buildGoModule (finalAttrs: {
   ];
 
   postInstall = ''
+    install -Dm644 skill.md "$out/share/${finalAttrs.meta.mainProgram}/skill/SKILL.md"
     installShellCompletion --cmd ${finalAttrs.meta.mainProgram} \
       --bash <("$out/bin/${finalAttrs.meta.mainProgram}" completion bash) \
       --fish <("$out/bin/${finalAttrs.meta.mainProgram}" completion fish) \
@@ -49,7 +51,7 @@ buildGoModule (finalAttrs: {
   '';
 
   passthru.tests.go-test = buildGoModule {
-    pname = "jj-meta-go-test";
+    pname = "kdn-jj-meta-go-test";
     version = "0.1.0";
 
     inherit src vendorHash;
@@ -62,6 +64,6 @@ buildGoModule (finalAttrs: {
 
   meta = {
     description = "Attribute jj changes to the agent session that produced them";
-    mainProgram = "jj-meta";
+    mainProgram = "kdn-jj-meta";
   };
 })

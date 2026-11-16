@@ -115,16 +115,16 @@ is absent, `exec.LookPath` fails and the integration reports `jj-unavailable`.
 
 ### 4.3 Commit attribution
 
-Commit trailers are owned by the separate **`jj-meta`** tool (see
-[docs/tasks/2026-11/jj-meta](../jj-meta/design.md)):
+Commit trailers are owned by the separate **`kdn-jj-meta`** tool (see
+[docs/tasks/2026-11/kdn-jj-meta](../kdn-jj-meta/design.md)):
 
-- `jj-meta` owns the profile set (`agent`, `nixpkgs`, `asf`, `github`), the mutable-only check, the
+- `kdn-jj-meta` owns the profile set (`agent`, `nixpkgs`, `asf`, `github`), the mutable-only check, the
   deduplication and the `Assisted-by`/`Co-authored-by`/`Generated-by` policy.
 - `kdn-journal` records the sidecar mapping and calls
-  `jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when a change
+  `kdn-jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when a change
   is recorded. It never edits a commit description itself.
-- `kdn-journal changes` reads `jj-meta show --json` when it needs to display attribution.
-- If `jj-meta` is absent, the sidecar still records the mapping and the journal reports a warning.
+- `kdn-journal changes` reads `kdn-jj-meta show --json` when it needs to display attribution.
+- If `kdn-jj-meta` is absent, the sidecar still records the mapping and the journal reports a warning.
 
 This keeps the trailer policy in one place and lets `kdn-journal` work without jj or Atuin.
 

@@ -1,5 +1,5 @@
 // Package jjrun reads jj changes for the journal. It is a thin, read-only adapter: the journal
-// never rewrites a change, and commit trailers belong to jj-meta.
+// never rewrites a change, and commit trailers belong to kdn-jj-meta.
 package jjrun
 
 import (
@@ -29,6 +29,8 @@ type Runner interface {
 	WorkingCopyChange(ctx context.Context) (string, error)
 	// Change resolves one change ID or commit ID.
 	Change(ctx context.Context, rev string) (Change, error)
+	// Changes returns every change a revset matches, without the file list.
+	Changes(ctx context.Context, revset string) ([]Change, error)
 }
 
 // CLI runs the real jj binary.
@@ -92,6 +94,47 @@ func (c *CLI) Change(ctx context.Context, rev string) (Change, error) {
 		change.Files = files
 	}
 	return change, nil
+}
+
+// Changes implements Runner. It returns every change the revset matches and skips the per-change
+// file list, so a large revset stays fast.
+func (c *CLI) Changes(ctx context.Context, revset string) ([]Change, error) {
+	revset = strings.TrimSpace(revset)
+	if revset == "" {
+		return nil, fmt.Errorf("empty revset")
+	}
+	out, err := c.run(ctx, "log", "--no-pager", "--no-graph", "-r", revset, "-T", `json(self) ++ "\n"`)
+	if err != nil {
+		return nil, err
+	}
+	var changes []Change
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var record struct {
+			ChangeID    string `json:"change_id"`
+			CommitID    string `json:"commit_id"`
+			Description string `json:"description"`
+			Author      struct {
+				Name      string `json:"name"`
+				Email     string `json:"email"`
+				Timestamp string `json:"timestamp"`
+			} `json:"author"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			return nil, fmt.Errorf("parse jj log output: %w", err)
+		}
+		changes = append(changes, Change{
+			ChangeID:    record.ChangeID,
+			CommitID:    record.CommitID,
+			Description: record.Description,
+			Author:      strings.TrimSpace(record.Author.Name + " <" + record.Author.Email + ">"),
+			Timestamp:   record.Author.Timestamp,
+		})
+	}
+	return changes, nil
 }
 
 // files reads the changed paths of one change. A failure is not fatal: the change itself is the

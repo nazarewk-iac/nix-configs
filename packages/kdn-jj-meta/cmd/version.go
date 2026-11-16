@@ -14,7 +14,7 @@ func newVersionCmd(app *App) *cobra.Command {
 			if app.JSON {
 				return app.writeJSON("version", map[string]string{"version": app.Version}, nil)
 			}
-			fmt.Fprintf(app.Out, "jj-meta %s\n", app.Version)
+			fmt.Fprintf(app.Out, "kdn-jj-meta %s\n", app.Version)
 			return nil
 		},
 	}

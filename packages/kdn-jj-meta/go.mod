@@ -1,4 +1,4 @@
-module jj-meta
+module kdn-jj-meta
 
 go 1.26.0
 

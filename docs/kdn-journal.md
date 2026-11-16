@@ -53,6 +53,8 @@ kdn-journal session record-change <change-id>
 kdn-journal session record-commit <commit-id>
 kdn-journal session changes
 kdn-journal session atuin
+kdn-journal session backfill [--revset <revset>] [--dry-run]
+kdn-journal skill [--dir <path>]
 kdn-journal atuin list [--harness <name>]
 kdn-journal atuin show <thread-id>
 kdn-journal atuin search <query...> [--harness <name>] [--limit N]
@@ -183,7 +185,7 @@ kdn-journal atuin list|show|search
 ```
 
 `--session`, `--harness` and `--model` override the environment on every `session` subcommand.
-Detection reads the same table as `jj-meta`: `OPENCODE_SESSION_ID`, `PI_SESSION_ID`,
+Detection reads the same table as `kdn-jj-meta`: `OPENCODE_SESSION_ID`, `PI_SESSION_ID`,
 `CLAUDE_CODE_SESSION_ID`, `CODEX_THREAD_ID`, `CURSOR_CONVERSATION_ID`, `GEMINI_SESSION_ID`,
 `COPILOT_SESSION_ID`, then `AGENT_SESSION_ID`.
 
@@ -193,9 +195,9 @@ working-copy change as `jj.working_copy_change`. That is a pointer to the shared
 proof of ownership.
 
 `session record-change` appends the change ID to `jj.change_ids` and calls
-`jj-meta attribute <change-id> --session ... --harness ... --model ...`. The trailer policy lives in
-[jj-meta](jj-meta.md); `kdn-journal` never edits a commit description. A missing `jj-meta` is a
-`jj-meta-unavailable` warning and the mapping is still recorded. When the harness exports no model,
+`kdn-jj-meta attribute <change-id> --session ... --harness ... --model ...`. The trailer policy lives in
+[kdn-jj-meta](kdn-jj-meta.md); `kdn-journal` never edits a commit description. A missing `kdn-jj-meta` is a
+`kdn-jj-meta-unavailable` warning and the mapping is still recorded. When the harness exports no model,
 the model Atuin recorded for the thread is the fallback.
 
 `session changes` resolves every recorded ID through jj and prints the description, the author, the
@@ -210,6 +212,19 @@ transcript stays in Atuin's encrypted store. The thread's real start time replac
 Atuin is optional. Without the binary, with capture off, or with an empty store, the command prints
 `atuin-unavailable` or `atuin-empty` and exits 0. `atuin list|show|search` read the same CLI.
 
+`session backfill` attributes an existing history. For each change it takes the session from a
+sidecar that records the change ID first, then from the Atuin Thread whose
+`[started_at, updated_at]` interval covers the change's author time and whose cwd is this
+repository. Overlapping threads resolve to the one that started last; two threads that started at
+the same instant are ambiguous and skipped. An empty description is skipped, a change with no
+session is reported, and a change that already has every trailer is counted as unchanged.
+`--session <id>` restricts the run to one session, `--revset` defaults to `mutable()`, and
+`--dry-run` prints the plan without calling `kdn-jj-meta`.
+
+`kdn-journal skill` prints the cross-repo skill the binary embeds; `--dir <path>` writes it to
+`<path>/kdn-journal/SKILL.md`. Home Manager links it into `~/.agents/skills`,
+`~/.config/opencode/skills` and `~/.pi/agent/skills`.
+
 The sidecar:
 
 ```json
@@ -220,7 +235,7 @@ The sidecar:
   "started_at": "2026-11-15T18:24:38+01:00",
   "updated_at": "2026-11-16T10:00:00+01:00",
   "cwd": "/home/kdn/dev/github.com/nazarewk-iac/nix-configs",
-  "task": "docs/tasks/2026-11/jj-meta",
+  "task": "docs/tasks/2026-11/kdn-jj-meta",
   "jj": {
     "working_copy_change": "slrttxqzkkzn",
     "change_ids": ["sqzunxvvtlzy"],
@@ -348,7 +363,7 @@ The CLI works without a TTY. Use `--json`, never `tui`, and treat the exit code 
 - **The only journal writes are `task set-status` and the `session` sidecar.** Agents still write
   boards and worklogs themselves.
 - **Record your session identity and every change you commit.** `session init` once, then
-  `session record-change <change-id>` after each commit. It calls `jj-meta`, so the change gets the
+  `session record-change <change-id>` after each commit. It calls `kdn-jj-meta`, so the change gets the
   `Assisted-by` trailers and the sidecar gets the mapping. Neither step is required to read the
   journal.
 
@@ -371,7 +386,7 @@ kdn-journal doctor --parse-only --json
 kdn-journal board "$TASK_DIR" --json
 kdn-journal worklog "$TASK_DIR" --json
 
-# 6. After a commit, map the change and attribute it through jj-meta.
+# 6. After a commit, map the change and attribute it through kdn-jj-meta.
 kdn-journal session record-change "$CHANGE_ID" --json
 
 # 7. Update the status only after the lifecycle files are in place.
@@ -382,35 +397,37 @@ kdn-journal task set-status "$TASK" in-progress --json
 
 Every command emits the same envelope:
 
-| Field            | Type   | Meaning                                                                                                                  |
-| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `schema_version` | number | `1`; a breaking change bumps it.                                                                                         |
-| `command`        | string | `summary`, `sessions`, `session <sub>`, `tasks`, `task`, `board`, `worklog`, `doctor`, `atuin <sub>`, `task set-status`. |
-| `root`           | string | Absolute repository root. Do not diff it.                                                                                |
-| `generated_at`   | string | RFC 3339. Do not diff it.                                                                                                |
-| `data`           | object | Command payload.                                                                                                         |
-| `issues`         | array  | Machine-readable findings; an empty array, never `null`.                                                                 |
+| Field            | Type   | Meaning                                                                                                                           |
+| ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `schema_version` | number | `1`; a breaking change bumps it.                                                                                                  |
+| `command`        | string | `summary`, `sessions`, `session <sub>`, `tasks`, `task`, `board`, `worklog`, `doctor`, `atuin <sub>`, `skill`, `task set-status`. |
+| `root`           | string | Absolute repository root. Do not diff it.                                                                                         |
+| `generated_at`   | string | RFC 3339. Do not diff it.                                                                                                         |
+| `data`           | object | Command payload.                                                                                                                  |
+| `issues`         | array  | Machine-readable findings; an empty array, never `null`.                                                                          |
 
 Payloads:
 
-| Command                 | `data`                                                              |
-| ----------------------- | ------------------------------------------------------------------- |
-| `summary`               | `session`, optional `task`; with `--all`, `sessions`.               |
-| `sessions`              | `sessions[]`.                                                       |
-| `tasks`                 | `tasks[]`.                                                          |
-| `task`                  | `task`.                                                             |
-| `board`                 | `board`.                                                            |
-| `worklog`               | `worklog`.                                                          |
-| `doctor`                | `errors`, `warnings` (counts); the issue objects are in `issues`.   |
-| `task set-status`       | `task` (repo-relative path), `status`.                              |
-| `session init`          | `session` (the sidecar), `dir`, `sidecar`.                          |
-| `session record-change` | `session`, `sidecar`, `change_id`, `recorded`, `attributed`.        |
-| `session record-commit` | `session`, `sidecar`, `commit_id`, `recorded`.                      |
-| `session changes`       | `session`, `changes[]`.                                             |
-| `session atuin`         | `session`, `match` (`session-id`, `cwd-time`, `none`, `ambiguous`). |
-| `atuin list`            | `threads[]`.                                                        |
-| `atuin show`            | `thread`.                                                           |
-| `atuin search`          | `query`, `threads[]`.                                               |
+| Command                 | `data`                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `summary`               | `session`, optional `task`; with `--all`, `sessions`.                        |
+| `sessions`              | `sessions[]`.                                                                |
+| `tasks`                 | `tasks[]`.                                                                   |
+| `task`                  | `task`.                                                                      |
+| `board`                 | `board`.                                                                     |
+| `worklog`               | `worklog`.                                                                   |
+| `doctor`                | `errors`, `warnings` (counts); the issue objects are in `issues`.            |
+| `task set-status`       | `task` (repo-relative path), `status`.                                       |
+| `session init`          | `session` (the sidecar), `dir`, `sidecar`.                                   |
+| `session record-change` | `session`, `sidecar`, `change_id`, `recorded`, `attributed`.                 |
+| `session record-commit` | `session`, `sidecar`, `commit_id`, `recorded`.                               |
+| `session changes`       | `session`, `changes[]`.                                                      |
+| `session atuin`         | `session`, `match` (`session-id`, `cwd-time`, `none`, `ambiguous`).          |
+| `session backfill`      | `revset`, `dry_run`, `attributed[]`, `unchanged[]`, `skipped[]`, `failed[]`. |
+| `skill`                 | `id`, `markdown` or `path`.                                                  |
+| `atuin list`            | `threads[]`.                                                                 |
+| `atuin show`            | `thread`.                                                                    |
+| `atuin search`          | `query`, `threads[]`.                                                        |
 
 Key model fields:
 
@@ -440,9 +457,9 @@ Key model fields:
 - `tasks --status` accepts only a value present in the tree, or `all`; anything else exits 2.
 - `task set-status` exits 2 on a refusal and leaves the file unchanged.
 - The `session` commands degrade to warnings, not errors: `jj-unavailable`, `jj-working-copy`,
-  `jj-meta-unavailable`, `jj-meta-failed`, `atuin-unavailable`, `atuin-empty`, `atuin-no-match`,
+  `kdn-jj-meta-unavailable`, `kdn-jj-meta-failed`, `atuin-unavailable`, `atuin-empty`, `atuin-no-match`,
   `atuin-ambiguous`, `sidecar-corrupt` and `change-missing` all keep exit 0.
-- `session record-change` records the mapping even when `jj-meta` is missing or refuses the change.
+- `session record-change` records the mapping even when `kdn-jj-meta` is missing or refuses the change.
   The sidecar is the local source of truth; the trailer is the public, optional one.
 
 ### `jq` examples

@@ -44,6 +44,7 @@ func newSessionCmd(app *App) *cobra.Command {
 		newSessionRecordCommitCmd(app, opts),
 		newSessionChangesCmd(app, opts),
 		newSessionAtuinCmd(app, opts),
+		newSessionBackfillCmd(app, opts),
 	)
 	return cmd
 }
@@ -111,7 +112,7 @@ func newSessionInitCmd(app *App, opts *sessionOptions) *cobra.Command {
 func newSessionRecordChangeCmd(app *App, opts *sessionOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "record-change <change-id>",
-		Short: "Record a jj change and attribute it through jj-meta",
+		Short: "Record a jj change and attribute it through kdn-jj-meta",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			changeID := strings.TrimSpace(args[0])
@@ -126,7 +127,13 @@ func newSessionRecordChangeCmd(app *App, opts *sessionOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			recorded := sidecar.AddChange(changeID)
+			resolved := changeID
+			if app.JJ.Available() {
+				if change, err := app.JJ.Change(context.Background(), changeID); err == nil && change.ChangeID != "" {
+					resolved = change.ChangeID
+				}
+			}
+			recorded := sidecar.AddChange(resolved)
 			if err := sidecar.Save(path); err != nil {
 				return err
 			}
@@ -137,17 +144,17 @@ func newSessionRecordChangeCmd(app *App, opts *sessionOptions) *cobra.Command {
 			}
 			switch {
 			case !app.JJMeta.Available():
-				issues = append(issues, warningIssue("jj-meta-unavailable",
-					"jj-meta is not on PATH; the change is recorded but no trailer is written"))
+				issues = append(issues, warningIssue("kdn-jj-meta-unavailable",
+					"kdn-jj-meta is not on PATH; the change is recorded but no trailer is written"))
 			default:
-				err := app.JJMeta.Attribute(context.Background(), changeID, jjmeta.Options{
+				result, err := app.JJMeta.Attribute(context.Background(), resolved, jjmeta.Options{
 					Session: id.ID,
 					Harness: id.Harness,
 					Model:   model,
 				})
 				if err != nil {
-					issues = append(issues, warningIssue("jj-meta-failed", err.Error()))
-				} else {
+					issues = append(issues, warningIssue("kdn-jj-meta-failed", err.Error()))
+				} else if len(result.Added) > 0 {
 					attributed = true
 				}
 			}
@@ -155,18 +162,18 @@ func newSessionRecordChangeCmd(app *App, opts *sessionOptions) *cobra.Command {
 				return app.writeJSON("session record-change", map[string]any{
 					"session":    sidecar,
 					"sidecar":    path,
-					"change_id":  changeID,
+					"change_id":  resolved,
 					"recorded":   recorded,
 					"attributed": attributed,
 				}, issues)
 			}
 			if recorded {
-				fmt.Fprintf(app.Out, "recorded %s\n", changeID)
+				fmt.Fprintf(app.Out, "recorded %s\n", resolved)
 			} else {
-				fmt.Fprintf(app.Out, "%s already recorded\n", changeID)
+				fmt.Fprintf(app.Out, "%s already recorded\n", resolved)
 			}
 			if attributed {
-				fmt.Fprintf(app.Out, "attributed %s\n", changeID)
+				fmt.Fprintf(app.Out, "attributed %s\n", resolved)
 			}
 			printIssues(app, issues)
 			return nil
@@ -294,9 +301,9 @@ func (a *App) openSidecar(id sessionid.Identity) (*sessionid.Sidecar, string, []
 	}
 	sidecar.Harness = id.Harness
 	sidecar.SessionID = id.ID
-	if cwd, err := os.Getwd(); err == nil {
-		sidecar.Cwd = cwd
-	}
+	// Cwd is the repository root, not the shell's working directory, so the Atuin link still
+	// matches when `session init` runs from a subdirectory.
+	sidecar.Cwd = a.Root
 	sidecar.Touch(now)
 	return sidecar, path, issues, nil
 }

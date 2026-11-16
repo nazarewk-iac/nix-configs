@@ -6,7 +6,7 @@ authored_by: agent
 timestamp: 2026-11-16T09:10:00+01:00
 ---
 
-# Design: `jj-meta`
+# Design: `kdn-jj-meta`
 
 ## 1. Decisions
 
@@ -25,7 +25,7 @@ timestamp: 2026-11-16T09:10:00+01:00
 ## 2. Package layout
 
 ```
-packages/jj-meta/
+packages/kdn-jj-meta/
 ├── default.nix
 ├── go.mod
 ├── go.sum
@@ -43,7 +43,7 @@ packages/jj-meta/
     └── render/      # text/JSON
 ```
 
-Module path `jj-meta`. Go 1.25.2. Dependencies: `spf13/cobra`, `gopkg.in/yaml.v3` only if config is
+Module path `kdn-jj-meta`. Go 1.25.2. Dependencies: `spf13/cobra`, `gopkg.in/yaml.v3` only if config is
 needed; otherwise standard library.
 
 ## 3. Trailer model
@@ -147,11 +147,12 @@ If the model is unknown:
 ### `attribute`
 
 ```
-jj-meta attribute [<change-id>|--revset <revset>]
+kdn-jj-meta attribute [<change-id>|--revset <revset>]
   [--session <id>] [--harness <name>] [--model <name>]
   [--profile agent,nixpkgs,asf|github|full]
   [--trailer key=value] [--coauthor] [--coauthor-email <email>]
-  [--generated] [--no-session] [--allow-immutable] [--dry-run] [--json]
+  [--generated] [--no-session] [--allow-immutable] [--allow-empty]
+  [--dry-run] [--json]
 ```
 
 - Builds the desired trailers from the active profile set (default `agent,nixpkgs,asf`):
@@ -162,19 +163,21 @@ jj-meta attribute [<change-id>|--revset <revset>]
   - `full`: all four
   - each `--trailer` adds one custom line
 - `--profile` replaces the active set; `--coauthor` and `--generated` add one line on top of it.
+- A change with an empty description is skipped unless `--allow-empty` is given; `check` skips it
+  too, so a gate over `mutable()` passes while `@` is empty.
 - Reads the change description, appends only missing lines, calls `jj describe`.
 - Prints added/skipped trailers and the change IDs; `--json` emits `{change_id, added, skipped}`.
 - Idempotent: a second run adds nothing.
 
 `--coauthor`, `--profile github` and `--profile full` require `--coauthor-email` or
-`JJ_META_COAUTHOR_EMAIL`. The tool never uses the human’s email and never defaults to the local
+`KDN_JJ_META_COAUTHOR_EMAIL`. The tool never uses the human’s email and never defaults to the local
 user. If the email is missing, it refuses and prints the flag. The human is already the author and
 is never added as a co-author.
 
 ### `show`
 
 ```
-jj-meta show <change-id> [--json]
+kdn-jj-meta show <change-id> [--json]
 ```
 
 Prints change ID, commit ID, mutable/immutable, description and parsed trailers.
@@ -182,7 +185,7 @@ Prints change ID, commit ID, mutable/immutable, description and parsed trailers.
 ### `list`
 
 ```
-jj-meta list [--revset <revset>] [--missing] [--json]
+kdn-jj-meta list [--revset <revset>] [--missing] [--json]
 ```
 
 Lists changes with trailer state. `--missing` filters to changes without `Assisted-by`.
@@ -190,7 +193,7 @@ Lists changes with trailer state. `--missing` filters to changes without `Assist
 ### `check`
 
 ```
-jj-meta check [--revset <revset>] [--require coauthor] [--json]
+kdn-jj-meta check [--revset <revset>] [--require coauthor] [--json]
 ```
 
 - Default revset `mutable() & @` or `main..@`? Use `mutable() & @` for a single change and let the
@@ -221,23 +224,23 @@ No absolute paths, no unstable commit IDs in the contract except where requested
 - When it records a change/commit, it can call:
 
   ```sh
-  jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>
+  kdn-jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>
   ```
 
 - `kdn-journal` never edits commit descriptions itself.
-- `kdn-journal session changes` can call `jj-meta show --json` to display the trailers.
-- If `jj-meta` is absent, `kdn-journal` reports a warning and keeps the sidecar mapping.
-- Atuin remains optional: attribution works from the sidecar and `jj-meta` alone.
+- `kdn-journal session changes` can call `kdn-jj-meta show --json` to display the trailers.
+- If `kdn-jj-meta` is absent, `kdn-journal` reports a warning and keeps the sidecar mapping.
+- Atuin remains optional: attribution works from the sidecar and `kdn-jj-meta` alone.
 
 ## 9. Agent VCS rule
 
 Add to `.agents/rules/jujutsu-vcs.md` and the commit helper:
 
-- Before an agent commits, run `jj-meta attribute <change-id>` or let the helper call it.
+- Before an agent commits, run `kdn-jj-meta attribute <change-id>` or let the helper call it.
 - Every agent-assisted commit carries `Assisted-by:`.
 - `Co-authored-by:` is never the human author; it is optional agent attribution only.
 - `Signed-off-by:` stays human-only.
-- `jj-meta check --revset 'main..@'` is the pre-push/CI gate; `jj` has no commit-msg hook.
+- `kdn-jj-meta check --revset 'main..@'` is the pre-push/CI gate; `jj` has no commit-msg hook.
 
 ## 10. Tests
 
@@ -252,14 +255,14 @@ Add to `.agents/rules/jujutsu-vcs.md` and the commit helper:
 - `check`: missing `Assisted-by` error, `--require coauthor` warning/error, JSON shape.
 - Integration: a real temporary jj repo with a mutable change; attribute twice; assert unchanged
   second time and body preserved.
-- Nix: `jj-meta-test`, `jj-meta-parse` with a fixture repo.
+- Nix: `kdn-jj-meta-test`, `kdn-jj-meta-parse` with a fixture repo.
 
 ## 11. Packaging
 
-- `packages/jj-meta/default.nix`: `buildGoModule`, shell completions, `passthru.tests.go-test`.
+- `packages/kdn-jj-meta/default.nix`: `buildGoModule`, shell completions, `passthru.tests.go-test`.
 - `packages/default.nix`, `checks/default.nix`, `checks/bundles.nix`: package and check.
 - `devenv.nix`: binary on the shell PATH.
-- Docs: `docs/jj-meta.md`; short `.agents/rules/jj-meta.md` linked from `AGENTS.md`.
+- Docs: `docs/kdn-jj-meta.md`; short `.agents/rules/kdn-jj-meta.md` linked from `AGENTS.md`.
 
 ## 12. Open questions
 
@@ -267,4 +270,4 @@ Add to `.agents/rules/jujutsu-vcs.md` and the commit helper:
 2. `Assisted-by` format: `harness:model` vs `harness (model)`; choose one and document it.
 3. `Co-authored-by` email: a registered bot identity per project, or a local placeholder?
 4. `check` default revset: `@` for a single change or `main..@` for a branch?
-5. Should `jj-meta` also own the commit helper, or should `kdn-journal` own it?
+5. Should `kdn-jj-meta` also own the commit helper, or should `kdn-journal` own it?

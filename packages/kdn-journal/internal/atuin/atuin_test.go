@@ -70,3 +70,35 @@ func TestDecodeThreads(t *testing.T) {
 		t.Fatal("decodeThreads accepted invalid JSON")
 	}
 }
+
+func TestFindAt(t *testing.T) {
+	threads := []Thread{
+		{AtuinID: "early", Harness: "opencode", SessionID: "ses_early", Cwd: "/repo", StartedAt: "2026-11-16T09:00:00Z", UpdatedAt: "2026-11-16T12:00:00Z"},
+		{AtuinID: "late", Harness: "pi", SessionID: "ses_late", Cwd: "/repo", StartedAt: "2026-11-16T10:00:00Z", UpdatedAt: "2026-11-16T11:00:00Z"},
+		{AtuinID: "elsewhere", Harness: "opencode", SessionID: "ses_other", Cwd: "/other", StartedAt: "2026-11-16T09:00:00Z", UpdatedAt: "2026-11-16T12:00:00Z"},
+	}
+	at := func(value string) time.Time {
+		parsed, err := ParseTime(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return parsed
+	}
+	if match := FindAt(threads, "/repo", at("2026-11-16T09:30:00Z")); match.How != MatchTime || match.Thread.AtuinID != "early" {
+		t.Fatalf("FindAt(09:30) = %#v", match)
+	}
+	if match := FindAt(threads, "/repo", at("2026-11-16T10:30:00Z")); match.How != MatchTime || match.Thread.AtuinID != "late" {
+		t.Fatalf("FindAt(10:30) = %#v, want the latest start", match)
+	}
+	if match := FindAt(threads, "/repo", at("2026-11-16T13:00:00Z")); match.How != MatchNone {
+		t.Fatalf("FindAt(13:00) = %#v", match)
+	}
+	if match := FindAt(threads, "/other", at("2026-11-16T10:30:00Z")); match.How != MatchTime || match.Thread.AtuinID != "elsewhere" {
+		t.Fatalf("FindAt(/other) = %#v", match)
+	}
+	tie := append([]Thread{}, threads...)
+	tie[1].StartedAt = "2026-11-16T09:00:00Z"
+	if match := FindAt(tie, "/repo", at("2026-11-16T10:30:00Z")); match.How != MatchAmbiguous {
+		t.Fatalf("FindAt(tie) = %#v", match)
+	}
+}

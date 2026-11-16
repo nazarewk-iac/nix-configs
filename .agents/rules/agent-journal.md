@@ -187,9 +187,10 @@ kdn-journal session record-change <change-id> --json
 ```
 
 `session init` detects the harness and session from the environment and reuses the existing session
-directory. `session record-change` stores the jj mapping in the sidecar and calls `jj-meta`, so the
-change also gets its `Assisted-by` trailers. See [jj-meta.md](jj-meta.md). `session atuin` links the
-Atuin Thread when the harness is captured; it is optional.
+directory. `session record-change` stores the jj mapping in the sidecar and calls `kdn-jj-meta`, so the
+change also gets its `Assisted-by` trailers. See [kdn-jj-meta.md](kdn-jj-meta.md). `session atuin` links the
+Atuin Thread when the harness is captured; it is optional. `session backfill` attributes an existing
+history from the sidecars and the Atuin intervals; run it once per repository, not per session.
 
 Agents should use the JSON path and never call `tui`. The machine-readable contract, the JSON field
 table and the one safe write are in [kdn-journal.md](kdn-journal.md). The human command reference is

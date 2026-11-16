@@ -5,6 +5,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 
@@ -13,6 +14,9 @@ import (
 
 var version = "dev"
 
+//go:embed skill.md
+var skillMarkdown string
+
 func main() {
 	// Bubble Tea v1 queries the terminal background in its package init. The packaged wrapper
 	// sets CI=1 so termenv skips that query; restore the environment before the CLI runs so the
@@ -20,7 +24,7 @@ func main() {
 	if os.Getenv("KDN_JOURNAL_NO_OSC") == "1" {
 		_ = os.Unsetenv("CI")
 	}
-	if err := cmd.NewRoot(version).Execute(); err != nil {
+	if err := cmd.NewRoot(version, skillMarkdown).Execute(); err != nil {
 		if exit, ok := cmd.AsExitError(err); ok {
 			os.Exit(exit.Code)
 		}

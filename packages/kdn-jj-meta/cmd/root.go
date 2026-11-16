@@ -1,4 +1,4 @@
-// Package cmd holds the cobra command tree of jj-meta.
+// Package cmd holds the cobra command tree of kdn-jj-meta.
 package cmd
 
 import (
@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"jj-meta/internal/jj"
+	"kdn-jj-meta/internal/jj"
 )
 
 // App is the shared state of one CLI run.
@@ -23,6 +23,7 @@ type App struct {
 	Err     io.Writer
 	Now     func() time.Time
 	Getenv  func(string) string
+	Skill   string
 	Runner  jj.Runner
 }
 
@@ -50,9 +51,10 @@ type Issue struct {
 }
 
 // NewRoot builds the root command with the real output streams and the real jj binary.
-func NewRoot(version string) *cobra.Command {
+func NewRoot(version, skill string) *cobra.Command {
 	return NewRootWithApp(&App{
 		Version: version,
+		Skill:   skill,
 		Out:     os.Stdout,
 		Err:     os.Stderr,
 		Now:     time.Now,
@@ -75,9 +77,9 @@ func NewRootWithApp(app *App) *cobra.Command {
 		app.Getenv = os.Getenv
 	}
 	root := &cobra.Command{
-		Use:   "jj-meta",
+		Use:   "kdn-jj-meta",
 		Short: "Attribute jj changes to the agent session that produced them",
-		Long: "jj-meta appends attribution trailers to the description of a mutable jj change.\n" +
+		Long: "kdn-jj-meta appends attribution trailers to the description of a mutable jj change.\n" +
 			"It discovers the harness and session from the environment, adds only the lines that are\n" +
 			"missing, deduplicates them, and never deletes or rewrites existing metadata.",
 		SilenceUsage:  true,
@@ -104,6 +106,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 		newShowCmd(app),
 		newListCmd(app),
 		newCheckCmd(app),
+		newSkillCmd(app),
 		newVersionCmd(app),
 	)
 	return root
@@ -136,7 +139,7 @@ func (a *App) writeJSON(command string, data any, issues []Issue) error {
 }
 
 func (a *App) warnf(format string, args ...any) {
-	fmt.Fprintf(a.Err, "jj-meta: warning: "+format+"\n", args...)
+	fmt.Fprintf(a.Err, "kdn-jj-meta: warning: "+format+"\n", args...)
 }
 
 // AsExitError reports the explicit exit code of err, if any.

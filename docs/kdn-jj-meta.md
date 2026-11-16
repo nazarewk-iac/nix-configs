@@ -1,15 +1,15 @@
 ---
 type: Reference
-description: The jj-meta CLI that attributes a jj change to the agent session that produced it — trailer profiles, session autodiscovery, the mutable-only rule, JSON output and exit codes.
+description: The kdn-jj-meta CLI that attributes a jj change to the agent session that produced it — trailer profiles, session autodiscovery, the mutable-only rule, JSON output and exit codes.
 timestamp: 2026-11-16T09:35:00+01:00
 ---
 
-# `jj-meta`
+# `kdn-jj-meta`
 
-`jj-meta` appends the attribution trailers to the description of a jj change. It discovers the
+`kdn-jj-meta` appends the attribution trailers to the description of a jj change. It discovers the
 harness, session and model from the environment, adds only the lines that are missing, deduplicates
 them, and never deletes or rewrites existing metadata. It is a Go binary under
-[`packages/jj-meta/`](../packages/jj-meta/).
+[`packages/kdn-jj-meta/`](../packages/kdn-jj-meta/).
 
 ## Why
 
@@ -19,18 +19,18 @@ repo-global and has no public way to attach a session to one change. A commit tr
 description is the portable channel: it survives a clone, and `git interpret-trailers` reads it.
 
 The Nixpkgs transparency policy requires an `Assisted-by:` trailer for LLM-assisted commits and
-says explicitly that `Co-authored-by:` does not satisfy it. `jj-meta` makes the correct trailer the
+says explicitly that `Co-authored-by:` does not satisfy it. `kdn-jj-meta` makes the correct trailer the
 easy default instead of a thing a person must remember.
 
-The tool is separate from `kdn-journal` on purpose. `jj-meta` owns jj metadata and needs only `jj`.
-`kdn-journal` owns the session and task journal and calls `jj-meta` when it records a change. See
-[tasks/2026-11/jj-meta](tasks/2026-11/jj-meta/definition.md) and
+The tool is separate from `kdn-journal` on purpose. `kdn-jj-meta` owns jj metadata and needs only `jj`.
+`kdn-journal` owns the session and task journal and calls `kdn-jj-meta` when it records a change. See
+[tasks/2026-11/kdn-jj-meta](tasks/2026-11/kdn-jj-meta/definition.md) and
 [tasks/2026-11/journal-session-identity](tasks/2026-11/journal-session-identity/definition.md).
 
 ## Profiles
 
 A profile is one attribution convention. Profiles compose: `--profile` takes a comma-separated list
-or repeats, and `JJ_META_PROFILE` sets the default list. The default active set is
+or repeats, and `KDN_JJ_META_PROFILE` sets the default list. The default active set is
 `agent,nixpkgs,asf`.
 
 | Profile   | Trailers                         | Use                                                                         |
@@ -59,7 +59,7 @@ Rules that hold for every profile:
 
 - `Co-authored-by` names the **agent**. The human is already the author and is never added as a
   co-author.
-- `Co-authored-by` needs an agent email: `--coauthor-email` or `JJ_META_COAUTHOR_EMAIL`. The tool
+- `Co-authored-by` needs an agent email: `--coauthor-email` or `KDN_JJ_META_COAUTHOR_EMAIL`. The tool
   never uses the local user's address and never invents one.
 - `Signed-off-by` is never written. It is the human's DCO certification.
 - The default set writes both `Assisted-by` and `Generated-by` because different consumers read
@@ -73,31 +73,42 @@ Rules that hold for every profile:
 ## Commands
 
 ```
-jj-meta attribute [<change-id>] [--revset <revset>]
-                  [--session <id>] [--harness <name>] [--model <name>]
-                  [--profile agent,nixpkgs,asf|github|full]
-                  [--trailer key=value] [--coauthor] [--coauthor-email <email>]
-                  [--generated] [--no-session] [--allow-immutable] [--dry-run]
-jj-meta show [<change-id>]
-jj-meta list [--revset <revset>] [--missing]
-jj-meta check [--revset <revset>] [--require coauthor]
-jj-meta version
-jj-meta completion <shell>
+kdn-jj-meta attribute [<change-id>] [--revset <revset>]
+                       [--session <id>] [--harness <name>] [--model <name>]
+                       [--profile agent,nixpkgs,asf|github|full]
+                       [--trailer key=value] [--coauthor] [--coauthor-email <email>]
+                       [--generated] [--no-session] [--allow-immutable] [--allow-empty]
+                       [--dry-run]
+kdn-jj-meta show [<change-id>]
+kdn-jj-meta list [--revset <revset>] [--missing]
+kdn-jj-meta check [--revset <revset>] [--require coauthor]
+kdn-jj-meta skill [--dir <path>]
+kdn-jj-meta version
+kdn-jj-meta completion <shell>
 ```
 
 Global flags: `--json`, `--dir <path>`.
 
 `attribute` defaults to `@`. It refuses a change outside `mutable()` unless `--allow-immutable` is
 explicit, and jj itself still refuses to rewrite an immutable change. `--dry-run` prints the plan
-and writes nothing. A second run adds nothing and calls no `jj describe`.
+and writes nothing. A second run adds nothing and calls no `jj describe`. A change with an empty
+description is skipped unless `--allow-empty` is given: an empty `@` is not a commit yet.
 
 `show` prints the body, the parsed trailers and the mutability of one change. `list` prints the
 trailer state of every change a revset matches; `--missing` keeps only the changes without
 `Assisted-by` or `Generated-by`. `check` exits 1 when a change is missing `Assisted-by`;
-`--require coauthor` also requires `Co-authored-by`.
+`--require coauthor` also requires `Co-authored-by`. A change with an empty description is skipped,
+so a gate over `mutable()` or `main..@` passes while `@` is still empty.
 
 Use `--revset 'main..@'` for a branch gate. `check` does not filter immutable changes: the revset
 decides the scope.
+
+### `skill`
+
+`kdn-jj-meta skill` prints the cross-repo skill the binary embeds. `--dir <path>` writes it to
+`<path>/kdn-jj-meta/SKILL.md`, the layout an agent harness reads. Home Manager installs the same
+file into `~/.agents/skills`, `~/.config/opencode/skills` and `~/.pi/agent/skills`, so an agent in
+any repository can load it without a checkout of this one. `--json` returns `{id, markdown}`.
 
 ## Session autodiscovery
 
@@ -114,7 +125,7 @@ The tool reads the same environment table as `kdn-journal`, in this order:
 | `copilot`  | `COPILOT_SESSION_ID`                          | `COPILOT_MODEL`  |
 | generic    | `AGENT_SESSION_ID`                            | `AGENT_MODEL`    |
 
-`AGENT_MODEL` and `JJ_META_MODEL` are the last model fallbacks. A harness with no session ID is
+`AGENT_MODEL` and `KDN_JJ_META_MODEL` are the last model fallbacks. A harness with no session ID is
 still reported when `AI_AGENT` or `AGENT_HARNESS` names one, so the `Harness` trailer is available.
 
 `--session`, `--harness` and `--model` override the environment. An unknown harness writes no
@@ -161,12 +172,15 @@ Exit codes: 0 success, 1 a refused change or a failed `check`, 2 a usage or jj e
 
 ## Tests
 
-- `packages/jj-meta/internal/trailer` covers the parser and the append rules: no description,
+- `packages/kdn-jj-meta/internal/trailer` covers the parser and the append rules: no description,
   body only, existing block, CRLF, folded values, a fenced block, duplicates, a single-valued key
   with a different value and a trailing blank line.
 - `internal/session` covers every environment variable, the priority order and the overrides.
 - `internal/attribution` covers every profile, the default set, the co-author email requirement and
   the warnings.
 - `internal/jj` runs the real binary against a temporary repository when `jj` is on `PATH`.
-- The `jj-meta-attribute` check runs the packaged binary in a sandboxed temporary repository:
-  attribute, a second no-op run, the github profile, the gate and the immutable refusal.
+- `cmd` covers the four profiles, the idempotent second run, the immutable refusal and the JSON
+  envelope.
+- The `kdn-jj-meta-attribute` check runs the packaged binary in a sandboxed temporary repository:
+  attribute, a second no-op run, the github profile, the agent profile, the gate and the immutable
+  refusal.

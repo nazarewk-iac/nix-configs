@@ -7,13 +7,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"jj-meta/internal/trailer"
+	"kdn-jj-meta/internal/trailer"
 )
 
 type checkEntry struct {
 	ChangeID string   `json:"change_id"`
 	CommitID string   `json:"commit_id"`
 	Mutable  bool     `json:"mutable"`
+	Skipped  bool     `json:"skipped,omitempty"`
 	Errors   []string `json:"errors"`
 	Warnings []string `json:"warnings"`
 }
@@ -69,6 +70,21 @@ func (a *App) check(revset string, require []string) error {
 	}
 	var issues []Issue
 	for _, change := range changes {
+		if strings.TrimSpace(change.Description) == "" {
+			entry := checkEntry{
+				ChangeID: change.ChangeID,
+				CommitID: change.CommitID,
+				Mutable:  !change.Immutable,
+				Skipped:  true,
+				Errors:   []string{},
+				Warnings: []string{},
+			}
+			data.Changes = append(data.Changes, entry)
+			if !a.JSON {
+				fmt.Fprintf(a.Out, "%s  skipped (empty description)\n", shortID(entry.ChangeID))
+			}
+			continue
+		}
 		doc := trailer.Parse(change.Description)
 		entry := checkEntry{
 			ChangeID: change.ChangeID,

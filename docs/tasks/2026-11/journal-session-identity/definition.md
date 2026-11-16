@@ -98,15 +98,15 @@ Add `.cache/agents/<session>/session.json` (git-ignored) with:
 - Record `working_copy_change` at session start/end as a **pointer to the shared working copy**, not
   as proof of ownership.
 - Record explicit change IDs when the session creates or splits commits.
-- Commit attribution is delegated to **`jj-meta`** (see
-  [docs/tasks/2026-11/jj-meta](../jj-meta/definition.md)). That tool owns the trailer profiles,
+- Commit attribution is delegated to **`kdn-jj-meta`** (see
+  [docs/tasks/2026-11/kdn-jj-meta](../kdn-jj-meta/definition.md)). That tool owns the trailer profiles,
   mutable-only checks, deduplication and the `Assisted-by`/`Co-authored-by`/`Generated-by` policy.
 - This task owns the sidecar and the session mapping. `kdn-journal` calls
-  `jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when it
-  records a change, and reads `jj-meta show --json` when it displays attribution.
+  `kdn-jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when it
+  records a change, and reads `kdn-jj-meta show --json` when it displays attribution.
 - `kdn-journal` never edits commit descriptions itself and never duplicates the trailer policy.
 - Never claim that a change ID uniquely belongs to one session when `@` is shared.
-- Degrade gracefully when jj or `jj-meta` is absent; the sidecar still records the mapping.
+- Degrade gracefully when jj or `kdn-jj-meta` is absent; the sidecar still records the mapping.
 
 ### 4. Atuin Threads integration
 
@@ -141,8 +141,8 @@ kdn-journal summary --atuin
 kdn-journal tui   # session detail shows the Atuin link
 
 # attribution is delegated to the separate tool:
-jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>
-jj-meta show <change-id> --json
+kdn-jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>
+kdn-jj-meta show <change-id> --json
 ```
 
 ## Non-goals
@@ -164,9 +164,9 @@ jj-meta show <change-id> --json
   cwd/time fallback; missing Atuin or capture-off produces a warning, not an error.
 - After `threads.capture = true` and `atuin threads import`, `atuin threads list` is non-empty and
   no longer prints the capture-off warning.
-- `kdn-journal` delegates attribution to `jj-meta`; a fixture proves it calls the CLI with the
+- `kdn-journal` delegates attribution to `kdn-jj-meta`; a fixture proves it calls the CLI with the
   session/harness/model and reads back the trailers. The `Assisted-by` gate is tested in the
-  `jj-meta` task, not duplicated here.
+  `kdn-jj-meta` task, not duplicated here.
 - `summary --atuin` and the TUI session detail show the Atuin UUID and message count.
 - No sidecar or session ID is committed by default.
 - Tests cover env detection, sidecar round-trip, jj template parsing with a fake runner, Atuin JSON

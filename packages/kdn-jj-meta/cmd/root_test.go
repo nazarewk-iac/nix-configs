@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"jj-meta/internal/jj"
+	"kdn-jj-meta/internal/jj"
 )
 
 type describedCall struct {
@@ -122,7 +122,7 @@ func TestAttributeRefusesImmutable(t *testing.T) {
 }
 
 func TestAttributeDryRun(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	app := newTestApp(runner, opencodeEnv())
 	out, _, err := execute(t, app, "attribute", "@", "--dry-run")
 	if err != nil {
@@ -146,7 +146,7 @@ func TestAttributeNoMatchingChange(t *testing.T) {
 }
 
 func TestAttributeGitHubNeedsEmail(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	app := newTestApp(runner, opencodeEnv())
 	if _, _, err := execute(t, app, "attribute", "@", "--profile", "github"); err == nil {
 		t.Fatal("github profile accepted a missing email")
@@ -154,9 +154,9 @@ func TestAttributeGitHubNeedsEmail(t *testing.T) {
 }
 
 func TestAttributeCoauthorEmailFromEnv(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	env := opencodeEnv()
-	env["JJ_META_COAUTHOR_EMAIL"] = "bot@example.com"
+	env["KDN_JJ_META_COAUTHOR_EMAIL"] = "bot@example.com"
 	app := newTestApp(runner, env)
 	if _, _, err := execute(t, app, "attribute", "@", "--profile", "github"); err != nil {
 		t.Fatalf("attribute: %v", err)
@@ -168,7 +168,7 @@ func TestAttributeCoauthorEmailFromEnv(t *testing.T) {
 }
 
 func TestAttributeNoSession(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	app := newTestApp(runner, opencodeEnv())
 	if _, _, err := execute(t, app, "attribute", "@", "--no-session"); err != nil {
 		t.Fatalf("attribute: %v", err)
@@ -179,9 +179,9 @@ func TestAttributeNoSession(t *testing.T) {
 }
 
 func TestAttributeCustomTrailerAndProfileFromEnv(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	env := opencodeEnv()
-	env["JJ_META_PROFILE"] = "asf"
+	env["KDN_JJ_META_PROFILE"] = "asf"
 	app := newTestApp(runner, env)
 	if _, _, err := execute(t, app, "attribute", "@", "--trailer", "Reviewed-by=Human"); err != nil {
 		t.Fatalf("attribute: %v", err)
@@ -236,7 +236,7 @@ func TestAttributeJSON(t *testing.T) {
 }
 
 func TestAttributeProfilesAreComposable(t *testing.T) {
-	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111", Description: "subject"}}}
 	app := newTestApp(runner, opencodeEnv())
 	if _, _, err := execute(t, app, "attribute", "@", "--profile", "agent", "--profile", "nixpkgs"); err != nil {
 		t.Fatalf("attribute: %v", err)
@@ -351,7 +351,7 @@ func TestVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("version: %v", err)
 	}
-	if strings.TrimSpace(out) != "jj-meta test" {
+	if strings.TrimSpace(out) != "kdn-jj-meta test" {
 		t.Fatalf("output = %q", out)
 	}
 }

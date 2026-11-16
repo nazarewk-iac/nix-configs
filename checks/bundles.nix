@@ -111,8 +111,8 @@ in
     "kdn-certs-expiry"
     "kdn-journal-test"
     "kdn-journal-parse"
-    "jj-meta-test"
-    "jj-meta-attribute"
+    "kdn-jj-meta-test"
+    "kdn-jj-meta-attribute"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];

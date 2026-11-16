@@ -135,6 +135,7 @@ func decodeThreads(out string) ([]Thread, error) {
 const (
 	MatchSessionID = "session-id"
 	MatchCwdTime   = "cwd-time"
+	MatchTime      = "time-window"
 	MatchNone      = "none"
 	MatchAmbiguous = "ambiguous"
 )
@@ -200,6 +201,47 @@ func Find(threads []Thread, sessionID, harness, cwd string, started time.Time, w
 	default:
 		return Match{How: MatchAmbiguous}
 	}
+}
+
+// FindAt returns the thread whose [started_at, updated_at] interval covers at and whose cwd is
+// cwd. It ignores the harness because a commit carries no harness. When several sessions overlap,
+// the one that started last wins: it is the most recent work on that tree. Two sessions that
+// started at the same instant are ambiguous.
+func FindAt(threads []Thread, cwd string, at time.Time) Match {
+	wantCwd := ""
+	if cwd != "" {
+		wantCwd = filepath.Clean(cwd)
+	}
+	type candidate struct {
+		thread Thread
+		start  time.Time
+	}
+	var candidates []candidate
+	for _, thread := range threads {
+		if wantCwd != "" && filepath.Clean(thread.Cwd) != wantCwd {
+			continue
+		}
+		start, err := ParseTime(thread.StartedAt)
+		if err != nil {
+			continue
+		}
+		end, err := ParseTime(thread.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		if at.Before(start) || at.After(end) {
+			continue
+		}
+		candidates = append(candidates, candidate{thread: thread, start: start})
+	}
+	if len(candidates) == 0 {
+		return Match{How: MatchNone}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].start.After(candidates[j].start) })
+	if len(candidates) > 1 && candidates[0].start.Equal(candidates[1].start) {
+		return Match{How: MatchAmbiguous}
+	}
+	return Match{Thread: candidates[0].thread, How: MatchTime}
 }
 
 // ParseTime accepts the RFC3339 variants Atuin emits.
