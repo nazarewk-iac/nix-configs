@@ -11,7 +11,9 @@ links:
 
 ---
 
+# Agent trailer profiles
+
 `kdn-jj-meta` owns the trailer profiles. `--profile` replaces the set; `--coauthor` adds the agent only; the human is never a co-author and `Signed-off-by` stays human-only.
 
-# Related Concepts
+## Related Concepts
 - [One writer per bundle](one-writer-per-bundle.md): Attribution and memory are separate tools with separate writers.

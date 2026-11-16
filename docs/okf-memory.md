@@ -14,8 +14,10 @@ of the OKF tooling in this repository; `kdn-okf` reads the same bundle and never
 ```
 knowledge -> .agents/knowledge        # tracked symlink
 .agents/knowledge/
-├── index.md                          # okf_version: "0.2", scopes: [project]
+├── index.md                          # okf_version: "0.2"
 ├── log.md                            # maintained by okf-agent-memory
+├── manifest.ai-xf.yaml               # AI-XF v0.5 manifest
+├── okf-base.yaml                     # okflint type profile
 └── decisions/
     ├── index.md                      # generated listing with descriptions
     ├── no-push.md
@@ -83,12 +85,18 @@ fields and follows the mirrored links. Level 3 (federation) is not used.
 
 ## Validation and scorecard
 
-Two gates run together:
+Five gates run together:
 
 - `okf-memory validate .agents/knowledge --strict --drift` fails on a broken link, an orphan, or a
   description that no longer matches the parent `index.md` listing.
 - `ai-xf-validate .agents/knowledge --level 2` fails on a missing or duplicate `id`, a typed link
   without a body mirror, or a missing manifest.
+- `okf-rs validate`, `okf-rs lint` and `okf-rs links --broken --check` apply strict OKF v0.2
+  conformance and the hygiene rules. See [docs/okf-toolchain.md](okf-toolchain.md).
+- `okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge` applies the
+  per-type profile from `okf-base.yaml`.
+- `okph validate .agents/knowledge --strict --ignore prefer-absolute-links` checks the graph from
+  the citation side.
 
 The scorecard reports three pillars: epistemic maintenance, human stewardship and graph integrity.
 The seed scores 72/100 (Grade C) because no concept carries a human `verified` entry. The check
@@ -97,7 +105,7 @@ human, add `verified: [{ by: "human:<name>", at: "<iso-time>" }]` and raise the 
 
 ## Security
 
-- `scopes: [project]`; no vendor registry, user or system layers in v1.
+- One project bundle; no vendor registry, user or system layer in v1.
 - The hub/vault (zero-knowledge sync) is off.
 - No secrets, credentials, customer data or session transcripts.
 - `code_refs` are repository-relative.

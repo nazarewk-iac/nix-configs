@@ -181,6 +181,13 @@ in
       # Screen an external document for hidden content and prompt injection before its text
       # reaches .agents/knowledge. See docs/okf-guard.md.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-guard
+      # The Rust OKF toolkit: strict conformance, lint, link graph and link-safe `mv`/`rm`.
+      # See docs/okf-toolchain.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-rs
+      # The per-type compliance linter and its manifest gate.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okflint
+      # Git-native impact analysis: `affected --git`, `deps`, `dependents`.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okph
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)

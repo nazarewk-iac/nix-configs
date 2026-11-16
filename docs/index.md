@@ -1,7 +1,7 @@
 ---
 type: Index
 title: "docs"
-description: "386 concepts: Task 143, Research 103, Solution 54, Reference 29, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories"
+description: "388 concepts: Task 143, Research 103, Solution 54, Reference 30, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Plan 1, Review 1 · 2 directories"
 generated: true
 ---
 
@@ -9,7 +9,7 @@ generated: true
 
 # docs
 
-386 concepts: Task 143, Research 103, Solution 54, Reference 29, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1 · 2 directories
+388 concepts: Task 143, Research 103, Solution 54, Reference 30, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Plan 1, Review 1 · 2 directories
 
 [..](../index.md)
 
@@ -52,11 +52,12 @@ generated: true
 - **[SSH certificates, ELI5](ssh-signing-eli5.md)** — A plain-language explanation of SSH certificates (user and host) and how to use them on both the client and the server side in this repo. · `Guide` · `stable` · `unverified`
 - **[SSH signing with the KDN CA](ssh-signing.md)** — How to log in to fleet hosts with SSH user certificates signed by the KDN SSH CA instead of per-host authorized_keys entries. · `Guide` · `stable` · `unverified`
 - **[Testing conventions](testing.md)** — Prefer committed pytest tests with a nix-shell shebang that builds the tool onto PATH over one-off manual test commands. · `Reference` · `stable` · `unverified`
+- **[The OKF toolchain](okf-toolchain.md)** — The external OKF tools — okf-rs for strict conformance, lint, links and link-safe refactors; okflint for the per-type manifest gate; okph for graph and impact analysis. · `Reference` · `stable` · `unverified`
 - **[Working in a sibling `jj workspace add` directory](vcs-workspaces.md)** — Gotchas when a background agent works in a jj-workspace-add sibling dir — stale DEVENV_ROOT, untracked-but-required files, and `path:` flakes copying git-ignored content. · `Reference` · `stable` · `unverified`
 - **[Zellij web access](zellij-web-access.md)** — Generate zellij-web login tokens on the host, and connect from an Android phone (Firefox) or another Linux machine over the NetBird VPN. · `How-To` · `stable` · `unverified`
 
 ## Directories
 
 - **[guides](guides/index.md)** — 1 concept: How-To 1
-- **[tasks](tasks/index.md)** — 346 concepts: Task 143, Research 103, Solution 54, Design 20, Status 10, Reference 6, unknown 6, Decision 3, Review 1
+- **[tasks](tasks/index.md)** — 347 concepts: Task 143, Research 103, Solution 54, Design 20, Status 10, Reference 6, unknown 6, Decision 3, Plan 1, Review 1
 

@@ -8,4 +8,6 @@ id: cache-outside-bundle
 
 ---
 
+# Cache outside the bundle
+
 The cache lives in `$XDG_CACHE_HOME/kdn-okf/<sha256(bundle-root)>/index-v1.json`; `--cache-dir` overrides it.

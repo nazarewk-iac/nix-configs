@@ -1,0 +1,27 @@
+# The okflint manifest for the agent memory bundle. okflint is a generic engine: this file
+# declares the standard, and the tool knows no type vocabulary of its own.
+#
+# `okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge` is the gate.
+# `okf-memory` still owns `index.md` and `log.md`; okflint only reads them.
+okf_version: "0.2"
+
+base:
+  name: "nix-configs agent memory"
+  roots:
+    - path: "."
+  reserved_files:
+    index: "index.md"
+    log: "log.md"
+  link_resolution:
+    scope: base
+    external_refs: []
+
+profile:
+  # ISO dates, when a concept carries them. The seed uses `generated.at` instead.
+  date_fields: [created, updated]
+
+  types:
+    Decision:
+      required: [type, title, description, status, generated]
+      optional: [id, links, tags, verified, stale_after, sources]
+      status_values: [draft, stable, deprecated]

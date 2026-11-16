@@ -1,7 +1,7 @@
 ---
 type: Index
 title: "nix-configs"
-description: "471 concepts: Task 143, Research 103, Reference 67, Solution 54, unknown 30, Design 20, How-To 10, README 10, Status 10, Playbook 6, Guide 5, Note 4, Decision 3, Backlog 2, Concept 2, Review 1, Template 1 · 12 directories"
+description: "473 concepts: Task 143, Research 103, Reference 68, Solution 54, unknown 30, Design 20, How-To 10, README 10, Status 10, Playbook 6, Guide 5, Note 4, Decision 3, Backlog 2, Concept 2, Plan 1, Review 1, Template 1 · 12 directories"
 generated: true
 ---
 
@@ -9,7 +9,7 @@ generated: true
 
 # nix-configs
 
-471 concepts: Task 143, Research 103, Reference 67, Solution 54, unknown 30, Design 20, How-To 10, README 10, Status 10, Playbook 6, Guide 5, Note 4, Decision 3, Backlog 2, Concept 2, Review 1, Template 1 · 12 directories
+473 concepts: Task 143, Research 103, Reference 68, Solution 54, unknown 30, Design 20, How-To 10, README 10, Status 10, Playbook 6, Guide 5, Note 4, Decision 3, Backlog 2, Concept 2, Plan 1, Review 1, Template 1 · 12 directories
 
 ## Concepts
 
@@ -23,7 +23,7 @@ generated: true
 - **[bpftrace](bpftrace/index.md)** — 1 concept: unknown 1
 - **[checks](checks/index.md)** — 29 concepts: Reference 20, unknown 5, Note 4
 - **[data](data/index.md)** — 12 concepts: unknown 9, Reference 3
-- **[docs](docs/index.md)** — 386 concepts: Task 143, Research 103, Solution 54, Reference 29, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Review 1
+- **[docs](docs/index.md)** — 388 concepts: Task 143, Research 103, Solution 54, Reference 30, Design 20, Status 10, How-To 8, unknown 7, Guide 5, Decision 3, Playbook 3, Plan 1, Review 1
 - **[hack](hack/index.md)** — 1 concept: unknown 1
 - **[hosts](hosts/index.md)** — 4 concepts: Reference 4
 - **[hosts-den](hosts-den/index.md)** — 1 concept: Reference 1

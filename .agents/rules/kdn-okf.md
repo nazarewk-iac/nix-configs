@@ -1,6 +1,6 @@
 ---
 type: Rule
-description: "Read an OKF v0.2 bundle in slices with kdn-okf: list/search/outline/section/context, JSON or JSONL, and doctor --parse-only as the gate."
+description: "Read an OKF v0.2 bundle in slices with kdn-okf, gate it with okf-rs/okflint/okph, and move concepts only with okf-rs mv."
 timestamp: 2026-11-16T14:30:00+01:00
 ---
 
@@ -27,3 +27,14 @@ Full doc: [docs/kdn-okf.md](../../docs/kdn-okf.md). The tool lives in
   lists candidates on stderr, so `$(kdn-okf show x --print-path)` never captures a menu.
 - **Trust and freshness are derived, not asserted.** `unverified` is the absence of `verified`;
   `stale` compares `stale_after` against `--now` or the clock.
+- **Move and delete only with `okf-rs`.** `okf-rs mv <old> <new> --bundle <bundle>` rewrites every
+  incoming link, rebases outgoing links and keeps the AI-XF `id`; `okf-rs rm` refuses a concept
+  that still has incoming links unless `--redirect-to` or `--unlink` says what to do. Never move a
+  concept by hand, and never delete one without `okf-rs rm`.
+- **The external gates are `okf-rs validate`, `okf-rs lint` and `okf-rs links --broken --check`;
+  `okflint validate --manifest <bundle>/okf-base.yaml <bundle>`; and
+  `okph validate <bundle> --strict --ignore prefer-absolute-links`.** `doctor` stays the fast
+  in-process check and does not shell out. Full doc: [docs/okf-toolchain.md](../../docs/okf-toolchain.md).
+- **Before a review, ask what the change touches.**
+  `okph affected --git <base> --root .agents/knowledge` lists the changed concepts and everything
+  that cites them, transitively.

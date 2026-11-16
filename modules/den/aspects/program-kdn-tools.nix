@@ -15,6 +15,9 @@ let
   okf-agent-memory = pkgs.callPackage ../../../packages/okf-agent-memory { };
   ai-xf = pkgs.callPackage ../../../packages/ai-xf { };
   okf-guard = pkgs.callPackage ../../../packages/okf-guard { };
+  okf-rs = pkgs.callPackage ../../../packages/okf-rs { };
+  okflint = pkgs.callPackage ../../../packages/okflint { };
+  okph = pkgs.callPackage ../../../packages/okph { };
 in
 {
   kdn.program-kdn-tools.homeManager =
@@ -27,6 +30,9 @@ in
         okf-agent-memory
         ai-xf
         okf-guard
+        okf-rs
+        okflint
+        okph
       ];
 
       home.file = lib.listToAttrs (

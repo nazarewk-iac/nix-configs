@@ -187,6 +187,73 @@ denTests.checks
         touch "$out"
       '';
 
+  # The Rust OKF toolkit against the memory bundle: strict OKF v0.2 conformance, the 13 lint
+  # rules and a broken-link check. This is the stricter second opinion next to
+  # `okf-memory validate --strict --drift`.
+  okf-rs-check =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (file: file.hasExt "md") ../.agents/knowledge;
+      };
+    in
+    pkgs.runCommand "check-okf-rs-check"
+      {
+        nativeBuildInputs = [ pkgs.kdn.okf-rs ];
+      }
+      ''
+        cp -r ${src}/.agents/knowledge "$TMPDIR/knowledge"
+        chmod -R u+w "$TMPDIR/knowledge"
+        okf-rs validate "$TMPDIR/knowledge"
+        okf-rs lint "$TMPDIR/knowledge"
+        okf-rs links "$TMPDIR/knowledge" --broken --check
+        touch "$out"
+      '';
+
+  # The okflint compliance gate: the manifest declares the concept types and their required
+  # fields, and every concept must match it. This is the per-type profile check.
+  okflint-validate =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (
+          file: file.hasExt "md" || file.name == "okf-base.yaml"
+        ) ../.agents/knowledge;
+      };
+    in
+    pkgs.runCommand "check-okflint-validate"
+      {
+        nativeBuildInputs = [ pkgs.kdn.okflint ];
+      }
+      ''
+        cp -r ${src}/.agents/knowledge "$TMPDIR/knowledge"
+        chmod -R u+w "$TMPDIR/knowledge"
+        okflint validate-manifest "$TMPDIR/knowledge/okf-base.yaml"
+        okflint validate --manifest "$TMPDIR/knowledge/okf-base.yaml" "$TMPDIR/knowledge"
+        touch "$out"
+      '';
+
+  # The okph gate. `--strict` fails on warnings, so `prefer-absolute-links` is ignored: the
+  # bundle uses relative links because `okf-agent-memory relate` and AI-XF body mirrors write
+  # them, and the OKF spec only recommends the absolute form.
+  okph-validate =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (file: file.hasExt "md") ../.agents/knowledge;
+      };
+    in
+    pkgs.runCommand "check-okph-validate"
+      {
+        nativeBuildInputs = [ pkgs.kdn.okph ];
+      }
+      ''
+        cp -r ${src}/.agents/knowledge "$TMPDIR/knowledge"
+        chmod -R u+w "$TMPDIR/knowledge"
+        okph validate "$TMPDIR/knowledge" --strict --ignore prefer-absolute-links
+        touch "$out"
+      '';
+
   # The content-safety scanner: a clean file passes, a known injection blocks, a PDF with
   # white-on-white text blocks, and the memory bundle is clean. The bundle scan is the backstop
   # for text pasted in from an untrusted source. It is not a gate on the repository's own docs:

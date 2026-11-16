@@ -11,7 +11,9 @@ links:
 
 ---
 
+# One writer per bundle
+
 `create`/`update` maintain `index.md` and `log.md`. `kdn-okf generate-index` is for documentation bundles and must not run on the memory bundle.
 
-# Related Concepts
+## Related Concepts
 - [Cache outside the bundle](cache-outside-bundle.md): Both keep tool state out of the bundle.

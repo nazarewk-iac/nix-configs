@@ -52,6 +52,9 @@ in
   kdn-okf = pkgs.callPackage ./kdn-okf { };
   okf-agent-memory = pkgs.callPackage ./okf-agent-memory { };
   okf-guard = pkgs.callPackage ./okf-guard { };
+  okf-rs = pkgs.callPackage ./okf-rs { };
+  okflint = pkgs.callPackage ./okflint { };
+  okph = pkgs.callPackage ./okph { };
   ai-xf = pkgs.callPackage ./ai-xf { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
