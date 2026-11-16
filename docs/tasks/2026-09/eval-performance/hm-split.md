@@ -65,17 +65,18 @@ Every count below is reproducible with the command next to it. Scope:
 
 ### 1. Parent → Home Manager: the parent writes user config
 
-| Edge                                             | Count                   | Command                                                          | What it does                                                                                                                                               |
-| ------------------------------------------------ | ----------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kdnConfig.util.ifHMParent`                      | **60 uses, 60 files**   | `grep -rn ifHMParent --include=*.nix modules/universal \| wc -l` | A parent branch forwards its settings into `home-manager.users.*`. Without the parent there is no forward.                                                 |
-| `home-manager.sharedModules`                     | **138 uses, 113 files** | `grep -rn home-manager.sharedModules --include=*.nix … \| wc -l` | The broadest bridge: every module can inject any Home Manager module into every user.                                                                      |
-| `home-manager.users.<name>`                      | **31 uses, 20 files**   | `grep -rn home-manager.users --include=*.nix … \| wc -l`         | Direct writes, e.g. `modules/universal/profile/user/kdn/default.nix:180`, `hosts/oams/default.nix:148`. A few are reads and comments; § 2 lists the reads. |
-| `home-manager.extraSpecialArgs`                  | 1                       | `grep -rn extraSpecialArgs --include=*.nix …`                    | `modules/universal/default.nix:94` passes the nested meta-module arguments into every user.                                                                |
-| `home-manager.useGlobalPkgs` / `useUserPackages` | 3 sites                 | see below                                                        | `modules/universal/default.nix:97-98` turns both on; `modules/den-pkgs/pin-module.nix:27-28` forces both on for a pinned host.                             |
-| `lib/slots` `renderUsers`                        | 1 renderer              | `lib/slots/default.nix:45-47`                                    | A slot writes `users.<name>` and the host hands the result to `home-manager.users.<name>`.                                                                 |
+| Edge                                             | Count                   | Command                                                          | What it does                                                                                                                                                                                    |
+| ------------------------------------------------ | ----------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kdnConfig.util.ifHMParent`                      | **60 uses, 60 files**   | `grep -rn ifHMParent --include=*.nix modules/universal \| wc -l` | A parent branch forwards its settings into `home-manager.users.*`. Without the parent there is no forward.                                                                                      |
+| `home-manager.sharedModules`                     | **138 uses, 113 files** | `grep -rn home-manager.sharedModules --include=*.nix … \| wc -l` | The broadest bridge: every module can inject any Home Manager module into every user.                                                                                                           |
+| `home-manager.users.<name>`                      | **31 uses, 20 files**   | `grep -rn home-manager.users --include=*.nix … \| wc -l`         | Direct writes, e.g. `modules/universal/profile/user/kdn/default.nix:180`, `hosts/oams/default.nix:148`. A few are reads and comments; § 2 lists the reads.                                      |
+| `home-manager.extraSpecialArgs`                  | 1                       | `grep -rn extraSpecialArgs --include=*.nix …`                    | `modules/universal/default.nix:94` passes the nested meta-module arguments into every user.                                                                                                     |
+| `home-manager.useGlobalPkgs` / `useUserPackages` | 3 sites                 | see below                                                        | `modules/universal/default.nix:97-98` turns both on; `modules/den-pkgs/pin-module.nix:27-28` forces both on for a pinned host; `hosts-den/pryll/default.nix:171` sets `useGlobalPkgs` directly. |
+| `lib/slots` `renderUsers`                        | 1 renderer              | `lib/slots/default.nix:45-47`                                    | A slot writes `users.<name>` and the host hands the result to `home-manager.users.<name>`.                                                                                                      |
 
 The forward direction is the bulk of the work: 60 modules and 113 files assume a parent that can
-write user config.
+write user config. The same predicate family has 9 `ifNotHMParent` uses; those select the Home
+Manager or non-host branch, so they are mode switches and not a parent read.
 
 ### 2. Parent reads Home Manager back: the parent forces the user graph
 
@@ -84,11 +85,16 @@ evaluation.
 
 | Site                                               | Reads                                                        | Forced by                                       |
 | -------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
-| `modules/universal/disks/config.nix:71`            | each user's `kdn.disks.persist.<bucket>.{files,directories}` | the `preservation.preserveAt` user entries      |
+| `modules/universal/disks/config.nix:43,71`         | each user's `kdn.disks.persist.<bucket>.{files,directories}` | the `preservation.preserveAt` user entries      |
 | `modules/universal/disks/config.nix:135`           | `builtins.attrNames` of `home-manager.users`                 | `kdn.disks.users`                               |
 | `modules/universal/disks/config.nix:136-146`       | each user's `home.username`                                  | `systemd.services.home-manager-<user>` ordering |
 | `modules/universal/programs/atuin/default.nix:268` | `home-manager.users.<user>.xdg.dataHome`                     | the autologin unit's script text                |
-| `modules/den/aspects/disks.nix:73`                 | `config.home-manager.users or { }` and `.kdn.disks.persist`  | persistence, even after the den port            |
+| `modules/den/aspects/disks.nix:73,749`             | `config.home-manager.users` and the persist lists            | persistence, even after the den port            |
+| `modules/den/aspects/disks.nix:836-846`            | the user names and `home.username`                           | `kdn.disks.users` and the service order         |
+
+Seven read sites in three files: two persist-list reads, two user-name reads, two `home.username`
+reads, and one `xdg.dataHome` read. The den binding at `:73` and the universal map argument at
+`:71` are the same read as their `:749`/`:43` counterparts; count each file once.
 
 The den tree kept this read on purpose. `modules/den/common/persist.nix:17` and
 `modules/den/aspects/disks-persist.nix:7` state it: the host reads the user's persist paths back
@@ -103,28 +109,34 @@ Home Manager's own NixOS and nix-darwin modules pass the whole parent config to 
 `parentConfig`:
 
 ```nix
-# modules/universal/default.nix:14-18, and the same block in _hm-bootstrap.nix:12-16
+# modules/universal/_hm-bootstrap.nix:12-16 is the live copy; the binding at
+# modules/universal/default.nix:14-18 is never read.
 parentConfig = ensure osConfig // ensure darwinConfig;
 ```
 
-The real forced reads are few and specific. The rest of the 34 `osConfig` occurrences are arguments,
-declarations, comments, or dead bindings.
+The real forced reads are few and specific. `grep -rnE '\bosConfig\b' …` finds **28** real
+occurrences; the wider `grep -rn osConfig` returns 34 because it also matches `nixosConfigurations`.
+The rest are arguments, declarations, comments, or dead bindings.
 
-| Site                                                               | Reads                                                                           | Consequence of a standalone user eval                                                                                  |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `modules/universal/_hm-bootstrap.nix:30-45`                        | `parentConfig.home-manager.useGlobalPkgs`, `nixpkgs.config`, `nixpkgs.overlays` | With no parent, the user builds its own nixpkgs. A full extra instantiation, unless the caller passes the host `pkgs`. |
-| `modules/universal/programs/firefox/default.nix:138-139`           | `osConfig.programs.firefox.policies` and `.languagePacks`                       | The standalone branch silently writes no policy and no language pack.                                                  |
-| `modules/universal/programs/thunderbird/default.nix:58`            | `osConfig.programs.thunderbird.policies`                                        | Same silent drop.                                                                                                      |
-| `modules/universal/virtualisation/containers/default.nix:19,202`   | `osConfig.boot.kernelPackages.oci-seccomp-bpf-hook`                             | The seccomp hook drops out; `hasOciHook` is false.                                                                     |
-| `modules/universal/_stylix.nix:26,53`                              | `kdnConfig.parent == null`                                                      | A parentless user takes the **other** stylix branch: Home Manager integration instead of the host's.                   |
-| `modules/universal/desktop/sway/home-manager/kanshi/default.nix:2` | nothing — the argument is unused                                                | Dead. Remove it.                                                                                                       |
-| `modules/universal/desktop/sway/home-manager/swaylock.nix:12`      | nothing — `sysCfg` is bound and never used                                      | Dead. Remove it.                                                                                                       |
-| `modules/universal/desktop/sway/home-manager/default.nix:32`       | nothing — same dead `sysCfg`                                                    | Dead. Remove it.                                                                                                       |
-| `modules/universal/profile/user/bn/default.nix:159`                | a **user record**, not the OS config                                            | A naming trap: the option is called `osConfig` inside a user scope.                                                    |
-| `modules/universal/profile/user/sn/default.nix:148`                | the same user record                                                            | Same trap.                                                                                                             |
+| Site                                                               | Reads                                                                           | Consequence of a standalone user eval                                                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `modules/universal/_hm-bootstrap.nix:30-45`                        | `parentConfig.home-manager.useGlobalPkgs`, `nixpkgs.config`, `nixpkgs.overlays` | With no parent, the user builds its own nixpkgs. A full extra instantiation, unless the caller passes the host `pkgs`.     |
+| `modules/universal/programs/firefox/default.nix:138-139`           | `osConfig.programs.firefox.policies` and `.languagePacks`                       | The parent's extra policies and packs are lost. The module's own policy block and `en-GB`/`pl` default stay (`:141-146`).  |
+| `modules/universal/programs/thunderbird/default.nix:58`            | `osConfig.programs.thunderbird.policies`                                        | The parent's policy attributes are lost; the module's own two policy blocks stay (`:70`, `:97`).                           |
+| `modules/universal/virtualisation/containers/default.nix:19,202`   | `osConfig.boot.kernelPackages.oci-seccomp-bpf-hook`                             | The seccomp hook drops out; `hasOciHook` is false.                                                                         |
+| `modules/universal/_stylix.nix:26,53`                              | `kdnConfig.parent == null`                                                      | A parentless user takes the **other** stylix branch: Home Manager integration instead of the host's.                       |
+| `modules/meta/default.nix:184-188`, 32 call sites                  | `config.parents` through `util.hasParentOfAnyType`                              | With no parent the chain is empty, so every guarded block vanishes. Seven sites are in `desktop/sway/home-manager/` alone. |
+| `modules/universal/desktop/sway/home-manager/kanshi/default.nix:2` | nothing — the argument is unused                                                | Dead. Remove it.                                                                                                           |
+| `modules/universal/desktop/sway/home-manager/swaylock.nix:12`      | nothing — `sysCfg` is bound and never used                                      | Dead. Remove it.                                                                                                           |
+| `modules/universal/desktop/sway/home-manager/default.nix:32`       | nothing — same dead `sysCfg`                                                    | Dead. Remove it.                                                                                                           |
+| `modules/universal/profile/user/bn/default.nix:159`                | a **user record**, not the OS config                                            | A naming trap: the option is called `osConfig` inside a user scope.                                                        |
+| `modules/universal/profile/user/sn/default.nix:148`                | the same user record                                                            | Same trap.                                                                                                                 |
 
 So the parent → user direction is one real bridge (`_hm-bootstrap`), three content reads, one branch
-selector (`stylix`), and three dead bindings. This is much smaller than the 113-file direction in § 1.
+selector (`stylix`), one parent-chain predicate (32 `hasParentOfAnyType` sites), and three dead
+bindings. That is still much smaller than the 113-file direction in § 1, but the predicate is the
+one that grows with the module count and the one the den port calls out first. Seven
+`home-manager/` files depend on it for the whole desktop shell.
 
 ### 4. Home Manager's own system contract
 
@@ -156,8 +168,10 @@ cannot depend on a parent.
 | `disks` / `disks-persist` | `home-manager.users` write and read-back             | **Still present.** The persistence model reads the user's paths back. |
 
 `flake.denHomeConfigurations` and `checks/den-mvp/home/default.nix` already evaluate standalone Home
-Manager configurations with no den entity and no host. So the den tree already has the output shape
-that this proposal needs. What it does not have is a real host whose users are wired that way.
+Manager configurations with no den entity and no host. `hosts-den/pryll` is already a real den host
+with `home-manager.useGlobalPkgs` and a `bn` user, but the user arrives as a host-side HM assignment,
+not as a den user entity. So the gap is narrower than "no real host": no host has a den user whose
+`homeManager` class feeds a per-host `denHomeConfigurations` entry.
 
 ## What each edge must become
 
@@ -165,7 +179,7 @@ that this proposal needs. What it does not have is a real host whose users are w
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `ifHMParent` forward (60)                   | A user-scope aspect owns the setting; the parent keeps only host-level config                   | `modules/den/aspects/hm-bootstrap.nix`       |
 | `sharedModules` injection (138 / 113 files) | A declared option on the host, read by the user entity — or move the whole module to user scope | `program-firefox` policy option              |
-| Parent read-back (5)                        | Explicit data: `kdn.disks.users.<name>`, a `runtimeDir` option, or a per-user data file         | `program-atuin` `runtimeDir`                 |
+| Parent read-back (7 sites, 3 files)         | Explicit data: `kdn.disks.users.<name>`, a `runtimeDir` option, or a per-user data file         | `program-atuin` `runtimeDir`                 |
 | `osConfig` content read (3)                 | A defaulted option on the user side; the consumer sets it                                       | `program-firefox`, `program-thunderbird`     |
 | `osConfig` pkgs bridge (1)                  | Pass the host's `pkgs` into `homeManagerConfiguration`, or `useGlobalPkgs = true`               | `modules/den/aspects/hm-bootstrap.nix:39-40` |
 | `kdnConfig.parent == null` (stylix)         | Make the choice an explicit option, not a structural guess                                      | `modules/den/aspects/stylix.nix`             |
@@ -214,8 +228,8 @@ The tooling is the small part, and it is worth designing now because the output 
 3. **`useUserPackages` semantics.** Today the user profile is a package of `users.users.<name>`, so
    the system closure holds it. After a split the profile lives only in the Home Manager generation.
 4. **Silent standalone branches.** Firefox policies, Thunderbird policies, the containers seccomp
-   hook, and stylix all take a different branch with no parent. Each is a behaviour change, not a
-   crash.
+   hook, stylix, and the 32 `hasParentOfAnyType` sites all take a different branch with no parent.
+   Each is a behaviour change, not a crash.
 5. **The persistence model.** The per-user preserve lists, `kdn.disks.users`, and the
    `home-manager-<user>` ordering read from the parent. [design-persistence.md](design-persistence.md)
    designs the inversion to explicit host data.
@@ -229,19 +243,25 @@ The tooling is the small part, and it is worth designing now because the output 
    processes do not, unless the pinned `pkgs` from
    [../../2026-11/pinned-pkgs-single-instantiation/definition.md](../../2026-11/pinned-pkgs-single-instantiation/definition.md)
    is passed in.
+9. **The Home Manager side has no secret key source.** The only sops age key in the tree is
+   parent-side: `modules/universal/security/secrets/age/default.nix:219` sets
+   `sops.age.keyFile = "/var/lib/sops-nix/key.txt"`, and `:211` still carries the
+   `# TODO: home-manager module` note. A standalone `home-manager switch` needs a user-side key
+   source that does not exist yet.
 
 ## The measurement that would work
 
-`checks/universal-guards.nix` and `checks/standalone.nix` already build stub parents
-(`osStub`, `hmMeta`, `hostMeta`) and standalone Home Manager evaluations. Reuse that harness; do not
-`mkForce` a real host, which is what failed here.
+`checks/universal-guards.nix` already builds stub parents (`osStub`, `hmMeta`, `hostMeta`).
+`checks/standalone.nix` is the standalone-rule enforcer and uses a bare `lib.evalModules`, so it
+supplies the shape but not the stubs. Reuse both harnesses; do not `mkForce` a real host, which is
+what failed here.
 
 Three numbers, one pinned revision, one warm store, one evaluator:
 
 | #   | Attribute                                                                        | What it proves           |
 | --- | -------------------------------------------------------------------------------- | ------------------------ |
 | A   | the real host toplevel `drvPath`                                                 | the baseline             |
-| B   | the same host with the HM users and the five read-backs stubbed                  | what the parent saves    |
+| B   | the same host with the HM users and the seven read sites stubbed                 | what the parent saves    |
 | C   | one real user's standalone Home Manager `activationPackage` with the same `pkgs` | what the user side costs |
 
 Acceptance for the idea:
@@ -258,7 +278,8 @@ Until B and C exist, the split has no number and the task keeps its current leve
 Do not build the wrapper first. Build the inventory down to zero in the den tree, because that tree
 already holds the rule and the output shape:
 
-1. **Finish the den user route.** Wire one real `hosts-den` host to a den user entity and one
+1. **Finish the den user route.** `hosts-den/pryll` is the natural first host: it already runs a
+   `bn` Home Manager user. Add a den user entity with the `homeManager` class and one
    `denHomeConfigurations` entry. That is the first end-to-end pair, with no universal edits.
 2. **Invert the persistence read-back.** It is the only leftover parent → user read in den; the
    design is in [design-persistence.md](design-persistence.md).

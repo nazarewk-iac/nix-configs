@@ -156,20 +156,31 @@ code changed.
 - **The read is smaller than the first inventory said.** The parent reads
   `hmConfig.kdn.disks.persist.<bucket>.{files,directories}`, not `home.file`. No Home Manager code
   ever reads that option, and nothing reads `kdn.disks.enable` either.
-- **Every app entry for `usr/*` is already inside an XDG directory.** `kdn.apps` prefixes `dirs.cache`
+- **Every app entry is home-relative, and most are XDG-prefixed.** `kdn.apps` prefixes `dirs.cache`
   with `.cache`, `dirs.config` with `.config`, `dirs.data` with `.local/share`, `dirs.state` with
-  `.local/state` (`apps/default.nix:60-71`). So a host that persists the four XDG directories needs
-  no per-app list at all.
+  `.local/state` (`apps/default.nix:57-71`). An entry that starts with `/` has the slash stripped
+  (`:22-30`), so it lands at the home root: `.thunderbird`, `.mozilla/firefox`, `.omp`, `.pi`,
+  `.claude`, `.wine` are exceptions, not XDG-covered. The review caught this.
 - **Recommended design — R1:** persist the four XDG dirs, the media dirs, `.ssh` and `.gnupg` per
   user, all host data, plus a per-module host-branch entry for the roughly ten paths outside XDG
   (`.aws`, `.java`, the shell histories, `dev`, `Games`). `userDefaults.persist` already exists in
   den; universal only needs the port.
-- **The migration is mostly deletion.** About twelve `kdn.apps` lists and thirty-five in-XDG writes
-  go away; about ten exceptions move to a host branch. The two `home-manager.users` name reads and
-  the service-ordering read move to `cfg.users`, which already feeds the home-directory creation
-  (`disks/config.nix:211-239`).
+- **The migration is mostly deletion.** About twelve `kdn.apps` lists and forty universal / twenty
+  den user-scope writes go away; about ten universal exceptions move to a host branch. The two
+  `home-manager.users` name reads and the service-ordering read move to `cfg.users` filtered to
+  normal users, with `root` explicit.
+- **Whole-directory persistence has four real costs** the first draft understated: paths that
+  modules deliberately put in a different bucket (Steam/lutris/bottles in `usr/cache`), secrets under
+  `.config` (the rosec age key), `.local/state` turning HM generations into gc roots, and
+  `hmbackup` files no longer wiped per boot. All four are now recorded.
 - **Atuin is a free win.** Its unit script resolves `xdg.dataHome` at evaluation time; it can read
-  `${XDG_DATA_HOME:-$HOME/.local/share}` at runtime instead, removing one of the five read-backs
+  `${XDG_DATA_HOME:-$HOME/.local/share}` at runtime instead, removing one of the seven read sites
   with no design decision.
 - **The proof is the same A/B that failed:** empty `home-manager.users` must evaluate. It does not
-  today; it dies at `atuin:268`.
+  today; it dies at `atuin:268`. Run it on `etra`, not `oams`: `oams` uses
+  `kdn.fs.disko.luks-zfs.enable`, which excludes `kdn.disks.enable`, so its persistence blocks are
+  never forced (the review caught this too).
+- **A review pass found and fixed:** the missed `hasParentOfAnyType` predicate (32 sites), a wrong
+  read-site count (5 vs 7), the overstated standalone Firefox/Thunderbird losses, a wrong `osConfig`
+  grep count (34 vs 28), the invalid `oams` proof host, and a missing sops hazard (no Home Manager
+  key source exists).

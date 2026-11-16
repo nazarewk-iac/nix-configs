@@ -24,14 +24,14 @@ The note supersedes one line of the earlier inventory: the parent does **not** r
 | `modules/universal/disks/config.nix:43`      | `hmConfig.kdn.disks.persist.<bucket>.{files,directories}` | the `preservation.preserveAt` user entries   |
 | `modules/universal/disks/config.nix:135`     | the attribute names of `home-manager.users`               | `kdn.disks.users`                            |
 | `modules/universal/disks/config.nix:136-146` | `hmConfig.home.username`                                  | `systemd.services.home-manager-<user>` order |
-| `modules/den/aspects/disks.nix:73,777`       | `config.home-manager.users` and the same persist lists    | the same three things                        |
-| `modules/den/aspects/disks.nix:836-846`      | the user names and `home.username`                        | the same two things                          |
+| `modules/den/aspects/disks.nix:73,749`       | `config.home-manager.users` and the same persist lists    | the persist-list read                        |
+| `modules/den/aspects/disks.nix:836-846`      | the user names and `home.username`                        | `kdn.disks.users` and the service order      |
 
 Two facts make this tractable:
 
 1. **No Home Manager code reads `kdn.disks.persist`.** Every Home Manager occurrence is an
-   assignment. The only reader is the parent, at `config.nix:43`. So the option can stop existing in
-   the user scope with no HM consumer to update.
+   assignment. The only reader is the parent, at `config.nix:43` and `disks.nix:749`. So the option
+   can stop existing in the user scope with no HM consumer to update.
 2. **`kdn.disks.enable` has no Home Manager consumer either.** The parent forwards it at
    `config.nix:15`; nothing reads it. Den already dropped that forward
    (`modules/den/aspects/disks.nix:28`).
@@ -41,7 +41,9 @@ systemd unit names. Two of the three are host data already (`config.users.users`
 
 ## What the persist data looks like today
 
-`preservation.preserveAt.<bucket>.users.<user>` merges three layers at `config.nix:34-71`:
+`preservation.preserveAt.<bucket>.users.<user>` merges **two** layers in universal
+(`config.nix:42-45`: the Home Manager lists and `persists.users.<user>`), and **three** in den
+(`disks.nix:747-750`, where `userDefaults.persist` joins them):
 
 | Layer                                             | Owner        | Example                                        |
 | ------------------------------------------------- | ------------ | ---------------------------------------------- |
@@ -54,8 +56,8 @@ The `kdn.apps` registry is the largest writer: each app declares `dirs` and `fil
 the `ifHM` branch. `modules/den/aspects/apps.nix` publishes the same data as
 `kdn.apps-persist` and asks the consumer to wire it.
 
-**The key observation.** `modules/universal/apps/default.nix:60-71` prefixes every list with a fixed
-directory:
+**The key observation.** `modules/universal/apps/default.nix:57-71` prefixes a list with a fixed
+directory, and `:22-30` **strips** a leading `/` instead of honouring it:
 
 | Bucket         | Prefix         |
 | -------------- | -------------- |
@@ -66,14 +68,26 @@ directory:
 | `disposable`   | none (`""`)    |
 | `reproducible` | none (`""`)    |
 
-So **every app entry for the four `usr/*` buckets already sits inside one XDG base directory**. The
-per-program lists add no information to a host that persists those directories. The `disposable`
-bucket is rolled back to `@empty` on every boot (`config.nix:150-205`), so an entry there does
-nothing. The `reproducible` bucket takes no snapshots and nearly every app declares it empty; the one
-non-empty entry (`nextcloud-client`, `Nextcloud`) is a home-root path and joins the exception list.
+So every app entry is relative to `$HOME`, and the four `usr/*` buckets sit inside the four XDG
+directories — **except an entry that starts with `/`**. That slash is stripped, so the entry lands
+at the home root. The real ones:
 
-That is the design opening: make the four XDG directories the unit of persistence, and the largest
-writer disappears without a migration.
+| Entry                       | Module                              |
+| --------------------------- | ----------------------------------- |
+| `/.thunderbird`             | `programs/thunderbird:43`           |
+| `/.mozilla/firefox`         | `programs/firefox:86`               |
+| `/.omp`, `/.pi`             | `development/llm/{omp,pi}:27`       |
+| `/.claude`, `/.claude.json` | `development/llm/claude-code:25-26` |
+| `/.wine`                    | `emulation/wine:42`                 |
+
+`disposable` is rolled back to `@empty` on every boot (`config.nix:150-205`), so a home path there
+is equivalent to ephemeral. `reproducible` takes no snapshots and nearly every app declares it
+empty; the one non-empty entry (`nextcloud-client`, `Nextcloud`) is a home-root path and joins the
+exception list.
+
+That is the design opening: make the four XDG directories the unit of persistence, and the bulk of
+the app output — every XDG-prefixed list — disappears without a migration. The leading-slash entries
+become part of the exception list.
 
 ## Why the loop exists
 
@@ -97,33 +111,62 @@ The host persists a fixed set of home directories for every user in `kdn.disks.u
 maps to a bucket, so the existing snapshot policy still applies. A path outside the base set is an
 explicit host entry, written by the module that knows it, in that module's **host** branch.
 
-| Base entry                                                | Bucket                                 | Covers                                                          |
-| --------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------- |
-| `.config`                                                 | `usr/config`                           | every `dirs.config` and `files.config` app entry                |
-| `.local/share`                                            | `usr/data`                             | every `dirs.data` and `files.data` app entry                    |
-| `.local/state`                                            | `usr/state`                            | every `dirs.state` and `files.state` app entry                  |
-| `.cache`                                                  | `usr/cache`                            | every `dirs.cache` and `files.cache` app entry                  |
-| `Documents`, `Desktop`, `Pictures`, `Videos`, `Downloads` | `usr/data`, `Downloads` in `usr/cache` | the media dirs `disks/default.nix:604-616` writes today         |
-| `.ssh`, `.gnupg`                                          | `usr/data`                             | keys and trust stores, currently at `ssh-client:31`, `gnupg:93` |
+Every base entry is an attrset, so it can carry a mode. The current default is `homeDirMode` =
+`0750`; `.gnupg` must stay `0700`.
 
-After that set, the whole `kdn.apps` persist output and about 90 % of the per-program writes become
-unnecessary. The survivors are the paths outside the four XDG directories:
+| Base entry                                                | Bucket                                 | Notes                                                        |
+| --------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `.config`                                                 | `usr/config`                           | covers the XDG-prefixed `dirs.config`/`files.config` entries |
+| `.local/share`                                            | `usr/data`                             | covers the XDG-prefixed `dirs.data`/`files.data` entries     |
+| `.local/state`                                            | `usr/state`                            | covers the XDG-prefixed `dirs.state`/`files.state` entries   |
+| `.cache`                                                  | `usr/cache`                            | covers the XDG-prefixed `dirs.cache`/`files.cache` entries   |
+| `Documents`, `Desktop`, `Pictures`, `Videos`, `Downloads` | `usr/data`, `Downloads` in `usr/cache` | the media dirs `disks/default.nix:604-616` writes today      |
+| `.ssh`, `.gnupg`                                          | `usr/data`                             | `.gnupg` keeps `{ mode = "0700"; }`; see `gnupg:93-98`       |
+
+After that set, the XDG-prefixed part of the `kdn.apps` output and about 90 % of the per-program
+writes become unnecessary. The survivors are the paths outside the four XDG directories:
 
 | Survivor                                                                | Where it lives today                                | Replacement                    |
 | ----------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------ |
 | `.aws`                                                                  | `development/cloud/aws:16`                          | host branch of the same module |
 | `.java/.userPrefs/...`                                                  | `development/jetbrains:158-161`                     | host branch of the same module |
+| `.thunderbird`, `.mozilla/firefox`                                      | `thunderbird:43`, `firefox:86`                      | host branch of the same module |
+| `.omp`, `.pi`, `.claude`, `.claude.json`, `.wine`                       | `omp:27`, `pi:27`, `claude-code:25-26`, `wine:42`   | host branch of the same module |
 | shell histories (`.bash_history`, `.zsh_history`, `.python_history`, …) | `profile/machine/baseline:120-125`                  | base entry or host branch      |
 | `dev`, `Games`                                                          | `profile/user/kdn:296`, `profile/machine/gaming:84` | host branch or per-user entry  |
 | `Nextcloud`                                                             | `nextcloud-client:41` (`usr/reproducible`)          | host branch                    |
 
+That table is a scope estimate, not a census. Regenerate it from
+`config.preservation.preserveAt` on a real host before deleting a write (see "Proof and acceptance").
+
+**Re-bucketing is the real cost.** Some modules deliberately put a path in a _different_ bucket than
+its XDG prefix. `profile/machine/gaming:86-95` sends `.local/share/Steam/steamapps`,
+`.local/share/lutris/runtime` and `.local/share/bottles/{runners,temp,dxvk}` to `usr/cache`, while
+`.local/share/Steam`, `lutris` and `bottles` are in `usr/data`. Whole-`.local/share` persistence puts
+all of it in `usr/data`, which takes snapshots (`disks/default.nix:468-471`). A gaming host needs an
+explicit override or must accept the snapshot growth. The same mismatch exists at
+`hw/audio:57` (wireplumber in `usr/config`), `nwg-shell:92` (`.cache/nwg-pin-cache` in `usr/config`)
+and `baseline:120` (a `usr/state` file under `.local/share`).
+
 Cost: more data persists. `.config` now persists whole, including generated files that used to be
 left out. That is the normal impermanence trade-off; the four buckets still separate the snapshotted
-halves (`config`, `data`) from the disposable ones (`cache`, `state`).
+halves (`config`, `data`) from the disposable ones (`cache`, `state`). Three consequences need a
+decision before it lands:
 
-The switch itself needs one reboot. On a live system the old per-file mounts sit _inside_ the new
-directory mount, so they stack until the old units and mounts are gone. Plan a `nixos-rebuild boot`
-plus a reboot, and verify `findmnt` shows one mount per base directory afterwards.
+- **Secrets under `.config`.** The rosec default age identity is
+  `~/.config/sops/age/keys.txt` (`modules/universal/services/rosec/default.nix:199`), and provider
+  tokens live under `.config` too. Whole-`.config` persistence makes them persistent _and_
+  snapshotted. Audit the tree before "start with no exclusions" becomes the policy.
+- **Home Manager generations become gc roots.** `environment.profiles` includes
+  `$HOME/.local/state/nix/profile` (`nixpkgs users-groups.nix:979`). Persisting `.local/state` keeps
+  every generation rooted; pair it with a `nix-collect-garbage --delete-older-than` policy.
+- **`hmbackup` files accumulate.** `modules/universal/default.nix:96` sets
+  `backupFileExtension = "hmbackup"`. In a tmpfs home they vanish per boot; under whole-`.config`
+  persistence they accumulate forever. Add a cleanup rule.
+
+The switch deserves one reboot. On a live system the old per-file mounts can outlive the switch and
+become unreachable under the new directory mount. A `nixos-rebuild boot` plus a reboot removes the
+doubt; then check that `findmnt` shows one mount per base directory.
 
 ### R2 — the selection becomes host data
 
@@ -158,10 +201,20 @@ users = builtins.mapAttrs (username: _user: {
 }) cfg.users;   # host data, no config.home-manager.users
 ```
 
-`cfg.users` stops defaulting from `home-manager.users`. Default it from `config.users.users` — the
-module already reads that option at `config.nix:211-239` for the home directory, mode, user and
-group — and keep an explicit entry for a user whose home location differs. `root` needs a decision:
-it is not a normal user, but it has a Home Manager config on some hosts.
+`cfg.users` stops defaulting from `home-manager.users`. Do **not** default it from all of
+`config.users.users`: `users.users.<name>.home` defaults to `/var/empty`
+(`nixpkgs users-groups.nix:225-228`), and every system user that omits a home shares it.
+`preservation` emits one tmpfiles `d` rule per user directory with `user = <name>`
+(`preservation lib.nix:232`), so two system users with the same `/var/empty` collide on one key
+with different values — the `conflicting definition values` failure already documented at
+`config.nix:220-239`. Filter to `u.isNormalUser` and exclude `home == "/var/empty"`, then add
+explicit entries for `root` and any service user that needs a home.
+
+`root` is not optional. `modules/universal/services/nextcloud-client-nixos/default.nix:50` writes
+`kdn.disks.persist."usr/reproducible".users.root.directories`, and `config.nix:259` reads
+`cfg.users."${username}"` with no fallback. A filter that drops root throws `attribute 'root'
+missing` on every host with that service. Its default `homeLocation` is `disposable`
+(`disks/default.nix:472`), so give it a chosen bucket.
 
 ### The base set is a policy, so it lives in the machine layer
 
@@ -182,14 +235,18 @@ This is one line per program, local to the file, and it never crosses an evaluat
 
 ### The writes to delete
 
-| Kind                                                          | Count (approx.) | Action                                                       |
-| ------------------------------------------------------------- | --------------- | ------------------------------------------------------------ |
-| `kdn.apps` → `kdn.disks.persist`                              | 12 lists        | Delete. All four `usr/*` buckets are covered by the base set |
-| Per-program `ifHM`/`sharedModules` writes inside XDG          | ~35             | Delete                                                       |
-| Per-program writes outside XDG                                | ~10             | Move to the module's host branch                             |
-| `disks/default.nix:575-616` sharedModules base                | 7 paths         | Move to `userDefaults.persist`                               |
-| `disks/config.nix:15` `kdn.disks.enable` forward              | 1               | Delete                                                       |
-| den aspect writes (`profile-*`, `zellij`, `gnupg`, `apps`, …) | ~15             | The same, per aspect                                         |
+| Kind                                                 | Count (approx.)             | Action                                                                                        |
+| ---------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| `kdn.apps` → `kdn.disks.persist`                     | 12 lists                    | Delete the XDG-prefixed ones; move the leading-slash entries to host branches                 |
+| Per-program `ifHM`/`sharedModules` writes inside XDG | ≈40 universal, ≈20 den      | Delete                                                                                        |
+| Per-program writes outside XDG                       | ≈10 universal, a few in den | Move to the module's host branch                                                              |
+| `disks/default.nix:575-616` sharedModules base       | 7 paths                     | Move to `userDefaults.persist`                                                                |
+| `disks/config.nix:15` `kdn.disks.enable` forward     | 1                           | Delete                                                                                        |
+| den aspect writes (`profile-*`, `zellij`, `apps`, …) | part of the ≈20 above       | The same, per aspect; den's gnupg already goes through the app registry (`program-gnupg:223`) |
+
+The per-program figures are a scope estimate. Count them with
+`grep -rn 'kdn.disks.persist' --include=*.nix modules/universal modules/den` and classify each hit by
+its enclosing `ifHM`, `home-manager.sharedModules` or den `homeManager` target.
 
 ### The service ordering
 
@@ -208,7 +265,7 @@ runtime and delete the evaluation read:
 test -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/session"
 ```
 
-That fix is worth doing on its own; it removes one of the five read-back sites with no design
+That fix is worth doing on its own; it removes one of the seven read-back sites with no design
 decision.
 
 ## Migration path
@@ -219,9 +276,9 @@ Each step is independently testable.
 2. **Move the seven base paths** of `disks/default.nix:575-616` from `sharedModules` writes to
    `userDefaults.persist`. Compare `preservation.preserveAt` before and after: the user entries must
    be identical.
-3. **Default `cfg.users`** from `config.users.users` and iterate `cfg.users` in
-   `preserveAt.users` and in the service-ordering block. Drop the two `home-manager.users` reads at
-   `config.nix:135-146`.
+3. **Default `cfg.users`** from `config.users.users` filtered to `u.isNormalUser` with a real home,
+   plus an explicit `root`, and iterate `cfg.users` in `preserveAt.users` and in the
+   service-ordering block. Drop the two `home-manager.users` reads at `config.nix:135-146`.
 4. **Add the base directory set** (the four XDG dirs, the media dirs, `.ssh`, `.gnupg`) to the
    machine layer. This is a **superset** of today's persisted paths for every host, by construction.
 5. **Delete the `kdn.apps` persist write** and the per-program writes inside XDG.
@@ -230,25 +287,36 @@ Each step is independently testable.
    `kdn.disks.enable` forward at `config.nix:15`.
 8. **Atuin**: runtime path, delete the read at `default.nix:268`.
 9. **Den**: the same steps in `modules/den/aspects/disks.nix` and the aspect writers. Den starts
-   closer: `userDefaults.persist` exists and the base paths are already there.
+   closer: `userDefaults.persist` exists (`:273`) and the base paths are already there. Remove
+   `hmUsers` from the merge (`:747-750`), from `kdn.disks.users` (`:836`) and from the service
+   ordering (`:837-846`).
+10. **Update the checks.** `checks/universal-guards.nix:422-430` and the den assertions
+    (`checks/den-mvp/assertions/disks-fs.nix:450-471`, `desktop-leaves.nix:770,791`) assert the
+    app→persist mapping. Steps 5, 6 and 9 fail them until they are rewritten to the host-side data.
 
 After steps 7 and 8, `nix eval` of a host with `home-manager.users = lib.mkForce { }` succeeds. That
 is the proof that the persistence loop is gone, and the first real measurement of the parent side.
 
 ## Proof and acceptance
 
-1. **The loop is gone.** `oams` evaluates with `home-manager.users = lib.mkForce { }`, without
-   emptying `kdn.programs.atuin.autologinUsers`. Today it dies at `atuin:268`; after the change it
-   must return a `drvPath`.
+1. **The loop is gone.** On `etra` (a host with `kdn.disks.enable = true`,
+   `hosts/etra/default.nix:178`), `nix eval` with `home-manager.users = lib.mkForce { }` and without
+   emptying `kdn.programs.atuin.autologinUsers` must return a `drvPath`. Today it dies at
+   `atuin:268`. Do not use `oams` for this proof: it sets `kdn.fs.disko.luks-zfs.enable = true`
+   (`hosts/oams/default.nix:159`), which is mutually exclusive with `kdn.disks.enable` (`:435`), so
+   every persistence block is `mkIf cfg.enable` and the run would prove only the atuin read.
 2. **Coverage, not equality.** Dump `config.preservation.preserveAt` as JSON before and after, per
    host. Every file and directory persisted before must be covered by a persisted directory after;
    R1 is coarser, so the old exact paths disappear. Extra coverage is the accepted cost of R1 and
    belongs in the note, not in a surprise.
-3. **The boot order holds.** `preservation.target` still precedes any Home Manager activation that
-   remains. In the split end state the parent has no HM service, so the check moves to the wrapper.
-4. **No unrelated closure change.** The system closure changes because it now holds more tmpfiles
-   and mount units. Compare the `preservation.preserveAt` and `systemd.tmpfiles` option values, and
-   use a closure comparison for the rest — never `drvPath` on a universal host
+3. **The mounts exist, not just the order.** `preservation.target` still precedes any Home Manager
+   activation, and every base mount is checked with `findmnt` and `systemctl is-active` after one
+   boot. A failed mount unit leaves the target reachable, so the ordering alone proves nothing.
+4. **An explicit exit-criterion amendment.** `definition.md` says out of scope "a change that alters
+   any host's built output", and exit criterion 3 says no closure may change. R1 changes it by
+   design: more tmpfiles and mount units. Record the amendment to criterion 3 in `definition.md`
+   before the change lands, and compare the `preservation.preserveAt` and `systemd.tmpfiles` option
+   values plus the rest of the closure — never `drvPath` on a universal host
    ([definition.md](definition.md) § "The `drvPath` caveat").
 5. **`den-eval-instantiate` does not rise.** The change touches the instantiate path only through
    the disks aspect; measure with `nix build --no-eval-cache -L`.
@@ -258,13 +326,22 @@ is the proof that the persistence loop is gone, and the first real measurement o
 - **Does `.cache` persist at all?** `usr/cache` takes no snapshots; persisting it saves a warm cache
   and grows the disk. A host-level switch is cheap: leave it out of the base set and declare it per
   host.
-- **Exclusions under `.config`.** Whole-directory persistence brings generated files. A short
-  exclude list is possible, but it reintroduces per-path data. Start with none.
-- **A user who overrides `XDG_DATA_HOME` or `xdg.userDirs`.** R1 assumes the defaults. An override
-  needs a host entry; the base set must not silently persist the wrong directory.
-- **`root`.** Not a normal user, but it has a Home Manager config on the hosts where root needs one.
-- **Darwin.** `kdn.disks` is NixOS-only (`disks/default.nix:120` adds `config.nix` for `nixos`
-  alone), so this design has no Darwin side.
+- **Exclusions under `.config`.** Whole-directory persistence brings generated files and the
+  secrets named above. A short exclude list is possible, but it reintroduces per-path data. "Start
+  with none" is safe only after the secrets audit.
+- **A user who overrides `XDG_DATA_HOME` or `xdg.userDirs`.** R1 assumes the defaults. The media
+  list hard-codes `Documents`/`Desktop`/… while `profile/machine/baseline:111-113` sets
+  `xdg.userDirs.createDirectories = false`, so a renamed directory is real. A host entry would
+  duplicate user data and recreate the coupling; prefer one `kdn.xdg.*` data value read by both
+  sides, or state that custom XDG dirs are unsupported under R1.
+- **Home Manager generations as gc roots.** Persisting `.local/state` keeps every HM generation in
+  `environment.profiles` (`nixpkgs users-groups.nix:979`). Decide the retention rule with the
+  change, not after the first fully rooted store.
+- **`root`.** Required by `nextcloud-client-nixos:50`; decide its `homeLocation`, not whether it
+  exists.
+- **Darwin.** The `kdn.disks` option tree is loaded in every class; only the effect half is gated to
+  `nixos` (`disks/default.nix:120` adds `config.nix` for `nixos` alone). So this design has no Darwin
+  side, and a Darwin Home Manager user may still write `kdn.disks.persist` harmlessly.
 
 ## Related
 
