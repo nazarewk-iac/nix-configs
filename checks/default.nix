@@ -165,6 +165,28 @@ denTests.checks
         touch "$out"
       '';
 
+  # The memory bundle at AI-XF Level 2: stable ids, typed links mirrored by body links, a
+  # manifest and OKF trust signals. The validator is the pinned reference tool.
+  ai-xf-validate =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (
+          file: file.hasExt "md" || file.name == "manifest.ai-xf.yaml"
+        ) ../.agents/knowledge;
+      };
+    in
+    pkgs.runCommand "check-ai-xf-validate"
+      {
+        nativeBuildInputs = [ pkgs.kdn.ai-xf ];
+      }
+      ''
+        cp -r ${src}/.agents/knowledge "$TMPDIR/knowledge"
+        chmod -R u+w "$TMPDIR/knowledge"
+        ai-xf-validate "$TMPDIR/knowledge" --level 2
+        touch "$out"
+      '';
+
   # The `kdn-jj-meta` binary against a temporary jj repository. It proves what the Go suite fakes: the
   # `json(self)` read, the `mutable()` gate, `describe --stdin` and idempotency. No network, no
   # user configuration, no remote.

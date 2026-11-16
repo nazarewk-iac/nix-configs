@@ -10,17 +10,17 @@ timestamp: 2026-11-16T15:30:00+01:00
 
 ## 1. Decisions
 
-| Question        | Decision                                      | Reason                                                                                                       |
-| --------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Bundle location | `.agents/knowledge/`, real files              | `.agents/` is already the agent metadata tree and is tracked.                                                |
-| Default path    | Root symlink `knowledge -> .agents/knowledge` | The tool's default is `./knowledge`; the symlink also makes `--scope project` work from the repository root. |
-| Writer          | `okf-agent-memory` only                       | It maintains `index.md`/`log.md`; a second writer would fight it.                                            |
-| Reader          | `kdn-okf`                                     | TUI, outline/section/context, trust/staleness facets and `doctor --parse-only`.                              |
-| Binary          | `okf-memory`                                  | Upstream installs `okf`, which collides with two other tools.                                                |
-| Scopes          | `[project]`                                   | Vendor, user and system layers are a later decision; the hub is off.                                         |
-| MCP             | Read tools first                              | `okf_search`/`okf_show` are safe; writes need a role and a review.                                           |
-| Gate            | `validate --strict --drift`                   | Catches broken links, orphans and description drift; the scorecard waits for human verification.             |
-| Seed            | A small curated set                           | The memory must be trustworthy before agents write to it.                                                    |
+| Question        | Decision                                                 | Reason                                                                                                       |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Bundle location | `.agents/knowledge/`, real files                         | `.agents/` is already the agent metadata tree and is tracked.                                                |
+| Default path    | Root symlink `knowledge -> .agents/knowledge`            | The tool's default is `./knowledge`; the symlink also makes `--scope project` work from the repository root. |
+| Writer          | `okf-agent-memory` only                                  | It maintains `index.md`/`log.md`; a second writer would fight it.                                            |
+| Reader          | `kdn-okf`                                                | TUI, outline/section/context, trust/staleness facets and `doctor --parse-only`.                              |
+| Binary          | `okf-memory`                                             | Upstream installs `okf`, which collides with two other tools.                                                |
+| Scopes          | `[project]`                                              | Vendor, user and system layers are a later decision; the hub is off.                                         |
+| MCP             | Read tools first                                         | `okf_search`/`okf_show` are safe; writes need a role and a review.                                           |
+| Gate            | `validate --strict --drift` + `ai-xf-validate --level 2` | Catches broken links, orphans, drift, missing ids and unmirrored typed links.                                |
+| Seed            | A small curated set                                      | The memory must be trustworthy before agents write to it.                                                    |
 
 ## 2. Layout
 
@@ -115,6 +115,9 @@ upstream procedure.
 - `--strict` treats broken links and orphans as errors; `--drift` compares descriptions against
   the generated listings.
 - Do not run `kdn-okf generate-index` in the check.
+- Run `ai-xf-validate "$TMPDIR/knowledge" --level 2` as the AI-XF gate. The concepts carry a
+  stable slug `id`, typed `links` mirrored by the body links, and `manifest.ai-xf.yaml` declares
+  the version. Level 3 (federation) is out of scope.
 
 ## 7. Seed and migration
 

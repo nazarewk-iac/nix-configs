@@ -176,6 +176,8 @@ in
       # Git-native agent memory on OKF v0.2. It owns .agents/knowledge; kdn-okf only reads it.
       # See docs/okf-memory.md.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-agent-memory
+      # The AI-XF validator and canonicaliser. The memory bundle is checked at Level 2.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.ai-xf
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)

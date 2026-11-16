@@ -74,10 +74,21 @@ Read tools: `okf_search`, `okf_show`, `okf_validate`. Write tools: `okf_create`,
 `okf_relate`. The write tools are enabled only for a memory-writing role; the seed is reviewed
 before agents add to it.
 
+## AI-XF Level 2
+
+The bundle also conforms to [AI-XF](ai-xf.md) Level 2: every concept carries a stable slug `id`
+and typed `links` entries mirrored by a body link, and `manifest.ai-xf.yaml` declares the version
+and name. The gate is `ai-xf-validate .agents/knowledge --level 2`. `kdn-okf` ignores the extra
+fields and follows the mirrored links. Level 3 (federation) is not used.
+
 ## Validation and scorecard
 
-`okf-memory validate .agents/knowledge --strict --drift` is the gate: it fails on a broken link, an
-orphan, or a description that no longer matches the parent `index.md` listing.
+Two gates run together:
+
+- `okf-memory validate .agents/knowledge --strict --drift` fails on a broken link, an orphan, or a
+  description that no longer matches the parent `index.md` listing.
+- `ai-xf-validate .agents/knowledge --level 2` fails on a missing or duplicate `id`, a typed link
+  without a body mirror, or a missing manifest.
 
 The scorecard reports three pillars: epistemic maintenance, human stewardship and graph integrity.
 The seed scores 72/100 (Grade C) because no concept carries a human `verified` entry. The check

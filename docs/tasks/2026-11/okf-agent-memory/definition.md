@@ -100,7 +100,15 @@ Each concept is short, carries `code_refs` when it governs a path, and is review
 - `index.md` and `log.md` are owned by `okf-agent-memory`; `kdn-okf generate-index` is not run on
   this bundle.
 
-### 7. Security and scope
+### 7. AI-XF Level 2
+
+- Every concept carries a stable slug `id` and typed `links` mirrored by a body link.
+- `manifest.ai-xf.yaml` declares `ai-xf: "0.5"` and the bundle name.
+- `ai-xf-validate .agents/knowledge --level 2` is the AI-XF gate; `okf-memory update` must
+  preserve `id` and `links`.
+- Level 3 (federation) is out of scope.
+
+### 8. Security and scope
 
 - v1 uses `scopes: [project]`; no vendor registry, user or system layers.
 - The hub/vault (zero-knowledge sync) stays off; it is a new security and supply-chain surface.
@@ -122,7 +130,7 @@ Each concept is short, carries `code_refs` when it governs a path, and is review
   opencode and pi, and a write tool is either disabled or gated by the rule.
 - `kdn-okf --bundle .agents/knowledge list --json` and `kdn-okf --bundle .agents/knowledge tui`
   read the same bundle.
-- `okf-memory-validate` and `kdn-okf doctor --parse-only` pass in the sandbox.
+- `okf-memory-validate`, `ai-xf-validate` and `kdn-okf doctor --parse-only` pass in the sandbox.
 - `okf-memory` and its skill are installed by Home Manager and the den aspect.
 - Docs: `docs/okf-memory.md`, `.agents/rules/okf-memory.md`, `AGENTS.md` rows.
 - No secrets, no transcripts, no registry, no hub.

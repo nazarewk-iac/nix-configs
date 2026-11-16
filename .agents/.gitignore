@@ -16,3 +16,7 @@
 !*.md
 .*.md
 *.local.md
+
+# The agent memory bundle is a committed OKF/AI-XF bundle. It carries a YAML manifest and may
+# carry non-Markdown assets, so the whole directory is tracked.
+!knowledge/**
