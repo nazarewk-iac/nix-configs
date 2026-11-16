@@ -292,21 +292,35 @@ with `conflicts resolve`, which deletes the loser. An orphan archive without a m
 between the archive write and the marker write) is listed by `rosec-conflicts --list`; inspect the
 canonical, then delete the orphan by hand. A retention policy is a possible follow-up.
 
-## Migrate from KeePassXC
+## KeePassXC → rosec migration (done on `oams`, 2026-11-16)
 
-KeePassXC still serves `org.freedesktop.secrets` on this host. The migration task
-(`docs/tasks/2026-11/keepassxc-to-rosec-migration/`) reads the **live Secret Service** — the 46
-items it exposes, not the whole KDBX — copies every attribute and secret through
-`hack/keepassxc-to-rosec.py`, verifies each item through `secret-tool`, and then flips the one line:
+The Secret Service holds the machine-stored secrets; the personal vault stays in KeePassXC. On
+`oams` the live collection exposed **46 items** (all in the KDBX group `drag0nius/secret-service`),
+and they now live in the sops store.
 
-```nix
-kdn.services.rosec.enable = true;
-```
+`hack/keepassxc-to-rosec.py` is the copy tool:
 
-The KeePassXC unit is disabled in the same change, and the `dbus-kdn-sway-secrets-service` name
-holder is pointed at the `rosecd` (two `Type=dbus` units cannot hold one bus name). The personal
-vault stays in KeePassXC. The store is already `derived`, so the migrated items are encrypted to the
-derived identity.
+- read the live bus (`Item.Attributes`, `secret-tool lookup Uuid=<uuid>`);
+- write through a **private** `rosecd --socket` in a `0700` directory, so KeePassXC stays untouched
+  until the cutover;
+- copy every public attribute **verbatim** (the clients' search contract) and the secret as
+  `password`, in `[item]` + top-level `[attributes]`/`[secrets]` TOML;
+- verify from the destination through `secret-tool`, then stop the private daemon.
+
+The cutover is one switch:
+
+- `kdn.services.rosec.enable = true` and `kdn.services.rosec.rosecd.enable = false` (the module's
+  own unit would be a second `Type=dbus` owner);
+- the `dbus-kdn-sway-secrets-service` name holder runs the `rosecd` instead of `sleep infinity`;
+  `nextcloud-client` keeps its `Requires` on the holder;
+- `kdn.programs.keepassxc.service.enable = false`, forced in the Home Manager evaluation because the
+  module forwards the option with `mkDefault`;
+- `[FdoSecrets] Enabled=false` in `keepassxc.ini` and `FDO_ENABLED=false` in `kdn-keepass.sh`, so a
+  GUI start cannot reclaim the bus.
+
+Result: `busctl --user status org.freedesktop.secrets` names the `rosecd`, all 46 items read back
+through `secret-tool`, `nextcloud-client` is active, and the KDBX is untouched. Delete the
+`secret-service` group in KeePassXC when the copy is no longer needed.
 
 ## Troubleshooting
 
