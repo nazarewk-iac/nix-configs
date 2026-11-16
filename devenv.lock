@@ -1214,6 +1214,7 @@
         "preservation-upstream": "preservation-upstream",
         "pyproject-build-systems": "pyproject-build-systems",
         "pyproject-nix": "pyproject-nix",
+        "rosec": "rosec",
         "rpi-sbcshop-hat-ups": "rpi-sbcshop-hat-ups",
         "rust-overlay": "rust-overlay",
         "sops-nix": "sops-nix",
@@ -1974,6 +1975,27 @@
           "nix-configs",
           "nixpkgs"
         ]
+      }
+    },
+    "rosec": {
+      "inputs": {
+        "nixpkgs": [
+          "nix-configs",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794699081,
+        "narHash": "sha256-51GSx0zdYpe/ZBHJaSUNdgSa8L2fDHmhP3PC4Sclu1c=",
+        "owner": "nazarewk-iac",
+        "repo": "rosec",
+        "rev": "4605bda5900fe558193b33bf875149d0ec2b2953",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk-iac",
+        "repo": "rosec",
+        "type": "github"
       }
     },
     "rpi-sbcshop-hat-ups": {
