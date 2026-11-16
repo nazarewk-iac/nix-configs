@@ -11,6 +11,7 @@ let
   kdn-journal = pkgs.callPackage ../../../packages/kdn-journal { };
   kdn-jj-meta = pkgs.callPackage ../../../packages/kdn-jj-meta { };
   kdn-okf = pkgs.callPackage ../../../packages/kdn-okf { };
+  okf-agent-memory = pkgs.callPackage ../../../packages/okf-agent-memory { };
 in
 {
   kdn.program-kdn-tools.homeManager =
@@ -20,6 +21,7 @@ in
         kdn-journal
         kdn-jj-meta
         kdn-okf
+        okf-agent-memory
       ];
 
       home.file = lib.listToAttrs (
@@ -36,6 +38,10 @@ in
             {
               name = "${root}/kdn-okf/SKILL.md";
               value.source = "${kdn-okf}/share/kdn-okf/skill/SKILL.md";
+            }
+            {
+              name = "${root}/okf-memory";
+              value.source = "${okf-agent-memory}/share/okf-agent-memory/skill";
             }
           ])
           [

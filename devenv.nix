@@ -1,6 +1,7 @@
 {
   inputs,
   pkgs,
+  config,
   ...
 }:
 let
@@ -172,6 +173,9 @@ in
       # Index and browse OKF v0.2 bundles: list, search, outline/section/context, links, doctor
       # and the TUI. See docs/kdn-okf.md.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-okf
+      # Git-native agent memory on OKF v0.2. It owns .agents/knowledge; kdn-okf only reads it.
+      # See docs/okf-memory.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-agent-memory
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)
@@ -208,6 +212,13 @@ in
     kdn.jj.installAgentRules = true;
     kdn.zellij.installAgentRules = true;
     kdn.mcp.basic-memory.installAgentRules = true;
+    # The writable memory bundle. Read tools are safe; write tools are reviewed before use.
+    kdn.mcp.extraBackends.okf-memory = {
+      description = "okf-memory";
+      command = "${
+        inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.okf-agent-memory
+      }/bin/okf-memory mcp ${config.devenv.root}/.agents/knowledge";
+    };
 
     # This repository's own formatter app. The aspect allow-lists no app name, so this line
     # keeps the Bash allow rule that the slot used to carry.

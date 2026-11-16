@@ -115,6 +115,7 @@ in
     "kdn-jj-meta-attribute"
     "kdn-okf-test"
     "kdn-okf-parse"
+    "okf-memory-validate"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];

@@ -141,6 +141,30 @@ denTests.checks
         touch "$out"
       '';
 
+  # The agent-memory bundle: structure, graph connectivity and description drift. The scorecard is
+  # reported by the tool but is not a hard gate yet; the seed has no human verification.
+  okf-memory-validate =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ../.;
+        fileset = pkgs.lib.fileset.fileFilter (file: file.hasExt "md") ../.agents/knowledge;
+      };
+    in
+    pkgs.runCommand "check-okf-memory-validate"
+      {
+        nativeBuildInputs = [
+          pkgs.kdn.okf-agent-memory
+          pkgs.kdn.kdn-okf
+        ];
+      }
+      ''
+        cp -r ${src}/.agents/knowledge "$TMPDIR/knowledge"
+        chmod -R u+w "$TMPDIR/knowledge"
+        okf-memory validate "$TMPDIR/knowledge" --strict --drift
+        kdn-okf --bundle "$TMPDIR/knowledge" doctor --parse-only
+        touch "$out"
+      '';
+
   # The `kdn-jj-meta` binary against a temporary jj repository. It proves what the Go suite fakes: the
   # `json(self)` read, the `mutable()` gate, `describe --stdin` and idempotency. No network, no
   # user configuration, no remote.

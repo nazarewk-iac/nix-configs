@@ -67,6 +67,9 @@
 !/modules/den/aspects/*.yaml
 !/modules/shared/universal/profile/user/kdn/
 !/LICENSE
+# The writable agent-memory bundle is a real directory; the root symlink makes the tool's default
+# `./knowledge` and `--scope project` resolve from the repository root.
+!/knowledge
 
 !/AGENTS.md
 

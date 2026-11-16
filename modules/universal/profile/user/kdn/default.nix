@@ -176,6 +176,7 @@ in
           pkgs.kdn.kdn-journal
           pkgs.kdn.kdn-jj-meta
           pkgs.kdn.kdn-okf
+          pkgs.kdn.okf-agent-memory
         ];
         # The two tools carry a SKILL.md each. Link it where the harnesses look: ~/.agents for
         # generic agents and OpenCode compatibility, ~/.config/opencode for OpenCode, and
@@ -194,6 +195,10 @@ in
               {
                 name = "${root}/kdn-okf/SKILL.md";
                 value.source = "${pkgs.kdn.kdn-okf}/share/kdn-okf/skill/SKILL.md";
+              }
+              {
+                name = "${root}/okf-memory";
+                value.source = "${pkgs.kdn.okf-agent-memory}/share/okf-agent-memory/skill";
               }
             ])
             [
