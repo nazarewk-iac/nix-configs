@@ -25,9 +25,10 @@ nix run .#okf-check                       # the memory bundle, from the working 
 nix run .#okf-check -- path/to/bundle     # any bundle with an okf-base.yaml
 ```
 
-`nix run .#okf-check` runs every gate above in order and stops at the first failure. It reads the
-working tree, so it is the edit loop, and it needs no devenv shell. In the shell,
-`hack/okf-check.sh` is the same script.
+`nix run .#okf-check` runs every gate above and reports all failures, so one pass shows the whole
+picture. `--fail-fast` stops at the first one when that is what you want. It reads the working tree,
+so it is the edit loop, and it needs no devenv shell. In the shell, `hack/okf-check.sh` is the same
+script.
 
 The Nix checks are the reproducible layer: each one copies the bundle into a sandbox and runs the
 same tools, so a local file or a stale cache cannot hide a problem. One command runs the package
