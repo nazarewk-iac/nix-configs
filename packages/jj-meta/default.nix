@@ -1,6 +1,6 @@
 # The `jj-meta` CLI. It attributes a jj change to the agent session that produced it: it appends
-# the missing `Assisted-by`, `Session-Id`, `Harness` and `Model` trailers to a mutable change,
-# deduplicates them, and never deletes or rewrites existing metadata.
+# the missing `Assisted-by`, `Generated-by`, `Session-Id`, `Harness` and `Model` trailers to a
+# mutable change, deduplicates them, and never deletes or rewrites existing metadata.
 #
 # The package is self-contained under this directory, so an external adopter can reuse it. It
 # follows `packages/kdn-journal/`: `buildGoModule`, a filtered source, shell completions, and a

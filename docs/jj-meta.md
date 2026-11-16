@@ -29,15 +29,20 @@ The tool is separate from `kdn-journal` on purpose. `jj-meta` owns jj metadata a
 
 ## Profiles
 
-A profile is the set of conventions one project accepts. `--trailer key=value` adds one more line,
-and `JJ_META_PROFILE` sets the default profile.
+A profile is one attribution convention. Profiles compose: `--profile` takes a comma-separated list
+or repeats, and `JJ_META_PROFILE` sets the default list. The default active set is
+`agent,nixpkgs,asf`.
 
-| Profile              | Trailers                                                                          | Use                                                                                |
-| -------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `portable` (default) | `Assisted-by`, `Session-Id`, `Harness`, `Model`                                   | Nixpkgs, OpenInfra, LocalAI, Flux, Fedora and any consumer of a disclosure trailer |
-| `github`             | `portable` + `Co-authored-by`                                                     | Projects that want GitHub's avatar and contributor convention                      |
-| `asf`                | `Generated-by`, `Session-Id`, `Harness`, `Model`                                  | Apache-style projects that use `Generated-by`                                      |
-| `full`               | `Assisted-by`, `Generated-by`, `Co-authored-by`, `Session-Id`, `Harness`, `Model` | A repository that accepts every field                                              |
+| Profile   | Trailers                         | Use                                                                         |
+| --------- | -------------------------------- | --------------------------------------------------------------------------- |
+| `agent`   | `Session-Id`, `Harness`, `Model` | The local session key. The journal reads it back.                           |
+| `nixpkgs` | `Assisted-by`                    | The Nixpkgs transparency disclosure; also OpenInfra, LocalAI, Flux, Fedora. |
+| `asf`     | `Generated-by`                   | The Apache-style disclosure.                                                |
+| `github`  | `Co-authored-by`                 | GitHub's avatar and contributor convention. Needs an agent email.           |
+| `full`    | all four                         | A repository that accepts every field.                                      |
+
+`--profile` **replaces** the active set. `--coauthor` adds `Co-authored-by` and `--generated` adds
+`Generated-by` on top of whatever set is active, so `--coauthor` keeps the default set.
 
 The values are:
 
@@ -57,8 +62,10 @@ Rules that hold for every profile:
 - `Co-authored-by` needs an agent email: `--coauthor-email` or `JJ_META_COAUTHOR_EMAIL`. The tool
   never uses the local user's address and never invents one.
 - `Signed-off-by` is never written. It is the human's DCO certification.
-- `Generated-by` means mostly machine-authored work. `Assisted-by` means a human materially
-  revised it. Do not write both just to cover every parser.
+- The default set writes both `Assisted-by` and `Generated-by` because different consumers read
+  different lines. The meaning still differs: `Assisted-by` means a human materially revised the
+  work, `Generated-by` means mostly machine-authored. Narrow the set with
+  `--profile nixpkgs` or `--profile asf` when only one reading is accurate.
 - `Session-Id`, `Harness` and `Model` are single-valued: an existing value is kept, and a different
   one is reported as skipped. `Assisted-by`, `Generated-by` and `Co-authored-by` are multi-valued:
   an exact duplicate is skipped, and a distinct value gets its own line.
@@ -68,7 +75,7 @@ Rules that hold for every profile:
 ```
 jj-meta attribute [<change-id>] [--revset <revset>]
                   [--session <id>] [--harness <name>] [--model <name>]
-                  [--profile portable|github|asf|full]
+                  [--profile agent,nixpkgs,asf|github|full]
                   [--trailer key=value] [--coauthor] [--coauthor-email <email>]
                   [--generated] [--no-session] [--allow-immutable] [--dry-run]
 jj-meta show [<change-id>]
@@ -132,7 +139,7 @@ byte-identical and `jj describe` is not called.
   "command": "attribute",
   "generated_at": "2026-11-16T09:35:00+01:00",
   "data": {
-    "profile": "portable",
+    "profiles": ["agent", "nixpkgs", "asf"],
     "session": { "harness": "opencode", "session_id": "ses_1", "model": "model" },
     "dry_run": false,
     "changes": [
@@ -140,7 +147,7 @@ byte-identical and `jj describe` is not called.
         "change_id": "sqzunxvvtlzyonoonoqxotyxuxktzrxv",
         "commit_id": "9320c6ec6e0fd99efcb44e96a01298f5ef6eb6e6",
         "mutable": true,
-        "added": ["Assisted-by: opencode:model"],
+        "added": ["Assisted-by: opencode:model", "Generated-by: opencode:model"],
         "skipped": [],
         "written": true
       }
@@ -158,8 +165,8 @@ Exit codes: 0 success, 1 a refused change or a failed `check`, 2 a usage or jj e
   body only, existing block, CRLF, folded values, a fenced block, duplicates, a single-valued key
   with a different value and a trailing blank line.
 - `internal/session` covers every environment variable, the priority order and the overrides.
-- `internal/attribution` covers the four profiles, the co-author email requirement and the
-  warnings.
+- `internal/attribution` covers every profile, the default set, the co-author email requirement and
+  the warnings.
 - `internal/jj` runs the real binary against a temporary repository when `jj` is on `PATH`.
 - The `jj-meta-attribute` check runs the packaged binary in a sandboxed temporary repository:
   attribute, a second no-op run, the github profile, the gate and the immutable refusal.

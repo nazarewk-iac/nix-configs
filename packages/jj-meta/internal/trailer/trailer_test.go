@@ -14,21 +14,33 @@ func TestParse(t *testing.T) {
 	}{
 		{name: "empty", input: ""},
 		{name: "body only", input: "subject\n\nbody text\n", body: "subject\n\nbody text"},
-		{name: "body and trailers", input: "subject\n\nbody\n\nAssisted-by: opencode:m\n", body: "subject\n\nbody",
-			trailers: []Trailer{{"Assisted-by", "opencode:m"}}},
-		{name: "trailers only", input: "Assisted-by: opencode:m\nSession-Id: ses_1\n",
-			trailers: []Trailer{{"Assisted-by", "opencode:m"}, {"Session-Id", "ses_1"}}},
-		{name: "subject directly above a trailer is not a block", input: "subject\nAssisted-by: a:b",
-			body: "subject\nAssisted-by: a:b"},
+		{
+			name: "body and trailers", input: "subject\n\nbody\n\nAssisted-by: opencode:m\n", body: "subject\n\nbody",
+			trailers: []Trailer{{"Assisted-by", "opencode:m"}},
+		},
+		{
+			name: "trailers only", input: "Assisted-by: opencode:m\nSession-Id: ses_1\n",
+			trailers: []Trailer{{"Assisted-by", "opencode:m"}, {"Session-Id", "ses_1"}},
+		},
+		{
+			name: "subject directly above a trailer is not a block", input: "subject\nAssisted-by: a:b",
+			body: "subject\nAssisted-by: a:b",
+		},
 		{name: "prose paragraph is not a trailer", input: "subject\n\nThis is: prose.\n", body: "subject\n\nThis is: prose."},
 		{name: "fenced code is not a trailer", input: "subject\n\n```\nAssisted-by: a:b\n```\n", body: "subject\n\n```\nAssisted-by: a:b\n```"},
 		{name: "list is not a trailer", input: "subject\n\n- Assisted-by: a:b\n", body: "subject\n\n- Assisted-by: a:b"},
-		{name: "folded value", input: "Assisted-by: opencode:\n  deepseek\n",
-			trailers: []Trailer{{"Assisted-by", "opencode: deepseek"}}},
-		{name: "duplicate keys", input: "Assisted-by: a:b\nAssisted-by: c:d\n",
-			trailers: []Trailer{{"Assisted-by", "a:b"}, {"Assisted-by", "c:d"}}},
-		{name: "trailing blank line", input: "subject\n\nAssisted-by: a:b\n\n", body: "subject",
-			trailers: []Trailer{{"Assisted-by", "a:b"}}},
+		{
+			name: "folded value", input: "Assisted-by: opencode:\n  deepseek\n",
+			trailers: []Trailer{{"Assisted-by", "opencode: deepseek"}},
+		},
+		{
+			name: "duplicate keys", input: "Assisted-by: a:b\nAssisted-by: c:d\n",
+			trailers: []Trailer{{"Assisted-by", "a:b"}, {"Assisted-by", "c:d"}},
+		},
+		{
+			name: "trailing blank line", input: "subject\n\nAssisted-by: a:b\n\n", body: "subject",
+			trailers: []Trailer{{"Assisted-by", "a:b"}},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

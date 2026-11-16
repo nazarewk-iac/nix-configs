@@ -41,19 +41,22 @@ mutable changes by default.
 ### 1. Trailer policy and profiles
 
 The tool covers several attribution conventions without forcing every project to accept every
-trailer. A **profile** selects the set; `--trailer key=value` adds one more.
+trailer. A **profile** is one convention; the profiles compose into a set, and the default set is
+`agent,nixpkgs,asf`. `--trailer key=value` adds one more line.
 
-| Profile              | Trailers                                                                          | Use                                                                                                |
-| -------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `portable` (default) | `Assisted-by`, `Session-Id`, `Harness`, `Model`                                   | Nixpkgs, OpenInfra, LocalAI, Flux, Fedora; any consumer that reads a dedicated disclosure trailer. |
-| `github`             | `portable` + `Co-authored-by`                                                     | Projects that want GitHub’s avatar/contributor convention. Requires an agent email.                |
-| `asf`                | `Generated-by`, `Session-Id`, `Harness`, `Model`                                  | Apache-style projects that use `Generated-by`.                                                     |
-| `full`               | `Assisted-by`, `Generated-by`, `Co-authored-by`, `Session-Id`, `Harness`, `Model` | Maximum coverage for a repo that accepts all of them.                                              |
+| Profile   | Trailers                         | Use                                                                                                |
+| --------- | -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `agent`   | `Session-Id`, `Harness`, `Model` | The local session key; `kdn-journal` reads it back.                                                |
+| `nixpkgs` | `Assisted-by`                    | Nixpkgs, OpenInfra, LocalAI, Flux, Fedora; any consumer that reads a dedicated disclosure trailer. |
+| `asf`     | `Generated-by`                   | Apache-style projects that use `Generated-by`.                                                     |
+| `github`  | `Co-authored-by`                 | GitHub’s avatar/contributor convention. Requires an agent email.                                   |
+| `full`    | all four                         | Maximum coverage for a repo that accepts all of them.                                              |
 
 Default values:
 
 ```text
 Assisted-by: <harness>:<model>
+Generated-by: <harness>:<model>
 Session-Id: <session-id>
 Harness: <harness>
 Model: <model>
@@ -65,19 +68,19 @@ Model: <model>
   suppresses it.
 - `Harness:` and `Model:` are redundant with `Assisted-by` for humans, but make the metadata
   machine-readable without parsing the combined value.
-- `Co-authored-by:` is **not** in the default profile. `--profile github` or `--coauthor` adds
+- `Co-authored-by:` is **not** in the default set. `--profile github` or `--coauthor` adds
   `Co-authored-by: <agent> <email>` for the agent, never for the human author. An email is required;
   the tool never invents one or uses the local user.
-- `Generated-by:` is in the `asf`/`full` profiles, or available through `--trailer`. Use it only
-  when the change is mostly machine-authored; `Assisted-by` is the better fit when a human
-  materially revised the work.
+- `Generated-by:` is part of the default set through the `asf` profile. Narrow the set with
+  `--profile nixpkgs` when the work is materially human-revised, or `--profile asf` when it is
+  mostly machine-authored.
 - `Signed-off-by:` is never written by this tool. It is the human’s DCO certification.
 - Existing lines are preserved. The tool appends only missing `Key: value` lines.
 - Multi-valued keys (`Assisted-by`, `Co-authored-by`, `Generated-by`) deduplicate exact values and
   allow multiple distinct values. Single-valued keys (`Session-Id`, `Harness`, `Model`) are left
   alone when any value exists.
-- `--profile portable` is the default; a repository can set `JJ_META_PROFILE` to another profile.
-  The profile only controls defaults; explicit `--trailer` lines always win.
+- The default active set is `agent,nixpkgs,asf`; a repository can set `JJ_META_PROFILE` to another
+  comma-separated set. `--profile` replaces the set; explicit `--trailer` lines always win.
 
 ### 2. Mutable-only by default
 

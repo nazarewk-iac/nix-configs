@@ -1,9 +1,9 @@
-// Package attribution builds the trailer set for one change from a profile and a session.
+// Package attribution builds the trailer set for one change from a profile set and a session.
 //
-// A profile is the set of conventions one project accepts. `portable` is the default because the
-// Nixpkgs, OpenInfra, LocalAI, Flux and Fedora policies all accept a dedicated `Assisted-by`
-// disclosure. `Co-authored-by` is a GitHub credit mechanism, not a disclosure, so it stays out of
-// the default and always names the agent, never the human author.
+// A profile is one attribution convention. Profiles compose: the default set is `agent`,
+// `nixpkgs` and `asf`, so a change carries the local session key, the Nixpkgs disclosure and the
+// ASF `Generated-by` line at once. `github` is the GitHub co-author convention and stays out of
+// the default because it is credit, not disclosure.
 package attribution
 
 import (
@@ -14,38 +14,89 @@ import (
 	"jj-meta/internal/trailer"
 )
 
-// Profile names the trailer convention a repository accepts.
+// Profile names one attribution convention.
 type Profile string
 
 const (
-	// Portable is the default: Assisted-by, Session-Id, Harness, Model.
-	Portable Profile = "portable"
-	// GitHub adds the agent Co-authored-by line for the GitHub avatar convention.
-	GitHub Profile = "github"
-	// ASF uses Generated-by instead of Assisted-by, for Apache-style projects.
+	// Agent writes the local session key: Session-Id, Harness and Model.
+	Agent Profile = "agent"
+	// Nixpkgs writes Assisted-by, the disclosure the Nixpkgs transparency policy requires.
+	Nixpkgs Profile = "nixpkgs"
+	// ASF writes Generated-by, the Apache-style disclosure.
 	ASF Profile = "asf"
-	// Full writes every supported field.
+	// GitHub writes Co-authored-by, the GitHub credit convention. It needs an agent email.
+	GitHub Profile = "github"
+	// Full activates every profile.
 	Full Profile = "full"
 )
 
-// Profiles lists the accepted profile names, in help order.
-var Profiles = []string{string(Portable), string(GitHub), string(ASF), string(Full)}
+// Profiles lists the accepted profile names, in canonical order.
+var Profiles = []string{string(Agent), string(Nixpkgs), string(ASF), string(GitHub), string(Full)}
 
-// ParseProfile validates a profile name. An empty name means Portable.
-func ParseProfile(name string) (Profile, error) {
-	switch p := Profile(strings.ToLower(strings.TrimSpace(name))); p {
-	case "":
-		return Portable, nil
-	case Portable, GitHub, ASF, Full:
-		return p, nil
-	default:
-		return "", fmt.Errorf("unknown profile %q; use one of %s", name, strings.Join(Profiles, ", "))
+// DefaultProfiles is the active set when the caller names none.
+var DefaultProfiles = []Profile{Agent, Nixpkgs, ASF}
+
+// ParseProfiles validates the profile names. Each value may hold a comma-separated list, so a
+// flag can be repeated or passed once with `agent,nixpkgs,asf`. An empty list means the default
+// set.
+func ParseProfiles(values []string) ([]Profile, error) {
+	var out []Profile
+	for _, value := range values {
+		for _, name := range strings.Split(value, ",") {
+			name = strings.ToLower(strings.TrimSpace(name))
+			if name == "" {
+				continue
+			}
+			profile := Profile(name)
+			switch profile {
+			case Agent, Nixpkgs, ASF, GitHub, Full:
+				out = append(out, profile)
+			default:
+				return nil, fmt.Errorf("unknown profile %q; use one of %s", name, strings.Join(Profiles, ", "))
+			}
+		}
 	}
+	return normalizeProfiles(out), nil
+}
+
+// normalizeProfiles expands `full`, removes duplicates and orders the set canonically.
+func normalizeProfiles(profiles []Profile) []Profile {
+	if len(profiles) == 0 {
+		profiles = DefaultProfiles
+	}
+	active := make(map[Profile]bool, len(profiles))
+	for _, profile := range profiles {
+		if profile == Full {
+			active[Agent] = true
+			active[Nixpkgs] = true
+			active[ASF] = true
+			active[GitHub] = true
+			continue
+		}
+		active[profile] = true
+	}
+	out := make([]Profile, 0, 4)
+	for _, profile := range []Profile{Agent, Nixpkgs, ASF, GitHub} {
+		if active[profile] {
+			out = append(out, profile)
+		}
+	}
+	return out
+}
+
+// Names renders a profile set for JSON and help output.
+func Names(profiles []Profile) []string {
+	out := make([]string, 0, len(profiles))
+	for _, profile := range profiles {
+		out = append(out, string(profile))
+	}
+	return out
 }
 
 // Options describes one attribution request.
 type Options struct {
-	Profile       Profile
+	// Profiles is the active set. An empty set means DefaultProfiles.
+	Profiles      []Profile
 	Session       session.Session
 	NoSession     bool
 	Coauthor      bool
@@ -62,12 +113,13 @@ type Plan struct {
 
 // Build returns the trailers the options describe.
 //
-// The order is stable: the disclosure first, then the agent co-author, then the session fields.
+// The order is stable: the disclosures first, then the local agent fields, then the co-author.
 // Duplicate keys with equal values collapse; distinct values survive.
 func Build(opts Options) (Plan, error) {
-	profile, err := ParseProfile(string(opts.Profile))
-	if err != nil {
-		return Plan{}, err
+	profiles := normalizeProfiles(opts.Profiles)
+	active := make(map[Profile]bool, len(profiles))
+	for _, profile := range profiles {
+		active[profile] = true
 	}
 	s := opts.Session
 	var plan Plan
@@ -86,27 +138,29 @@ func Build(opts Options) (Plan, error) {
 	if s.Harness == "" {
 		plan.Warnings = append(plan.Warnings,
 			"cannot detect the agent harness; no Assisted-by trailer is written. Pass --harness (and --model)")
-	} else if s.Model == "" {
+	} else if s.Model == "" && (active[Nixpkgs] || active[ASF]) {
 		plan.Warnings = append(plan.Warnings,
-			"cannot detect the model; Assisted-by names the harness only. Pass --model to satisfy the Nixpkgs policy")
+			"cannot detect the model; the disclosure names the harness only. Pass --model to satisfy the Nixpkgs policy")
 	}
 
-	switch profile {
-	case Portable, Full:
+	if active[Nixpkgs] {
 		add("Assisted-by", agent)
 	}
-	switch profile {
-	case ASF, Full:
+	if active[ASF] || opts.Generated {
 		add("Generated-by", agent)
 	}
-	if opts.Generated {
-		add("Generated-by", agent)
+	if active[Agent] {
+		if !opts.NoSession {
+			add("Session-Id", s.ID)
+		}
+		add("Harness", s.Harness)
+		add("Model", s.Model)
 	}
-	if profile == GitHub || profile == Full || opts.Coauthor {
+	if active[GitHub] || opts.Coauthor {
 		email := strings.TrimSpace(opts.CoauthorEmail)
 		if email == "" {
 			return Plan{}, fmt.Errorf(
-				"profile %s and --coauthor need an agent email: pass --coauthor-email or set JJ_META_COAUTHOR_EMAIL", profile)
+				"the github profile and --coauthor need an agent email: pass --coauthor-email or set JJ_META_COAUTHOR_EMAIL")
 		}
 		name := s.Harness
 		if name == "" {
@@ -114,11 +168,6 @@ func Build(opts Options) (Plan, error) {
 		}
 		add("Co-authored-by", name+" <"+email+">")
 	}
-	if !opts.NoSession {
-		add("Session-Id", s.ID)
-	}
-	add("Harness", s.Harness)
-	add("Model", s.Model)
 	for _, t := range opts.Extra {
 		add(t.Key, t.Value)
 	}

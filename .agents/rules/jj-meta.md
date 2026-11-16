@@ -22,6 +22,10 @@ usual call is:
 jj-meta attribute <change-id>
 ```
 
+- The default profiles are `agent`, `nixpkgs` and `asf`: the tool writes `Assisted-by`,
+  `Generated-by`, `Session-Id`, `Harness` and `Model` together. Narrow the set with
+  `--profile nixpkgs` when a human materially revised the work, or `--profile asf` when it is
+  mostly machine-authored.
 - `Assisted-by: <harness>:<model>` is the disclosure the Nixpkgs transparency policy requires.
   `Co-authored-by:` does **not** satisfy that policy.
 - `Session-Id:` and `Harness:` tie the change to the agent session. `kdn-journal` reads them back.

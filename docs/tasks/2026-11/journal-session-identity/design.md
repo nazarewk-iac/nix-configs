@@ -118,7 +118,7 @@ is absent, `exec.LookPath` fails and the integration reports `jj-unavailable`.
 Commit trailers are owned by the separate **`jj-meta`** tool (see
 [docs/tasks/2026-11/jj-meta](../jj-meta/design.md)):
 
-- `jj-meta` owns the profile set (`portable`, `github`, `asf`, `full`), the mutable-only check, the
+- `jj-meta` owns the profile set (`agent`, `nixpkgs`, `asf`, `github`), the mutable-only check, the
   deduplication and the `Assisted-by`/`Co-authored-by`/`Generated-by` policy.
 - `kdn-journal` records the sidecar mapping and calls
   `jj-meta attribute <change-id> --session <id> --harness <harness> --model <model>` when a change

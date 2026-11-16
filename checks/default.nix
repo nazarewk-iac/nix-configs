@@ -146,6 +146,7 @@ denTests.checks
         jj log --no-pager --no-graph -r @ -T 'description' > after-first.txt
         grep -q '^subject$' after-first.txt
         grep -q 'Assisted-by: opencode:test-model' after-first.txt
+        grep -q 'Generated-by: opencode:test-model' after-first.txt
         grep -q 'Session-Id: ses_check' after-first.txt
         grep -q 'Harness: opencode' after-first.txt
         grep -q 'Model: test-model' after-first.txt
@@ -167,6 +168,15 @@ denTests.checks
         jj new -m 'unattributed' >/dev/null 2>&1
         if jj-meta check @; then
           echo "check passed on an unattributed change" >&2
+          exit 1
+        fi
+
+        # The agent profile writes only the local session key, not a disclosure.
+        jj-meta attribute @ --profile agent --harness opencode --model test-model --session ses_check
+        jj log --no-pager --no-graph -r @ -T 'description' > after-agent.txt
+        grep -q 'Session-Id: ses_check' after-agent.txt
+        if grep -q 'Assisted-by' after-agent.txt; then
+          echo "the agent profile wrote Assisted-by" >&2
           exit 1
         fi
 

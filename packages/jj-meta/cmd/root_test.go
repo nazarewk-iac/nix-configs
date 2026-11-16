@@ -77,7 +77,7 @@ func TestAttributeAddsTrailers(t *testing.T) {
 	if len(runner.described) != 1 {
 		t.Fatalf("Describe called %d times", len(runner.described))
 	}
-	want := "subject\n\nAssisted-by: opencode:model\nSession-Id: ses_1\nHarness: opencode\nModel: model\n"
+	want := "subject\n\nAssisted-by: opencode:model\nGenerated-by: opencode:model\nSession-Id: ses_1\nHarness: opencode\nModel: model\n"
 	if got := runner.described[0].description; got != want {
 		t.Fatalf("description = %q, want %q", got, want)
 	}
@@ -206,8 +206,8 @@ func TestAttributeJSON(t *testing.T) {
 		SchemaVersion int    `json:"schema_version"`
 		Command       string `json:"command"`
 		Data          struct {
-			Profile string `json:"profile"`
-			Session struct {
+			Profiles []string `json:"profiles"`
+			Session  struct {
 				Harness string `json:"harness"`
 				ID      string `json:"session_id"`
 			} `json:"session"`
@@ -224,11 +224,29 @@ func TestAttributeJSON(t *testing.T) {
 	if env.SchemaVersion != 1 || env.Command != "attribute" {
 		t.Fatalf("envelope = %#v", env)
 	}
-	if env.Data.Profile != "portable" || env.Data.Session.Harness != "opencode" || env.Data.Session.ID != "ses_1" {
+	if strings.Join(env.Data.Profiles, ",") != "agent,nixpkgs,asf" {
+		t.Fatalf("profiles = %#v", env.Data.Profiles)
+	}
+	if env.Data.Session.Harness != "opencode" || env.Data.Session.ID != "ses_1" {
 		t.Fatalf("data = %#v", env.Data)
 	}
-	if len(env.Data.Changes) != 1 || len(env.Data.Changes[0].Added) != 4 || !env.Data.Changes[0].Written {
+	if len(env.Data.Changes) != 1 || len(env.Data.Changes[0].Added) != 5 || !env.Data.Changes[0].Written {
 		t.Fatalf("changes = %#v", env.Data.Changes)
+	}
+}
+
+func TestAttributeProfilesAreComposable(t *testing.T) {
+	runner := &fakeRunner{changes: []jj.Change{{ChangeID: "aaaa", CommitID: "1111"}}}
+	app := newTestApp(runner, opencodeEnv())
+	if _, _, err := execute(t, app, "attribute", "@", "--profile", "agent", "--profile", "nixpkgs"); err != nil {
+		t.Fatalf("attribute: %v", err)
+	}
+	got := runner.described[0].description
+	if !strings.Contains(got, "Assisted-by: opencode:model") || strings.Contains(got, "Generated-by") {
+		t.Fatalf("description = %q", got)
+	}
+	if _, _, err := execute(t, app, "attribute", "@", "--profile", "agent,nixpkgs,asf", "--dry-run"); err != nil {
+		t.Fatalf("attribute with a comma list: %v", err)
 	}
 }
 

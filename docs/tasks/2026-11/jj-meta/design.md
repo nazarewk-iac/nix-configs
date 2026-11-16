@@ -10,17 +10,17 @@ timestamp: 2026-11-16T09:10:00+01:00
 
 ## 1. Decisions
 
-| Question            | Decision                                                                   | Reason                                                                     |
-| ------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Default disclosure  | `Assisted-by: <harness>:<model>`                                           | Nixpkgs requires it; `Co-authored-by` does not satisfy the policy.         |
-| Default profile     | `portable`: `Assisted-by`, `Session-Id`, `Harness`, `Model`                | Covers the dedicated-trailer projects without noisy or misleading fields.  |
-| Other profiles      | `github` adds `Co-authored-by`; `asf` adds `Generated-by`; `full` adds all | A project opts into the convention it accepts.                             |
-| Session attribution | `Session-Id: <id>` by default when known; `--no-session`                   | The tool exists to attribute changes to sessions; suppression is explicit. |
-| Co-author           | Off by default; `--coauthor`/`--profile github` requires an agent email    | Do not put the human author in `Co-authored-by`; do not invent an email.   |
-| Mutable only        | Default target `@`, intersected with `mutable()`                           | Rewriting immutable history is unsafe and outside the tool.                |
-| Existing metadata   | Never delete or rewrite; append only missing lines                         | Another agent or a human may own the existing text.                        |
-| Deduplication       | Exact `key: value` lines; multi-valued keys allow distinct values          | Idempotent without collapsing independent tools.                           |
-| Integration         | `kdn-journal` calls the CLI; no library coupling                           | The tools stay separate and testable.                                      |
+| Question            | Decision                                                                | Reason                                                                     |
+| ------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Default disclosure  | `Assisted-by: <harness>:<model>` and `Generated-by: <harness>:<model>`  | Nixpkgs reads `Assisted-by`; ASF-style consumers read `Generated-by`.      |
+| Default profile set | `agent,nixpkgs,asf`                                                     | The local session key plus both disclosures, without the co-author line.   |
+| Other profiles      | `github` adds `Co-authored-by`; `full` adds all four                    | A project opts into the convention it accepts.                             |
+| Session attribution | `Session-Id: <id>` by default when known; `--no-session`                | The tool exists to attribute changes to sessions; suppression is explicit. |
+| Co-author           | Off by default; `--coauthor`/`--profile github` requires an agent email | Do not put the human author in `Co-authored-by`; do not invent an email.   |
+| Mutable only        | Default target `@`, intersected with `mutable()`                        | Rewriting immutable history is unsafe and outside the tool.                |
+| Existing metadata   | Never delete or rewrite; append only missing lines                      | Another agent or a human may own the existing text.                        |
+| Deduplication       | Exact `key: value` lines; multi-valued keys allow distinct values       | Idempotent without collapsing independent tools.                           |
+| Integration         | `kdn-journal` calls the CLI; no library coupling                        | The tools stay separate and testable.                                      |
 
 ## 2. Package layout
 
@@ -149,19 +149,19 @@ If the model is unknown:
 ```
 jj-meta attribute [<change-id>|--revset <revset>]
   [--session <id>] [--harness <name>] [--model <name>]
-  [--profile portable|github|asf|full]
+  [--profile agent,nixpkgs,asf|github|full]
   [--trailer key=value] [--coauthor] [--coauthor-email <email>]
   [--generated] [--no-session] [--allow-immutable] [--dry-run] [--json]
 ```
 
-- Builds the desired trailers from the profile:
-  - `portable`: `Assisted-by: <harness>:<model>`, `Session-Id: <id>`, `Harness: <harness>`,
-    `Model: <model>`
-  - `github`: `portable` + `Co-authored-by: <harness> <email>`
-  - `asf`: `Generated-by: <harness>:<model>`, `Session-Id`, `Harness`, `Model`
-  - `full`: `Assisted-by`, `Generated-by`, `Co-authored-by`, `Session-Id`, `Harness`, `Model`
+- Builds the desired trailers from the active profile set (default `agent,nixpkgs,asf`):
+  - `agent`: `Session-Id: <id>`, `Harness: <harness>`, `Model: <model>`
+  - `nixpkgs`: `Assisted-by: <harness>:<model>`
+  - `asf`: `Generated-by: <harness>:<model>`
+  - `github`: `Co-authored-by: <harness> <email>`
+  - `full`: all four
   - each `--trailer` adds one custom line
-- `--generated` is a shortcut for the `asf` disclosure on the current profile.
+- `--profile` replaces the active set; `--coauthor` and `--generated` add one line on top of it.
 - Reads the change description, appends only missing lines, calls `jj describe`.
 - Prints added/skipped trailers and the change IDs; `--json` emits `{change_id, added, skipped}`.
 - Idempotent: a second run adds nothing.
@@ -247,8 +247,8 @@ Add to `.agents/rules/jujutsu-vcs.md` and the commit helper:
 - jj runner fake: mutable/immutable, description read/write, missing change, jj unavailable.
 - Session detection: every env var, precedence, model fallback, explicit flags.
 - `--coauthor` refuses without an email; uses the agent identity; never the human.
-- Profiles: `portable` default, `github` adds `Co-authored-by`, `asf` adds `Generated-by`, `full`
-  adds all; `--generated` adds only `Generated-by`; `--trailer` overrides/augments.
+- Profiles: default `agent,nixpkgs,asf`; `github` adds `Co-authored-by`, `full` adds all; the flag
+  repeats or takes a comma list; `--generated` and `--coauthor` add one line on top.
 - `check`: missing `Assisted-by` error, `--require coauthor` warning/error, JSON shape.
 - Integration: a real temporary jj repo with a mutable change; attribute twice; assert unchanged
   second time and body preserved.

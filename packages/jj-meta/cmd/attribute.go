@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -16,7 +17,7 @@ type attributeOptions struct {
 	session        string
 	harness        string
 	model          string
-	profile        string
+	profiles       []string
 	trailers       []string
 	coauthor       bool
 	coauthorEmail  string
@@ -36,10 +37,10 @@ type changeAttribution struct {
 }
 
 type attributeData struct {
-	Profile string              `json:"profile"`
-	Session session.Session     `json:"session"`
-	DryRun  bool                `json:"dry_run"`
-	Changes []changeAttribution `json:"changes"`
+	Profiles []string            `json:"profiles"`
+	Session  session.Session     `json:"session"`
+	DryRun   bool                `json:"dry_run"`
+	Changes  []changeAttribution `json:"changes"`
 }
 
 func newAttributeCmd(app *App) *cobra.Command {
@@ -74,7 +75,7 @@ func newAttributeCmd(app *App) *cobra.Command {
 	flags.StringVar(&opts.session, "session", "", "session ID (default: detect from the environment)")
 	flags.StringVar(&opts.harness, "harness", "", "agent harness, for example opencode or pi")
 	flags.StringVar(&opts.model, "model", "", "model name and version")
-	flags.StringVar(&opts.profile, "profile", "", "trailer profile: portable, github, asf or full (default: JJ_META_PROFILE or portable)")
+	flags.StringArrayVar(&opts.profiles, "profile", nil, "active trailer profiles: agent, nixpkgs, asf, github, full; repeatable or comma-separated (default: agent,nixpkgs,asf)")
 	flags.StringArrayVar(&opts.trailers, "trailer", nil, "extra trailer as key=value; repeatable")
 	flags.BoolVar(&opts.coauthor, "coauthor", false, "also add the agent Co-authored-by line (needs an email)")
 	flags.StringVar(&opts.coauthorEmail, "coauthor-email", "", "agent email for Co-authored-by (default: JJ_META_COAUTHOR_EMAIL)")
@@ -100,11 +101,13 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 				"change %s is immutable; pass --allow-immutable to try anyway", shortID(change.ChangeID))}
 		}
 	}
-	profileName := opts.profile
-	if profileName == "" {
-		profileName = a.Getenv("JJ_META_PROFILE")
+	profileValues := opts.profiles
+	if len(profileValues) == 0 {
+		if env := a.Getenv("JJ_META_PROFILE"); strings.TrimSpace(env) != "" {
+			profileValues = []string{env}
+		}
 	}
-	profile, err := attribution.ParseProfile(profileName)
+	profiles, err := attribution.ParseProfiles(profileValues)
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 	}
 	sess := session.Detect(a.Getenv).Apply(opts.harness, opts.session, opts.model)
 	plan, err := attribution.Build(attribution.Options{
-		Profile:       profile,
+		Profiles:      profiles,
 		Session:       sess,
 		NoSession:     opts.noSession,
 		Coauthor:      opts.coauthor,
@@ -132,7 +135,7 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 	for _, warning := range plan.Warnings {
 		a.warnf("%s", warning)
 	}
-	data := attributeData{Profile: string(profile), Session: sess, DryRun: opts.dryRun}
+	data := attributeData{Profiles: attribution.Names(profiles), Session: sess, DryRun: opts.dryRun}
 	var issues []Issue
 	for _, change := range changes {
 		doc := trailer.Parse(change.Description)
