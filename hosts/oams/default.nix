@@ -459,13 +459,24 @@ in
       # not register the Secret Service any more: `[FdoSecrets] Enabled=false` and the wrapper's
       # `FDO_ENABLED=false` keep the integration off, so the GUI never claims the bus.
       #
-      # The rosec *package* ships `rosecd.service`/`rosecd.socket` in `$out/share/systemd/user`,
-      # and systemd finds them through the user profile's `XDG_DATA_DIRS` — independent of Home
-      # Manager. Both declare `BusName=org.freedesktop.secrets`, so they must be masked, or the
-      # manager refuses the transaction with "Two services allocated for the same bus name".
-      systemd.user.units."rosecd.service".enable = false;
+      # The rosec *package* ships `rosecd.service`/`rosecd.socket` and a session-bus activation
+      # file (`org.freedesktop.secrets.service` -> `SystemdService=rosecd.service`) in the user
+      # profile, so systemd finds them through `XDG_DATA_DIRS` — independent of Home Manager.
+      #
+      # `rosecd.service` becomes an ALIAS of the name holder (below): the activation file then
+      # starts the shim instead of a masked unit, and there is still exactly one
+      # `BusName=org.freedesktop.secrets`. Masking `rosecd.service` alone left the activation file
+      # pointing at a dead unit. The package's socket unit is a private socket nobody uses.
       systemd.user.units."rosecd.socket".enable = false;
 
+      # The store must be unlocked before the unit counts as started: `Type=dbus` readiness is
+      # the bus name, and `ExecStartPost` runs after that but before the start job completes, so
+      # every `Requires` client (nextcloud) starts against an unlocked store. A locked provider
+      # makes a headless client write a duplicate item instead of reading its own, and rosec has no
+      # silent unlock path. The sops field is optional, but `rosec unlock` still prompts on a TTY:
+      # allocate one and keep stdin open until the unwrap finishes (a bare newline plus EOF kills
+      # the session before the YubiKey is done). The leading `-` keeps a missing YubiKey from
+      # failing the unit.
       # The conflict report is independent: it reads the store, not the daemon.
       kdn.services.rosec = {
         enable = true;
@@ -500,6 +511,10 @@ in
       # cold-start bound, and only its process changes. nixpkgs' `script` writes a plain
       # `serviceConfig.ExecStart`, so `mkForce` wins without a second definition.
       systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+        # The package's session-bus activation file names `rosecd.service`; the alias makes that
+        # name start this unit, so a client that asks for the bus before the session starts it
+        # still gets the daemon.
+        aliases = [ "rosecd.service" ];
         serviceConfig.ExecStart = lib.mkForce "${lib.getExe' config.kdn.services.rosec.package "rosecd"}";
         serviceConfig.ExecStartPost = [
           "-${pkgs.writeShellScript "rosec-unlock" ''

@@ -77,3 +77,23 @@ Keep the KDBX. Set `kdn.services.rosec.enable = false`, remove the host shim ove
 profile guard, set `kdn.programs.keepassxc.service.enable = true` and `FDO_ENABLED=true`, set the ini
 `Enabled=true`, switch, restart the name holder, start `keepassxc.service`. The rosec store stays; a
 re-run of the tool deletes by `Uuid` and re-imports.
+
+## Follow-up: the bus-name and ordering traps
+
+Three problems appeared after the first cutover, and each has a lasting fix:
+
+- **A second bus owner.** The rosec *package* ships `rosecd.service`/`rosecd.socket` and a
+  session-bus activation file in the user profile, so systemd finds them through `XDG_DATA_DIRS`
+  independently of Home Manager. Masking the unit left the activation file pointing at a dead unit.
+  `rosecd.service` is now an **alias** of the name holder, so activation starts the shim and exactly
+  one unit owns the bus.
+- **A locked store at login.** `rosec` has no silent unlock path, so a client that starts before the
+  first unlock cannot read its item. `rosec-unlock.service` (oneshot, `After` the shim, `Before`
+  `nextcloud-client`, `WantedBy graphical-session.target`) unlocks once with the YubiKey.
+- **Duplicate items on every Nextcloud start.** rosec replaces an item only when the secret is
+  equal; the client writes `secret` while the migrated item used `password`, so the create never
+  matched and added a new item. The two Nextcloud items are now client-owned (`type = "generic"`,
+  `[secrets] secret`), and two restarts added nothing.
+
+Final shape: 46 items — 44 still carry the source `Uuid`, the two Nextcloud items are owned by the
+client and read by `server`/`user`/`type`.
