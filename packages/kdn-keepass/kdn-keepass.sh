@@ -4,6 +4,9 @@ set -eEuo pipefail
 : "${expect_script:="${BASH_SOURCE[0]%/*}/kdn-keepass.exp"}"
 : "${keepass_pass_path:="KeePass"}"
 : "${KEEPASS_PATH:=""}"
+# The Secret Service integration is a host choice: rosec owns `org.freedesktop.secrets` after the
+# migration, and re-enabling FdoSecrets would make KeePassXC claim the same name again.
+: "${FDO_ENABLED:="false"}"
 
 # The unit cannot answer GUI dialogs: an "unlock before search" prompt, an item-access
 # confirmation, or a delete confirmation would block the automated login-unlock or a headless
@@ -12,7 +15,8 @@ set -eEuo pipefail
 # database stayed locked). Enforce the dialog-free shape of the Secret Service integration in the
 # user's real ini — keepassxc writes its own runtime state into that file, so the repo cannot own
 # the whole file; this owns the keys below only. A GUI toggle is overridden again at the next
-# start. `Enabled=true` keeps the integration itself on (the DB decides which groups are exposed).
+# start. `Enabled` follows `FDO_ENABLED` (default `false`): rosec owns the bus after the migration,
+# and `Enabled=false` keeps the GUI from reclaiming it.
 ini="${XDG_CONFIG_HOME:-"$HOME/.config"}/keepassxc/keepassxc.ini"
 upsert_fdo_key() {
   local key="$1" value="$2"
@@ -37,7 +41,7 @@ upsert_fdo_key() {
     }
   ' "$ini" > "$ini.tmp" && mv "$ini.tmp" "$ini"
 }
-upsert_fdo_key Enabled true
+upsert_fdo_key Enabled "$FDO_ENABLED"
 upsert_fdo_key UnlockBeforeSearch false
 upsert_fdo_key ConfirmAccessItem false
 upsert_fdo_key ConfirmDeleteItem false

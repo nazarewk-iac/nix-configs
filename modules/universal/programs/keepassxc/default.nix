@@ -40,8 +40,8 @@ in
         of the Darwin package set, so the platform test is the correct one.
       */
       ++ lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.kdn.kdn-keepass;
-    })
-    (lib.mkIf cfg.service.enable {
+      # `KEEPASS_PATH` outlives the service: the `kdn-keepass` wrapper reads it to find the KDBX,
+      # and a host may disable the service (rosec owns the bus) while still starting the GUI.
       kdn.env.variables = envs;
     })
     /*

@@ -164,6 +164,24 @@ in
       `org.freedesktop.secrets`: two units cannot hold that bus name
     '';
 
+    rosecd.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.kdn.services.rosec.enable;
+      defaultText = lib.literalExpression "config.kdn.services.rosec.enable";
+      description = ''
+        Install the `rosecd.service` unit. Turn it off when another unit runs the same binary and
+        owns `org.freedesktop.secrets` (for example a desktop name holder): two `Type=dbus` units
+        cannot hold one bus name. The provider config and the key services still render.
+      '';
+    };
+
+    servicePath = lib.mkOption {
+      type = lib.types.str;
+      readOnly = true;
+      internal = true;
+      description = "`PATH` for a unit that runs the daemon outside this module.";
+    };
+
     package = lib.mkOption {
       type = lib.types.package;
       default = kdnConfig.inputs.rosec.packages.${pkgs.stdenv.hostPlatform.system}.rosec;
@@ -391,12 +409,15 @@ in
           message = "kdn.services.rosec.providers.sops.path must name the store root when `enable` is true";
         }
       ];
+      # Defined in every context: a NixOS host uses it to run the daemon from a unit it owns,
+      # and the Home Manager evaluation must see the same value.
+      kdn.services.rosec.servicePath = servicePath;
     }
 
     # The option tree exists in every context, but only a Home Manager evaluation can write a user
     # unit and a file under the home directory. A NixOS host forwards the values downward.
     #
-    # The two `readOnly` outputs (`package` and `conflictScript`) are not forwarded: each evaluation
+    # The `readOnly` outputs (`conflictScript` and `servicePath`) are not forwarded: each evaluation
     # derives its own from the same defaults, and a `mkDefault` on a `readOnly` option aborts with
     # "read-only, but set multiple times".
     (kdnConfig.util.ifHMParent (
@@ -407,6 +428,7 @@ in
               builtins.removeAttrs cfg [
                 "package"
                 "conflictScript"
+                "servicePath"
               ]
             );
           }
@@ -468,7 +490,7 @@ in
           };
         })
 
-        (lib.mkIf cfg.enable {
+        (lib.mkIf cfg.rosecd.enable {
           systemd.user.services.rosecd = {
             Unit = {
               Description = "rosec Secret Service daemon (sops file tree)";
@@ -500,6 +522,7 @@ in
             Install.WantedBy = [ "default.target" ];
           };
         })
+
 
         (lib.mkIf cfg.conflictNotification.enable {
           # The state directory exists before the first run, so the script writes one file and

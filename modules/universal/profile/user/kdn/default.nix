@@ -476,21 +476,23 @@ in
             (import ./mimeapps.nix { inherit config pkgs lib; }).config
           )
           (lib.mkIf config.kdn.desktop.sway.enable {
-            systemd.user.services.keepassxc.Unit = {
-              # Do NOT add `Wants=` for the secrets service here. KeePassXC is what claims
-              # `org.freedesktop.secrets`, and the service unit waits for that claim, so a `Wants`
-              # is a cycle: KeePassXC -> service -> (waits for) KeePassXC. The cycle used to be
-              # resolved by the service's start timeout, which then rolled back KeePassXC and
-              # `nextcloud-client` (`Requires` the service) and left the session without either
-              # (measured on oams, 2026-11-10). `Install.WantedBy` below is the other direction and
-              # is safe: it only makes an on-demand activation start KeePassXC when it is dead.
-              Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
-              After = [ config.kdn.desktop.sway.systemd.envs.target ];
-              PartOf = [ config.wayland.systemd.target ];
+            # The whole unit belongs to `service.enable`. Guarding only `WantedBy` leaves a unit
+            # with no `ExecStart`, and systemd refuses to load it (`Refusing to run a unit with no
+            # ExecStart`); masking it with an empty list is worse.
+            systemd.user.services.keepassxc = lib.mkIf config.kdn.programs.keepassxc.service.enable {
+              Unit = {
+                # Do NOT add `Wants=` for the secrets service here. KeePassXC is what claims
+                # `org.freedesktop.secrets`, and the service unit waits for that claim, so a `Wants`
+                # is a cycle: KeePassXC -> service -> (waits for) KeePassXC. The cycle used to be
+                # resolved by the service's start timeout, which then rolled back KeePassXC and
+                # `nextcloud-client` (`Requires` the service) and left the session without either
+                # (measured on oams, 2026-11-10). `Install.WantedBy` below is the other direction and
+                # is safe: it only makes an on-demand activation start KeePassXC when it is dead.
+                Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
+                After = [ config.kdn.desktop.sway.systemd.envs.target ];
+                PartOf = [ config.wayland.systemd.target ];
+              };
             };
-            systemd.user.services.keepassxc.Install.WantedBy = [
-              config.kdn.desktop.sway.systemd.secrets-service.service
-            ];
             systemd.user.services.nextcloud-client.Unit = {
               Requires = lib.mkForce [
                 config.kdn.desktop.sway.systemd.envs.target
