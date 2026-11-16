@@ -11,6 +11,9 @@ func newVersionCmd(app *App) *cobra.Command {
 		Use:   "version",
 		Short: "Print the version",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if app.JSONL {
+				return app.writeJSONL([]any{map[string]string{"version": app.Version}})
+			}
 			if app.JSON {
 				return app.writeJSON("version", map[string]string{"version": app.Version}, nil)
 			}

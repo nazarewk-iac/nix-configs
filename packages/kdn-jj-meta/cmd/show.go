@@ -57,6 +57,9 @@ func (a *App) show(rev string) error {
 	if data.Trailers == nil {
 		data.Trailers = []trailer.Trailer{}
 	}
+	if a.JSONL {
+		return a.writeJSONL([]any{data})
+	}
 	if a.JSON {
 		return a.writeJSON("show", data, nil)
 	}

@@ -39,7 +39,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.syncDetail()
 		return m, tea.Batch(cmds...)
 	case editorFinishedMsg:
-		return m.refresh(msg.err), nil
+		model, cmd := m.refresh(msg.err)
+		return model, cmd
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -97,8 +98,15 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "e":
 		return m.edit()
+	case "f":
+		return m, m.cycleFacet()
+	case "s":
+		return m, m.cycleSort()
+	case "c":
+		return m, m.clearFilters()
 	case "r":
-		return m.refresh(nil), nil
+		model, cmd := m.refresh(nil)
+		return model, cmd
 	case "pgup", "ctrl+b", "pgdown", "ctrl+f", "ctrl+u", "ctrl+d":
 		// Page keys always scroll the detail pane in split view.
 		return m, m.updateDetail(msg)
@@ -150,18 +158,18 @@ func (m Model) edit() (tea.Model, tea.Cmd) {
 }
 
 // refresh reloads the tree and the store from disk and reports the result.
-func (m *Model) refresh(editorErr error) Model {
+func (m *Model) refresh(editorErr error) (Model, tea.Cmd) {
 	if m.deps.Reload == nil {
 		m.status = "reload is unavailable"
-		return *m
+		return *m, nil
 	}
 	tree, store, err := m.deps.Reload()
 	if err != nil {
 		m.status = "reload failed: " + err.Error()
-		return *m
+		return *m, nil
 	}
-	m.setTree(tree)
-	m.setStore(store)
+	treeCmd := m.setTree(tree)
+	storeCmd := m.setStore(store)
 	m.syncLayout()
 	m.syncDetail()
 	status := fmt.Sprintf("reloaded: %d items", len(m.tasks.Items())+len(m.sessions.Items()))
@@ -169,7 +177,7 @@ func (m *Model) refresh(editorErr error) Model {
 		status = "editor: " + editorErr.Error() + " · " + status
 	}
 	m.status = status
-	return *m
+	return *m, tea.Batch(treeCmd, storeCmd)
 }
 
 func fileExists(path string) bool {

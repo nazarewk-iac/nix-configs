@@ -87,7 +87,7 @@ kdn-jj-meta version
 kdn-jj-meta completion <shell>
 ```
 
-Global flags: `--json`, `--dir <path>`.
+Global flags: `--json`, `--jsonl`, `--dir <path>`.
 
 `attribute` defaults to `@`. It refuses a change outside `mutable()` unless `--allow-immutable` is
 explicit, and jj itself still refuses to rewrite an immutable change. `--dry-run` prints the plan
@@ -97,7 +97,10 @@ description is skipped unless `--allow-empty` is given: an empty `@` is not a co
 `show` prints the body, the parsed trailers and the mutability of one change. `list` prints the
 trailer state of every change a revset matches; `--missing` keeps only the changes without
 `Assisted-by` or `Generated-by`. `check` exits 1 when a change is missing `Assisted-by`;
-`--require coauthor` also requires `Co-authored-by`. A change with an empty description is skipped,
+`--require coauthor` also requires `Co-authored-by`.
+
+`--jsonl` prints one JSON object per line with no envelope: one change for `attribute`, `show`,
+`list` and `check`, and one object for `skill` and `version`. It is the form to pipe into `jq`. A change with an empty description is skipped,
 so a gate over `mutable()` or `main..@` passes while `@` is still empty.
 
 Use `--revset 'main..@'` for a branch gate. `check` does not filter immutable changes: the revset

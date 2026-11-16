@@ -331,3 +331,89 @@ func TestViewContainsHelpAndTabs(t *testing.T) {
 		}
 	}
 }
+
+func TestStatusFilterCycle(t *testing.T) {
+	m := NewModel(fixture())
+	if len(m.tasks.Items()) != 2 {
+		t.Fatalf("items = %d, want 2", len(m.tasks.Items()))
+	}
+	m = send(m, "f")
+	if m.statusFilter != "open" {
+		t.Fatalf("statusFilter = %q, want open", m.statusFilter)
+	}
+	if len(m.tasks.Items()) != 1 {
+		t.Fatalf("open filter kept %d items, want 1", len(m.tasks.Items()))
+	}
+	if got := m.tasks.Items()[0].(taskItem).task.Slug; got != "beta" {
+		t.Errorf("open filter selected %q, want beta", got)
+	}
+	m = send(m, "f")
+	if m.statusFilter != "in-progress" || len(m.tasks.Items()) != 1 {
+		t.Fatalf("in-progress filter: %q, %d items", m.statusFilter, len(m.tasks.Items()))
+	}
+	if got := m.tasks.Items()[0].(taskItem).task.Slug; got != "alpha" {
+		t.Errorf("in-progress filter selected %q, want alpha", got)
+	}
+	m = send(m, "c")
+	if m.statusFilter != "" || len(m.tasks.Items()) != 2 {
+		t.Errorf("clear left %q, %d items", m.statusFilter, len(m.tasks.Items()))
+	}
+}
+
+func TestSessionHarnessFilter(t *testing.T) {
+	m := NewModel(fixture())
+	m = send(m, "tab")
+	m = send(m, "f")
+	if m.harnessFilter != "opencode" {
+		t.Fatalf("harnessFilter = %q, want opencode", m.harnessFilter)
+	}
+	if len(m.sessions.Items()) != 1 {
+		t.Fatalf("filtered sessions = %d, want 1", len(m.sessions.Items()))
+	}
+	m = send(m, "f")
+	if m.harnessFilter != "" || len(m.sessions.Items()) != 1 {
+		t.Errorf("second cycle = %q, %d items", m.harnessFilter, len(m.sessions.Items()))
+	}
+}
+
+func TestSortTasks(t *testing.T) {
+	now := time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	tasks := []*task.Task{
+		{Slug: "b", Title: "Bravo", Status: "done", LastActivity: now},
+		{Slug: "a", Title: "Alpha", Status: "blocked", LastActivity: now.Add(-time.Hour)},
+	}
+	sortTasks(tasks, taskSortTitle)
+	if tasks[0].Slug != "a" || tasks[1].Slug != "b" {
+		t.Errorf("title sort = %s, %s", tasks[0].Slug, tasks[1].Slug)
+	}
+	sortTasks(tasks, taskSortStatus)
+	if tasks[0].Slug != "a" {
+		t.Errorf("status sort first = %s, want blocked task", tasks[0].Slug)
+	}
+	sortTasks(tasks, taskSortActivity)
+	if tasks[0].Slug != "b" {
+		t.Errorf("activity sort first = %s, want newest task", tasks[0].Slug)
+	}
+}
+
+func TestStatusLabel(t *testing.T) {
+	cases := map[string]string{
+		"open":          "○ open",
+		"in-progress":   "◐ in-progress",
+		"blocked":       "✖ blocked",
+		"done":          "✔ done",
+		"not-scheduled": "· not-scheduled",
+	}
+	for status, want := range cases {
+		label, style := statusLabel(status)
+		if label != want {
+			t.Errorf("statusLabel(%q) = %q, want %q", status, label, want)
+		}
+		if style.GetForeground() == nil {
+			t.Errorf("statusLabel(%q) has no foreground color", status)
+		}
+	}
+	if label, _ := statusLabel("mystery"); label != "? mystery" {
+		t.Errorf("unknown status label = %q", label)
+	}
+}

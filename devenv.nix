@@ -169,6 +169,9 @@ in
       # Attribute a jj change to the agent session that produced it. The binary writes the
       # Assisted-by/Generated-by/Session-Id/Harness/Model trailers. See docs/kdn-jj-meta.md.
       inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-jj-meta
+      # Index and browse OKF v0.2 bundles: list, search, outline/section/context, links, doctor
+      # and the TUI. See docs/kdn-okf.md.
+      inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.kdn-okf
       # Pi, wired from repo files so its config is versioned instead of living in ~/.pi:
       #   data/pi/models.json     the fleet models + context tiers (no secret; the key is a
       #                           runtime `!cat /run/configs/...` reference)

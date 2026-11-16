@@ -63,6 +63,9 @@ func setTaskStatus(app *App, selector, status string) error {
 	if err := atomicWrite(item.DefinitionPath, data, info.Mode()); err != nil {
 		return err
 	}
+	if app.JSONL {
+		return app.writeJSONL([]any{map[string]any{"task": item.RelDir, "status": status}})
+	}
 	if app.JSON {
 		return app.writeJSON("task set-status", map[string]any{"task": item.RelDir, "status": status}, nil)
 	}

@@ -54,6 +54,13 @@ func newTasksCmd(app *App) *cobra.Command {
 				}
 			}
 			tasks = orderTasks(tasks, tree)
+			if app.JSONL {
+				items := make([]any, 0, len(tasks))
+				for _, item := range tasks {
+					items = append(items, item)
+				}
+				return app.writeJSONL(items)
+			}
 			if app.JSON {
 				return app.writeJSON("tasks", map[string]any{"tasks": tasks}, nil)
 			}
@@ -86,6 +93,9 @@ func newTaskCmd(app *App) *cobra.Command {
 			if printPath {
 				_, err := fmt.Fprintln(app.Out, item.DefinitionPath)
 				return err
+			}
+			if app.JSONL {
+				return app.writeJSONL([]any{item})
 			}
 			if app.JSON {
 				return app.writeJSON("task", map[string]any{"task": item}, item.Issues)

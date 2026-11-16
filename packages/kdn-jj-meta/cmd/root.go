@@ -17,6 +17,7 @@ import (
 // App is the shared state of one CLI run.
 type App struct {
 	JSON    bool
+	JSONL   bool
 	Dir     string
 	Version string
 	Out     io.Writer
@@ -86,9 +87,11 @@ func NewRootWithApp(app *App) *cobra.Command {
 		SilenceErrors: true,
 	}
 	jsonFlag := app.JSON
+	jsonlFlag := app.JSONL
 	dirFlag := app.Dir
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		app.JSON = jsonFlag
+		app.JSONL = jsonlFlag
 		app.Dir = dirFlag
 		if cmd.Name() == "version" || cmd.Name() == "completion" || cmd.Name() == "help" {
 			return nil
@@ -100,6 +103,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 	}
 	flags := root.PersistentFlags()
 	flags.BoolVar(&jsonFlag, "json", jsonFlag, "print machine-readable JSON")
+	flags.BoolVar(&jsonlFlag, "jsonl", jsonlFlag, "print one JSON object per line")
 	flags.StringVar(&dirFlag, "dir", dirFlag, "run jj in this directory")
 	root.AddCommand(
 		newAttributeCmd(app),
@@ -136,6 +140,16 @@ func (a *App) writeJSON(command string, data any, issues []Issue) error {
 		Data:          data,
 		Issues:        issues,
 	})
+}
+
+func (a *App) writeJSONL(items []any) error {
+	enc := json.NewEncoder(a.Out)
+	for _, item := range items {
+		if err := enc.Encode(item); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *App) warnf(format string, args ...any) {

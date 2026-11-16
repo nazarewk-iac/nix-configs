@@ -36,6 +36,13 @@ func newAtuinListCmd(app *App) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if app.JSONL {
+				items := make([]any, 0, len(threads))
+				for _, thread := range threads {
+					items = append(items, thread)
+				}
+				return app.writeJSONL(items)
+			}
 			if app.JSON {
 				return app.writeJSON("atuin list", map[string]any{"threads": threads}, nil)
 			}
@@ -58,6 +65,9 @@ func newAtuinShowCmd(app *App) *cobra.Command {
 			thread, err := app.Atuin.Show(context.Background(), strings.TrimSpace(args[0]))
 			if err != nil {
 				return err
+			}
+			if app.JSONL {
+				return app.writeJSONL([]any{thread})
 			}
 			if app.JSON {
 				return app.writeJSON("atuin show", map[string]any{"thread": thread}, nil)
@@ -105,6 +115,13 @@ func newAtuinSearchCmd(app *App) *cobra.Command {
 			threads, err := app.Atuin.Search(context.Background(), query, harness, limit)
 			if err != nil {
 				return err
+			}
+			if app.JSONL {
+				items := make([]any, 0, len(threads))
+				for _, thread := range threads {
+					items = append(items, thread)
+				}
+				return app.writeJSONL(items)
 			}
 			if app.JSON {
 				return app.writeJSON("atuin search", map[string]any{"query": query, "threads": threads}, nil)

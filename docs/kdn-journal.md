@@ -63,12 +63,13 @@ kdn-journal completion <shell>
 kdn-journal version
 ```
 
-Global flags: `--root <path>`, `--json`, `--no-color`, `--width <n>`.
+Global flags: `--root <path>`, `--json`, `--jsonl`, `--no-color`, `--width <n>`.
 
 `--root` defaults to a walk up from the current directory until it finds `docs/tasks`, or
 `flake.nix` with `.jj` or `.git`. There is no `KDN_ROOT` environment variable.
 
-Text is the default output. `--json` selects the envelope in [JSON envelope](#json-envelope). Text
+Text is the default output. `--json` selects the envelope in [JSON envelope](#json-envelope);
+`--jsonl` prints one JSON object per line with no envelope, for `jq`, `fzf` and `xargs`. Text
 lines truncate to the width (100 by default, set by `--width`) with a tail ellipsis.
 Color is used only on a TTY, without `--no-color`, and with `NO_COLOR` unset.
 

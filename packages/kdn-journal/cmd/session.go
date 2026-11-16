@@ -86,6 +86,13 @@ func newSessionInitCmd(app *App, opts *sessionOptions) *cobra.Command {
 			if err := sidecar.Save(path); err != nil {
 				return err
 			}
+			if app.JSONL {
+				return app.writeJSONL([]any{map[string]any{
+					"session": sidecar,
+					"dir":     filepath.Dir(path),
+					"sidecar": path,
+				}})
+			}
 			if app.JSON {
 				return app.writeJSON("session init", map[string]any{
 					"session": sidecar,
@@ -158,6 +165,15 @@ func newSessionRecordChangeCmd(app *App, opts *sessionOptions) *cobra.Command {
 					attributed = true
 				}
 			}
+			if app.JSONL {
+				return app.writeJSONL([]any{map[string]any{
+					"session":    sidecar,
+					"sidecar":    path,
+					"change_id":  resolved,
+					"recorded":   recorded,
+					"attributed": attributed,
+				}})
+			}
 			if app.JSON {
 				return app.writeJSON("session record-change", map[string]any{
 					"session":    sidecar,
@@ -202,6 +218,14 @@ func newSessionRecordCommitCmd(app *App, opts *sessionOptions) *cobra.Command {
 			recorded := sidecar.AddCommit(commitID)
 			if err := sidecar.Save(path); err != nil {
 				return err
+			}
+			if app.JSONL {
+				return app.writeJSONL([]any{map[string]any{
+					"session":   sidecar,
+					"sidecar":   path,
+					"commit_id": commitID,
+					"recorded":  recorded,
+				}})
 			}
 			if app.JSON {
 				return app.writeJSON("session record-commit", map[string]any{
@@ -358,6 +382,13 @@ func (a *App) sessionChanges(id sessionid.Identity) error {
 		changes = append(changes, change)
 	}
 	if a.JSON {
+		if a.JSONL {
+			items := make([]any, 0, len(changes))
+			for _, change := range changes {
+				items = append(items, change)
+			}
+			return a.writeJSONL(items)
+		}
 		return a.writeJSON("session changes", map[string]any{"session": sidecar, "changes": changes}, issues)
 	}
 	fmt.Fprintf(a.Out, "session %s (%s)\n", sidecar.SessionID, sidecar.Harness)
@@ -432,6 +463,9 @@ func (a *App) sessionAtuin(id sessionid.Identity) error {
 }
 
 func (a *App) finishAtuin(sidecar *sessionid.Sidecar, issues []task.Issue, how string) error {
+	if a.JSONL {
+		return a.writeJSONL([]any{map[string]any{"session": sidecar, "match": how}})
+	}
 	if a.JSON {
 		return a.writeJSON("session atuin", map[string]any{
 			"session": sidecar,

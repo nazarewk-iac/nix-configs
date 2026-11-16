@@ -44,6 +44,9 @@ func newWorklogCmd(app *App) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if app.JSONL {
+				return app.writeJSONL([]any{wl})
+			}
 			if app.JSON {
 				return app.writeJSON("worklog", map[string]any{"worklog": wl}, nil)
 			}

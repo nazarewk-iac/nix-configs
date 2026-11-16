@@ -10,6 +10,7 @@
 let
   kdn-journal = pkgs.callPackage ../../../packages/kdn-journal { };
   kdn-jj-meta = pkgs.callPackage ../../../packages/kdn-jj-meta { };
+  kdn-okf = pkgs.callPackage ../../../packages/kdn-okf { };
 in
 {
   kdn.program-kdn-tools.homeManager =
@@ -18,6 +19,7 @@ in
       home.packages = [
         kdn-journal
         kdn-jj-meta
+        kdn-okf
       ];
 
       home.file = lib.listToAttrs (
@@ -30,6 +32,10 @@ in
             {
               name = "${root}/kdn-jj-meta/SKILL.md";
               value.source = "${kdn-jj-meta}/share/kdn-jj-meta/skill/SKILL.md";
+            }
+            {
+              name = "${root}/kdn-okf/SKILL.md";
+              value.source = "${kdn-okf}/share/kdn-okf/skill/SKILL.md";
             }
           ])
           [

@@ -114,7 +114,15 @@ func (a *App) check(revset string, require []string) error {
 		}
 		fmt.Fprintf(a.Out, "%s  %s\n", shortID(entry.ChangeID), strings.Join(entry.Errors, ", "))
 	}
-	if a.JSON {
+	if a.JSONL {
+		items := make([]any, 0, len(data.Changes))
+		for _, entry := range data.Changes {
+			items = append(items, entry)
+		}
+		if err := a.writeJSONL(items); err != nil {
+			return err
+		}
+	} else if a.JSON {
 		if err := a.writeJSON("check", data, issues); err != nil {
 			return err
 		}

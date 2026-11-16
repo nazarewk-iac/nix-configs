@@ -38,6 +38,13 @@ func newSummaryCmd(app *App) *cobra.Command {
 				if !full && limit > 0 && len(sessions) > limit {
 					sessions = sessions[:limit]
 				}
+				if app.JSONL {
+					items := make([]any, 0, len(sessions))
+					for _, session := range sessions {
+						items = append(items, session)
+					}
+					return app.writeJSONL(items)
+				}
 				if app.JSON {
 					return app.writeJSON("summary", map[string]any{"sessions": sessions}, nil)
 				}
@@ -60,6 +67,13 @@ func newSummaryCmd(app *App) *cobra.Command {
 				if err != nil {
 					return err
 				}
+			}
+			if app.JSONL {
+				data := map[string]any{"session": session}
+				if taskItem != nil {
+					data["task"] = taskItem
+				}
+				return app.writeJSONL([]any{data})
 			}
 			if app.JSON {
 				data := map[string]any{"session": session}

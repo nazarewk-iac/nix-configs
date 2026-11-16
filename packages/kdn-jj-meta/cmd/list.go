@@ -55,6 +55,7 @@ func (a *App) list(revset string, missingOnly bool) error {
 			ChangeID:    change.ChangeID,
 			CommitID:    change.CommitID,
 			Mutable:     !change.Immutable,
+			Missing:     []string{},
 			AssistedBy:  nonNil(doc.Values("Assisted-by")),
 			GeneratedBy: nonNil(doc.Values("Generated-by")),
 			SessionIDs:  nonNil(doc.Values("Session-Id")),
@@ -68,6 +69,13 @@ func (a *App) list(revset string, missingOnly bool) error {
 			continue
 		}
 		entries = append(entries, entry)
+	}
+	if a.JSONL {
+		items := make([]any, 0, len(entries))
+		for _, entry := range entries {
+			items = append(items, entry)
+		}
+		return a.writeJSONL(items)
 	}
 	if a.JSON {
 		return a.writeJSON("list", map[string]any{"revset": revset, "changes": entries}, nil)

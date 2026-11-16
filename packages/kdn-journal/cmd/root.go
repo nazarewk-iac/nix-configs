@@ -26,6 +26,7 @@ import (
 type App struct {
 	Root    string
 	JSON    bool
+	JSONL   bool
 	NoColor bool
 	Width   int
 	Version string
@@ -105,11 +106,13 @@ func NewRootWithApp(app *App) *cobra.Command {
 	}
 	rootFlag := app.Root
 	jsonFlag := app.JSON
+	jsonlFlag := app.JSONL
 	noColorFlag := app.NoColor
 	widthFlag := app.Width
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		app.Root = rootFlag
 		app.JSON = jsonFlag
+		app.JSONL = jsonlFlag
 		app.NoColor = noColorFlag
 		app.Width = widthFlag
 		if cmd.Name() == "version" || cmd.Name() == "skill" || strings.HasPrefix(cmd.CommandPath(), "kdn-journal completion") {
@@ -120,6 +123,7 @@ func NewRootWithApp(app *App) *cobra.Command {
 	flags := root.PersistentFlags()
 	flags.StringVar(&rootFlag, "root", rootFlag, "repository root (default: walk up from the current directory)")
 	flags.BoolVar(&jsonFlag, "json", jsonFlag, "print machine-readable JSON")
+	flags.BoolVar(&jsonlFlag, "jsonl", jsonlFlag, "print one JSON object per line")
 	flags.BoolVar(&noColorFlag, "no-color", noColorFlag, "disable color")
 	flags.IntVar(&widthFlag, "width", widthFlag, "output width in columns")
 	root.AddCommand(
@@ -210,6 +214,16 @@ type envelope struct {
 	GeneratedAt   string       `json:"generated_at"`
 	Data          any          `json:"data"`
 	Issues        []task.Issue `json:"issues"`
+}
+
+func (a *App) writeJSONL(items []any) error {
+	enc := json.NewEncoder(a.Out)
+	for _, item := range items {
+		if err := enc.Encode(item); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *App) writeJSON(command string, data any, issues []task.Issue) error {

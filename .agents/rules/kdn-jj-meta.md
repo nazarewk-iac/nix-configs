@@ -40,6 +40,7 @@ kdn-jj-meta attribute <change-id>
   created.
 - `kdn-jj-meta check --revset 'main..@'` is the gate before a push. jj has no commit-msg hook, so the
   gate is a command, not a hook.
+- `--jsonl` prints one object per line for `jq`; `--json` keeps the envelope with `issues`.
 
 `kdn-journal` calls the same binary when it records a change. Do not duplicate the trailer policy
 in another tool or in a hand-written commit message.

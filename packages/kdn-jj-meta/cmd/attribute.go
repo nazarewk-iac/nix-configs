@@ -182,6 +182,19 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 		}
 		a.printAttribution(result, opts.dryRun)
 	}
+	if a.JSONL {
+		items := make([]any, 0, len(data.Changes))
+		for _, change := range data.Changes {
+			items = append(items, change)
+		}
+		if err := a.writeJSONL(items); err != nil {
+			return err
+		}
+		if len(issues) > 0 {
+			return &ExitError{Code: 1}
+		}
+		return nil
+	}
 	if a.JSON {
 		if len(issues) > 0 {
 			_ = a.writeJSON("attribute", data, issues)

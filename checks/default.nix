@@ -118,6 +118,29 @@ denTests.checks
   # runner behind a fake. The two real-jj cases skip in the sandbox.
   kdn-jj-meta-test = pkgs.kdn.kdn-jj-meta.passthru.tests.go-test;
 
+  # The `kdn-okf` Go suite: frontmatter, the Markdown scanner, trust/staleness, the link graph,
+  # the cache and the search scopes. Every case uses a temporary bundle.
+  kdn-okf-test = pkgs.kdn.kdn-okf.passthru.tests.go-test;
+
+  # The parse gate over a fixture bundle. A broken link is a warning, so the gate must pass.
+  kdn-okf-parse =
+    let
+      src = pkgs.lib.fileset.toSource {
+        root = ./kdn-okf;
+        fileset = pkgs.lib.fileset.fileFilter (file: file.hasExt "md") ./kdn-okf/bundle;
+      };
+    in
+    pkgs.runCommand "check-kdn-okf-parse"
+      {
+        nativeBuildInputs = [ pkgs.kdn.kdn-okf ];
+      }
+      ''
+        cp -r ${src}/bundle "$TMPDIR/bundle"
+        chmod -R u+w "$TMPDIR/bundle"
+        kdn-okf --bundle "$TMPDIR/bundle" doctor --parse-only
+        touch "$out"
+      '';
+
   # The `kdn-jj-meta` binary against a temporary jj repository. It proves what the Go suite fakes: the
   # `json(self)` read, the `mutable()` gate, `describe --stdin` and idempotency. No network, no
   # user configuration, no remote.

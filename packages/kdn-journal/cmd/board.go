@@ -43,6 +43,9 @@ func newBoardCmd(app *App) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if app.JSONL {
+				return app.writeJSONL([]any{b})
+			}
 			if app.JSON {
 				return app.writeJSON("board", map[string]any{"board": b}, nil)
 			}

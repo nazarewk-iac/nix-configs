@@ -153,6 +153,22 @@ func (a *App) sessionBackfill(bf backfillOptions, opts sessionOptions) error {
 		entry.Attributed = true
 		data.Attributed = append(data.Attributed, entry)
 	}
+	if a.JSONL {
+		var items []any
+		for _, entry := range data.Attributed {
+			items = append(items, jsonlBackfill("attributed", entry))
+		}
+		for _, entry := range data.Unchanged {
+			items = append(items, jsonlBackfill("unchanged", entry))
+		}
+		for _, entry := range data.Skipped {
+			items = append(items, jsonlBackfill("skipped", entry))
+		}
+		for _, entry := range data.Failed {
+			items = append(items, jsonlBackfill("failed", entry))
+		}
+		return a.writeJSONL(items)
+	}
 	if a.JSON {
 		return a.writeJSON("session backfill", data, issues)
 	}
@@ -197,6 +213,15 @@ func (a *App) matchSidecar(entries []sessionid.Entry, threads []atuin.Thread, ch
 		return true
 	}
 	return false
+}
+
+type jsonlBackfillEntry struct {
+	State string `json:"state"`
+	backfillEntry
+}
+
+func jsonlBackfill(state string, entry backfillEntry) jsonlBackfillEntry {
+	return jsonlBackfillEntry{State: state, backfillEntry: entry}
 }
 
 func printBackfillEntries(a *App, title string, entries []backfillEntry) {

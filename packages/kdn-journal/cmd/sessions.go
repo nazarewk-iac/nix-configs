@@ -34,6 +34,13 @@ func newSessionsCmd(app *App) *cobra.Command {
 				}
 				sessions = filtered
 			}
+			if app.JSONL {
+				items := make([]any, 0, len(sessions))
+				for _, session := range sessions {
+					items = append(items, session)
+				}
+				return app.writeJSONL(items)
+			}
 			if app.JSON {
 				return app.writeJSON("sessions", map[string]any{"sessions": sessions}, nil)
 			}

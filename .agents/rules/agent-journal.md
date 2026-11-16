@@ -192,6 +192,7 @@ change also gets its `Assisted-by` trailers. See [kdn-jj-meta.md](kdn-jj-meta.md
 Atuin Thread when the harness is captured; it is optional. `session backfill` attributes an existing
 history from the sidecars and the Atuin intervals; run it once per repository, not per session.
 
-Agents should use the JSON path and never call `tui`. The machine-readable contract, the JSON field
-table and the one safe write are in [kdn-journal.md](kdn-journal.md). The human command reference is
+Agents should use the JSON or JSONL path and never call `tui`. `--json` is the envelope with
+`issues`; `--jsonl` is one object per line for `jq` and `fzf`. The machine-readable contract, the
+JSON field table and the one safe write are in [kdn-journal.md](kdn-journal.md). The human command reference is
 [docs/kdn-journal.md](../../docs/kdn-journal.md).

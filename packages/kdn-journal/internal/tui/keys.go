@@ -13,6 +13,9 @@ type keyMap struct {
 	Back     key.Binding
 	Tab      key.Binding
 	Filter   key.Binding
+	Facet    key.Binding
+	Sort     key.Binding
+	Clear    key.Binding
 	Edit     key.Binding
 	Reload   key.Binding
 	PageUp   key.Binding
@@ -30,6 +33,9 @@ func defaultKeyMap() keyMap {
 		Back:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back")),
 		Tab:      key.NewBinding(key.WithKeys("tab", "shift+tab"), key.WithHelp("tab", "switch")),
 		Filter:   key.NewBinding(key.WithKeys("/"), key.WithHelp("/", "filter")),
+		Facet:    key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "facet")),
+		Sort:     key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
+		Clear:    key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "clear")),
 		Edit:     key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit")),
 		Reload:   key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload")),
 		PageUp:   key.NewBinding(key.WithKeys("pgup", "ctrl+b"), key.WithHelp("pgup", "page up")),
@@ -40,7 +46,7 @@ func defaultKeyMap() keyMap {
 
 // ShortHelp implements help.KeyMap.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Down, k.Open, k.Tab, k.Filter, k.Edit, k.Reload, k.Quit}
+	return []key.Binding{k.Down, k.Open, k.Tab, k.Filter, k.Facet, k.Sort, k.Edit, k.Quit}
 }
 
 // FullHelp implements help.KeyMap.
@@ -48,7 +54,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Top, k.Bottom},
 		{k.Open, k.Back, k.Tab, k.Filter},
-		{k.PageUp, k.PageDown, k.Edit, k.Reload},
-		{k.Quit},
+		{k.Facet, k.Sort, k.Clear, k.Edit},
+		{k.PageUp, k.PageDown, k.Reload, k.Quit},
 	}
 }

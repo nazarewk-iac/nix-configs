@@ -23,6 +23,7 @@ func (m Model) View() string {
 	}
 	lines := make([]string, 0, m.height)
 	lines = append(lines, m.headerLine())
+	lines = append(lines, fit(m.facetLine(), m.width))
 	lines = append(lines, m.bodyLines()...)
 	if m.status != "" {
 		lines = append(lines, fit(styleStatus.Render(m.status), m.width))
@@ -50,6 +51,18 @@ func (m Model) headerLine() string {
 		return fit(trunc("kdn-journal  Tasks | Sessions", m.width), m.width)
 	}
 	return fit(left+strings.Repeat(" ", gap)+tabs, m.width)
+}
+
+// facetLine shows the active facet filter and sort mode, and the keys that change them.
+func (m Model) facetLine() string {
+	parts := []string{}
+	if m.tab == TabSessions {
+		parts = append(parts, "harness="+orDefault(m.harnessFilter, "all"))
+	} else {
+		parts = append(parts, "status="+orDefault(m.statusFilter, "all"))
+	}
+	parts = append(parts, "sort="+m.sortLabel())
+	return styleDim.Render("filters: " + strings.Join(parts, " · ") + "   f facet · s sort · c clear")
 }
 
 func (m Model) tabBar() string {

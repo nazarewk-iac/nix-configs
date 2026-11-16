@@ -47,7 +47,15 @@ func newDoctorCmd(app *App) *cobra.Command {
 					warnings++
 				}
 			}
-			if app.JSON {
+			if app.JSONL {
+				items := make([]any, 0, len(issues))
+				for _, issue := range issues {
+					items = append(items, issue)
+				}
+				if err := app.writeJSONL(items); err != nil {
+					return err
+				}
+			} else if app.JSON {
 				if err := app.writeJSON("doctor", map[string]any{"errors": errors, "warnings": warnings}, issues); err != nil {
 					return err
 				}

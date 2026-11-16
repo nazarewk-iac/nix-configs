@@ -23,6 +23,9 @@ func newSkillCmd(app *App) *cobra.Command {
 				return fmt.Errorf("this build carries no skill")
 			}
 			if dir == "" {
+				if app.JSONL {
+					return app.writeJSONL([]any{map[string]any{"id": skillID, "markdown": app.Skill}})
+				}
 				if app.JSON {
 					return app.writeJSON("skill", map[string]any{"id": skillID, "markdown": app.Skill}, nil)
 				}
@@ -35,6 +38,9 @@ func newSkillCmd(app *App) *cobra.Command {
 			}
 			if err := os.WriteFile(path, []byte(app.Skill), 0o644); err != nil {
 				return err
+			}
+			if app.JSONL {
+				return app.writeJSONL([]any{map[string]any{"id": skillID, "path": path}})
 			}
 			if app.JSON {
 				return app.writeJSON("skill", map[string]any{"id": skillID, "path": path}, nil)

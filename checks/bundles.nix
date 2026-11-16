@@ -113,6 +113,8 @@ in
     "kdn-journal-parse"
     "kdn-jj-meta-test"
     "kdn-jj-meta-attribute"
+    "kdn-okf-test"
+    "kdn-okf-parse"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
   ];
