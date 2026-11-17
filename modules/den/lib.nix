@@ -145,6 +145,7 @@ let
     outputs-host = ./aspects/outputs.nix;
     packaging-asdf = ./aspects/packaging.nix;
     profile-baseline = ./aspects/profile-baseline.nix;
+    profile-default-secrets = ./aspects/profile-default-secrets.nix;
     profile-baseline-flake-links = ./aspects/profile-baseline.nix;
     profile-baseline-gc = ./aspects/profile-baseline.nix;
     profile-basic = ./aspects/profile-basic.nix;
@@ -155,6 +156,7 @@ let
     profile-headless-vim = ./aspects/profile-headless.nix;
     profile-headless-wezterm = ./aspects/profile-headless.nix;
     profile-hetzner = ./aspects/profile-hetzner.nix;
+    profile-remote-builders = ./aspects/profile-remote-builders.nix;
     profile-workstation = ./aspects/profile-workstation.nix;
     program-atuin = ./aspects/program-atuin.nix;
     program-beeper = ./aspects/program-beeper.nix;
@@ -200,6 +202,7 @@ let
     rosetta-builder = ./aspects/rosetta-builder.nix;
     secrets = ./aspects/secrets.nix;
     security-disk-encryption = ./aspects/security-disk-encryption.nix;
+    security-dynamic-netrc = ./aspects/security-dynamic-netrc.nix;
     security-secrets-age = ./aspects/security-secrets-age.nix;
     security-secrets-sops = ./aspects/security-secrets-sops.nix;
     security-secure-boot = ./aspects/security-secure-boot.nix;
