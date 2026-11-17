@@ -374,7 +374,7 @@ in
       }) config.kdn.apps-persist.directories;
 
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
-        "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
+        "exec kdn-anonymize-clipboard";
 
       # The old `profile/user/kdn` turned both extra matrix clients on.
       kdn.programs.matrix.nheko.use = true;
