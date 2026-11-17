@@ -358,6 +358,14 @@ in
         llmHost.gpu
       ];
 
+      # The default sops file of this repository. The old `profile/default-secrets` module names it;
+      # a den aspect holds no flake, so the host does. Every sops secret below depends on it.
+      kdn.security.secrets.sops.defaultFile = "${inputs.self}/default.unattended.sops.yaml";
+
+      # Fish is the login shell of the primary user, as in the old tree.
+      kdn.programs.fish.defaultShell = true;
+      kdn.programs.fish.defaultShellUsers = [ "kdn" ];
+
       # --- identity ---------------------------------------------------------
       networking.hostName = "brys";
       networking.hostId = "0a989258";
