@@ -68,6 +68,56 @@ let
 
   rosecConfigFile = configFormat.generate "rosec-config.toml" rosecConfig;
 
+  # The daemon unit is emitted by the *host* evaluation: a NixOS host owns the user units it
+  # forwards, and a desktop name holder lives there too. Emitting it from Home Manager as well
+  # would shadow the holder in `~/.config/systemd/user` and lose its session ordering.
+  rosecdUnit = {
+    aliases = lib.optional (cfg.rosecd.unitName != "rosecd") "rosecd.service";
+    # A desktop name holder supplies its own description; keep this one a default.
+    description = lib.mkDefault "rosec Secret Service daemon (sops file tree)";
+    documentation = [ "https://github.com/jmylchreest/rosec" ];
+    partOf = [ "default.target" ];
+    # Do NOT order after `default.target` while also being `WantedBy` it: systemd reports
+    # "Transaction order is cyclic" when the target is restarted.
+    after = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
+    wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
+    wantedBy = [ "default.target" ];
+    serviceConfig = {
+      Type = "dbus";
+      BusName = "org.freedesktop.secrets";
+      # The module owns the process; a name holder only contributes the unit shell.
+      ExecStart = lib.mkForce "${lib.getExe' cfg.package "rosecd"}";
+      Environment = [
+        "PATH=${servicePath}"
+        "SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
+      ];
+      Restart = "on-failure";
+      RestartSec = 2;
+      TimeoutStartSec = lib.mkDefault "60s";
+    };
+  };
+
+  unlockUnit = {
+    description = "Unlock the rosec sops store after the Secret Service daemon starts";
+    requires = [ "${cfg.rosecd.unitName}.service" ];
+    after = [ "${cfg.rosecd.unitName}.service" ];
+    wantedBy = [ "default.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      TimeoutStartSec = "120s";
+      ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+        exec ${pkgs.expect}/bin/expect -c '
+          set timeout 90
+          spawn ${lib.getExe' cfg.package "rosec"} unlock
+          expect {
+            -re "Press Enter|No password needed" { send "\r"; exp_continue }
+            eof
+          }
+        '
+      ''}";
+    };
+  };
+
   # `sops` and the age plugin are resolved from `PATH`: `rosecd` runs `sops` as a subprocess,
   # and `sops` runs the age plugin. `key_file` is exported too, so a manual `sops` run in the
   # same session honours the same identity.
@@ -169,9 +219,31 @@ in
       default = config.kdn.services.rosec.enable;
       defaultText = lib.literalExpression "config.kdn.services.rosec.enable";
       description = ''
-        Install the `rosecd.service` unit. Turn it off when another unit runs the same binary and
-        owns `org.freedesktop.secrets` (for example a desktop name holder): two `Type=dbus` units
-        cannot hold one bus name. The provider config and the key services still render.
+        Install the daemon unit. Turn it off when another unit runs the same binary and owns
+        `org.freedesktop.secrets`: two `Type=dbus` units cannot hold one bus name. The provider
+        config and the key services still render.
+      '';
+    };
+
+    rosecd.unitName = lib.mkOption {
+      type = lib.types.str;
+      default = "rosecd";
+      description = ''
+        Name of the daemon unit. A desktop that already has a D-Bus name holder can point this at
+        it, and the module then supplies the process, environment and activation alias while the
+        holder keeps its `Type=dbus`/`BusName` and session ordering. The unit always answers to
+        `rosecd.service` as an alias.
+      '';
+    };
+
+    rosecd.unlock.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.kdn.services.rosec.rosecd.enable;
+      defaultText = lib.literalExpression "config.kdn.services.rosec.rosecd.enable";
+      description = ''
+        Install `rosec-unlock.service`, a oneshot that unlocks the store after the daemon starts.
+        A locked provider blocks the first Secret Service client, and rosec has no silent unlock
+        path; clients that start on their own should `Wants` this unit.
       '';
     };
 
@@ -420,6 +492,12 @@ in
     # The `readOnly` outputs (`conflictScript` and `servicePath`) are not forwarded: each evaluation
     # derives its own from the same defaults, and a `mkDefault` on a `readOnly` option aborts with
     # "read-only, but set multiple times".
+    (kdnConfig.util.ifTypes [ "nixos" ] (lib.mkIf cfg.rosecd.enable {
+      systemd.user.services."${cfg.rosecd.unitName}" = rosecdUnit;
+      systemd.user.units."rosecd.socket".enable = false;
+      systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable unlockUnit;
+    }))
+
     (kdnConfig.util.ifHMParent (
       lib.mkIf needsHomeManager {
         home-manager.sharedModules = [
@@ -499,40 +577,6 @@ in
             Install.WantedBy = [ "default.target" ];
           };
         })
-
-        (lib.mkIf cfg.rosecd.enable {
-          systemd.user.services.rosecd = {
-            Unit = {
-              Description = "rosec Secret Service daemon (sops file tree)";
-              Documentation = [ "https://github.com/jmylchreest/rosec" ];
-              # Headless: no `graphical-session.target`. The daemon serves CLI clients over SSH and
-              # in a TTY too, so it follows the user manager alone.
-              PartOf = [ "default.target" ];
-              After = [ "default.target" ] ++ lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
-              Wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
-            };
-
-            Service = {
-              # `dbus` so systemd publishes `BusName` and a client that asks for
-              # `org.freedesktop.secrets` activates the unit.
-              Type = "dbus";
-              BusName = "org.freedesktop.secrets";
-              ExecStart = "${lib.getExe' cfg.package "rosecd"}";
-              Environment = [
-                "PATH=${servicePath}"
-                "SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
-              ];
-              Restart = "on-failure";
-              RestartSec = 2;
-              # A cold start waits for the YubiKey. Keep the bound wide enough for a slow token and
-              # still bounded when the token is absent: the unit fails instead of hanging.
-              TimeoutStartSec = "60s";
-            };
-
-            Install.WantedBy = [ "default.target" ];
-          };
-        })
-
 
         (lib.mkIf cfg.conflictNotification.enable {
           # The state directory exists before the first run, so the script writes one file and
