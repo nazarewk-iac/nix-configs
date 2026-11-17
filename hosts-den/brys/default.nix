@@ -32,7 +32,9 @@ let
   llmHost = import ./llm.nix {
     inherit lib;
     pkgs = inputs.self.pkgs.x86_64-linux.default;
-    kdnConfig = { self = inputs.self; };
+    kdnConfig = {
+      self = inputs.self;
+    };
     profile = "desktop";
   };
 
@@ -362,7 +364,12 @@ in
   # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
   # forbids one aspect writing a sibling's option, so the user states it here.
   den.aspects.kdn.homeManager =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     {
       imports = [
         ../../data/desktop-sway-kanshi.nix
@@ -404,6 +411,91 @@ in
         "sn"
       ];
 
+      # The profile rows and the container set the old `profile/user/kdn` declared. A den aspect
+      # carries no personal browser data, so the host states it.
+      programs.firefox.profiles = {
+        kdn = {
+          id = 0;
+          name = "kdn";
+          path = "kdn";
+          containers = {
+            Facebook = {
+              color = "yellow";
+              icon = "fence";
+              id = 8;
+              name = "Facebook";
+            };
+            bn = {
+              color = "pink";
+              icon = "pet";
+              id = 6;
+              name = "bn";
+            };
+            en = {
+              color = "red";
+              icon = "pet";
+              id = 5;
+              name = "en";
+            };
+            personal = {
+              color = "blue";
+              icon = "fingerprint";
+              id = 1;
+              name = "personal";
+            };
+            personal-2 = {
+              color = "green";
+              icon = "fingerprint";
+              id = 2;
+              name = "personal-2";
+            };
+            sn = {
+              color = "purple";
+              icon = "pet";
+              id = 7;
+              name = "sn";
+            };
+            work = {
+              color = "turquoise";
+              icon = "briefcase";
+              id = 3;
+              name = "work";
+            };
+            work-2 = {
+              color = "purple";
+              icon = "briefcase";
+              id = 4;
+              name = "work-2";
+            };
+          };
+        };
+        jp = {
+          id = 1;
+          name = "jp";
+          path = "jp";
+        };
+        bn = {
+          id = 2;
+          name = "bn";
+          path = "bn";
+        };
+        sn = {
+          id = 3;
+          name = "sn";
+          path = "sn";
+        };
+        en = {
+          id = 4;
+          name = "en";
+          path = "en";
+        };
+        dn = {
+          id = 5;
+          name = "dn";
+          path = "dn";
+        };
+      };
+
       # The `user` aspect's Home Manager target selects a row from its own `kdn.users`; the NixOS
       # `user-profiles` row does not cross the scope. State the row here for the u2f file.
       kdn.users.kdn = {
@@ -415,31 +507,31 @@ in
       # Inline: the repository's `.gitignore` tracks `.nix` files only, so an extensionless
       # payload beside this file would not reach the flake source.
       xdg.configFile."gsimplecal/config".text = ''
-show_calendar = 1
-show_timezones = 1
-mark_today = 1
-show_week_numbers = 1
-close_on_unfocus = 1
-mainwindow_decorated = 0
-mainwindow_keep_above = 1
-mainwindow_sticky = 0
-mainwindow_skip_taskbar = 1
-mainwindow_resizable = 0
-mainwindow_position = mouse
+        show_calendar = 1
+        show_timezones = 1
+        mark_today = 1
+        show_week_numbers = 1
+        close_on_unfocus = 1
+        mainwindow_decorated = 0
+        mainwindow_keep_above = 1
+        mainwindow_sticky = 0
+        mainwindow_skip_taskbar = 1
+        mainwindow_resizable = 0
+        mainwindow_position = mouse
 
 
-clock_format = %a, %H:%M:%S
-clock_label = Local
-clock_tz =
-clock_label = UTC
-clock_tz = :UTC
-clock_label = BST
-clock_tz = :Europe/London
-clock_label = HKT
-clock_tz = :Asia/Hong_Kong
+        clock_format = %a, %H:%M:%S
+        clock_label = Local
+        clock_tz =
+        clock_label = UTC
+        clock_tz = :UTC
+        clock_label = BST
+        clock_tz = :Europe/London
+        clock_label = HKT
+        clock_tz = :Asia/Hong_Kong
       '';
-      xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink
-        "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";
+      xdg.configFile."klg/config.toml".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";
       xdg.userDirs.enable = true;
 
       # The `apps` aspect publishes the persistence lists and writes no sibling option; the user
@@ -449,17 +541,13 @@ clock_tz = :Asia/Hong_Kong
         files = config.kdn.apps-persist.files.${bucket} or [ ];
       }) config.kdn.apps-persist.directories;
 
-      kdn.desktop-sway.extraKeybindings."Control+Super+A" =
-        "exec kdn-anonymize-clipboard";
+      kdn.desktop-sway.extraKeybindings."Control+Super+A" = "exec kdn-anonymize-clipboard";
 
       # The old `programs/handlr` module wrote this binding from its `nixos` target. The den aspect
       # publishes the `xdg-open` replacement and drops the binding, so the user states it.
-      kdn.desktop-sway.extraKeybindings."Super+O" =
-        "exec ${
-          pkgs.writeScript "xdg-open-clipboard" ''
-            ${lib.getExe config.kdn.programs.handlr.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
-          ''
-        }";
+      kdn.desktop-sway.extraKeybindings."Super+O" = "exec ${pkgs.writeScript "xdg-open-clipboard" ''
+        ${lib.getExe config.kdn.programs.handlr.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
+      ''}";
 
       # The old `profile/user/kdn` turned both extra matrix clients on.
       kdn.programs.matrix.nheko.use = true;
@@ -778,10 +866,12 @@ clock_tz = :Asia/Hong_Kong
 
       # --- personal data the old loader imported ---------------------------
       # The wallpaper from `data/universal-deps/stylix.nix`, at the same `mkDefault` priority.
-      stylix.image = lib.mkDefault (pkgs.fetchurl {
-        url = "https://nc.nazarewk.pw/s/XSR3x6AkwZAiyBo/download/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg";
-        sha256 = "sha256-1d/kdFn8v0i1PTeOPytYNUB1TxsuBLNf4+nRgSOYQu4=";
-      });
+      stylix.image = lib.mkDefault (
+        pkgs.fetchurl {
+          url = "https://nc.nazarewk.pw/s/XSR3x6AkwZAiyBo/download/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg";
+          sha256 = "sha256-1d/kdFn8v0i1PTeOPytYNUB1TxsuBLNf4+nRgSOYQu4=";
+        }
+      );
 
       # --- nix itself -------------------------------------------------------
       # The old tree runs Lix, sets the store optimiser on a timer, and pins the flake registry.
@@ -832,8 +922,10 @@ clock_tz = :Asia/Hong_Kong
       );
 
       kdn.services.nextcloud-client.urlPath = config.sops.secrets."default/nextcloud/nixos/url".path;
-      kdn.services.nextcloud-client.usernamePath = config.sops.secrets."default/nextcloud/nixos/username".path;
-      kdn.services.nextcloud-client.passwordPath = config.sops.secrets."default/nextcloud/nixos/password".path;
+      kdn.services.nextcloud-client.usernamePath =
+        config.sops.secrets."default/nextcloud/nixos/username".path;
+      kdn.services.nextcloud-client.passwordPath =
+        config.sops.secrets."default/nextcloud/nixos/password".path;
       kdn.disks.persist."usr/reproducible".users.root.directories =
         config.kdn.services.nextcloud-client.persist.usrReproducibleRoot;
 
