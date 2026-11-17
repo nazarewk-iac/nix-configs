@@ -748,6 +748,7 @@ let
         "program-gnupg"
         "program-handlr"
         "program-kdeconnect"
+        "program-kdn-tools"
         "program-keepass"
         "program-keepassxc"
         "program-logseq"
