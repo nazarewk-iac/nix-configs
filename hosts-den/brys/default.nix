@@ -384,7 +384,7 @@ in
         httpie-desktop
         qpdf
         (pkgs.callPackage ../../packages/kdnctl { })
-        (pkgs.callPackage ../../packages/kagi-cli { })
+        (pkgs.callPackage ../../packages/kagi-cli/package.nix { })
         (pkgs.callPackage ../../packages/klg { })
         (pkgs.callPackage ../../packages/klog-time-tracker { })
         (pkgs.callPackage ../../packages/ss-util { })
