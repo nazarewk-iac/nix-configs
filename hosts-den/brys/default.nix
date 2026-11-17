@@ -376,6 +376,15 @@ in
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
         "exec kdn-anonymize-clipboard";
 
+      # The old `programs/handlr` module wrote this binding from its `nixos` target. The den aspect
+      # publishes the `xdg-open` replacement and drops the binding, so the user states it.
+      kdn.desktop-sway.extraKeybindings."Super+O" =
+        "exec ${
+          pkgs.writeScript "xdg-open-clipboard" ''
+            ${lib.getExe config.kdn.programs.handlr.xdg-utils.package} "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline)"
+          ''
+        }";
+
       # The old `profile/user/kdn` turned both extra matrix clients on.
       kdn.programs.matrix.nheko.use = true;
       kdn.programs.matrix.gomuks.use = true;
