@@ -753,6 +753,16 @@ clock_tz = :Asia/Hong_Kong
         inherit (config.kdn.nix.remote-builder) user;
       };
 
+      # --- personal data the old loader imported ---------------------------
+      # The checkout `nh` rebuilds from; the old `development-nix.nix` data file named it.
+      kdn.dev-nix.flake.path = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
+
+      # The wallpaper from `data/universal-deps/stylix.nix`, at the same `mkDefault` priority.
+      stylix.image = lib.mkDefault (pkgs.fetchurl {
+        url = "https://nc.nazarewk.pw/s/XSR3x6AkwZAiyBo/download/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg";
+        sha256 = "sha256-1d/kdFn8v0i1PTeOPytYNUB1TxsuBLNf4+nRgSOYQu4=";
+      });
+
       # --- nix itself -------------------------------------------------------
       # The old tree runs Lix, sets the store optimiser on a timer, and pins the flake registry.
       # `nix-config` ports the settings; these three are host decisions.
