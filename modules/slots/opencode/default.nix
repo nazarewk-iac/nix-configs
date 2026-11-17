@@ -368,14 +368,24 @@ in
         files.".opencode/plugins/kdn-opencode-stable-prompt.ts".text = stablePromptPlugin;
 
         # The ClankTalk shim is a plugin package directory. OpenCode 2.2.5 loads it only when its
-        # files are regular files, so copy them from the store on each shell entry.
-        enterShell = lib.optionalString cfg.clankTalk.enable ''
-          install -d .opencode/plugins/kdn-clank-talk
-          rm -f .opencode/plugins/kdn-clank-talk/index.js .opencode/plugins/kdn-clank-talk/tui.js .opencode/plugins/kdn-clank-talk/package.json
-          install -m 0644 ${clankTalkIndexFile} .opencode/plugins/kdn-clank-talk/index.js
-          install -m 0644 ${clankTalkTuiFile} .opencode/plugins/kdn-clank-talk/tui.js
-          install -m 0644 ${clankTalkPackageFile} .opencode/plugins/kdn-clank-talk/package.json
-        '';
+        # files are regular files, so copy them from the store on each shell entry. Compare first
+        # and replace atomically, so a live server never reads a half-written file.
+        enterShell =
+          lib.optionalString cfg.clankTalk.enable ''
+            install -d .opencode/plugins/kdn-clank-talk
+            for pair in "index.js:${clankTalkIndexFile}" "tui.js:${clankTalkTuiFile}" "package.json:${clankTalkPackageFile}"; do
+              name="''${pair%%:*}"
+              src="''${pair#*:}"
+              dest=".opencode/plugins/kdn-clank-talk/$name"
+              if ! cmp -s "$src" "$dest"; then
+                install -m 0644 "$src" "$dest.tmp"
+                mv "$dest.tmp" "$dest"
+              fi
+            done
+          ''
+          + lib.optionalString (!cfg.clankTalk.enable) ''
+            rm -rf .opencode/plugins/kdn-clank-talk
+          '';
       };
     }
   );

@@ -348,14 +348,24 @@
         files.".opencode/plugins/kdn-opencode-stable-prompt.ts".text = stablePromptPlugin;
 
         # The ClankTalk shim is a plugin package directory. OpenCode 2.2.5 loads it only when its
-        # files are regular files, so copy them from the store on each shell entry.
-        enterShell = lib.optionalString cfg.clankTalk.enable ''
-          install -d .opencode/plugins/kdn-clank-talk
-          rm -f .opencode/plugins/kdn-clank-talk/index.js .opencode/plugins/kdn-clank-talk/tui.js .opencode/plugins/kdn-clank-talk/package.json
-          install -m 0644 ${clankTalkIndexFile} .opencode/plugins/kdn-clank-talk/index.js
-          install -m 0644 ${clankTalkTuiFile} .opencode/plugins/kdn-clank-talk/tui.js
-          install -m 0644 ${clankTalkPackageFile} .opencode/plugins/kdn-clank-talk/package.json
-        '';
+        # files are regular files, so copy them from the store on each shell entry. Compare first
+        # and replace atomically, so a live server never reads a half-written file.
+        enterShell =
+          lib.optionalString cfg.clankTalk.enable ''
+            install -d .opencode/plugins/kdn-clank-talk
+            for pair in "index.js:${clankTalkIndexFile}" "tui.js:${clankTalkTuiFile}" "package.json:${clankTalkPackageFile}"; do
+              name="''${pair%%:*}"
+              src="''${pair#*:}"
+              dest=".opencode/plugins/kdn-clank-talk/$name"
+              if ! cmp -s "$src" "$dest"; then
+                install -m 0644 "$src" "$dest.tmp"
+                mv "$dest.tmp" "$dest"
+              fi
+            done
+          ''
+          + lib.optionalString (!cfg.clankTalk.enable) ''
+            rm -rf .opencode/plugins/kdn-clank-talk
+          '';
 
         # The aspect's own smoke test. It stays offline: the sandbox has no network and no real
         # `$HOME`, so nothing here starts opencode itself.
@@ -367,14 +377,15 @@
           echo "• opencode: the wrapper execs a store path" >&2
           grep -qE '^exec /nix/store/' "$(command -v opencode)"
 
-          if [ -e .opencode/plugins/kdn-clank-talk/index.js ]; then
+          ${lib.optionalString cfg.clankTalk.enable ''
             echo "• opencode: the ClankTalk shim is a regular file" >&2
+            test -f .opencode/plugins/kdn-clank-talk/index.js
             test ! -L .opencode/plugins/kdn-clank-talk/index.js
             test ! -L .opencode/plugins/kdn-clank-talk/tui.js
             test -f .opencode/plugins/kdn-clank-talk/package.json
             grep -q 'KDN_CLANK_TALK' .opencode/plugins/kdn-clank-talk/index.js
             grep -q 'KDN_CLANK_TALK' .opencode/plugins/kdn-clank-talk/tui.js
-          fi
+          ''}
         '';
       };
     };

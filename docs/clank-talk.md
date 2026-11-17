@@ -26,7 +26,7 @@ clank-pi              # Pi, guarded
 | Launcher         | What it sets                                                                                                                                    |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clank-opencode` | `KDN_CLANK_TALK=1`, `CLANK_TALK_ROOT` at the repository root, and `opencode --standalone` (a private server so the variable reaches the plugin) |
-| `clank-pi`       | Runs the repository Pi wrapper with `--no-extensions` and only the ClankTalk extension plus `model-discovery`                                   |
+| `clank-pi`       | Runs a second Pi wrapper built from the same configuration, with `--no-extensions` and only the ClankTalk extension plus `model-discovery`        |
 
 The OpenCode plugin is a shim package at `.opencode/plugins/kdn-clank-talk/`. Its `index.js` calls
 the upstream `setup` only when `KDN_CLANK_TALK=1`; its `tui.js` does the same. A normal session
@@ -34,10 +34,11 @@ loads the shim, and the shim does nothing. The shim is installed as **regular fi
 `enterShell`, not as Nix store symlinks: OpenCode 2.2.5 does not load a folder plugin whose files
 are symlinks.
 
-The Pi launcher uses `--no-extensions` and an explicit `-e` for ClankTalk. It also keeps
-`model-discovery`, which registers the live `litellm-dynamic` provider; it registers providers, not
-tools, so it does not weaken the guard. It drops `pi-orchestrator`, `pi-atelier`, `ask_user`,
-`session-digest`, `pi-hashline-edit` and the `btw` skill.
+The Pi launcher uses a second `mkCodingAgent` wrapper, not the normal `pi` wrapper. It passes
+`--no-extensions` and an explicit `-e` for ClankTalk. It also keeps `model-discovery`, which
+registers the live `litellm-dynamic` provider; it registers providers, not tools, so it does not
+weaken the guard. It drops `pi-orchestrator`, `pi-atelier`, `ask_user`, `session-digest`,
+`pi-hashline-edit` and the `btw` skill.
 
 ## The policy
 
@@ -75,7 +76,8 @@ fetch and question, with the script that did it. The runtime keeps three days by
 
 ## Requirements
 
-- **bubblewrap** must be on `PATH` for `in a sandbox`. The devshell installs it.
+- **bubblewrap** must be on `PATH` for `in a sandbox` on Linux. The devshell installs it on
+  Linux; macOS uses `sandbox-exec`.
 - The `clank-talk` package patches two NixOS assumptions in the upstream sandbox:
   - it adds `/nix/store` to the read-only system paths, so a Nix binary can find its interpreter
     and libraries;
@@ -113,7 +115,7 @@ fetch and question, with the script that did it. The runtime keeps three days by
 | `packages/clank-talk/default.nix`                    | The pinned package and the NixOS sandbox patches               |
 | `modules/den/aspects/opencode.nix`                   | The den aspect: shim generation and the `clankTalk` option     |
 | `modules/slots/opencode/default.nix`                 | The same option for slot consumers                             |
-| `devenv.nix`                                         | `clank-pi`, `clank-opencode`, `bubblewrap` and the package pin |
+| `devenv.nix`                                         | `clank-pi`, `clank-opencode`, `bubblewrap` (Linux) and the package pin |
 | `AGENTS.talk`                                        | The policy: tools and hooks                                    |
 | `.opencode/plugins/kdn-clank-talk/`                  | Generated shim (regular files, not tracked)                    |
 | `.talk/audit/`, `.talk/harness/`, `.talk/untrusted/` | Audit, session state and tainted inputs                        |

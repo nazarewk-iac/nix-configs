@@ -65,7 +65,7 @@ stdenv.mkDerivation (finalAttrs: {
     runHook preInstall
 
     mkdir -p "$out/lib/clank-talk" "$out/bin"
-    cp -r . "$out/lib/clank-talk/"
+    cp -r bin src package.json README.md LICENSE "$out/lib/clank-talk/"
 
     # The entry points have a `#!/usr/bin/env node` shebang. Wrap the Node binary explicitly, so
     # the package does not depend on the caller's PATH.
@@ -79,11 +79,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru = {
     # A folder with no package.json; OpenCode loads its `index` file and the `tui` file beside it.
-    opencodePlugin = "${placeholder "out"}/lib/clank-talk/src/js/harnesses/opencode";
+    opencodePlugin = "${finalAttrs.finalPackage}/lib/clank-talk/src/js/harnesses/opencode";
     # The Pi extension entry. Pi supplies the optional `typebox` peer from its own runtime.
-    piExtension = "${placeholder "out"}/lib/clank-talk/src/js/harnesses/pi.js";
+    piExtension = "${finalAttrs.finalPackage}/lib/clank-talk/src/js/harnesses/pi.js";
     # The MCP server entry point, for a harness without a native integration.
-    mcpServer = "${placeholder "out"}/bin/clank-talk-mcp";
+    mcpServer = "${finalAttrs.finalPackage}/bin/clank-talk-mcp";
   };
 
   meta = {

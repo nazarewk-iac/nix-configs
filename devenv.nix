@@ -246,8 +246,9 @@ in
       pkgs.prettier
       # The `hack/*.py` helpers, including the certificate-expiry summary the shell entry reads.
       pkgs.python3
+    ] ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # ClankTalk's `in a sandbox` uses bubblewrap on Linux. The launchers are in this shell, so the
-      # binary must be on PATH; without it, a sandboxed tool refuses to run.
+      # binary must be on PATH; without it, a sandboxed tool refuses to run. macOS uses sandbox-exec.
       pkgs.bubblewrap
     ];
 
