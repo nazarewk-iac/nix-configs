@@ -70,6 +70,12 @@ the human before jj writes, Nix builds, `nix fmt`, the devenv check and `kdn-jj-
 without a sandbox because it needs the store, the daemon and the network; the human gate is the
 control.
 
+The policy is tracked: `.gitignore` unignores `AGENTS.talk`. The review hardening also refuses a
+change to the agent instruction files (`AGENTS.md`, `CLAUDE.md`, `data/pi/AGENTS.md`,
+`.agents/rules/`), a jj fileset in a `files` list, a move or delete of the knowledge bundle, and
+`prettier` on the knowledge bundle or secrets. A global `before run` hook keeps every program either
+in a sandbox or on the named jj/Nix allowlist.
+
 ### Docs and instructions
 
 - `docs/clank-talk.md` — the launchers, the policy, taint, audit, requirements and limits.
@@ -83,9 +89,9 @@ Package and policy:
 
 ```sh
 nix build --no-link --print-out-paths .#clank-talk
-# /nix/store/05a9m5psfhlq5kyvpic4jdn0jaw3wz1v-clank-talk-0.1.3
+# /nix/store/q2v6bk0r2nzlx0bcz98j0dbkixf4881i-clank-talk-0.1.3
 
-/nix/store/05a9m5psfhlq5kyvpic4jdn0jaw3wz1v-clank-talk-0.1.3/bin/clank-talk harness --json --root .
+/nix/store/q2v6bk0r2nzlx0bcz98j0dbkixf4881i-clank-talk-0.1.3/bin/clank-talk harness --json --root .
 # {"agentsTalk":true,"required":false,"allowed":[],"untrusted":[],"errors":[]}
 ```
 
@@ -97,6 +103,9 @@ nix_eval '.#clank-talk.version'-> done, 0.1.3
 write @/.agents/knowledge/...  -> failed: the knowledge bundle is written by okf-agent-memory
 git push                       -> failed: this repository never pushes from an agent session
 jj_commit files: [.agents/...] -> failed: the commit names a protected path
+jj_commit files: ['all()']     -> failed: use explicit project paths, not a jj fileset
+write @/AGENTS.md              -> failed: the agent instruction files are human-owned
+prettier @/.agents/knowledge/  -> failed: the knowledge bundle is not formatted
 check_bundle bundle: 'nope'    -> failed: unknown bundle (before the human is asked)
 nix_build '.#clank-talk'       -> done, asked the human, built the package
 write + undo                   -> the file is removed

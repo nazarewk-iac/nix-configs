@@ -26,7 +26,7 @@ clank-pi              # Pi, guarded
 | Launcher         | What it sets                                                                                                                                    |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clank-opencode` | `KDN_CLANK_TALK=1`, `CLANK_TALK_ROOT` at the repository root, and `opencode --standalone` (a private server so the variable reaches the plugin) |
-| `clank-pi`       | Runs a second Pi wrapper built from the same configuration, with `--no-extensions` and only the ClankTalk extension plus `model-discovery`        |
+| `clank-pi`       | Runs a second Pi wrapper built from the same configuration, with `--no-extensions` and only the ClankTalk extension plus `model-discovery`      |
 
 The OpenCode plugin is a shim package at `.opencode/plugins/kdn-clank-talk/`. Its `index.js` calls
 the upstream `setup` only when `KDN_CLANK_TALK=1`; its `tui.js` does the same. A normal session
@@ -48,9 +48,11 @@ cannot change any `.talk` file.
 - **Tools:** jj (`jj_status`, `jj_diff`, `jj_commit`, `jj_split`, `jj_absorb`, ...), Nix
   (`nix_eval`, `nix_build`, `check_bundle`, `nix_fmt`), `prettier`, `kdn-journal`, `kdn-jj-meta`
   and a read-only `rg`.
-- **Hooks:** a change to `.agents/knowledge/`, `knowledge/`, `secrets/` or a `*.sops.yaml` is
-  refused. A `git push` is refused. A `jj` write, a Nix build, `nix fmt`, the devenv shell check
-  and `kdn-jj-meta` ask the human first.
+- **Hooks:** a change to `.agents/knowledge/`, `knowledge/`, `secrets/`, a `*.sops.yaml` or the
+  agent instruction files (`AGENTS.md`, `CLAUDE.md`, `data/pi/AGENTS.md`, `.agents/rules/`) is
+  refused. A jj fileset in a `files` list is refused. A `git push` is refused. A `jj` write, a Nix
+  build, `nix fmt`, the devenv shell check and `kdn-jj-meta` ask the human first. A `before run`
+  hook keeps every other program in a sandbox or on the named jj/Nix allowlist.
 - **Nix route:** Nix runs **without** a sandbox, because it needs the store, the daemon and the
   network. The agent can call only the named `nix_*` tools, and each one asks the human. Do not add
   the Nix daemon socket to a sandbox: it is a privilege boundary.
@@ -110,15 +112,15 @@ fetch and question, with the script that did it. The runtime keeps three days by
 
 ## Files
 
-| Path                                                 | Role                                                           |
-| ---------------------------------------------------- | -------------------------------------------------------------- |
-| `packages/clank-talk/default.nix`                    | The pinned package and the NixOS sandbox patches               |
-| `modules/den/aspects/opencode.nix`                   | The den aspect: shim generation and the `clankTalk` option     |
-| `modules/slots/opencode/default.nix`                 | The same option for slot consumers                             |
+| Path                                                 | Role                                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| `packages/clank-talk/default.nix`                    | The pinned package and the NixOS sandbox patches                       |
+| `modules/den/aspects/opencode.nix`                   | The den aspect: shim generation and the `clankTalk` option             |
+| `modules/slots/opencode/default.nix`                 | The same option for slot consumers                                     |
 | `devenv.nix`                                         | `clank-pi`, `clank-opencode`, `bubblewrap` (Linux) and the package pin |
-| `AGENTS.talk`                                        | The policy: tools and hooks                                    |
-| `.opencode/plugins/kdn-clank-talk/`                  | Generated shim (regular files, not tracked)                    |
-| `.talk/audit/`, `.talk/harness/`, `.talk/untrusted/` | Audit, session state and tainted inputs                        |
+| `AGENTS.talk`                                        | The policy: tools and hooks                                            |
+| `.opencode/plugins/kdn-clank-talk/`                  | Generated shim (regular files, not tracked)                            |
+| `.talk/audit/`, `.talk/harness/`, `.talk/untrusted/` | Audit, session state and tainted inputs                                |
 
 ## Related
 
