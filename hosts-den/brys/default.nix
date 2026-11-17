@@ -333,6 +333,7 @@ in
     program-zsh
     secrets
     security-secrets-age
+    service-rosec
     service-syncthing
     signing
     ssh-access
