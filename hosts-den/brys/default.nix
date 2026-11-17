@@ -481,6 +481,27 @@ in
       kdn.networking.ifaces."drek".metric = 900;
       kdn.networking.ifaces."drek".address.internal4 = "192.168.41.31/24";
 
+      # The NetBird mesh. The old `profile/machine/baseline` carried this block; the den baseline
+      # dropped it on purpose (a network identity is entity data), so the host states it.
+      kdn.networking.netbird.admins = [ "kdn" ];
+      kdn.networking.netbird.default.users = [ "kdn" ];
+      kdn.networking.netbird.default.environment = {
+        NB_BLOCK_INBOUND = "true";
+        NB_DISABLE_DNS = "true";
+      };
+      # The old default was a disabled client; only `priv` runs on brys. `active` replaces the
+      # old `default.enable` name.
+      kdn.networking.netbird.default.active = false;
+      kdn.networking.netbird.clients.priv.idx = 1;
+      kdn.networking.netbird.clients.priv.enable = true;
+      kdn.networking.netbird.clients.priv.environment.NB_DISABLE_DNS = "false";
+      kdn.networking.netbird.clients.priv.environment.NB_BLOCK_INBOUND = "false";
+      kdn.networking.netbird.clients.t1.idx = 5;
+      kdn.networking.netbird.clients.t2.idx = 6;
+      kdn.networking.netbird.clients.t3.idx = 7;
+      # The aspect names no secrets manager; the host points it at the generated sops subtree.
+      kdn.networking.netbird.secretsTree = config.kdn.security.secrets.sops.secrets.default.netbird;
+
       # The build-farm `agent-check` responder must be reachable from the LAN and the mesh, and
       # nowhere else. VNC is mesh-only.
       networking.firewall.interfaces."kdn-eth-2g".allowedTCPPorts = [ 39701 ];
