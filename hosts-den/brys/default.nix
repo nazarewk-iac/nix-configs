@@ -366,6 +366,13 @@ in
     {
       xdg.configFile."kdn/source-flake".source = inputs.self;
 
+      # The `apps` aspect publishes the persistence lists and writes no sibling option; the user
+      # wires them into its own `disks-persist` tree, as the aspect header states.
+      kdn.disks.persist = lib.mapAttrs (bucket: directories: {
+        inherit directories;
+        files = config.kdn.apps-persist.files.${bucket} or [ ];
+      }) config.kdn.apps-persist.directories;
+
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
         "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
 
