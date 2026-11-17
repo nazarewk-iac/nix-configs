@@ -600,6 +600,9 @@ in
         "root"
         "kdn"
       ];
+      kdn.programs.atuin.autologin.usernameFile = config.sops.secrets."default/atuin/username".path;
+      kdn.programs.atuin.autologin.passwordFile = config.sops.secrets."default/atuin/password".path;
+      kdn.programs.atuin.autologin.keyFile = config.sops.secrets."default/atuin/key".path;
 
       # The four wireless networks the old `profile/machine/basic` carries, with the same
       # priorities. The old module rendered one environment file from every WLAN secret; only
