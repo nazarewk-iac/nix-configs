@@ -388,7 +388,7 @@ in
 
       xdg.configFile."kdn/source-flake".source = inputs.self;
       # A host fact the `pi-client` aspect needs in the user evaluation.
-      kdn.hostName = "brys";
+      kdn.pi-client.hostName = "brys";
       # Inline: the repository's `.gitignore` tracks `.nix` files only, so an extensionless
       # payload beside this file would not reach the flake source.
       xdg.configFile."gsimplecal/config".text = ''

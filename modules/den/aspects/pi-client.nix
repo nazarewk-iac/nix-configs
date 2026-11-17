@@ -39,9 +39,15 @@
         (builtins.readDir agentsDir);
     in
     {
-      # `kdn.hostName` is a host option; a Home Manager evaluation declares it through the shared
-      # common module, and the consumer states the machine name next to its own user config.
-      imports = [ ../common/host-name.nix ];
+      # A Home Manager evaluation has no `kdn.hostName` of its own, and importing the shared
+      # declaration would collide with another aspect's import in a bare consumer. So the aspect
+      # declares its own name option; a consumer sets it next to its user config.
+      options.kdn.pi-client.hostName = lib.mkOption {
+        type = lib.types.str;
+        default = config.networking.hostName or "";
+        defaultText = lib.literalExpression "config.networking.hostName or \"\"";
+        description = "The machine name whose local endpoint the pi client should include.";
+      };
 
       programs.pi-coding-agent = {
         enable = true;
@@ -51,7 +57,7 @@
         # everywhere, plus a serving host's own direct path when running on it.
         models.providers =
           (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson
-            { host = config.kdn.hostName; };
+            { host = config.kdn.pi-client.hostName; };
 
         # pi resolves the default by an EXACT provider+id lookup (findInitialModel), so the pair
         # must name a model the runtime actually holds. `litellm-dynamic` is the provider the
