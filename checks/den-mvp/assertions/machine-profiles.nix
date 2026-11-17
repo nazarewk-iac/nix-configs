@@ -119,6 +119,7 @@ let
       "dev-rust"
       "dev-terraform"
       "dev-web"
+      "program-kdn-tools"
       "program-terminal-ide"
       "virt-containers"
       "virt-containers-podman"
