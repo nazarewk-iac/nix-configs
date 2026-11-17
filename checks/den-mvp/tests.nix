@@ -3535,6 +3535,9 @@ let
   baseInstantiatedBy = {
     apps = "den-eval-batch2 (bare home, plain and with two applications)";
     ca = "host-nixos";
+    # The Niri session is build-validated on `hosts-den/brys`; `den-eval-instantiate` forces both
+    # target bodies from the registry with no consumer data.
+    desktop-niri = "hosts-den/brys, den-eval-instantiate (bare nixos and home)";
     devenv-cli = "host-darwin, host-nixos, users/dev, home, devenv";
     disks = "den-eval-disks-fs (bare nixos, plain and with two LUKS volumes)";
     disks-persist = "den-eval-disks-fs (bare home, with the apps aspect and without it)";
@@ -3549,6 +3552,9 @@ let
     # consumer, so the body still gets coverage.
     homebrew-nix-managed = "den-eval-instantiate (bare darwin force only)";
     hw-audio = "den-eval-hw (bare nixos, plain and graphical; bare home)";
+    profile-default-secrets = "hosts-den/brys, den-eval-instantiate (bare nixos)";
+    profile-remote-builders = "hosts-den/brys, den-eval-instantiate (bare nixos and darwin)";
+    security-dynamic-netrc = "hosts-den/brys, den-eval-instantiate (bare nixos)";
     hw-basic = "den-eval-hw (bare nixos)";
     hw-bluetooth = "den-eval-hw (bare nixos)";
     hw-cpu-amd = "den-eval-hw (bare nixos)";
