@@ -120,6 +120,7 @@ in
 
     # --- desktop ----------------------------------------------------------
     desktop-base
+    desktop-niri
     desktop-sway
     desktop-sway-remote
     desktop-sway-waybar
@@ -238,6 +239,7 @@ in
   den.aspects.kdn.includes = with kdn; [
     apps
     desktop-base
+    desktop-niri
     desktop-sway
     desktop-sway-kanshi
     desktop-sway-media-keys
@@ -591,6 +593,15 @@ clock_tz = :Asia/Hong_Kong
 
       # --- desktop ----------------------------------------------------------
       kdn.desktop-sway.portals.debug = true;
+
+      # The Niri evaluation session. It is a second entry in the greeter; `defaultSession` is
+      # untouched, so Sway still starts by default. The repo's own secret service owns
+      # `org.freedesktop.secrets`, so the portal's Secret interface names no second backend.
+      kdn.desktop-niri = {
+        session = "niri-session";
+        portal.secret = "none";
+        useNautilus = true;
+      };
 
       # --- networking -------------------------------------------------------
       kdn.networking.debug = true;

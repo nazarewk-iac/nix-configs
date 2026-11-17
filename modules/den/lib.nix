@@ -42,6 +42,7 @@ let
     certificates = ./aspects/certificates.nix;
     desktop-base = ./aspects/desktop-base.nix;
     desktop-kde = ./aspects/desktop-kde.nix;
+    desktop-niri = ./aspects/desktop-niri.nix;
     desktop-remote-server = ./aspects/desktop-remote-server.nix;
     desktop-sway = ./aspects/desktop-sway.nix;
     desktop-sway-kanshi = ./aspects/desktop-sway-kanshi.nix;

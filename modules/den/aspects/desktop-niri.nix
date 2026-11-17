@@ -714,12 +714,12 @@ let
           description = "Use Nautilus as the portal's file chooser.";
         };
         portal.secret = lib.mkOption {
-          type = lib.types.enum [ "gnome-keyring" "repo" ];
+          type = lib.types.enum [ "gnome-keyring" "gtk" "none" ];
           default = "gnome-keyring";
           description = ''
-            The `org.freedesktop.impl.portal.Secret` back-end. `repo` means the repository's own
-            `kdn-secret-service` claims the bus name; the portal then must not start a second
-            keyring.
+            The `org.freedesktop.impl.portal.Secret` back-end. `none` leaves the interface to the
+            bus name owner, which is how the repository's own `kdn-secret-service` serves it
+            without starting a second keyring.
           '';
         };
         extraKdl = lib.mkOption {
@@ -801,7 +801,8 @@ in
           # The repository's own secret service claims `org.freedesktop.secrets`. The nixpkgs
           # module turns gnome-keyring on and points the portal's Secret interface at it; both
           # would fight the repo unit, so both are overridden.
-          services.gnome.gnome-keyring.enable = lib.mkDefault false;
+          services.gnome.gnome-keyring.enable =
+            lib.mkDefault (config.kdn.desktop-niri.portal.secret == "gnome-keyring");
           xdg.portal.config.niri."org.freedesktop.impl.portal.Secret" =
             lib.mkDefault config.kdn.desktop-niri.portal.secret;
 
