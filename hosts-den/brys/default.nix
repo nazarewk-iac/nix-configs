@@ -578,6 +578,13 @@ in
       ];
       networking.firewall.interfaces."nb-priv".allowedUDPPorts = [ 5900 ];
 
+      # Syncthing runs as a user service, so the old `profile/user/kdn` opened its ports itself.
+      networking.firewall.allowedTCPPorts = [ 22000 ];
+      networking.firewall.allowedUDPPorts = [
+        21027
+        22000
+      ];
+
       networking.hosts."10.116.89.68" = [ "gipe" ];
       networking.networkmanager.ensureProfiles.profiles.gipe = {
         connection = {
@@ -735,6 +742,12 @@ in
       };
 
       # --- certificates -----------------------------------------------------
+      # Trust the KDN CA (data/ca/ca.pub) system-wide, and keep the offline CA key as an
+      # encrypted blob for manual reference. The old host did this through the `ca` slot.
+      kdn.ca.kdn.enable = true;
+      kdn.ca.kdn.certFile = "${inputs.self}/data/ca/ca.pub";
+      kdn.ca.kdn.keySopsFile = "${inputs.self}/data/ca/ca.key.sops";
+
       kdn.certificates.repoRoot = inputs.self;
       kdn.certificates.certs.ssh-host-brys = {
         ca = "kdn";
