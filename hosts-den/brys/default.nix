@@ -436,6 +436,10 @@ in
       # A TPM or a network unlock of the encrypted root, so a reboot needs no keyboard.
       boot.initrd.clevis.enable = lib.mkDefault true;
 
+      # The old host bound the discrete GPU to `vfio-pci` (`kdn.hw.gpu.vfio.enable = true`, with no
+      # ids). That is where `iommu=pt` and the VFIO kernel modules come from.
+      kdn.hw.gpu.vfio.use = true;
+
       # --- containers -------------------------------------------------------
       # The rootless store lives on the persistent `usr/data` base, never on the disposable home.
       # The `virt-containers` aspect publishes the list; the host states the bucket once.
