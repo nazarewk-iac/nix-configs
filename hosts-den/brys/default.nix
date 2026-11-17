@@ -518,6 +518,14 @@ in
       '';
       xdg.configFile."nix/nix.nix".text = "";
 
+      # The wlr portal's screencast chooser. The old sway user module wrote this file; the den
+      # aspect keeps the portal selection but not the chooser command.
+      xdg.configFile."xdg-desktop-portal-wlr/sway".text = ''
+        [screencast]
+        chooser_cmd=${lib.getExe pkgs.wofi} -d -n --prompt='Select the monitor to share:'
+        chooser_type=dmenu
+      '';
+
       # The `user` aspect's Home Manager target selects a row from its own `kdn.users`; the NixOS
       # `user-profiles` row does not cross the scope. State the row here for the u2f file.
       kdn.users.kdn = {
