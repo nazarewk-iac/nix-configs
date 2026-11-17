@@ -496,6 +496,28 @@ in
         };
       };
 
+      # The old `profile/user/kdn` read its own `.gitattributes`; the file is still the single
+      # source, so the user points at it.
+      programs.git.attributes = [
+        (builtins.readFile ../../modules/universal/profile/user/kdn/.gitattributes)
+      ];
+
+      # The old `_hm-bootstrap` generated these two files from the host nixpkgs opinion. den
+      # drops that bridge by design, so the user states the same values.
+      xdg.configFile."nixpkgs/config.nix".text = ''
+        {
+          allowAliases = true;
+          allowUnfree = true;
+          permittedInsecurePackages = [
+            "litestream-0.3.13"
+            "electron-28.3.3"
+            "electron-27.3.11"
+            "olm-3.2.16"
+          ];
+        }
+      '';
+      xdg.configFile."nix/nix.nix".text = "";
+
       # The `user` aspect's Home Manager target selects a row from its own `kdn.users`; the NixOS
       # `user-profiles` row does not cross the scope. State the row here for the u2f file.
       kdn.users.kdn = {
