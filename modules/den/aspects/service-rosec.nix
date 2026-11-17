@@ -212,6 +212,27 @@ in
           '';
         };
 
+        rosecd.unitName = lib.mkOption {
+          type = lib.types.str;
+          default = "rosecd";
+          description = ''
+            Name of the daemon unit (without the `.service` suffix). A desktop that already has a
+            D-Bus name holder points this at it; the aspect then supplies the process, environment
+            and activation alias, and the holder keeps its `Type=dbus`/`BusName` and session
+            ordering. The unit always answers to `rosecd.service` as an alias.
+          '';
+        };
+
+        rosecd.unlock.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.kdn.services.rosec.rosecd.enable;
+          defaultText = lib.literalExpression "config.kdn.services.rosec.rosecd.enable";
+          description = ''
+            Install `rosec-unlock.service`, a oneshot that unlocks the store after the daemon
+            starts. Clients that start on their own should `Wants` this unit.
+          '';
+        };
+
         servicePath = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
@@ -488,30 +509,57 @@ in
         })
 
         (lib.mkIf cfg.rosecd.enable {
-          systemd.user.services.rosecd = {
+          # The package ships a private socket unit nobody uses; it must not be enabled.
+          systemd.user.units."rosecd.socket".enable = false;
+
+          # A locked provider blocks the first client; unlock once after the daemon is up.
+          systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable {
             Unit = {
-              Description = "rosec Secret Service daemon (sops file tree)";
+              Description = "Unlock the rosec sops store after the Secret Service daemon starts";
+              Requires = [ "${cfg.rosecd.unitName}.service" ];
+              After = [ "${cfg.rosecd.unitName}.service" ];
+              WantedBy = [ "default.target" ];
+            };
+            Service = {
+              Type = "oneshot";
+              TimeoutStartSec = "120s";
+              ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+                exec ${pkgs.expect}/bin/expect -c '
+                  set timeout 90
+                  spawn ${lib.getExe' cfg.package "rosec"} unlock
+                  expect {
+                    -re "Press Enter|No password needed" { send "\r"; exp_continue }
+                    eof
+                  }
+                '
+              ''}";
+            };
+          };
+
+          systemd.user.services."${cfg.rosecd.unitName}" = {
+            Unit = {
+              Description = lib.mkDefault "rosec Secret Service daemon (sops file tree)";
               Documentation = [ "https://github.com/jmylchreest/rosec" ];
-              # Headless: the daemon serves CLI clients over SSH and in a TTY too, so it follows the
-              # user manager and not `graphical-session.target`.
+              # Headless: the daemon serves CLI clients over SSH and in a TTY too.
               PartOf = [ "default.target" ];
-              After = [ "default.target" ] ++ lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
+              # Do not order after `default.target` while also being `WantedBy` it: systemd reports
+              # "Transaction order is cyclic" when the target is restarted.
+              After = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
               Wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
+              Aliases = lib.optional (cfg.rosecd.unitName != "rosecd") "rosecd.service";
             };
 
             Service = {
               Type = "dbus";
               BusName = "org.freedesktop.secrets";
-              ExecStart = lib.getExe' cfg.package "rosecd";
+              ExecStart = lib.mkForce (lib.getExe' cfg.package "rosecd");
               Environment = [
                 "PATH=${servicePath}"
                 "SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
               ];
               Restart = "on-failure";
               RestartSec = 2;
-              # A cold start waits for the YubiKey. Wide enough for a slow token, still bounded when
-              # the token is absent.
-              TimeoutStartSec = "60s";
+              TimeoutStartSec = lib.mkDefault "60s";
             };
 
             Install.WantedBy = [ "default.target" ];
