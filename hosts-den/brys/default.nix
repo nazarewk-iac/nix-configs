@@ -387,6 +387,10 @@ in
       };
 
       xdg.configFile."kdn/source-flake".source = inputs.self;
+
+      # The checkout `nh` rebuilds from; the old `development-nix.nix` data file named it. The
+      # `dev-nix` option tree is Home Manager-only, so the user states it here.
+      kdn.dev-nix.flake.path = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
       # A host fact the `pi-client` aspect needs in the user evaluation.
       kdn.pi-client.hostName = "brys";
       # Inline: the repository's `.gitignore` tracks `.nix` files only, so an extensionless
@@ -754,9 +758,6 @@ clock_tz = :Asia/Hong_Kong
       };
 
       # --- personal data the old loader imported ---------------------------
-      # The checkout `nh` rebuilds from; the old `development-nix.nix` data file named it.
-      kdn.dev-nix.flake.path = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
-
       # The wallpaper from `data/universal-deps/stylix.nix`, at the same `mkDefault` priority.
       stylix.image = lib.mkDefault (pkgs.fetchurl {
         url = "https://nc.nazarewk.pw/s/XSR3x6AkwZAiyBo/download/13754-mushrooms-toadstools-glow-photoshop-3840x2160.jpg";
