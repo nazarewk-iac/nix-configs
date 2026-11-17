@@ -803,7 +803,7 @@ in
           # module turns gnome-keyring on and points the portal's Secret interface at it; both
           # would fight the repo unit, so both are overridden.
           services.gnome.gnome-keyring.enable =
-            lib.mkDefault (config.kdn.desktop-niri.portal.secret == "gnome-keyring");
+            lib.mkForce (config.kdn.desktop-niri.portal.secret == "gnome-keyring");
           xdg.portal.config.niri."org.freedesktop.impl.portal.Secret" =
             lib.mkDefault config.kdn.desktop-niri.portal.secret;
 
