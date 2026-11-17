@@ -165,8 +165,8 @@
             # The NetBird unit can be `active` before its interface holds the address, so the
             # first bind fails with `cannot assign requested address`. Keep retrying until the
             # address appears; the start limit is lifted because the wait is unbounded.
-            startLimitIntervalSec = 0;
-            startLimitBurst = 0;
+            startLimitIntervalSec = lib.mkForce 0;
+            startLimitBurst = lib.mkForce 0;
             serviceConfig = {
               Restart = lib.mkDefault "on-failure";
               RestartSec = lib.mkDefault "5s";
