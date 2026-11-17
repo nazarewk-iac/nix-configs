@@ -393,6 +393,17 @@ in
       # `dev-nix` option tree is Home Manager-only, so the user states it here.
       kdn.dev-nix.flake.path = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
 
+      # The old `profile/user/kdn` declared these Firefox profiles; the den aspect builds one
+      # home profile per name, and the `firefox-containers-d-sync` units follow them.
+      kdn.programs.firefox.profileNames = [
+        "bn"
+        "dn"
+        "en"
+        "jp"
+        "kdn"
+        "sn"
+      ];
+
       # The `user` aspect's Home Manager target selects a row from its own `kdn.users`; the NixOS
       # `user-profiles` row does not cross the scope. State the row here for the u2f file.
       kdn.users.kdn = {
