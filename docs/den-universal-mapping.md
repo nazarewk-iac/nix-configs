@@ -37,11 +37,11 @@ Two trees carry a private subtree. Every count below excludes it.
 
 | Status       | Old modules | Meaning                                                               |
 | ------------ | ----------- | --------------------------------------------------------------------- |
-| `ported`     | 168         | An aspect exists and `modules/den/lib.nix` registers it.              |
-| `not ported` | 5           | No aspect names it yet.                                               |
+| `ported`     | 171         | An aspect exists and `modules/den/lib.nix` registers it.              |
+| `not ported` | 3           | No aspect names it yet.                                               |
 | `shared`     | 1           | No aspect, but a file under `modules/den/common/` serves the concern. |
 | `excluded`   | 3           | A deliberate decision keeps it out of den.                            |
-| **Total**    | **177**     | Every `modules/universal/**/default.nix`, private subtree excluded.   |
+| **Total**    | **178**     | Every `modules/universal/**/default.nix`, private subtree excluded.   |
 
 `refresh.sh measure` prints the four counts, and `refresh.sh fix` derives the `Status` cell of every
 row from the registry. So the column cannot drift from the registry; only a `shared` or an
@@ -276,7 +276,7 @@ Four more aspects come from this area and get no row, because each ports a file 
 
 | old module                                                        | `kdn.*` prefix                          | den aspect            | Status       |
 | ----------------------------------------------------------------- | --------------------------------------- | --------------------- | ------------ |
-| `modules/universal/profile/default-secrets/default.nix`           | `kdn.profile.default-secrets`           | —                     | `not ported` |
+| `modules/universal/profile/default-secrets/default.nix`           | `kdn.profile.default-secrets`           | `profile-default-secrets` | `ported` |
 | `modules/universal/profile/hardware/darwin-utm-guest/default.nix` | `kdn.profile.hardware.darwin-utm-guest` | `hw-darwin-utm-guest` | `ported`     |
 | `modules/universal/profile/hardware/dell-e5470/default.nix`       | `kdn.profile.hardware.dell-e5470`       | `hw-dell-e5470`       | `ported`     |
 | `modules/universal/profile/hardware/rpi4/default.nix`             | `kdn.profile.hardware.rpi4`             | —                     | `not ported` |
@@ -287,7 +287,7 @@ Four more aspects come from this area and get no row, because each ports a file 
 | `modules/universal/profile/machine/gaming/default.nix`            | `kdn.profile.machine.gaming`            | `profile-gaming`      | `ported`     |
 | `modules/universal/profile/machine/hetzner/default.nix`           | `kdn.profile.machine.hetzner`           | `profile-hetzner`     | `ported`     |
 | `modules/universal/profile/machine/workstation/default.nix`       | `kdn.profile.machine.workstation`       | `profile-workstation` | `ported`     |
-| `modules/universal/profile/remote-builders/default.nix`           | `kdn.profile.remote-builders`           | —                     | `not ported` |
+| `modules/universal/profile/remote-builders/default.nix`           | `kdn.profile.remote-builders`           | `profile-remote-builders` | `ported` |
 | `modules/universal/profile/user/bn/default.nix`                   | `kdn.profile.user.bn`                   | `user`                | `ported`     |
 | `modules/universal/profile/user/kdn/default.nix`                  | `kdn.profile.user.kdn`                  | `user`                | `ported`     |
 | `modules/universal/profile/user/sn/default.nix`                   | `kdn.profile.user.sn`                   | `user`                | `ported`     |
@@ -343,6 +343,7 @@ Four more aspects come from this area and get no row, because each ports a file 
 | old module                                               | `kdn.*` prefix                 | den aspect                 | Status   |
 | -------------------------------------------------------- | ------------------------------ | -------------------------- | -------- |
 | `modules/universal/security/disk-encryption/default.nix` | `kdn.security.disk-encryption` | `security-disk-encryption` | `ported` |
+| `modules/universal/security/dynamic-netrc/default.nix`    | `kdn.security.dynamic-netrc`    | `security-dynamic-netrc`    | `ported` |
 | `modules/universal/security/secrets/age/default.nix`     | `kdn.security.secrets.age`     | `security-secrets-age`     | `ported` |
 | `modules/universal/security/secrets/default.nix`         | `kdn.security.secrets`         | `secrets`                  | `ported` |
 | `modules/universal/security/secrets/sops/default.nix`    | `kdn.security.secrets.sops`    | `security-secrets-sops`    | `ported` |
@@ -424,9 +425,9 @@ every aspect it wires, instead of once per aspect.
 | `modules/universal/helpers/default.nix` | `kdn.helpers` is a script bag of this repository. An adopter wants none of it.                                                                                                                                                       |
 | `modules/universal/env/default.nix`     | den ships no `kdn.env.*` by design. Design B makes each target write the native option, and the old `apply` filter moves to `modules/den/common/filter-packages.nix`.                                                                |
 
-`modules/universal/profile/remote-builders/default.nix` left this table.
-`modules/den/aspects/nix-remote-builder.nix` states that a later batch ports it, so the module is
-`not ported`, not excluded. The cross-host read stays the hard part of that port.
+`modules/universal/profile/remote-builders/default.nix` left this table and it is now `ported`:
+`modules/den/aspects/profile-remote-builders.nix` carries it, and the builder fleet is the
+consumer's data (`data/nix-build-machines.nix` on brys).
 
 ## Reverse: den aspects that no old module backs
 
@@ -499,16 +500,19 @@ hold a forward write and nothing else. `modules/den/aspects/toolset.nix:15` stat
 den consumer names the aspects it wants directly, so a module that only turns other modules on has
 no den counterpart. Both rows stay `not ported`, and no batch owns them.
 
-### Three old modules still wait for a batch
+### One old module still waits for a batch
 
 | Old module                                              | Lines | What blocks it                                                                                                                                                                                     |
 | ------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modules/universal/profile/remote-builders/default.nix` | 327   | It reads another host's evaluated config. den has no cross-host read. `modules/den/aspects/nix-remote-builder.nix` serves the reader half and names this module as the writer a later batch ports. |
 | `modules/universal/profile/hardware/rpi4/default.nix`   | 209   | The den check harness runs one platform. `docs/tasks/2026-09/generalization/015-den-check-harness-platforms/definition.md` holds the blocker.                                                      |
-| `modules/universal/profile/default-secrets/default.nix` | 138   | It names this repository's own secret files. An adopter needs a data-driven form first.                                                                                                            |
 
-Together those three hold 674 lines. With the two deliberate exclusions above, the whole remainder
-is 5 files and 743 lines.
+`modules/universal/profile/remote-builders/default.nix` and
+`modules/universal/profile/default-secrets/default.nix` are `ported` now:
+`modules/den/aspects/profile-remote-builders.nix` carries the reader half, and
+`modules/den/aspects/profile-default-secrets.nix` carries the sops baseline. The builder fleet is
+data, so it lives in `data/nix-build-machines.nix` and the host passes it in.
+
+Together with the two deliberate `toolset` exclusions, the remainder is 3 files and 278 lines.
 
 ### Closed: the sway session core
 
@@ -547,13 +551,15 @@ directions, so each port needs a design decision first. Three couplings still sh
   22 sites over the modules and the hosts name `kdn.profile.machine.baseline`. The port answers it
   with `includes`: `modules/den/aspects/profile-baseline.nix` turns each old `enable` write into an
   `includes` entry, so no aspect writes a sibling's option.
-- `modules/universal/profile/remote-builders/default.nix` reads another host's evaluated config.
-  That read has no den form yet, and it is the one coupling the port has not answered.
+- `modules/universal/profile/remote-builders/default.nix` is the last coupling that moved. The
+  module reads no other host; the builder fleet was hardcoded, so the port moves it to the
+  consumer as `kdn.profile-remote-builders.buildMachines`. `data/nix-build-machines.nix` holds the
+  old pipeline as a pure function.
 
-The remainder is now small: 5 `default.nix` files and 743 lines. Two of the five are the deliberate
-`toolset` exclusions above, at 34 and 35 lines. `refresh.sh measure` prints the file count and the
-line total from the `not ported` rows of the main table, so the two figures cannot disagree with the
-table.
+The remainder is now small: 3 `default.nix` files and 278 lines. Two of the three are the deliberate
+`toolset` exclusions above, at 34 and 35 lines, and the third is `profile/hardware/rpi4`.
+`refresh.sh measure` prints the file count and the line total from the `not ported` rows of the
+main table, so the two figures cannot disagree with the table.
 
 ## How to refresh this doc
 
