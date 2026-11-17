@@ -436,7 +436,6 @@ in
       kdn.desktop-sway.portals.debug = true;
 
       # --- networking -------------------------------------------------------
-      kdn.networking.enable = true;
       kdn.networking.debug = true;
       kdn.networking.iface.default = "kdn-eth-2g";
 
