@@ -685,7 +685,7 @@ let
           default = {
             touchpad.tap = { };
             touchpad.natural-scroll = { };
-            keyboard.xkb-layout = "pl";
+            keyboard.xkb.layout = "pl";
           };
           description = "The `input` node.";
         };
