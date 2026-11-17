@@ -545,6 +545,54 @@ in
             serviceConfig.TimeoutStartSec = "120s";
           };
         }
+
+          # When rosec owns the store, the desktop name holder IS the daemon. The unit keeps
+          # `Type=dbus`/`BusName` and the cold-start bound; only its process changes. This keeps
+          # one `org.freedesktop.secrets` owner and makes the rosec package's session-bus
+          # activation file (which names `rosecd.service`) resolve through the alias.
+          (lib.mkIf config.kdn.services.rosec.enable {
+            kdn.services.rosec.rosecd.enable = lib.mkDefault false;
+            # The package ships a private socket unit nobody uses; it must not be enabled.
+            systemd.user.units."rosecd.socket".enable = false;
+
+            systemd.user.services."${config.kdn.desktop.sway.systemd.secrets-service.name}" = {
+              aliases = [ "rosecd.service" ];
+              serviceConfig.ExecStart = lib.mkForce "${lib.getExe' config.kdn.services.rosec.package "rosecd"}";
+              serviceConfig.Restart = "on-failure";
+              serviceConfig.RestartSec = 2;
+              serviceConfig.Environment = [
+                "PATH=${config.kdn.services.rosec.servicePath}"
+                "SOPS_AGE_KEY_FILE=${config.kdn.services.rosec.providers.sops.key_file}"
+              ];
+              wants = [ "rosec-keys.service" ];
+              after = [ "rosec-keys.service" ];
+            };
+
+            # A locked provider blocks the first client (rosec has no silent unlock path), so
+            # unlock once per session, after the daemon is up. `expect` drives the optional
+            # password field; a missing YubiKey only fails this unit.
+            systemd.user.services.rosec-unlock = {
+              description = "Unlock the rosec sops store after the Secret Service daemon starts";
+              requires = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+              after = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+              wantedBy = [ config.kdn.desktop.sway.systemd.session.target ];
+              serviceConfig = {
+                Type = "oneshot";
+                TimeoutStartSec = "120s";
+                ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+                  exec ${pkgs.expect}/bin/expect -c '
+                    set timeout 90
+                    spawn ${lib.getExe' config.kdn.services.rosec.package "rosec"} unlock
+                    expect {
+                      -re "Press Enter|No password needed" { send "\r"; exp_continue }
+                      eof
+                    }
+                  '
+                ''}";
+              };
+            };
+          })
+
         (lib.mkIf config.programs.gnupg.agent.enable {
           systemd.user.services."${config.kdn.desktop.sway.systemd.envs.name}" = {
             serviceConfig.ExecStart = lib.mkAfter [

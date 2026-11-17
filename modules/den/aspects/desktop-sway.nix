@@ -952,6 +952,50 @@ let
             serviceConfig.TimeoutStartSec = "120s";
           };
         }
+
+        # When rosec owns the store, the desktop name holder IS the daemon: one
+        # `org.freedesktop.secrets` owner, and the rosec package's activation file (which names
+        # `rosecd.service`) resolves through the alias.
+        (lib.mkIf config.kdn.services.rosec.use {
+          kdn.services.rosec.rosecd.enable = lib.mkDefault false;
+          systemd.user.units."rosecd.socket".enable = false;
+
+          systemd.user.services."${cfg.systemd.secrets-service.name}" = {
+            aliases = [ "rosecd.service" ];
+            serviceConfig.ExecStart = lib.mkForce "${lib.getExe' config.kdn.services.rosec.package "rosecd"}";
+            serviceConfig.Restart = "on-failure";
+            serviceConfig.RestartSec = 2;
+            serviceConfig.Environment = [
+              "PATH=${config.kdn.services.rosec.servicePath}"
+              "SOPS_AGE_KEY_FILE=${config.kdn.services.rosec.providers.sops.key_file}"
+            ];
+            wants = [ "rosec-keys.service" ];
+            after = [ "rosec-keys.service" ];
+          };
+
+          # A locked provider blocks the first client; unlock once per session, after the daemon.
+          systemd.user.services.rosec-unlock = {
+            description = "Unlock the rosec sops store after the Secret Service daemon starts";
+            requires = [ cfg.systemd.secrets-service.service ];
+            after = [ cfg.systemd.secrets-service.service ];
+            wantedBy = [ cfg.systemd.session.target ];
+            serviceConfig = {
+              Type = "oneshot";
+              TimeoutStartSec = "120s";
+              ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+                exec ${pkgs.expect}/bin/expect -c '
+                  set timeout 90
+                  spawn ${lib.getExe' config.kdn.services.rosec.package "rosec"} unlock
+                  expect {
+                    -re "Press Enter|No password needed" { send "\r"; exp_continue }
+                    eof
+                  }
+                '
+              ''}";
+            };
+          };
+        })
+
         (lib.mkIf config.programs.gnupg.agent.enable {
           systemd.user.services."${cfg.systemd.envs.name}" = {
             serviceConfig.ExecStart = lib.mkAfter [

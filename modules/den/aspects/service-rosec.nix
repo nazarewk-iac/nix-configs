@@ -113,14 +113,20 @@ in
       rosecConfigFile = configFormat.generate "rosec-config.toml" rosecConfig;
 
       # `rosecd` shells out to `sops`, and `sops` resolves the age plugin from the same `PATH`.
-      servicePath = lib.makeBinPath (
-        [
-          cfg.package
-          cfg.providers.sops.sopsPackage
-          cfg.providers.sops.agePluginYubikeyPackage
-        ]
-        ++ cfg.extraPackages
-      );
+      # `rosecd` mounts FUSE filesystems and shells out to `fusermount3`; the store copy is not
+      # setuid, so the NixOS wrapper must come first on `PATH`.
+      servicePath = lib.concatStringsSep ":" [
+        "/run/wrappers/bin"
+        (lib.makeBinPath (
+          [
+            cfg.package
+            cfg.providers.sops.sopsPackage
+            cfg.providers.sops.agePluginYubikeyPackage
+            pkgs.fuse3
+          ]
+          ++ cfg.extraPackages
+        ))
+      ];
 
       conflictsScript = pkgs.writeShellApplication {
         name = "rosec-conflicts";
@@ -195,6 +201,24 @@ in
     in
     {
       options.kdn.services.rosec = {
+        rosecd.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.kdn.services.rosec.use;
+          defaultText = lib.literalExpression "config.kdn.services.rosec.use";
+          description = ''
+            Install the `rosecd.service` unit. Turn it off when another unit runs the same binary
+            and owns `org.freedesktop.secrets` (a desktop name holder): two `Type=dbus` units cannot
+            hold one bus name.
+          '';
+        };
+
+        servicePath = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          internal = true;
+          description = "`PATH` for a unit that runs the daemon outside this aspect.";
+        };
+
         use = lib.mkOption {
           type = lib.types.bool;
           default = false;
@@ -401,6 +425,9 @@ in
 
       config = lib.mkMerge [
         {
+          kdn.services.rosec.servicePath = servicePath;
+        }
+        {
           assertions = [
             {
               assertion = !cfg.use || cfg.providers.sops.path != "";
@@ -460,7 +487,7 @@ in
           };
         })
 
-        (lib.mkIf cfg.use {
+        (lib.mkIf cfg.rosecd.enable {
           systemd.user.services.rosecd = {
             Unit = {
               Description = "rosec Secret Service daemon (sops file tree)";
