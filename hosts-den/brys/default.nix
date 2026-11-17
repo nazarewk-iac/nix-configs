@@ -148,7 +148,6 @@ in
     dev-jetbrains
     dev-k8s
     dev-llm-claude-code
-    dev-llm-omp
     dev-llm-opencode
     dev-llm-pi
     dev-lua
@@ -264,7 +263,6 @@ in
     dev-jetbrains
     dev-k8s
     dev-llm-claude-code
-    dev-llm-omp
     dev-llm-opencode
     dev-llm-pi
     dev-lua
@@ -334,6 +332,7 @@ in
     program-zsh
     secrets
     security-secrets-age
+    service-syncthing
     signing
     ssh-access
     ssh-agent
@@ -362,10 +361,36 @@ in
   # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
   # forbids one aspect writing a sibling's option, so the user states it here.
   den.aspects.kdn.homeManager =
-    { config, ... }:
+    { config, pkgs, ... }:
     {
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
         "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
+
+      # The old `profile/user/kdn` turned both extra matrix clients on.
+      kdn.programs.matrix.nheko.use = true;
+      kdn.programs.matrix.gomuks.use = true;
+
+      # The desktop and tool extras of the old `profile/user/kdn` that no `program-*` aspect owns.
+      # They are one person's choices, so they stay in the host file, not in a reusable aspect.
+      home.packages = with pkgs; [
+        vlc
+        subtitleeditor
+        ffsubsync
+        haruna
+        shotwell
+        qrencode
+        zbar
+        ss-util
+        zoom-us
+        httpie-desktop
+        qpdf
+        (pkgs.callPackage ../../packages/kdnctl { })
+        (pkgs.callPackage ../../packages/kagi-cli { })
+        (pkgs.callPackage ../../packages/klg { })
+        (pkgs.callPackage ../../packages/klog-time-tracker { })
+        (pkgs.callPackage ../../packages/ss-util { })
+        (pkgs.callPackage ../../packages/systemd-find-cycles { })
+      ];
     };
 
   den.aspects.brys.nixos =
@@ -655,6 +680,12 @@ in
           passwordFile = config.sops.secrets."default/networking/wlan/drek/password".path;
         };
       };
+
+      kdn.services.iperf3.client.publicKeyPath = "/run/configs/networking/iperf-server/rsa/pub";
+      kdn.services.iperf3.client.passwordDir = "/run/configs/networking/iperf-server/users";
+      kdn.services.iperf3.client.defaultUsername = builtins.head (
+        builtins.attrNames config.kdn.security.secrets.sops.secrets.default.networking.iperf-server.users
+      );
 
       kdn.services.nextcloud-client.urlPath = config.sops.secrets."default/nextcloud/nixos/url".path;
       kdn.services.nextcloud-client.usernamePath = config.sops.secrets."default/nextcloud/nixos/username".path;
