@@ -237,7 +237,6 @@ in
   # Home Manager context through `home-manager.sharedModules`.
   den.aspects.kdn.includes = with kdn; [
     apps
-    ca-dag
     desktop-base
     desktop-sway
     desktop-sway-kanshi
@@ -336,7 +335,6 @@ in
     signing
     ssh-access
     ssh-agent
-    ssh-ca
 
     toolset-diagrams
     toolset-essentials
@@ -364,39 +362,18 @@ in
     { config, lib, pkgs, ... }:
     {
       imports = [
-        ../../data/ca/ca-dag.nix
         ../../data/desktop-sway-kanshi.nix
         ./mimeapps.nix
       ];
-
-      # The certificate leaves and the CA DAG resolve against the repository root in the user
-      # evaluation too: the old tree forwarded the host values through `home-manager.sharedModules`.
-      kdn.certificates.repoRoot = inputs.self;
-
-      # The certificate data must exist in this evaluation too: the user service reads the paths.
-      kdn.certificates.certs.zellij-web = {
-        ca = "kdn";
-        type = "tls-server";
-        commonName = "brys.priv.nb.net.int.kdn.im";
-        sans = [
-          "brys.priv.nb.net.int.kdn.im"
-          "llama-swap.brys.priv.nb.net.int.kdn.im"
-          "prometheus.brys.priv.nb.net.int.kdn.im"
-        ];
-        directory = "hosts/brys/certs";
-        certFile = "zellij.pub";
-        keyFile = "zellij.key";
-        keySource = "managed";
-        owner = "kdn";
-      };
 
       # The zellij web user service reads the certificate in the user scope, so the paths must be
       # stated here as well as on the host.
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = config.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
+        # The system sops module decrypts the key at boot and hands it to the `kdn` owner.
+        certFile = "${inputs.self}/hosts/brys/certs/zellij.pub";
+        keyFile = "/run/secrets/kdn/certificates/zellij-web.key";
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
@@ -872,8 +849,9 @@ in
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = config.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
+        # The system sops module decrypts the key at boot and hands it to the `kdn` owner.
+        certFile = "${inputs.self}/hosts/brys/certs/zellij.pub";
+        keyFile = "/run/secrets/kdn/certificates/zellij-web.key";
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
