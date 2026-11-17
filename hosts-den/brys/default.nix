@@ -412,7 +412,7 @@ clock_label = BST
 clock_tz = :Europe/London
 clock_label = HKT
 clock_tz = :Asia/Hong_Kong
-      ';
+      '';
       xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";
       xdg.userDirs.enable = true;
