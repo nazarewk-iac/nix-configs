@@ -75,6 +75,10 @@
         ]
       );
 
+      # Inclusion is the switch. `hardware.display.edid.enable` is what turns the extra modelines
+      # and a host's `hardware.display.outputs.<output>.edid` into `drm.edid_firmware` params; the
+      # old module's `kdn.hw.edid.enable` set it, and without it those outputs are inert.
+      config.hardware.display.edid.enable = lib.mkDefault true;
       config.hardware.display.edid.modelines = cfg.modelines;
     };
 }
