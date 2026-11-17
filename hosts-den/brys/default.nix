@@ -392,6 +392,13 @@ in
       # The checkout `nh` rebuilds from; the old `development-nix.nix` data file named it. The
       # `dev-nix` option tree is Home Manager-only, so the user states it here.
       kdn.dev-nix.flake.path = "/home/kdn/dev/github.com/nazarewk-iac/nix-configs";
+
+      # The `user` aspect's Home Manager target selects a row from its own `kdn.users`; the NixOS
+      # `user-profiles` row does not cross the scope. State the row here for the u2f file.
+      kdn.users.kdn = {
+        enable = true;
+        u2fKeysFile = ../../modules/universal/profile/user/kdn/yubico/u2f_keys.parts;
+      };
       # A host fact the `pi-client` aspect needs in the user evaluation.
       kdn.pi-client.hostName = "brys";
       # Inline: the repository's `.gitignore` tracks `.nix` files only, so an extensionless
