@@ -311,7 +311,7 @@ The cutover is one switch:
 
 - `kdn.services.rosec.enable = true` and `kdn.services.rosec.rosecd.enable = false` (the module's
   own unit would be a second `Type=dbus` owner);
-- the `dbus-kdn-sway-secrets-service` name holder runs the `rosecd` instead of `sleep infinity`;
+- the `kdn-secret-service` name holder runs the `rosecd` instead of `sleep infinity`;
   `nextcloud-client` keeps its `Requires` on the holder;
 - `kdn.programs.keepassxc.service.enable = false`, forced in the Home Manager evaluation because the
   module forwards the option with `mkDefault`;

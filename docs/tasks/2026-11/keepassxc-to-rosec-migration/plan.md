@@ -39,7 +39,7 @@ The migration therefore moves the **Secret Service contract**, not the password 
 | --- | --- |
 | KeePassXC | 2.8.0, `keepassxc.service` active, PID 196489, `--pw-stdin`, wrapper `kdn-keepass.sh` |
 | FdoSecrets | `[FdoSecrets] Enabled=true`; the wrapper upserts `Enabled=true` at every start; the GUI runs `keepassxc %f`, **not** the wrapper |
-| `secrets-service` | unit `dbus-kdn-sway-secrets-service.service`: `Type=dbus`, `BusName=org.freedesktop.secrets`, `script = sleep infinity`, `TimeoutStartSec=120s`, `partOf` the sway target |
+| `secrets-service` | unit `kdn-secret-service.service`: `Type=dbus`, `BusName=org.freedesktop.secrets`, `script = sleep infinity`, `TimeoutStartSec=120s`, `partOf` the sway target |
 | dependency web | `keepassxc.service` is `WantedBy` the shim; `nextcloud-client` `Requires` the shim |
 | live attributes | `Title`, `UserName`, `URL`, `Notes`, `Path`, `Uuid`, plus client attributes (`xdg:schema` 34, `service` 31, `account` 18, `application`, `username`, `user`, `source`, `version`, `server`, `type`, `FDO_SECRETS_CONTENT_TYPE`, `filename`, `key`, `MsalClientID`, `explanation`, `Microsoft.Developer.IdentityService`) |
 | attribute values | empty `Notes`/`URL`/`UserName` are common; no attribute carries a secret value |
@@ -274,7 +274,7 @@ The report is written atomically, and only a `--dry-run` writes the early summar
 
    `kdn.services.rosec.enable = true; kdn.services.rosec.rosecd.enable = false;` — the shim is the
    only `Type=dbus`/`BusName` owner, so `systemd-analyze --user verify` accepts the transaction.
-   Verify with `systemctl --user cat dbus-kdn-sway-secrets-service.service`: exactly one `ExecStart=`,
+   Verify with `systemctl --user cat kdn-secret-service.service`: exactly one `ExecStart=`,
    and it names `rosecd`.
 4. **Disable the KeePassXC service without an orphan.** The unit lives inside
    `(lib.mkIf cfg.service.enable …)`, but `modules/universal/profile/user/kdn/default.nix:479-493`
@@ -293,10 +293,10 @@ The report is written atomically, and only a `--dry-run` writes the early summar
 systemctl --user stop keepassxc.service
 sudo nixos-rebuild switch --flake "git+file://$PWD#oams"
 systemctl --user daemon-reload          # belt: 26.11 reloads user managers itself
-systemctl --user restart dbus-kdn-sway-secrets-service.service
+systemctl --user restart kdn-secret-service.service
 systemctl --user cat rosecd 2>&1 | head -1                           # must be "No files found" (rosecd.enable = false)
 busctl --user status org.freedesktop.secrets | head -3         # the rosecd PID
-systemctl --user is-active dbus-kdn-sway-secrets-service.service
+systemctl --user is-active kdn-secret-service.service
 systemctl --user status nextcloud-client.service
 rosec status                                                     # runtime identity reused from phase 2?
 ```
@@ -340,7 +340,7 @@ Rollback (any time before the KDBX is deleted):
 #      the profile guard restored, `kdn.programs.keepassxc.service.enable = true`,
 #      `FDO_ENABLED=true`, `keepassxc.ini [FdoSecrets] Enabled=true`
 sudo nixos-rebuild switch --flake "git+file://$PWD#oams"
-systemctl --user restart dbus-kdn-sway-secrets-service.service      # back to `sleep infinity`
+systemctl --user restart kdn-secret-service.service      # back to `sleep infinity`
 systemctl --user start keepassxc.service
 busctl --user status org.freedesktop.secrets                        # KeePassXC owns the name again
 ```

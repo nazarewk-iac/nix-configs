@@ -58,7 +58,7 @@ One switch:
 - `kdn.services.rosec.enable = true`, `kdn.services.rosec.rosecd.enable = false` — a new module
   option guards the module's own `rosecd.service`, so only one `Type=dbus` unit allocates
   `org.freedesktop.secrets`;
-- `hosts/oams`: the `dbus-kdn-sway-secrets-service` name holder gets
+- `hosts/oams`: the `kdn-secret-service` name holder gets
   `serviceConfig.ExecStart = lib.mkForce <rosecd>` (nixpkgs' `script` writes a plain `ExecStart`),
   the provider `PATH`/`SOPS_AGE_KEY_FILE`, and `wants`/`after` `rosec-keys.service`;
 - `kdn.programs.keepassxc.service.enable = false`, forced inside the Home Manager evaluation because
