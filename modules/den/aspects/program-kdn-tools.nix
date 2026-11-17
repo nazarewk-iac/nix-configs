@@ -7,21 +7,21 @@
 # The skill links are the cross-repo part: each tool ships a `SKILL.md` under
 # `share/<name>/skill/`, and a harness reads a global skill from `~/.agents/skills`,
 # `~/.config/opencode/skills` or `~/.pi/agent/skills`.
-{ pkgs, ... }:
-let
-  kdn-journal = pkgs.callPackage ../../../packages/kdn-journal { };
-  kdn-jj-meta = pkgs.callPackage ../../../packages/kdn-jj-meta { };
-  kdn-okf = pkgs.callPackage ../../../packages/kdn-okf { };
-  okf-agent-memory = pkgs.callPackage ../../../packages/okf-agent-memory { };
-  ai-xf = pkgs.callPackage ../../../packages/ai-xf { };
-  okf-guard = pkgs.callPackage ../../../packages/okf-guard { };
-  okf-rs = pkgs.callPackage ../../../packages/okf-rs { };
-  okflint = pkgs.callPackage ../../../packages/okflint { };
-  okph = pkgs.callPackage ../../../packages/okph { };
-in
+{ ... }:
 {
   kdn.program-kdn-tools.homeManager =
-    { lib, ... }:
+    { lib, pkgs, ... }:
+    let
+      kdn-journal = pkgs.callPackage ../../../packages/kdn-journal { };
+      kdn-jj-meta = pkgs.callPackage ../../../packages/kdn-jj-meta { };
+      kdn-okf = pkgs.callPackage ../../../packages/kdn-okf { };
+      okf-agent-memory = pkgs.callPackage ../../../packages/okf-agent-memory { };
+      ai-xf = pkgs.callPackage ../../../packages/ai-xf { };
+      okf-guard = pkgs.callPackage ../../../packages/okf-guard { };
+      okf-rs = pkgs.callPackage ../../../packages/okf-rs { };
+      okflint = pkgs.callPackage ../../../packages/okflint { };
+      okph = pkgs.callPackage ../../../packages/okph { };
+    in
     {
       home.packages = [
         kdn-journal
