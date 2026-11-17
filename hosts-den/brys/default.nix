@@ -419,7 +419,6 @@ in
       # `powersave` governor ramps cores unevenly and roughly halves throughput.
       powerManagement.cpuFreqGovernor = "performance";
 
-      kdn.hw.edid.enable = true;
       hardware.display.outputs."DP-4" = {
         edid = "PG278Q_120.bin";
         mode = "e";
