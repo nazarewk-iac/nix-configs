@@ -25,23 +25,23 @@
 # 3. **No custom module argument.** The target module takes `config`, `lib` and `pkgs` only.
 { ... }:
 {
-  declaration =
-    { config, lib, ... }:
-    {
-      # A Home Manager evaluation has no `kdn.hostName` of its own, and importing the shared
-      # declaration would collide with another aspect's import in a bare consumer. So the aspect
-      # declares its own name option; a consumer sets it next to its user config.
-      options.kdn.pi-client.hostName = lib.mkOption {
-        type = lib.types.str;
-        default = config.networking.hostName or "";
-        defaultText = lib.literalExpression "config.networking.hostName or \"\"";
-        description = "The machine name whose local endpoint the pi client should include.";
-      };
-    };
-
   kdn.pi-client.homeManager =
     { config, lib, ... }:
     let
+      declaration =
+        { config, lib, ... }:
+        {
+          # A Home Manager evaluation has no `kdn.hostName` of its own, and importing the shared
+          # declaration would collide with another aspect's import in a bare consumer. So the
+          # aspect declares its own name option; a consumer sets it next to its user config.
+          options.kdn.pi-client.hostName = lib.mkOption {
+            type = lib.types.str;
+            default = config.networking.hostName or "";
+            defaultText = lib.literalExpression "config.networking.hostName or \"\"";
+            description = "The machine name whose local endpoint the pi client should include.";
+          };
+        };
+
       # Sub-agent definitions are installed by home-manager, never copied out of the repo by hand.
       # pi's discoverAgents reads `$PI_CODING_AGENT_DIR/agents/*.md` (~/.pi/agent/agents/); each
       # *.md under data/pi/agents/ becomes one store symlink beside models.json/settings.json, so
