@@ -622,7 +622,6 @@ in
 
       # The zellij web interface, on the mesh interface only.
       kdn.zellij.web = {
-        enable = true;
         bindAddress = "0.0.0.0";
         port = 8082;
         certFile = config.kdn.certificates.certs.zellij-web.certPath;
