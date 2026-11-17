@@ -955,7 +955,7 @@ let
 
         # The daemon wiring lives in the rosec aspect; this desktop only names the unit it already
         # owns as the D-Bus name holder.
-        (lib.mkIf config.kdn.services.rosec.use {
+        (lib.mkIf (config.kdn.services.rosec.use or false) {
           kdn.services.rosec.rosecd.unitName = lib.mkDefault cfg.systemd.secrets-service.name;
         })
 
