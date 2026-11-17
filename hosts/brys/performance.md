@@ -27,7 +27,7 @@ confirms:
 | ------------------------------ | --------- | --------------- | --------------------- |
 | `nvme0n1` (Goodram PX700 2 TB) | M.2_1     | CPU Gen4 x4     | `00:01.1`             |
 | `nvme1n1` (Viper VP4300L 2 TB) | M.2_2     | chipset Gen4 x4 | `00:01.2` → `02:00.0` |
-| W6600 `0d:00.0`                | PCIEX16_1 | CPU Gen4 x8     |                       |
+| R9700 `0d:00.0`                | PCIEX16_1 | CPU Gen4 x8     |                       |
 | Radeon 550 "Lexa" `0e:00.0`    | PCIEX16_2 | CPU Gen4 x8     |                       |
 
 `nvme1n1` sits behind the X570 uplink (`00:01.2` → `02:00.0`). That PCIe 4.0 x4
@@ -44,13 +44,16 @@ MT7921K) driver issues are mostly on Windows. brys shows no PCIe AER errors.
 
 | PCI       | device                         | id          | VRAM                      |
 | --------- | ------------------------------ | ----------- | ------------------------- |
-| `0d:00.0` | Radeon PRO W6600 (RADV NAVI23) | `1002:73e3` | 7.98 GiB (`8573157376` B) |
+| `0d:00.0` | Radeon AI PRO R9700 (RADV NAVI48) | `1002:7551` | 31.86 GiB (`34213183488` B) |
 | `0e:00.0` | Lexa PRO (Radeon 540/550)      | `1002:699f` | 4.00 GiB (`4294967296` B) |
 
-`MESA_VK_DEVICE_SELECT=1002:73e3!` pins the W6600 as `Vulkan0`; the Lexa is
-never selected. The W6600 is unusable for the dense model weights, but it runs
-the Qwen MTP draft head — see [docs/local-llms.md](../../docs/local-llms.md),
-"GPU draft head".
+`MESA_VK_DEVICE_SELECT=1002:7551!` pins the R9700 as `Vulkan0`; the Lexa is
+never selected.
+
+The W6600 (8 GB) that this host ran until 2026-11-17 was a draft-head GPU and
+most of the model measurements below were taken on it. The R9700 replaced it
+with 32 GB, so the dated numbers are a lower bound for the current card; remeasure
+before sizing a resident model set from them.
 
 ## Storage: ZFS mirror and LUKS
 

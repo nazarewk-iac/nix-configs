@@ -1,7 +1,7 @@
 # Local LLM serving on oams — a second llama-swap host beside brys.
 #
 # oams is a laptop with a 12 GB Radeon RX 6800M (NAVI22), measured 6-9x faster at
-# prefill than brys' 8 GB W6600 on the same small models (docs/local-llms.md). The
+# prefill than brys' 32 GB R9700 on the same small models (docs/local-llms.md). The
 # small GPU models live here; brys keeps the big CPU/offload models.
 #
 # This file is deliberately leaner than hosts/brys/llm.nix:

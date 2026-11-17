@@ -93,7 +93,7 @@ in
     {
       home-manager.sharedModules = [ slots.config.home ];
     }
-    # The W6600 Vulkan runtime config for the GPU grunt (`hardware.graphics`,
+    # The R9700 Vulkan runtime config for the GPU grunt (`hardware.graphics`,
     # `mesa`, and `MESA_VK_DEVICE_SELECT`), owned by ./llm.nix (`llm.gpu`) so the
     # main profile and the Qwen specialisations cannot drift. The shipping host
     # always serves a GPU grunt, so this is always on.
@@ -407,7 +407,7 @@ in
       # It replaces the four entries this host used to carry (`llm-ds4`, `llm-small`,
       # `llm-qwen`, `llms-frontier`). One entry serves the whole fleet through llama-swap's
       # matrix engine: a request for a frontier model swaps the resident one (~90-120 s,
-      # no reboot), and the small/surveyed models co-reside on the W6600 by tier. The old
+      # no reboot), and the small/surveyed models co-reside on the R9700 by tier. The old
       # split existed because a router could hold one model; the swap engine removed that
       # reason. See hosts/brys/llms-frontier.nix and docs/local-llms.md.
       #

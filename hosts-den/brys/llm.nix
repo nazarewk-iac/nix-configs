@@ -37,7 +37,7 @@ let
   llm = import ../../lib/llm.nix { inherit lib; };
   srv = data.servers.brys;
 
-  # brys always runs llama-swap on the matrix engine and always exports the W6600 Vulkan runtime.
+  # brys always runs llama-swap on the matrix engine and always exports the R9700 Vulkan runtime.
   # These were `withSwap` / (`qwenVulkan || withGrunt || withSurveyed`) flags; the shipping host
   # fixed them, so they are constants here and every `lib.mkIf` below stays truthful.
   withSwap = true;
@@ -63,13 +63,13 @@ in
     };
   };
 
-  # Runtime graphics/ICD config for the W6600 Vulkan path: expose the Mesa RADV Vulkan ICD to the
-  # loader and pin the llama-cpp process tree to the W6600 (`1002:73e3`) so the 4 GB Lexa
+  # Runtime graphics/ICD config for the R9700 Vulkan path: expose the Mesa RADV Vulkan ICD to the
+  # loader and pin the llama-cpp process tree to the R9700 (`1002:7551`) so the 4 GB Lexa
   # (`Vulkan1`) is never selected. The `device = Vulkan0` preset key is the in-process belt.
   gpu = lib.optionalAttrs withGpu {
     hardware.graphics.enable = true;
     hardware.graphics.extraPackages = [ pkgs.mesa ];
-    systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:73e3!";
+    systemd.services.llama-cpp.environment.MESA_VK_DEVICE_SELECT = "1002:7551!";
   };
 
   # The NixOS-side LLM configuration. Import this as a module. It owns the

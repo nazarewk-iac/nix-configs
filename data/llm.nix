@@ -170,7 +170,7 @@ in
           ]
           [ "qwen3.5-35b-a3b" ]
         ];
-        vulkanDeviceSelect = "1002:73e3!";
+        vulkanDeviceSelect = "1002:7551!";
       };
 
       # Boot profiles: WHICH ROUTERS ARE SERVED. A model is served when its
@@ -203,7 +203,7 @@ in
     # The laptop host. It serves only SMALL models that fit the 12 GB RX 6800M
     # (docs/tasks/2026-11/oams-llm-host/). No grunt/surveyed split: one `main`
     # router plus a `swap` that lets llama-swap evict between the few models. The
-    # GPU device pin is 1002:73df (the 6800M), not brys' 1002:73e3.
+    # GPU device pin is 1002:73df (the 6800M), not brys' 1002:7551.
     oams = {
       package = "llama-cpp-sessions-vulkan-noblas";
       defaultThreads = 12;

@@ -6,8 +6,8 @@ timestamp: 2026-08-30T00:00:00+02:00
 
 # brys host
 
-Ryzen 9 5950X workstation, 128 GB DDR4, AMD Radeon Pro W6600 (8 GB, not
-useful for LLMs). CPU-only local LLM serving.
+Ryzen 9 5950X workstation, 128 GB DDR4, AMD Radeon AI PRO R9700 (32 GB, Vulkan compute for the
+local LLMs). The RX 550 drives the displays.
 
 - Host config: [`hosts/brys/default.nix`](default.nix)
 - Build: `~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build`
@@ -16,7 +16,7 @@ useful for LLMs). CPU-only local LLM serving.
 
 brys runs several local LLMs through the standalone `kdn.llm.local` slot
 (backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`).
-The grunt and surveyed sets co-reside on the W6600 by tier; the frontier
+The grunt and surveyed sets co-reside on the R9700 by tier; the frontier
 (Qwen3.8-Flash-Next at 1M context, YaRN x4) retired from the fleet on
 2026-11-13 on electricity grounds, so the `main` router is empty.
 
