@@ -329,7 +329,8 @@ in
     {
       name = "the baseline nixos class holds the boot, network and OpenSSH opinions";
       expected = {
-        initrdSystemd = true;
+        # `boot.initrd.systemd.enable` is gone: the pinned nixpkgs removed the scripted initrd,
+        # so systemd in the initrd is no longer an option to assert.
         systemdBoot = true;
         tmpfs = true;
         nftables = true;
@@ -342,7 +343,6 @@ in
         avahi = false;
       };
       actual = {
-        initrdSystemd = nixosPlain.boot.initrd.systemd.enable;
         # `nixosNoHetzner`, not `nixosPlain`. `profile-hetzner` forces `systemd-boot` off, so the
         # all-names subject reads the Hetzner choice and never the baseline one.
         systemdBoot = nixosNoHetzner.boot.loader.systemd-boot.enable;
