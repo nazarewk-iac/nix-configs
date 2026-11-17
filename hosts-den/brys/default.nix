@@ -362,7 +362,7 @@ in
   # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
   # forbids one aspect writing a sibling's option, so the user states it here.
   den.aspects.kdn.homeManager =
-    { config, lib, pkgs, ... }:
+    { config, lib, osConfig, pkgs, ... }:
     {
       imports = [
         ../../data/ca/ca-dag.nix
@@ -378,8 +378,9 @@ in
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = config.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
+        # The certificate data lives on the host; `osConfig` reaches it from the user module.
+        certFile = osConfig.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = osConfig.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
@@ -847,8 +848,9 @@ in
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        certFile = config.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
+        # The certificate data lives on the host; `osConfig` reaches it from the user module.
+        certFile = osConfig.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = osConfig.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
