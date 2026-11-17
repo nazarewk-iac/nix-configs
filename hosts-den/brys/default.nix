@@ -29,7 +29,7 @@ let
   # The whole local-LLM serving config. It is a plain function that takes the flake as
   # `kdnConfig.self`, so the old file keeps working unchanged. Its three outputs (`slot`, `gpu`,
   # `nixos`) are merged below.
-  llm = import ./llm.nix {
+  llmHost = import ./llm.nix {
     inherit lib;
     pkgs = inputs.self.pkgs.x86_64-linux.default;
     kdnConfig = { self = inputs.self; };
@@ -352,9 +352,9 @@ in
 
         # The LLM slot data, the host-side secrets/persistence, and the GPU runtime config. These are
         # plain modules, so they merge into this target exactly as they merged into the old host.
-        llm.slot
-        llm.nixos
-        llm.gpu
+        llmHost.slot
+        llmHost.nixos
+        llmHost.gpu
       ];
 
       # --- identity ---------------------------------------------------------
