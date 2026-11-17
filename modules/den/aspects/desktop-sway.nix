@@ -955,12 +955,12 @@ let
 
         # The daemon wiring lives in the rosec aspect; this desktop only names the unit it already
         # owns as the D-Bus name holder.
-        # The write is an attribute, not a `mkIf`: the module system rejects a definition at an
-        # option path that does not exist even when the condition is false. A user config without
-        # the rosec aspect declares no `kdn.services.rosec`, so the path must be absent entirely.
-        (lib.optionalAttrs ((config.kdn.services ? rosec) && (config.kdn.services.rosec ? use)) {
-          kdn.services.rosec.rosecd.unitName = lib.mkDefault cfg.systemd.secrets-service.name;
-        })
+        # The daemon wiring lives in the rosec aspect; this desktop only names the unit it already
+        # owns as the D-Bus name holder. The write is a *consumer* decision, because the module
+        # system rejects a definition at an option path that does not exist even under `mkIf false`:
+        # a user that includes this aspect without the rosec aspect must not carry the path.
+        #
+        #   kdn.services.rosec.rosecd.unitName = config.desktop-sway.systemd.secrets-service.name;
 
         (lib.mkIf config.programs.gnupg.agent.enable {
           systemd.user.services."${cfg.systemd.envs.name}" = {
