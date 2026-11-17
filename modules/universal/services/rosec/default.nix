@@ -90,9 +90,12 @@ let
       Environment = [
         "PATH=${servicePath}"
         "SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
+        # The package's unit carries this; re-declaring the unit must not drop it.
+        "RUST_LOG=info"
       ];
       Restart = "on-failure";
       RestartSec = 2;
+      LimitMEMLOCK = "infinity";
       TimeoutStartSec = lib.mkDefault "60s";
     };
   };
@@ -106,14 +109,20 @@ let
       Type = "oneshot";
       TimeoutStartSec = "120s";
       ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
-        exec ${pkgs.expect}/bin/expect -c '
+        set -eu
+        ${pkgs.expect}/bin/expect -c '
           set timeout 90
           spawn ${lib.getExe' cfg.package "rosec"} unlock
           expect {
             -re "Press Enter|No password needed" { send "\r"; exp_continue }
+            timeout { exit 1 }
             eof
           }
-        '
+        ' || exit 1
+        # `expect` exits 0 at EOF even when the prompt never appeared; the daemon is the only
+        # authority on whether the store is open.
+        ${lib.getExe' cfg.package "rosec"} status | ${pkgs.gnugrep}/bin/grep -q "sops.*unlocked" \
+          || exit 1
       ''}";
     };
   };

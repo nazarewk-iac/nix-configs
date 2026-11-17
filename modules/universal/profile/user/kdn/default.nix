@@ -493,24 +493,28 @@ in
                 PartOf = [ config.wayland.systemd.target ];
               };
             };
-            systemd.user.services.nextcloud-client.Unit = {
-              Requires = lib.mkForce [
-                config.kdn.desktop.sway.systemd.envs.target
-                config.kdn.desktop.sway.systemd.secrets-service.service
-              ];
-              # `After=` alone does not pull the unlock in, so a client that starts on its own
-              # would run against a locked store. The rosec module defines the unit.
-              Wants = lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
-              After = [
-                config.wayland.systemd.target
-                config.kdn.desktop.sway.systemd.secrets-service.service
-                config.kdn.desktop.sway.systemd.envs.target
-                "tray.target"
-              ]
-              ++ lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
-              PartOf = [ config.wayland.systemd.target ];
+            # Guard the unit with the client's own switch: a sway host without Nextcloud would
+            # otherwise get a unit with no `ExecStart`, and systemd refuses to load it.
+            systemd.user.services.nextcloud-client = lib.mkIf config.services.nextcloud-client.enable {
+              Unit = {
+                Requires = lib.mkForce [
+                  config.kdn.desktop.sway.systemd.envs.target
+                  config.kdn.desktop.sway.systemd.secrets-service.service
+                ];
+                # `After=` alone does not pull the unlock in, so a client that starts on its own
+                # would run against a locked store. The rosec module defines the unit.
+                Wants = lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
+                After = [
+                  config.wayland.systemd.target
+                  config.kdn.desktop.sway.systemd.secrets-service.service
+                  config.kdn.desktop.sway.systemd.envs.target
+                  "tray.target"
+                ]
+                ++ lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
+                PartOf = [ config.wayland.systemd.target ];
+              };
+              Install.WantedBy = [ config.wayland.systemd.target ];
             };
-            systemd.user.services.nextcloud-client.Install.WantedBy = [ config.wayland.systemd.target ];
             systemd.user.services.kdeconnect.Unit = {
               Requires = [ config.kdn.desktop.sway.systemd.envs.target ];
               After = [ config.kdn.desktop.sway.systemd.envs.target ];

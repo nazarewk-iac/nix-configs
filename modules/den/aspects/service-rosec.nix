@@ -278,7 +278,8 @@ in
 
         providers.sops.path = lib.mkOption {
           type = lib.types.str;
-          default = "";
+          # No default: a store path is host data, and an empty default would fail deep inside
+          # the provider instead of at evaluation.
           example = "~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage";
           description = ''
             The store root: one directory per collection, one `<id>.sops.yaml` per item. A `~/`
@@ -471,7 +472,16 @@ in
         # reads `~/.config/rosec/config.toml` when `--store` is absent. Render it whenever this
         # aspect is active, not only when the daemon runs, or the CLI fails on a host that still
         # keeps its password manager on the bus.
-        (lib.mkIf (cfg.use || cfg.conflictNotification.use) {
+        (lib.mkIf (cfg.use || cfg.conflictNotification.use || cfg.providers.sops.keyGeneration.enable) {
+          # `xdg.configFile` links a read-only store file, so the config is mode 0444 and `rosecd`
+          # warns about it. Replace the link with a 0600 copy on every activation.
+          home.activation.rosec-config-mode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            cfg="$HOME/.config/rosec/config.toml"
+            if [ -L "$cfg" ]; then
+              cp --remove-destination "$(readlink -f "$cfg")" "$cfg"
+            fi
+            chmod 600 "$cfg"
+          '';
           xdg.configFile."rosec/config.toml".source = rosecConfigFile;
         })
 
@@ -509,17 +519,16 @@ in
         })
 
         (lib.mkIf cfg.rosecd.enable {
-          # The package ships a private socket unit nobody uses; it must not be enabled.
-          systemd.user.units."rosecd.socket".enable = false;
-
+          # The package's socket unit is not enabled by default, and Home Manager has no
+          # `systemd.user.units` to mask it with; leave it alone.
           # A locked provider blocks the first client; unlock once after the daemon is up.
           systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable {
             Unit = {
               Description = "Unlock the rosec sops store after the Secret Service daemon starts";
               Requires = [ "${cfg.rosecd.unitName}.service" ];
               After = [ "${cfg.rosecd.unitName}.service" ];
-              WantedBy = [ "default.target" ];
             };
+            Install.WantedBy = [ "default.target" ];
             Service = {
               Type = "oneshot";
               TimeoutStartSec = "120s";
@@ -546,8 +555,8 @@ in
               # "Transaction order is cyclic" when the target is restarted.
               After = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
               Wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
-              Aliases = lib.optional (cfg.rosecd.unitName != "rosecd") "rosecd.service";
             };
+            aliases = lib.optional (cfg.rosecd.unitName != "rosecd") "rosecd.service";
 
             Service = {
               Type = "dbus";
