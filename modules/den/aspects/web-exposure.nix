@@ -162,6 +162,15 @@
           # /run/secrets path). And bind to the network services that own the bind
           # address, restarting with them so a NetBird flap re-binds cleanly.
           systemd.services.caddy = {
+            # The NetBird unit can be `active` before its interface holds the address, so the
+            # first bind fails with `cannot assign requested address`. Keep retrying until the
+            # address appears; the start limit is lifted because the wait is unbounded.
+            startLimitIntervalSec = 0;
+            startLimitBurst = 0;
+            serviceConfig = {
+              Restart = lib.mkDefault "on-failure";
+              RestartSec = lib.mkDefault "5s";
+            };
             after = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
             wants = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
             partOf = cfg.networkServices;
