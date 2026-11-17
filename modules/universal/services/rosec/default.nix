@@ -454,6 +454,16 @@ in
         # module is active, not only when the daemon runs, or the CLI fails on a host that still
         # keeps its password manager on the bus.
         (lib.mkIf needsHomeManager {
+          # `xdg.configFile` links a read-only store file, so the config is mode 0444 and
+          # `rosecd` warns about it. Replace the link with a 0600 copy on every activation; the
+          # file holds paths only, but the daemon should not have to warn at every start.
+          home.activation.rosec-config-mode = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            cfg="$HOME/.config/rosec/config.toml"
+            if [ -L "$cfg" ]; then
+              cp --remove-destination "$(readlink -f "$cfg")" "$cfg"
+            fi
+            chmod 600 "$cfg"
+          '';
           xdg.configFile."rosec/config.toml".source = rosecConfigFile;
         })
 

@@ -469,14 +469,30 @@ in
       # pointing at a dead unit. The package's socket unit is a private socket nobody uses.
       systemd.user.units."rosecd.socket".enable = false;
 
-      # The store must be unlocked before the unit counts as started: `Type=dbus` readiness is
-      # the bus name, and `ExecStartPost` runs after that but before the start job completes, so
-      # every `Requires` client (nextcloud) starts against an unlocked store. A locked provider
-      # makes a headless client write a duplicate item instead of reading its own, and rosec has no
-      # silent unlock path. The sops field is optional, but `rosec unlock` still prompts on a TTY:
-      # allocate one and keep stdin open until the unwrap finishes (a bare newline plus EOF kills
-      # the session before the YubiKey is done). The leading `-` keeps a missing YubiKey from
-      # failing the unit.
+      # A locked provider makes a headless client write a duplicate item instead of reading its
+      # own, and rosec has no silent unlock path. Unlock once before the clients start; the unit is
+      # ordered before `nextcloud-client`, and a missing YubiKey only fails this unit.
+      systemd.user.services.rosec-unlock = {
+        description = "Unlock the rosec sops store before Secret Service clients start";
+        requires = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+        after = [ config.kdn.desktop.sway.systemd.secrets-service.service ];
+        before = [ "nextcloud-client.service" ];
+        wantedBy = [ "graphical-session.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          TimeoutStartSec = "120s";
+          ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+            exec ${pkgs.expect}/bin/expect -c '
+              set timeout 90
+              spawn ${lib.getExe' config.kdn.services.rosec.package "rosec"} unlock
+              expect {
+                -re "Press Enter|No password needed" { send "\r"; exp_continue }
+                eof
+              }
+            '
+          ''}";
+        };
+      };
       # The conflict report is independent: it reads the store, not the daemon.
       kdn.services.rosec = {
         enable = true;
@@ -516,13 +532,6 @@ in
         # still gets the daemon.
         aliases = [ "rosecd.service" ];
         serviceConfig.ExecStart = lib.mkForce "${lib.getExe' config.kdn.services.rosec.package "rosecd"}";
-        serviceConfig.ExecStartPost = [
-          "-${pkgs.writeShellScript "rosec-unlock" ''
-            set -eu
-            ( sleep 1; printf '\n'; sleep 10 ) \
-              | ${pkgs.util-linux}/bin/script -qec "${lib.getExe' config.kdn.services.rosec.package "rosec"} unlock" /dev/null
-          ''}"
-        ];
         serviceConfig.Restart = "on-failure";
         serviceConfig.RestartSec = 2;
         serviceConfig.Environment = [

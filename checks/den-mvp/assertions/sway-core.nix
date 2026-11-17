@@ -152,7 +152,7 @@ let
         envsTarget = "kdn-sway-kdn-sway-envs.target";
         tray = "kdn-sway-kdn-sway-tray.target";
         polkit = "kdn-sway-kdn-sway-polkit-agent.service";
-        secrets = "dbus-kdn-sway-secrets-service.service";
+        secrets = "kdn-secret-service.service";
       };
       actual = {
         sway = swayCfg.systemd.sway.service;
@@ -191,11 +191,11 @@ let
         sway = nixosCore.systemd.user.services ? "kdn-sway-kdn-sway-sway";
         envsService = nixosCore.systemd.user.services ? "kdn-sway-kdn-sway-envs";
         polkit = nixosCore.systemd.user.services ? "kdn-sway-kdn-sway-polkit-agent";
-        secretsService = nixosCore.systemd.user.services ? "dbus-kdn-sway-secrets-service";
+        secretsService = nixosCore.systemd.user.services ? "kdn-secret-service";
         session = nixosCore.systemd.user.targets ? "kdn-sway-kdn-sway-session";
         envsTarget = nixosCore.systemd.user.targets ? "kdn-sway-kdn-sway-envs";
         tray = nixosCore.systemd.user.targets ? "kdn-sway-kdn-sway-tray";
-        secretsTarget = nixosCore.systemd.user.targets ? "dbus-kdn-sway-secrets-service";
+        secretsTarget = nixosCore.systemd.user.targets ? "kdn-secret-service";
       };
     }
 

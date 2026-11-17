@@ -143,7 +143,7 @@ in
           ];
           tray.units = [ "target" ];
           polkit-agent.units = [ "service" ];
-          secrets-service.prefix = "dbus";
+          secrets-service.name = "kdn-secret-service";
           secrets-service.units = [
             "service"
             "target"
