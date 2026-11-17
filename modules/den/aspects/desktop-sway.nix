@@ -955,7 +955,10 @@ let
 
         # The daemon wiring lives in the rosec aspect; this desktop only names the unit it already
         # owns as the D-Bus name holder.
-        (lib.mkIf (config.kdn.services.rosec.use or false) {
+        # The write is an attribute, not a `mkIf`: the module system rejects a definition at an
+        # option path that does not exist even when the condition is false. A user config without
+        # the rosec aspect declares no `kdn.services.rosec`, so the path must be absent entirely.
+        (lib.optionalAttrs ((config.kdn.services ? rosec) && (config.kdn.services.rosec ? use)) {
           kdn.services.rosec.rosecd.unitName = lib.mkDefault cfg.systemd.secrets-service.name;
         })
 
