@@ -385,6 +385,8 @@ in
       };
 
       xdg.configFile."kdn/source-flake".source = inputs.self;
+      # A host fact the `pi-client` aspect needs in the user evaluation.
+      kdn.hostName = "brys";
       xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
       xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";

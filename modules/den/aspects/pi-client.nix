@@ -28,6 +28,10 @@
   kdn.pi-client.homeManager =
     { config, lib, ... }:
     let
+      # `kdn.hostName` is a host option; a Home Manager evaluation declares it through the shared
+      # common module, and the consumer states the machine name next to its own user config.
+      imports = [ ../common/host-name.nix ];
+
       # Sub-agent definitions are installed by home-manager, never copied out of the repo by hand.
       # pi's discoverAgents reads `$PI_CODING_AGENT_DIR/agents/*.md` (~/.pi/agent/agents/); each
       # *.md under data/pi/agents/ becomes one store symlink beside models.json/settings.json, so
