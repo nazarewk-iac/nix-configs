@@ -1,0 +1,290 @@
+# AGENTS.talk — the policy for a ClankTalk session in this repository.
+#
+# This file is human-owned. ClankTalk refuses any script change to it or to a `.talk` file.
+# Start a session with `clank-opencode` or `clank-pi`. Plain `opencode` and plain `pi` do not
+# load the ClankTalk integration, so this file has no effect there.
+#
+# The policy is deliberately small. Add a tool only when the daily loop needs it, and keep every
+# program behind a named tool: ClankTalk never gives the agent a shell.
+
+allow env PATH, HOME, USER, LOGNAME, TMPDIR, XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME, NIX_PATH, NIX_CONFIG, NIX_REMOTE, NIX_SSL_CERT_FILE, SSL_CERT_FILE, GIT_SSL_CAINFO, http_proxy, https_proxy, no_proxy, AI_AGENT, OPENCODE_SESSION_ID, OPENCODE_MODEL, PI_SESSION_ID, PI_MODEL
+allow changes to @/.agents/
+
+# Runs `jj status`.
+tool jj_status
+  run 'jj' with 'status'
+end
+
+# Shows the working-copy diff.
+tool jj_diff
+  run 'jj' with 'diff'
+end
+
+# Shows the diff of the named files.
+tool jj_diff_files with files
+  run 'jj' with 'diff', files
+end
+
+# Shows the recent log.
+tool jj_log
+  run 'jj' with 'log', '--limit', '20'
+end
+
+# Shows one change.
+tool jj_show with revision
+  run 'jj' with 'show', revision
+end
+
+# Creates a new empty change.
+tool jj_new
+  run 'jj' with 'new'
+end
+
+# Describes the working-copy change.
+tool jj_describe with message
+  run 'jj' with 'describe', '-m', message
+end
+
+# Commits the named files with a message. It never pushes.
+tool jj_commit with files, message
+  run 'jj' with 'commit', '-m', message, '--', files
+end
+
+# Splits the named files out of the working copy with a message.
+tool jj_split with files, message
+  run 'jj' with 'split', '-m', message, '--', files
+end
+
+# Folds the named files into the change that introduced their lines.
+tool jj_absorb with files
+  run 'jj' with 'absorb', '--', files
+end
+
+# Sets a bookmark on the working-copy change.
+tool jj_bookmark with name
+  run 'jj' with 'bookmark', 'set', name, '-r', '@'
+end
+
+# Evaluates one flake attribute and prints the raw result. Read-only.
+tool nix_eval with attribute
+  run 'nix' with 'eval', '--raw', attribute
+end
+
+# Builds one flake attribute without a link. A human confirms the build.
+tool nix_build with attribute
+  run 'nix' with 'build', '--no-link', '--print-out-paths', attribute
+end
+
+# Builds one check bundle from the fixed list. A human confirms the build.
+tool check_bundle with system, bundle
+  set bundles to ['bundle-core', 'bundle-den', 'bundle-pkgs', 'bundle-agent-memory', 'bundle-artifact', 'bundle-slow']
+  if bundles does not contain bundle
+    reject 'Unknown bundle. Use bundle-core, bundle-den, bundle-pkgs, bundle-agent-memory, bundle-artifact or bundle-slow.'
+  end
+  run 'nix' with 'build', '--no-eval-cache', '-L', '.#checks.' + system + '.' + bundle keeping the last 200 lines
+end
+
+# Formats the Nix tree.
+tool nix_fmt
+  run 'nix' with 'fmt'
+end
+
+# Formats the named Markdown or JSON files. It writes inside the project.
+tool prettier with files
+  run 'prettier' with '--write', files in a sandbox
+end
+
+# Enters the devenv shell and exits. The cheap shell check.
+tool devenv_shell_check
+  run 'devenv' with 'shell', '--', 'true'
+end
+
+# Reads the task and session journals. Use a subcommand such as `summary` or `tasks`.
+tool kdn_journal with arguments
+  run 'kdn-journal' with arguments in a sandbox
+end
+
+# Attributes a change to the harness session that produced it.
+tool kdn_jj_meta with revision
+  run 'kdn-jj-meta' with 'attribute', revision
+end
+
+# Searches the tree with ripgrep. Read-only.
+tool rg with pattern
+  run 'rg' with '--line-number', '--no-heading', pattern, '.' in a sandbox
+end
+
+# The memory bundle has one writer: okf-agent-memory. A script must not write it, and neither must
+# a jj commit that names it.
+before change
+  if the change's path is in @/.agents/knowledge/ or the change's path is in @/knowledge/
+    reject 'The knowledge bundle is written by okf-agent-memory, not by a script.'
+  end
+  if the change's path ends with 'AGENTS.md' or the change's path ends with 'CLAUDE.md' or the change's path is in @/.agents/rules/
+    reject 'The agent instruction files are human-owned. Ask the human to change them.'
+  end
+  if the change's path is in @/secrets/
+    reject 'Secrets are not written by a script.'
+  end
+  if the change's path ends with '.sops.yaml'
+    reject 'A sops file is not written by a script.'
+  end
+end
+
+# A move or delete can bypass the path checks above: moving the `knowledge` symlink aside, then
+# writing through the new name, lands in the bundle. Protect the source and the target.
+before move
+  if the move's from is in @/.agents/knowledge/ or the move's from is in @/knowledge/ or the move's to is in @/.agents/knowledge/ or the move's to is in @/knowledge/
+    reject 'The knowledge bundle cannot be moved.'
+  end
+end
+
+before delete
+  if the delete's path is in @/.agents/knowledge/ or the delete's path is in @/knowledge/
+    reject 'The knowledge bundle cannot be deleted.'
+  end
+end
+
+# This repository never pushes from an agent session. The human reviews and pushes.
+before git
+  if the git's operation is 'push'
+    reject 'This repository never pushes from an agent session. The human reviews and pushes.'
+  end
+end
+
+# A commit, split or absorb rewrites history. Show the human the message and ask first.
+before jj_commit
+  if the jj_commit's files's length is null
+    set targets to [the jj_commit's files]
+  else
+    set targets to the jj_commit's files
+  end
+  for file in targets
+    if file's path is null
+      reject 'Use explicit project paths in the files list, not a jj fileset.'
+    end
+    if file is in @/.agents/knowledge/ or file is in @/knowledge/ or file is in @/secrets/
+      reject 'The commit names a protected path: ' + file
+    end
+  end
+  ask 'Commit these files with "' + the jj_commit's message + '"?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before jj_split
+  if the jj_split's files's length is null
+    set targets to [the jj_split's files]
+  else
+    set targets to the jj_split's files
+  end
+  for file in targets
+    if file's path is null
+      reject 'Use explicit project paths in the files list, not a jj fileset.'
+    end
+    if file is in @/.agents/knowledge/ or file is in @/knowledge/ or file is in @/secrets/
+      reject 'The split names a protected path: ' + file
+    end
+  end
+  ask 'Split these files out with "' + the jj_split's message + '"?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before jj_absorb
+  if the jj_absorb's files's length is null
+    set targets to [the jj_absorb's files]
+  else
+    set targets to the jj_absorb's files
+  end
+  for file in targets
+    if file's path is null
+      reject 'Use explicit project paths in the files list, not a jj fileset.'
+    end
+    if file is in @/.agents/knowledge/ or file is in @/knowledge/ or file is in @/secrets/
+      reject 'The absorb names a protected path: ' + file
+    end
+  end
+  ask 'Absorb these files into the change that introduced their lines?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before jj_bookmark
+  ask 'Set bookmark ' + the jj_bookmark's name + ' on the working-copy change?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+# Nix and devenv run without a sandbox: they need the store, the daemon and the network. A human
+# confirms each call. The agent can call only these named tools, not an arbitrary program.
+before nix_build
+  ask 'Run a Nix build for ' + the nix_build's attribute + '?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before check_bundle
+  set bundles to ['bundle-core', 'bundle-den', 'bundle-pkgs', 'bundle-agent-memory', 'bundle-artifact', 'bundle-slow']
+  if bundles does not contain the check_bundle's bundle
+    reject 'Unknown bundle. Use bundle-core, bundle-den, bundle-pkgs, bundle-agent-memory, bundle-artifact or bundle-slow.'
+  end
+  ask 'Build the ' + the check_bundle's bundle + ' bundle on ' + the check_bundle's system + '?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before nix_fmt
+  ask 'Format the Nix tree with nix fmt?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before devenv_shell_check
+  ask 'Enter the devenv shell to check it?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before kdn_jj_meta
+  ask 'Attribute ' + the kdn_jj_meta's revision + ' to this session?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+before prettier
+  if the prettier's files's length is null
+    set targets to [the prettier's files]
+  else
+    set targets to the prettier's files
+  end
+  for file in targets
+    if file is in @/.agents/knowledge/ or file is in @/knowledge/ or file is in @/secrets/
+      reject 'The knowledge bundle and the secrets are not formatted by a script.'
+    end
+    if file ends with '.sops.yaml'
+      reject 'A sops file is not formatted by a script.'
+    end
+  end
+  ask 'Format these files with prettier?' with 'no' or 'yes'
+  if the result is not 'yes'
+    reject 'The human said no'
+  end
+end
+
+# Every tool that runs a program either uses a sandbox or is one of the named jj/Nix tools. A new
+# tool cannot silently run a program with the full user rights.
+before run
+  if the run's sandbox is null and the run's program is not 'jj' and the run's program is not 'nix' and the run's program is not 'devenv' and the run's program is not 'kdn-jj-meta'
+    reject 'Only the named jj and Nix tools run without a sandbox. Add "in a sandbox" to the tool.'
+  end
+end
