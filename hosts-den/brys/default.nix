@@ -328,6 +328,7 @@ in
     program-ssh-client
     program-terminal-ide
     program-thunderbird
+    program-weechat
     program-wofi
     program-zsh
     secrets
@@ -361,7 +362,7 @@ in
   # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
   # forbids one aspect writing a sibling's option, so the user states it here.
   den.aspects.kdn.homeManager =
-    { config, pkgs, ... }:
+    { config, lib, pkgs, ... }:
     {
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
         "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
@@ -389,6 +390,11 @@ in
         (pkgs.callPackage ../../packages/klog-time-tracker { })
         (pkgs.callPackage ../../packages/ss-util { })
         (pkgs.callPackage ../../packages/systemd-find-cycles { })
+        deluge-gtk
+        (pkgs.writeShellApplication {
+          name = "kdn-drag0nius.kdbx";
+          text = "${lib.getExe (pkgs.callPackage ../../packages/kdn-keepass { })} drag0nius.kdbx";
+        })
       ];
     };
 
