@@ -434,7 +434,7 @@ in
       kdn.disks.persist."usr/data".directories = config.kdn.virtualisation.containers.persist.usrData;
 
       # --- desktop ----------------------------------------------------------
-      kdn.desktop.sway.portals.debug = true;
+      kdn.desktop-sway.portals.debug = true;
 
       # --- networking -------------------------------------------------------
       kdn.networking.enable = true;
