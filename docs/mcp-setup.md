@@ -130,6 +130,12 @@ reload the backend in Claude Code (see Lifecycle below).
 
 ---
 
+## ClankTalk
+
+ClankTalk has native OpenCode and Pi integrations; it is not registered in this gateway. See
+[clank-talk.md](clank-talk.md). The MCP server (`clank-talk-mcp`) can be added as an
+`extraBackends` entry later, but Pi has no MCP elicitation, so the native extension is preferred.
+
 ## basic-memory knowledge bases
 
 Enabled via `kdn.mcp.basic-memory.enable = true` (a submodule of the mcp slot). Adds two

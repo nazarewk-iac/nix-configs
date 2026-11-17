@@ -35,6 +35,13 @@ text). Local models corrupt structured files often.
 - Report at the end of a turn: what changed, what you verified and how, what remains, and every
   decision you made without asking.
 
+## ClankTalk sessions
+
+When the `clank_talk` tool is available and the other tools are hidden, use `clank_talk` for all
+work: reading, editing, search, jj, Nix and tests. The delegation rules above do not apply in that
+session; the policy defines the only tools. If a task needs a tool that `AGENTS.talk` does not
+define, stop and tell the human. See [docs/clank-talk.md](../../docs/clank-talk.md).
+
 ## When a decision is not yours
 
 Some actions belong to the owner: hardware, reboots, installs, disk or secret operations, and

@@ -1,12 +1,15 @@
 ---
 type: Task
 description: Integrate ClankTalk's sandboxed scripting runtime into the OpenCode and Pi harnesses behind an opt-in launcher, with a repository AGENTS.talk policy for jj, Nix and the agent journal.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-17T08:18:24+01:00
 ---
 
 # Integrate ClankTalk with the OpenCode and Pi harnesses
+
+> ✅ **Done** — see the solution in [done.md](done.md).
 
 Upstream: <https://clank.talk/> · <https://github.com/bigskysoftware/clank-talk>
 
@@ -235,6 +238,9 @@ Out of scope:
    Pi?
 6. Confirm that the policy lives at the root. The alternative is a generated file that the launcher
    binds for the session; that adds a race with a second session in the same checkout.
+
+The trial resolved these: opt-in launchers, no `delegate`, Nix route A (unsandboxed and
+human-gated), the policy at the root, and no MCP gateway entry. See [done.md](done.md).
 
 ## Related
 

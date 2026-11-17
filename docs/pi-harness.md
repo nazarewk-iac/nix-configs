@@ -235,6 +235,7 @@ Rules that follow from the table:
 ## Related
 
 - [kdn-llms skill](../.agents/skills/kdn-llms/SKILL.md) — which alias for which purpose.
+- [docs/clank-talk.md](clank-talk.md) — the guarded ClankTalk mode and its launchers.
 - [docs/pi-extension-forks.md](pi-extension-forks.md) — how a Pi extension is forked, patched and
   vendored.
 - [docs/tasks/2026-10/pi-harness-multi-agent/](tasks/2026-10/pi-harness-multi-agent/definition.md)

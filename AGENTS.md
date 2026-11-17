@@ -108,6 +108,14 @@ read the full doc when you need detail.
 | [docs/tasks/README.md](docs/tasks/README.md)                                                              | Tasks convention: one directory per task under `<YYYY-MM>/`, done-tag + sibling solution, frontmatter schema                                                                                                                                                            |
 | [checks/README.md](checks/README.md)                                                                      | Every check: its bundle, its measured time and its exact standalone command. Never run a bare `nix flake check` — it takes 11 minutes.                                                                                                                                  |
 
+## ClankTalk sessions
+
+When the `clank_talk` tool is available and the other tools are hidden, use `clank_talk` for all
+work: reading, editing, search, jj, Nix and tests. Do not use a shell or other file tools. If a
+task needs a tool that `AGENTS.talk` does not define, stop and tell the human. Start a guarded
+session with `clank-opencode` or `clank-pi`; plain `opencode` and `pi` do not load ClankTalk. See
+[docs/clank-talk.md](docs/clank-talk.md).
+
 ## Nix Store Symlinks
 
 > **Important:** Any file in this repo that is a symlink into `/nix/store/...` was placed
