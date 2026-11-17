@@ -485,6 +485,12 @@ clock_tz = :Asia/Hong_Kong
         # the CA public key for `TrustedUserCAKeys` and the `@cert-authority` line.
         ../../data/ca/ca-dag.nix
 
+        # The old universal loader imported these personal data modules itself. den has no loader,
+        # so the host names them: the EDID modelines, the Polish locale, and the home printer.
+        ../../data/universal-safe/hw-edid.nix
+        ../../data/universal-safe/locale.nix
+        ../../data/universal-safe/services-printing.nix
+
         # The LLM slot data, the host-side secrets/persistence, and the GPU runtime config. These are
         # plain modules, so they merge into this target exactly as they merged into the old host.
         llmHost.slot
