@@ -10,13 +10,13 @@ timestamp: 2026-11-17T13:00:00+01:00
 
 ## What landed
 
-| Piece | Path | State |
-| --- | --- | --- |
-| Shared key map | `modules/den/common/desktop-niri.nix` | Done. The 13 friendly names, `super` = `Mod`. |
-| Niri aspect | `modules/den/aspects/desktop-niri.nix` | Done. NixOS and Home Manager targets, typed option tree, `checkConfig = true`. |
-| Registry | `modules/den/lib.nix` | Done. `desktop-niri` entry. |
-| brys session | `hosts-den/brys/default.nix` | Done. `kdn.desktop-niri.session = "niri-session"`, `portal.secret = "none"`, `useNautilus = true`. |
-| KDL validation | build | `niri validate` passes on the generated `~/.config/niri/config.kdl`. |
+| Piece          | Path                                   | State                                                                                              |
+| -------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Shared key map | `modules/den/common/desktop-niri.nix`  | Done. The 13 friendly names, `super` = `Mod`.                                                      |
+| Niri aspect    | `modules/den/aspects/desktop-niri.nix` | Done. NixOS and Home Manager targets, typed option tree, `checkConfig = true`.                     |
+| Registry       | `modules/den/lib.nix`                  | Done. `desktop-niri` entry.                                                                        |
+| brys session   | `hosts-den/brys/default.nix`           | Done. `kdn.desktop-niri.session = "niri-session"`, `portal.secret = "none"`, `useNautilus = true`. |
+| KDL validation | build                                  | `niri validate` passes on the generated `~/.config/niri/config.kdl`.                               |
 
 The Sway tree is untouched, `defaultSession` is untouched, and the Sway shortcut set is still the
 default session's.

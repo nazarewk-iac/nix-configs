@@ -274,23 +274,23 @@ Four more aspects come from this area and get no row, because each ports a file 
 
 ### profile
 
-| old module                                                        | `kdn.*` prefix                          | den aspect            | Status       |
-| ----------------------------------------------------------------- | --------------------------------------- | --------------------- | ------------ |
-| `modules/universal/profile/default-secrets/default.nix`           | `kdn.profile.default-secrets`           | `profile-default-secrets` | `ported` |
-| `modules/universal/profile/hardware/darwin-utm-guest/default.nix` | `kdn.profile.hardware.darwin-utm-guest` | `hw-darwin-utm-guest` | `ported`     |
-| `modules/universal/profile/hardware/dell-e5470/default.nix`       | `kdn.profile.hardware.dell-e5470`       | `hw-dell-e5470`       | `ported`     |
-| `modules/universal/profile/hardware/rpi4/default.nix`             | `kdn.profile.hardware.rpi4`             | —                     | `not ported` |
-| `modules/universal/profile/machine/baseline/default.nix`          | `kdn.profile.machine.baseline`          | `profile-baseline`    | `ported`     |
-| `modules/universal/profile/machine/basic/default.nix`             | `kdn.profile.machine.basic`             | `profile-basic`       | `ported`     |
-| `modules/universal/profile/machine/desktop/default.nix`           | `kdn.profile.machine.desktop`           | `profile-desktop`     | `ported`     |
-| `modules/universal/profile/machine/dev/default.nix`               | `kdn.profile.machine.dev`               | `profile-dev`         | `ported`     |
-| `modules/universal/profile/machine/gaming/default.nix`            | `kdn.profile.machine.gaming`            | `profile-gaming`      | `ported`     |
-| `modules/universal/profile/machine/hetzner/default.nix`           | `kdn.profile.machine.hetzner`           | `profile-hetzner`     | `ported`     |
-| `modules/universal/profile/machine/workstation/default.nix`       | `kdn.profile.machine.workstation`       | `profile-workstation` | `ported`     |
-| `modules/universal/profile/remote-builders/default.nix`           | `kdn.profile.remote-builders`           | `profile-remote-builders` | `ported` |
-| `modules/universal/profile/user/bn/default.nix`                   | `kdn.profile.user.bn`                   | `user`                | `ported`     |
-| `modules/universal/profile/user/kdn/default.nix`                  | `kdn.profile.user.kdn`                  | `user`                | `ported`     |
-| `modules/universal/profile/user/sn/default.nix`                   | `kdn.profile.user.sn`                   | `user`                | `ported`     |
+| old module                                                        | `kdn.*` prefix                          | den aspect                | Status       |
+| ----------------------------------------------------------------- | --------------------------------------- | ------------------------- | ------------ |
+| `modules/universal/profile/default-secrets/default.nix`           | `kdn.profile.default-secrets`           | `profile-default-secrets` | `ported`     |
+| `modules/universal/profile/hardware/darwin-utm-guest/default.nix` | `kdn.profile.hardware.darwin-utm-guest` | `hw-darwin-utm-guest`     | `ported`     |
+| `modules/universal/profile/hardware/dell-e5470/default.nix`       | `kdn.profile.hardware.dell-e5470`       | `hw-dell-e5470`           | `ported`     |
+| `modules/universal/profile/hardware/rpi4/default.nix`             | `kdn.profile.hardware.rpi4`             | —                         | `not ported` |
+| `modules/universal/profile/machine/baseline/default.nix`          | `kdn.profile.machine.baseline`          | `profile-baseline`        | `ported`     |
+| `modules/universal/profile/machine/basic/default.nix`             | `kdn.profile.machine.basic`             | `profile-basic`           | `ported`     |
+| `modules/universal/profile/machine/desktop/default.nix`           | `kdn.profile.machine.desktop`           | `profile-desktop`         | `ported`     |
+| `modules/universal/profile/machine/dev/default.nix`               | `kdn.profile.machine.dev`               | `profile-dev`             | `ported`     |
+| `modules/universal/profile/machine/gaming/default.nix`            | `kdn.profile.machine.gaming`            | `profile-gaming`          | `ported`     |
+| `modules/universal/profile/machine/hetzner/default.nix`           | `kdn.profile.machine.hetzner`           | `profile-hetzner`         | `ported`     |
+| `modules/universal/profile/machine/workstation/default.nix`       | `kdn.profile.machine.workstation`       | `profile-workstation`     | `ported`     |
+| `modules/universal/profile/remote-builders/default.nix`           | `kdn.profile.remote-builders`           | `profile-remote-builders` | `ported`     |
+| `modules/universal/profile/user/bn/default.nix`                   | `kdn.profile.user.bn`                   | `user`                    | `ported`     |
+| `modules/universal/profile/user/kdn/default.nix`                  | `kdn.profile.user.kdn`                  | `user`                    | `ported`     |
+| `modules/universal/profile/user/sn/default.nix`                   | `kdn.profile.user.sn`                   | `user`                    | `ported`     |
 
 ### programs
 
@@ -343,7 +343,7 @@ Four more aspects come from this area and get no row, because each ports a file 
 | old module                                               | `kdn.*` prefix                 | den aspect                 | Status   |
 | -------------------------------------------------------- | ------------------------------ | -------------------------- | -------- |
 | `modules/universal/security/disk-encryption/default.nix` | `kdn.security.disk-encryption` | `security-disk-encryption` | `ported` |
-| `modules/universal/security/dynamic-netrc/default.nix`    | `kdn.security.dynamic-netrc`    | `security-dynamic-netrc`    | `ported` |
+| `modules/universal/security/dynamic-netrc/default.nix`   | `kdn.security.dynamic-netrc`   | `security-dynamic-netrc`   | `ported` |
 | `modules/universal/security/secrets/age/default.nix`     | `kdn.security.secrets.age`     | `security-secrets-age`     | `ported` |
 | `modules/universal/security/secrets/default.nix`         | `kdn.security.secrets`         | `secrets`                  | `ported` |
 | `modules/universal/security/secrets/sops/default.nix`    | `kdn.security.secrets.sops`    | `security-secrets-sops`    | `ported` |
@@ -502,9 +502,9 @@ no den counterpart. Both rows stay `not ported`, and no batch owns them.
 
 ### One old module still waits for a batch
 
-| Old module                                              | Lines | What blocks it                                                                                                                                                                                     |
-| ------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modules/universal/profile/hardware/rpi4/default.nix`   | 209   | The den check harness runs one platform. `docs/tasks/2026-09/generalization/015-den-check-harness-platforms/definition.md` holds the blocker.                                                      |
+| Old module                                            | Lines | What blocks it                                                                                                                                |
+| ----------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modules/universal/profile/hardware/rpi4/default.nix` | 209   | The den check harness runs one platform. `docs/tasks/2026-09/generalization/015-den-check-harness-platforms/definition.md` holds the blocker. |
 
 `modules/universal/profile/remote-builders/default.nix` and
 `modules/universal/profile/default-secrets/default.nix` are `ported` now:
