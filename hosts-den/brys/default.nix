@@ -380,7 +380,6 @@ in
         shotwell
         qrencode
         zbar
-        ss-util
         zoom-us
         httpie-desktop
         qpdf
