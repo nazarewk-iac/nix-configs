@@ -35,6 +35,10 @@ let
 
   ext = pkgs.callPackage ./packages/pi-coding-agent-extensions { };
 
+  # The pinned ClankTalk runtime. The OpenCode slot takes it as an option because a devenv `pkgs`
+  # has no repository overlay; the Pi launcher takes the same package.
+  clankTalk = inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.clank-talk;
+
   # The system prompt for every extension's agent: the repository working style plus the model
   # catalog, joined into ONE file because `rules` takes a single path and pi has ONE
   # `--append-system-prompt`. The catalog is what lets the orchestrator pick a model from intent
@@ -87,63 +91,100 @@ let
     childExtensions = [ (toString ext.model-discovery) ];
   };
 
-  piWrapped =
-    (pi.lib.mkCodingAgent {
-      inherit pkgs;
-      modules = [
-        {
-          pi.coding-agent = {
-            # The repo flake's version-selected package (local copy > pi.nix > nixpkgs), so devenv
-            # gets the vendored 1.5.1. devenv's own `pkgs` has no repo overlay, so read the flake
-            # output instead of `pkgs.pi-coding-agent`.
-            package = inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
-            # The default working style for local LLMs plus the model catalog, appended to every
-            # session's system prompt. Built above as one file because `rules` takes a single path.
-            rules = piRules;
-            extensions = [
-              ext.timestamps
-              ext.idle-marker
-              # Side conversations in a TUI overlay (`/btw`, `/side`, `/btw:*`), so a
-              # tangent does not spend the main session's context. Needs a TUI; the
-              # devshell is interactive, so it stays on by default.
-              ext.pi-btw
-              # Vendored pi-orchestrator: engaged by default, so the parent agent keeps only
-              # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
-              # subagent extension, whose async/status/retry behaviour this one already has.
-              ext.pi-orchestrator
-              ext.orchestrator-gate
-              # Live fleet state (loaded aliases, served context, host headroom) so the
-              # orchestrator can pick a model from intent AND cost, not a fixed tier.
-              ext.fleet-status
-              # Dynamic model discovery: registers litellm + llama-swap providers with
-              # refreshModels, so `pi --list-models`/`/model` show the live catalog
-              # (including server-side-discovered Requesty ids) above static models.json.
-              ext.model-discovery
-              # Status rail and live activity sidebar: model, context, usage, git status,
-              # tool/agent activity and per-subagent cost. The Pi-harness status surface in
-              # place of the OpenCode built-ins.
-              ext.pi-atelier
-              # `ask_user`: an agent can stop and ask the operator a focused question (option
-              # lists, multi-select, freeform) instead of guessing or silently ending its turn.
-              ext.pi-ask-user
-              # `session_list` / `session_digest` / `session_detail`: read Pi sessions in widening
-              # steps (list -> digest with #n refs -> exact detail) so an agent learns what a prior
-              # session did without loading the whole file into context.
-              ext.session-digest
-              # Hashline read/edit: read emits [path#TAG] + N: lines; edit takes a line-anchored
-              # patch and rejects a stale tag, so a small model cannot edit lines from an old read.
-              ext.pi-hashline-edit
-            ];
-            skills = [
-              # `pi-btw` ships `skills/btw/SKILL.md` beside `extensions/btw.ts`, and `--extension`
-              # loads only the extension entry point. Without `--skill` the `/btw` commands still
-              # register, but nothing teaches the model when to reach for them.
-              "${ext.pi-btw}/skills"
-            ];
-          };
-        }
-      ];
-    }).package;
+  # The repository Pi configuration, shared by the normal wrapper and the ClankTalk launcher.
+  # `mkCodingAgent` returns a wrapper that always passes `--append-system-prompt` and the
+  # resource flags; the two callers differ only in the extension list.
+  piAgent = {
+    # The repo flake's version-selected package (local copy > pi.nix > nixpkgs), so devenv
+    # gets the vendored 1.5.1. devenv's own `pkgs` has no repo overlay, so read the flake
+    # output instead of `pkgs.pi-coding-agent`.
+    package = inputs.nix-configs.packages.${pkgs.stdenv.hostPlatform.system}.pi-coding-agent;
+    # The default working style for local LLMs plus the model catalog, appended to every
+    # session's system prompt. Built above as one file because `rules` takes a single path.
+    rules = piRules;
+    extensions = [
+      ext.timestamps
+      ext.idle-marker
+      # Side conversations in a TUI overlay (`/btw`, `/side`, `/btw:*`), so a
+      # tangent does not spend the main session's context. Needs a TUI; the
+      # devshell is interactive, so it stays on by default.
+      ext.pi-btw
+      # Vendored pi-orchestrator: engaged by default, so the parent agent keeps only
+      # `delegate` and all work goes to the subagent fleet. Replaces our ad-hoc
+      # subagent extension, whose async/status/retry behaviour this one already has.
+      ext.pi-orchestrator
+      ext.orchestrator-gate
+      # Live fleet state (loaded aliases, served context, host headroom) so the
+      # orchestrator can pick a model from intent AND cost, not a fixed tier.
+      ext.fleet-status
+      # Dynamic model discovery: registers litellm + llama-swap providers with
+      # refreshModels, so `pi --list-models`/`/model` show the live catalog
+      # (including server-side-discovered Requesty ids) above static models.json.
+      ext.model-discovery
+      # Status rail and live activity sidebar: model, context, usage, git status,
+      # tool/agent activity and per-subagent cost. The Pi-harness status surface in
+      # place of the OpenCode built-ins.
+      ext.pi-atelier
+      # `ask_user`: an agent can stop and ask the operator a focused question (option
+      # lists, multi-select, freeform) instead of guessing or silently ending its turn.
+      ext.pi-ask-user
+      # `session_list` / `session_digest` / `session_detail`: read Pi sessions in widening
+      # steps (list -> digest with #n refs -> exact detail) so an agent learns what a prior
+      # session did without loading the whole file into context.
+      ext.session-digest
+      # Hashline read/edit: read emits [path#TAG] + N: lines; edit takes a line-anchored
+      # patch and rejects a stale tag, so a small model cannot edit lines from an old read.
+      ext.pi-hashline-edit
+    ];
+    skills = [
+      # `pi-btw` ships `skills/btw/SKILL.md` beside `extensions/btw.ts`, and `--extension`
+      # loads only the extension entry point. Without `--skill` the `/btw` commands still
+      # register, but nothing teaches the model when to reach for them.
+      "${ext.pi-btw}/skills"
+    ];
+  };
+
+  piWrapped = (pi.lib.mkCodingAgent {
+    inherit pkgs;
+    modules = [ { pi.coding-agent = piAgent; } ];
+  }).package;
+
+  # ClankTalk is a mode, not the default: the launcher loads only the ClankTalk extension and
+  # `model-discovery` (providers, not tools), and disables Pi's own discovery. The repository
+  # wrapper cannot be reused as is, because it passes every extension with an explicit `-e`,
+  # and explicit paths survive `--no-extensions`.
+  clankPiWrapped = (pi.lib.mkCodingAgent {
+    inherit pkgs;
+    modules = [
+      {
+        pi.coding-agent = piAgent // {
+          extensions = [
+            "${clankTalk}/lib/clank-talk/src/js/harnesses/pi.js"
+            ext.model-discovery
+          ];
+          skills = [ ];
+          extraArgs = [ "--no-extensions" ];
+        };
+      }
+    ];
+  }).package;
+
+  clankPi = pkgs.writeShellScriptBin "clank-pi" ''
+    set -euo pipefail
+    root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    export CLANK_TALK_ROOT="$root"
+    exec ${clankPiWrapped}/bin/pi "$@"
+  '';
+
+  clankOpenCode = pkgs.writeShellScriptBin "clank-opencode" ''
+    set -euo pipefail
+    root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    export CLANK_TALK_ROOT="$root"
+    export KDN_CLANK_TALK=1
+    # The shim reads KDN_CLANK_TALK in the OpenCode server process. A private server keeps the
+    # variable in the process that loads the plugin; the background service would not see it.
+    exec opencode --standalone "$@"
+  '';
 in
 {
   imports = inputs.nix-configs.denLib.imports {
@@ -195,12 +236,19 @@ in
       #   data/pi/agents/         scout / worker / reviewer / planner / orchestrator
       # The wrapper appends --extension for each, so a plain `pi` in this shell has them.
       piWrapped
+      # The opt-in ClankTalk launchers. `clank-pi` calls the real Pi binary with only the ClankTalk
+      # extension (plus model-discovery); `clank-opencode` sets KDN_CLANK_TALK for the gated shim.
+      clankPi
+      clankOpenCode
       # The Markdown formatter. It is installed here so that `jj fix` can call a bare `prettier`,
       # which is a stable name, instead of a `/nix/store/...` path that a rebuild would move.
       # `treefmt.nix` enables the same program for `nix fmt`.
       pkgs.prettier
       # The `hack/*.py` helpers, including the certificate-expiry summary the shell entry reads.
       pkgs.python3
+      # ClankTalk's `in a sandbox` uses bubblewrap on Linux. The launchers are in this shell, so the
+      # binary must be on PATH; without it, a sandboxed tool refuses to run.
+      pkgs.bubblewrap
     ];
 
     # Certificate expiry reminder. `hack/certs-expiry.py` decodes the certificates ONCE and
@@ -313,6 +361,12 @@ in
       "~/dev/**"
     ];
     kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
+    # The ClankTalk OpenCode shim. Every session loads it, but it does nothing unless
+    # `clank-opencode` sets KDN_CLANK_TALK=1. See docs/clank-talk.md.
+    kdn.opencode.clankTalk = {
+      enable = true;
+      package = clankTalk;
+    };
 
     # brys-specific profile: feeds the requesty provider config and the requesty
     # DSML proxy (:9526). Auto-activated only on a host whose hostname is
