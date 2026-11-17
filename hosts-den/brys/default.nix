@@ -206,6 +206,7 @@ in
     # --- services ---------------------------------------------------------
     service-iperf3
     service-k8s-management
+    service-rosec
     service-nextcloud-client
     service-printing
 
