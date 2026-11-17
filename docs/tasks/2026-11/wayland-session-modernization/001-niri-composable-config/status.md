@@ -29,8 +29,9 @@ default session's.
 - The nine signed-off `accepted-loss` rows are absent: sticky, scratchpad (not bound in Sway
   either), `layout stacking`, `focus parent`, the two sibling-focus wheel binds, and the two
   resize-mode exits.
-- `spawn-at-startup` starts waybar, swaync and kanshi. The Sway session starts these through
-  systemd user units; a Niri session uses native spawns, so the two sessions do not share a unit.
+- `spawn-at-startup` is empty on brys: the Home Manager `waybar`, `swaync` and `kanshi` services
+  start from `graphical-session.target`, and native spawns would start a second copy. The aspect
+  default keeps the three commands for a standalone consumer with no such services.
 - `layout`, `input` and `animations` are typed sections. `extraKdl` is the escape hatch.
 - The bind assertion fails the build on a duplicate chord or a missing `source`.
 

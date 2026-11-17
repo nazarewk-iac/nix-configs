@@ -748,6 +748,9 @@ in
         session = "niri-session";
         portal.secret = "none";
         useNautilus = true;
+        # The Home Manager services (`waybar`, `swaync`, `kanshi`) start from
+        # `graphical-session.target`, so native spawns would start a second copy.
+        spawnAtStartup = [ ];
       };
 
       # --- networking -------------------------------------------------------
