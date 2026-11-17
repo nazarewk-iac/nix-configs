@@ -670,12 +670,12 @@ let
           type = lib.types.attrsOf lib.types.raw;
           default = {
             gaps = 4;
-            center-focused-column = true;
-            default-column-width = "50%";
-            preset-column-widths = [
-              "33.33%"
-              "50%"
-              "66.67%"
+            center-focused-column = "never";
+            default-column-width._children = [ { proportion = 0.5; } ];
+            preset-column-widths._children = [
+              { proportion = 0.33333; }
+              { proportion = 0.5; }
+              { proportion = 0.66667; }
             ];
           };
           description = "The `layout` node.";
