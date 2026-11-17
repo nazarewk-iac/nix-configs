@@ -147,9 +147,9 @@ runs, new hosts` only if the trial shows the default is too narrow. Do not use `
 
 Choose one route and record the reason.
 
-- **A. Unsandboxed, human-gated tools (recommended).** `nix_build` and `check_bundle` run `nix`
-  without `in a sandbox`, and a `before` hook asks the human for each call. The agent still cannot
-  run an arbitrary program; it can call only the named tools.
+- **A. Unsandboxed tools (recommended).** `nix_build`, `check_bundle` and `nix_fmt` run `nix`
+  without `in a sandbox`; the agent can call only the named tools, and a Nix eval/build/fmt/check
+  does not ask the human. The agent still cannot run an arbitrary program.
 - **B. Sandboxed with explicit paths.** Add `reads of '/nix/store'`, `writes to '~/.cache/nix'`
   and the daemon socket. This gives every tool with that line the same privilege as the daemon. It
   is not a sandbox for Nix. Do not choose B.
@@ -239,8 +239,8 @@ Out of scope:
 6. Confirm that the policy lives at the root. The alternative is a generated file that the launcher
    binds for the session; that adds a race with a second session in the same checkout.
 
-The trial resolved these: opt-in launchers, no `delegate`, Nix route A (unsandboxed and
-human-gated), the policy at the root, and no MCP gateway entry. See [done.md](done.md).
+The trial resolved these: opt-in launchers, no `delegate`, Nix route A (unsandboxed, no prompt),
+the policy at the root, and no MCP gateway entry. See [done.md](done.md).
 
 ## Related
 

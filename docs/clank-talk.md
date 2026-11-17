@@ -50,12 +50,13 @@ cannot change any `.talk` file.
   and a read-only `rg`.
 - **Hooks:** a change to `.agents/knowledge/`, `knowledge/`, `secrets/`, a `*.sops.yaml` or the
   agent instruction files (`AGENTS.md`, `CLAUDE.md`, `data/pi/AGENTS.md`, `.agents/rules/`) is
-  refused. A jj fileset in a `files` list is refused. A `git push` is refused. A `jj` write, a Nix
-  build, `nix fmt`, the devenv shell check and `kdn-jj-meta` ask the human first. A `before run`
-  hook keeps every other program in a sandbox or on the named jj/Nix allowlist.
+  refused. A jj fileset in a `files` list is refused. A `git push` is refused. A jj write and
+  `kdn-jj-meta` ask the human first; Nix eval/build/fmt/check and the devenv shell check run
+  without a prompt. A `before run` hook keeps every other program in a sandbox or on the named
+  jj/Nix allowlist.
 - **Nix route:** Nix runs **without** a sandbox, because it needs the store, the daemon and the
-  network. The agent can call only the named `nix_*` tools, and each one asks the human. Do not add
-  the Nix daemon socket to a sandbox: it is a privilege boundary.
+  network. The agent can call only the named `nix_*`/`devenv` tools; they run without a prompt. Do
+  not add the Nix daemon socket to a sandbox: it is a privilege boundary.
 
 Call a tool with two parameters by name:
 

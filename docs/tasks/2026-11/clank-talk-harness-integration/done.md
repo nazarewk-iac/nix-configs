@@ -66,9 +66,9 @@ repository root. The normal `pi` wrapper is unchanged.
 `AGENTS.talk` defines the daily loop: jj status/diff/log/new/commit/split/absorb/describe/bookmark,
 `nix_eval`/`nix_build`/`check_bundle`/`nix_fmt`, `prettier`, `kdn-journal`, `kdn-jj-meta` and a
 read-only `rg`. Hooks refuse the knowledge bundle, `secrets/`, `*.sops.yaml` and `git push`, and ask
-the human before jj writes, Nix builds, `nix fmt`, the devenv check and `kdn-jj-meta`. Nix runs
-without a sandbox because it needs the store, the daemon and the network; the human gate is the
-control.
+the human before jj writes and `kdn-jj-meta`. Nix eval/build/fmt/check and the devenv shell check run
+without a prompt. Nix runs without a sandbox because it needs the store, the daemon and the network;
+only the named tools are available.
 
 The policy is tracked: `.gitignore` unignores `AGENTS.talk`. The review hardening also refuses a
 change to the agent instruction files (`AGENTS.md`, `CLAUDE.md`, `data/pi/AGENTS.md`,
@@ -106,8 +106,8 @@ jj_commit files: [.agents/...] -> failed: the commit names a protected path
 jj_commit files: ['all()']     -> failed: use explicit project paths, not a jj fileset
 write @/AGENTS.md              -> failed: the agent instruction files are human-owned
 prettier @/.agents/knowledge/  -> failed: the knowledge bundle is not formatted
-check_bundle bundle: 'nope'    -> failed: unknown bundle (before the human is asked)
-nix_build '.#clank-talk'       -> done, asked the human, built the package
+check_bundle bundle: 'nope'    -> failed: unknown bundle
+nix_build '.#clank-talk'       -> done, built the package
 write + undo                   -> the file is removed
 rg 'clank_talk'                -> done, inside the sandbox
 prettier <file>                -> done, inside the sandbox

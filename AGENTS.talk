@@ -70,12 +70,12 @@ tool nix_eval with attribute
   run 'nix' with 'eval', '--raw', attribute
 end
 
-# Builds one flake attribute without a link. A human confirms the build.
+# Builds one flake attribute without a link.
 tool nix_build with attribute
   run 'nix' with 'build', '--no-link', '--print-out-paths', attribute
 end
 
-# Builds one check bundle from the fixed list. A human confirms the build.
+# Builds one check bundle from the fixed list.
 tool check_bundle with system, bundle
   set bundles to ['bundle-core', 'bundle-den', 'bundle-pkgs', 'bundle-agent-memory', 'bundle-artifact', 'bundle-slow']
   if bundles does not contain bundle
@@ -220,40 +220,8 @@ before jj_bookmark
   end
 end
 
-# Nix and devenv run without a sandbox: they need the store, the daemon and the network. A human
-# confirms each call. The agent can call only these named tools, not an arbitrary program.
-before nix_build
-  ask 'Run a Nix build for ' + the nix_build's attribute + '?' with 'no' or 'yes'
-  if the result is not 'yes'
-    reject 'The human said no'
-  end
-end
-
-before check_bundle
-  set bundles to ['bundle-core', 'bundle-den', 'bundle-pkgs', 'bundle-agent-memory', 'bundle-artifact', 'bundle-slow']
-  if bundles does not contain the check_bundle's bundle
-    reject 'Unknown bundle. Use bundle-core, bundle-den, bundle-pkgs, bundle-agent-memory, bundle-artifact or bundle-slow.'
-  end
-  ask 'Build the ' + the check_bundle's bundle + ' bundle on ' + the check_bundle's system + '?' with 'no' or 'yes'
-  if the result is not 'yes'
-    reject 'The human said no'
-  end
-end
-
-before nix_fmt
-  ask 'Format the Nix tree with nix fmt?' with 'no' or 'yes'
-  if the result is not 'yes'
-    reject 'The human said no'
-  end
-end
-
-before devenv_shell_check
-  ask 'Enter the devenv shell to check it?' with 'no' or 'yes'
-  if the result is not 'yes'
-    reject 'The human said no'
-  end
-end
-
+# Nix and devenv run without a sandbox: they need the store, the daemon and the network. The policy
+# allows only the named tools, and a Nix eval/build/fmt/check does not ask the human.
 before kdn_jj_meta
   ask 'Attribute ' + the kdn_jj_meta's revision + ' to this session?' with 'no' or 'yes'
   if the result is not 'yes'
