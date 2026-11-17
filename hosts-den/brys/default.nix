@@ -364,6 +364,32 @@ in
   den.aspects.kdn.homeManager =
     { config, lib, pkgs, ... }:
     {
+      imports = [
+        ../../data/ca/ca-dag.nix
+        ../../data/desktop-sway-kanshi.nix
+      ];
+
+      # The certificate leaves and the CA DAG resolve against the repository root in the user
+      # evaluation too: the old tree forwarded the host values through `home-manager.sharedModules`.
+      kdn.certificates.repoRoot = inputs.self;
+
+      # The zellij web user service reads the certificate in the user scope, so the paths must be
+      # stated here as well as on the host.
+      kdn.zellij.web = {
+        bindAddress = "0.0.0.0";
+        port = 8082;
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
+        user = "kdn";
+        firewallInterfaces = [ "nb-priv" ];
+      };
+
+      kdn.programs.keepassxc.service = {
+        use = true;
+        fileName = "drag0nius.kdbx";
+        searchDirs = [ "/home/kdn/Nextcloud/drag0nius@nc.nazarewk.pw/important/keepass" ];
+      };
+
       xdg.configFile."kdn/source-flake".source = inputs.self;
 
       # The `apps` aspect publishes the persistence lists and writes no sibling option; the user
