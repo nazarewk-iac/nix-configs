@@ -318,7 +318,7 @@ in
     ssh-access
     ssh-agent
     ssh-ca
-    stylix-home
+
     toolset-diagrams
     toolset-essentials
     toolset-fs
