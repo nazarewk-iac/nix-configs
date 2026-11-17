@@ -238,7 +238,6 @@ in
   den.aspects.kdn.includes = with kdn; [
     apps
     ca-dag
-    certificates
     desktop-base
     desktop-sway
     desktop-sway-kanshi
@@ -503,6 +502,10 @@ in
       # The old host pins every package to the flake's single per-system instance, so the host,
       # the specialisation and the ad-hoc `nix` calls share one nixpkgs. den does the same here.
       nixpkgs.pkgs = inputs.self.pkgs.x86_64-linux.default;
+      # `nixpkgs.pkgs` is mutually exclusive with `nixpkgs.config`/`overlays`; the old
+      # `modules/den-pkgs/pin-module.nix` forced both empty for the same reason.
+      nixpkgs.overlays = lib.mkForce [ ];
+      nixpkgs.config = lib.mkForce { };
 
       home-manager.useGlobalPkgs = true;
       # The old bootstrap put every Home Manager package into `/etc/profiles/per-user/<name>`, and
