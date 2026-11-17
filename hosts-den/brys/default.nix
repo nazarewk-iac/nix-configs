@@ -53,6 +53,12 @@ in
       "user"
       "homeManager"
     ];
+    # The old tree builds a Home Manager generation for root too: every universal module loaded
+    # into `home-manager.sharedModules`, and root's own `~/.config` follows it.
+    users.root.classes = [
+      "user"
+      "homeManager"
+    ];
   };
 
   # One aspect per thing the old host reached through the universal loader or a slot.
@@ -111,7 +117,6 @@ in
     net-dynamic-hosts
     net-resolved
     net-netbird
-    net-tailscale
 
     # --- desktop ----------------------------------------------------------
     desktop-base
@@ -578,6 +583,51 @@ in
         inherit (config.kdn) hostName;
         inherit (config.kdn.nix.remote-builder) user;
       };
+
+      # --- nix itself -------------------------------------------------------
+      # The old tree runs Lix, sets the store optimiser on a timer, and pins the flake registry.
+      # `nix-config` ports the settings; these three are host decisions.
+      nix.package = lib.mkDefault pkgs.lixPackageSets.latest.lix;
+      nix.optimise.automatic = true;
+      nix.registry.nixpkgs.flake = inputs.nixpkgs;
+
+      # --- shell history and the Nextcloud sync -----------------------------
+      kdn.programs.atuin.users = [
+        "root"
+        "kdn"
+      ];
+      kdn.programs.atuin.autologinUsers = [
+        "root"
+        "kdn"
+      ];
+
+      # The four wireless networks the old `profile/machine/basic` carries, with the same
+      # priorities. The old module rendered one environment file from every WLAN secret; only
+      # these four have a profile, so only these four matter.
+      kdn.profile-basic.wlan = {
+        Covfefe = {
+          priority = 50;
+          passwordFile = config.sops.secrets."default/networking/wlan/Covfefe/password".path;
+        };
+        dropout-wafer = {
+          priority = 100;
+          passwordFile = config.sops.secrets."default/networking/wlan/dropout-wafer/password".path;
+        };
+        yelk = {
+          priority = 1;
+          passwordFile = config.sops.secrets."default/networking/wlan/yelk/password".path;
+        };
+        drek = {
+          priority = 1;
+          passwordFile = config.sops.secrets."default/networking/wlan/drek/password".path;
+        };
+      };
+
+      kdn.services.nextcloud-client.urlPath = config.sops.secrets."default/nextcloud/nixos/url".path;
+      kdn.services.nextcloud-client.usernamePath = config.sops.secrets."default/nextcloud/nixos/username".path;
+      kdn.services.nextcloud-client.passwordPath = config.sops.secrets."default/nextcloud/nixos/password".path;
+      kdn.disks.persist."usr/reproducible".users.root.directories =
+        config.kdn.services.nextcloud-client.persist.usrReproducibleRoot;
 
       # --- users and policy -------------------------------------------------
       kdn.userProfiles = [
