@@ -776,20 +776,21 @@ in
     {
       imports = [ declaration ];
 
-      assertions = [
-        {
-          assertion = builtins.all (b: b.source != "" || b.parity == "reproduced") config.kdn.desktop-niri.bindings;
-          message = "A Niri bind with a Sway source must name it in `source`.";
-        }
-        {
-          assertion =
-            builtins.length (lib.unique (map (b: b.chord) config.kdn.desktop-niri.bindings))
-            == builtins.length config.kdn.desktop-niri.bindings;
-          message = "Two Niri binds share one chord; a chord is a conflict, not a merge.";
-        }
-      ];
-
       config = lib.mkMerge [
+        {
+          assertions = [
+            {
+              assertion = builtins.all (b: b.source != "") config.kdn.desktop-niri.bindings;
+              message = "Every Niri bind must name its Sway source in `source`.";
+            }
+            {
+              assertion =
+                builtins.length (lib.unique (map (b: b.chord) config.kdn.desktop-niri.bindings))
+                == builtins.length config.kdn.desktop-niri.bindings;
+              message = "Two Niri binds share one chord; a chord is a conflict, not a merge.";
+            }
+          ];
+        }
         {
           # Do NOT touch `displayManager.defaultSession`: Sway stays the default session.
           programs.niri = {
