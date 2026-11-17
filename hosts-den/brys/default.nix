@@ -620,7 +620,7 @@ in
       };
 
       # The zellij web interface, on the mesh interface only.
-      kdn.programs.zellij.web = {
+      kdn.zellij.web = {
         enable = true;
         bindAddress = "0.0.0.0";
         port = 8082;
