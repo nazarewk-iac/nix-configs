@@ -165,6 +165,17 @@ in
     # --- programs ---------------------------------------------------------
     apps
     program-atuin
+    program-beeper
+    program-blender
+    program-ente-photos
+    program-keepass
+    program-keepassxc
+    program-nextcloud-client
+    program-rambox
+    program-signal
+    program-slack
+    program-spotify
+    program-tidal
     program-browsers-launcher
     program-chrome
     program-chromium
@@ -270,6 +281,7 @@ in
     disks-persist
     hm-bootstrap
     hw-audio
+    hw-qmk
     hw-yubikey
     llm-client
     locale
@@ -286,6 +298,17 @@ in
     profile-headless-wezterm
     profile-workstation
     program-atuin
+    program-beeper
+    program-blender
+    program-ente-photos
+    program-keepass
+    program-keepassxc
+    program-nextcloud-client
+    program-rambox
+    program-signal
+    program-slack
+    program-spotify
+    program-tidal
     program-browsers-launcher
     program-chrome
     program-chromium
