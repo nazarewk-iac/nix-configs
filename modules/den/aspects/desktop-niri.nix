@@ -587,7 +587,7 @@ let
       # --- swayr family (§6) --------------------------------------------
       {
         chord = "${super}+Space";
-        action = "recent-windows";
+        action = "focus-window-previous";
         source = "desktop/sway/home-manager/swayr.nix:25";
         parity = "alternative";
         note = "Swayr's switch-window becomes Niri's recent-windows.";
@@ -599,13 +599,13 @@ let
       }
       {
         chord = "${super}+Tab";
-        action = "recent-windows";
+        action = "focus-window-previous";
         source = "desktop/sway/home-manager/swayr.nix:27";
         parity = "alternative";
       }
       {
         chord = "${alt}+Tab";
-        action = "recent-windows";
+        action = "focus-window-previous";
         source = "desktop/sway/home-manager/swayr.nix:28";
         parity = "alternative";
       }
@@ -685,7 +685,7 @@ let
           default = {
             touchpad.tap = { };
             touchpad.natural-scroll = { };
-            keybird.xkb-layout = "pl";
+            keyboard.xkb-layout = "pl";
           };
           description = "The `input` node.";
         };
@@ -760,7 +760,7 @@ let
       binds = lib.listToAttrs (map renderBind cfg.bindings);
       _children =
         map (entry: { spawn-at-startup._args = entry; }) cfg.spawnAtStartup
-        ++ map (name: { workspaces._args = [ name ]; }) cfg.workspaces
+        ++ map (name: { workspace._args = [ name ]; }) cfg.workspaces
         ++ map (out: { output._args = [ out.name ]; } // out.settings) cfg.outputs
         ++ map (rule: { window-rule._children = rule; }) cfg.windowRules;
     };
