@@ -536,6 +536,17 @@ let
         '';
       };
 
+      options.kdn.desktop-sway.extraKeybindings = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        example = lib.literalExpression ''{ "Control+Super+A" = "exec notify-send hi"; }'';
+        description = ''
+          Extra keybindings, merged into the generated map. A consumer that needs one binding of its
+          own states it here instead of writing the whole `keybindings` attribute; a duplicate chord
+          replaces the generated action, which is how a consumer overrides one default.
+        '';
+      };
+
       options.kdn.desktop-sway.launcher = lib.mkOption {
         type = with lib.types; listOf str;
         default = [ ];
@@ -1182,6 +1193,7 @@ let
                     # Launchers
                     "${super}+D" = exec cfg.launcher;
                   }
+                  // cfg.extraKeybindings
                 );
 
               modes.passthrough = with cfg.keys; {

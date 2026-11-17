@@ -15,12 +15,10 @@
 #
 # ## What the port changes
 #
-# 1. **The four discovery scripts become an option.** The old module builds them from four `.sh`
-#    files that live next to it, in the deprecated tree. An aspect must not read that tree, so the
-#    aspect declares `kdn.hw.basic.discoveryScripts` instead and defaults it to the empty list. A
-#    consumer that wants the scripts passes them. The scripts move to `hack/` in a later step, and
-#    the default then reads them by relative path, exactly as the `jj-fork` aspect reads
-#    `hack/pre-push.sh`.
+# 1. **The four discovery scripts move into this tree.** The old module builds them from four `.sh`
+#    files next to it, in the deprecated tree. This aspect carries its own copy under
+#    `../common/hw-basic/`, so it reads no file of the old tree. `kdn.hw.basic.discoveryScripts`
+#    stays an option, and the default is those four scripts plus the same runtime inputs.
 # 2. **The tool-set forward-write goes.** The old module writes a `unix` tool-set flag with
 #    `lib.mkDefault true`. An aspect has no `enable`, so a den consumer includes the tool-set
 #    aspect itself.
@@ -51,16 +49,46 @@
     {
       options.kdn.hw.basic.discoveryScripts = lib.mkOption {
         type = lib.types.listOf lib.types.package;
-        default = [ ];
+        default = [
+          (pkgs.writeShellApplication {
+            name = "lsiommu";
+            runtimeInputs = [ pkgs.findutils ];
+            text = builtins.readFile ../common/hw-basic/lsiommu.sh;
+          })
+          (pkgs.writeShellApplication {
+            name = "gpu-passthrough-check";
+            runtimeInputs = with pkgs; [
+              dmidecode
+              util-linux
+              lshw
+              pciutils
+              usbutils
+              sysfsutils
+            ];
+            text = builtins.readFile ../common/hw-basic/gpu-passthrough-check.sh;
+          })
+          (pkgs.writeShellApplication {
+            name = "list-device-drivers";
+            runtimeInputs = [ pkgs.coreutils ];
+            text = builtins.readFile ../common/hw-basic/list-device-drivers.sh;
+          })
+          (pkgs.writeShellApplication {
+            name = "find-device-kernel-module";
+            runtimeInputs = [
+              pkgs.pciutils
+              pkgs.gnugrep
+            ];
+            text = builtins.readFile ../common/hw-basic/find-device-kernel-module.sh;
+          })
+        ];
         example = lib.literalExpression ''
           [ (pkgs.writeShellApplication { name = "lsiommu"; text = "…"; }) ]
         '';
         description = ''
-          Extra hardware discovery scripts this machine installs.
+          Hardware discovery scripts this machine installs.
 
-          The old module builds four such scripts from `.sh` files that sit in the deprecated
-          module tree. An aspect must not read that tree, so the default is the empty list. A
-          consumer passes its own scripts here.
+          The default is the four scripts the old module carried, with the same runtime inputs.
+          A consumer may replace the whole list.
         '';
       };
 
@@ -74,6 +102,7 @@
         ++ lib.lists.optionals (with pkgs.stdenv.hostPlatform; isLinux && isx86_64) [
           pkgs.hardinfo2
         ]
+        ++ cfg.discoveryScripts
         ++ (with pkgs; [
           hddtemp
           # About 560 MiB, measured 2024-06-25.
@@ -94,7 +123,6 @@
 
           stress-ng
         ])
-        ++ cfg.discoveryScripts
       );
     };
 }

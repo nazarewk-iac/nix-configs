@@ -141,7 +141,6 @@ in
     dev-data
     dev-db
     dev-documents
-    dev-dotnet
     dev-elixir
     dev-git
     dev-golang
@@ -247,7 +246,6 @@ in
     dev-data
     dev-db
     dev-documents
-    dev-dotnet
     dev-elixir
     dev-git
     dev-golang
@@ -309,7 +307,6 @@ in
     program-ssh-client
     program-terminal-ide
     program-thunderbird
-    program-weechat
     program-wofi
     program-zsh
     secrets
@@ -337,6 +334,16 @@ in
     zellij-web
     user-profiles
   ];
+
+  # The user's own Home Manager overlay on top of the aspect list. The old
+  # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
+  # forbids one aspect writing a sibling's option, so the user states it here.
+  den.aspects.kdn.homeManager =
+    { config, ... }:
+    {
+      kdn.desktop-sway.extraKeybindings."Control+Super+A" =
+        "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
+    };
 
   den.aspects.brys.nixos =
     {
@@ -642,6 +649,10 @@ in
 
       # --- services ---------------------------------------------------------
       services.bpftune.enable = true;
+
+      # The old `profile/default-secrets` installed the clipboard anonymiser whenever a desktop
+      # was on. The aspect publishes the package; the host installs it.
+      environment.systemPackages = [ config.kdn.profile-default-secrets.anonymizeClipboard ];
 
       # --- per-service HTTPS exposure --------------------------------------
       # llama-swap and Prometheus each on their own subdomain, behind the internal CA leaf.
