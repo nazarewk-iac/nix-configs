@@ -792,6 +792,7 @@ let
         "service-nextcloud-client"
         "service-postgresql"
         "service-printing"
+        "service-rosec"
         "service-rustdesk"
         "service-samba"
         "service-syncthing"
