@@ -362,7 +362,7 @@ in
   # `profile/default-secrets` module wrote this binding through `home-manager.sharedModules`; den
   # forbids one aspect writing a sibling's option, so the user states it here.
   den.aspects.kdn.homeManager =
-    { config, lib, osConfig, pkgs, ... }:
+    { config, lib, pkgs, ... }:
     {
       imports = [
         ../../data/ca/ca-dag.nix
@@ -373,14 +373,30 @@ in
       # evaluation too: the old tree forwarded the host values through `home-manager.sharedModules`.
       kdn.certificates.repoRoot = inputs.self;
 
+      # The certificate data must exist in this evaluation too: the user service reads the paths.
+      kdn.certificates.certs.zellij-web = {
+        ca = "kdn";
+        type = "tls-server";
+        commonName = "brys.priv.nb.net.int.kdn.im";
+        sans = [
+          "brys.priv.nb.net.int.kdn.im"
+          "llama-swap.brys.priv.nb.net.int.kdn.im"
+          "prometheus.brys.priv.nb.net.int.kdn.im"
+        ];
+        directory = "hosts/brys/certs";
+        certFile = "zellij.pub";
+        keyFile = "zellij.key";
+        keySource = "managed";
+        owner = "kdn";
+      };
+
       # The zellij web user service reads the certificate in the user scope, so the paths must be
       # stated here as well as on the host.
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        # The certificate data lives on the host; `osConfig` reaches it from the user module.
-        certFile = osConfig.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = osConfig.kdn.certificates.certs.zellij-web.keyPath;
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
@@ -848,9 +864,8 @@ in
       kdn.zellij.web = {
         bindAddress = "0.0.0.0";
         port = 8082;
-        # The certificate data lives on the host; `osConfig` reaches it from the user module.
-        certFile = osConfig.kdn.certificates.certs.zellij-web.certPath;
-        keyFile = osConfig.kdn.certificates.certs.zellij-web.keyPath;
+        certFile = config.kdn.certificates.certs.zellij-web.certPath;
+        keyFile = config.kdn.certificates.certs.zellij-web.keyPath;
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
       };
