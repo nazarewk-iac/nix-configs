@@ -367,6 +367,7 @@ in
       imports = [
         ../../data/ca/ca-dag.nix
         ../../data/desktop-sway-kanshi.nix
+        ./mimeapps.nix
       ];
 
       # The certificate leaves and the CA DAG resolve against the repository root in the user
@@ -408,6 +409,10 @@ in
       };
 
       xdg.configFile."kdn/source-flake".source = inputs.self;
+      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+      xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";
+      xdg.userDirs.enable = true;
 
       # The `apps` aspect publishes the persistence lists and writes no sibling option; the user
       # wires them into its own `disks-persist` tree, as the aspect header states.
