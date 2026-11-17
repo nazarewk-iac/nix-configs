@@ -355,6 +355,17 @@ let
         description = "Run all three XDG desktop portals with verbose logging.";
       };
 
+      options.kdn.desktop-sway.uwsm.use = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        example = true;
+        description = ''
+          Add the UWSM-managed `sway-uwsm` session beside the hand-rolled `kdn-sway` one. The
+          default stays the control session of the A/B; turning this on changes no Sway unit and
+          makes both entries appear in the greeter.
+        '';
+      };
+
       options.kdn.desktop-sway.browser.command = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = "${pkgs.handlr-regex}/bin/handlr open";
@@ -613,6 +624,16 @@ let
       # TODO: figure out why exiting Sway a second time cannot `systemctl restart display-manager.service`
       # TODO: figure out why exiting Sway logs out all SSH sessions
       config = lib.mkMerge [
+        (lib.mkIf cfg.uwsm.use {
+          programs.uwsm = {
+            enable = true;
+            waylandCompositors.sway = {
+              prettyName = "Sway (UWSM)";
+              comment = "Sway managed by UWSM (A/B)";
+              binPath = "/run/current-system/sw/bin/sway";
+            };
+          };
+        })
         {
           # This machine runs a graphical session. The old tree read a desktop `enable` flag here.
           kdn.graphical = lib.mkDefault true;

@@ -21,6 +21,9 @@ in
       apply = value: value && config.kdn.desktop.enable;
     };
     portals.debug = lib.mkEnableOption "XDG desktop portal debugging";
+    # A/B only: add a UWSM-managed `sway-uwsm` session beside the `kdn-sway` control session.
+    # It changes no Sway unit and flips no default session.
+    uwsm.enable = lib.mkEnableOption "UWSM-managed sway-uwsm session (A/B)";
 
     browser.command = lib.mkOption {
       type = with lib.types; nullOr str;
@@ -167,6 +170,16 @@ in
   config = kdnConfig.util.ifTypes [ "nixos" ] (
     lib.mkIf cfg.enable (
       lib.mkMerge [
+        (lib.mkIf cfg.uwsm.enable {
+          programs.uwsm = {
+            enable = true;
+            waylandCompositors.sway = {
+              prettyName = "Sway (UWSM)";
+              comment = "Sway managed by UWSM (A/B)";
+              binPath = "/run/current-system/sw/bin/sway";
+            };
+          };
+        })
         { kdn.desktop.sway.keys = import ./keys.nix; }
         {
           # see https://github.com/NixOS/nixpkgs/issues/354210
@@ -550,7 +563,8 @@ in
         # owns as the D-Bus name holder. The module supplies the process, environment, activation
         # alias and the unlock unit; the holder keeps `Type=dbus`/`BusName` and session ordering.
         (lib.mkIf config.kdn.services.rosec.enable {
-          kdn.services.rosec.rosecd.unitName = lib.mkDefault config.kdn.desktop.sway.systemd.secrets-service.name;
+          kdn.services.rosec.rosecd.unitName =
+            lib.mkDefault config.kdn.desktop.sway.systemd.secrets-service.name;
         })
 
         (lib.mkIf config.programs.gnupg.agent.enable {
