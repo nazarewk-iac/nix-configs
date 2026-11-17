@@ -411,6 +411,11 @@ in
         "sn"
       ];
 
+      # The Home Manager services (`waybar`, `swaync`, `kanshi`) start from
+      # `graphical-session.target`, so native spawns would start a second copy. The Niri settings
+      # render in this scope, so the empty list belongs here.
+      kdn.desktop-niri.spawnAtStartup = [ ];
+
       # The profile rows and the container set the old `profile/user/kdn` declared. A den aspect
       # carries no personal browser data, so the host states it.
       programs.firefox.profiles = {
@@ -748,9 +753,7 @@ in
         session = "niri-session";
         portal.secret = "none";
         useNautilus = true;
-        # The Home Manager services (`waybar`, `swaync`, `kanshi`) start from
-        # `graphical-session.target`, so native spawns would start a second copy.
-        spawnAtStartup = [ ];
+
       };
 
       # --- networking -------------------------------------------------------
