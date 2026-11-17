@@ -170,7 +170,8 @@ let
         }
         {
           hardware.uinput.enable = true;
-          programs.ydotool.enable = lib.mkDefault true;
+          # `kdn.program-ydotool` owns the daemon and the socket path; the old module turned the
+          # `kdn` switch on here, not the nixpkgs `programs.ydotool` module.
           programs.wshowkeys.enable = true;
           services.accounts-daemon.enable = true;
           services.dleyna.enable = true;
