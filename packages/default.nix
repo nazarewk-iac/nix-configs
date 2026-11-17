@@ -58,6 +58,7 @@ in
   ai-xf = pkgs.callPackage ./ai-xf { };
   mcpsnoop = pkgs.callPackage ./mcpsnoop { };
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
+  clank-talk = pkgs.callPackage ./clank-talk { };
   kdn-journal = pkgs.callPackage ./kdn-journal { };
   # AUTO_PACKAGE_PLACEHOLDER #
   aws-sso = pkgs.callPackage ./aws-sso { };
