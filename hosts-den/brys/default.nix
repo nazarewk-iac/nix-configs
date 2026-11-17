@@ -364,6 +364,8 @@ in
   den.aspects.kdn.homeManager =
     { config, lib, pkgs, ... }:
     {
+      xdg.configFile."kdn/source-flake".source = inputs.self;
+
       kdn.desktop-sway.extraKeybindings."Control+Super+A" =
         "exec '${config.kdn.profile-default-secrets.anonymizeClipboard}/bin/kdn-anonymize-clipboard'";
 
@@ -439,7 +441,15 @@ in
       nixpkgs.pkgs = inputs.self.pkgs.x86_64-linux.default;
 
       home-manager.useGlobalPkgs = true;
+      # The old bootstrap put every Home Manager package into `/etc/profiles/per-user/<name>`, and
+      # added `home-manager-path` to each account. Keep that layout: a `~/.nix-profile` switch would
+      # move 350 packages and change what a fresh login sees.
+      home-manager.useUserPackages = true;
       home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+
+      # The old baseline published the flake checkout at this path; the den baseline leaves it to
+      # the consumer (its change 8).
+      environment.etc."kdn/source-flake".source = inputs.self;
 
       # --- boot path --------------------------------------------------------
       # The two LUKS volumes and the USB boot device. Copied verbatim from the old host: a wrong id
@@ -645,6 +655,10 @@ in
 
       # The fleet's builder list. The old module holds it inline; the aspect carries no personal
       # data, so the value lives in `data/`.
+      # The builder account accepts the same key file the old default named.
+      kdn.profile-remote-builders.authorizedKeysFiles = [
+        ../../modules/universal/profile/user/kdn/.ssh/authorized_keys
+      ];
       kdn.profile-remote-builders.buildMachines = import ../../data/nix-build-machines.nix {
         inherit lib;
         inherit (config.kdn) hostName;
