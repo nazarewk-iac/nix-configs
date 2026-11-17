@@ -387,7 +387,32 @@ in
       xdg.configFile."kdn/source-flake".source = inputs.self;
       # A host fact the `pi-client` aspect needs in the user evaluation.
       kdn.hostName = "brys";
-      xdg.configFile."gsimplecal/config".source = ./gsimplecal/config;
+      # Inline: the repository's `.gitignore` tracks `.nix` files only, so an extensionless
+      # payload beside this file would not reach the flake source.
+      xdg.configFile."gsimplecal/config".text = ''
+show_calendar = 1
+show_timezones = 1
+mark_today = 1
+show_week_numbers = 1
+close_on_unfocus = 1
+mainwindow_decorated = 0
+mainwindow_keep_above = 1
+mainwindow_sticky = 0
+mainwindow_skip_taskbar = 1
+mainwindow_resizable = 0
+mainwindow_position = mouse
+
+
+clock_format = %a, %H:%M:%S
+clock_label = Local
+clock_tz =
+clock_label = UTC
+clock_tz = :UTC
+clock_label = BST
+clock_tz = :Europe/London
+clock_label = HKT
+clock_tz = :Asia/Hong_Kong
+      ';
       xdg.configFile."klg/config.toml".source = config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/Nextcloud/drag0nius@nc.nazarewk.pw/time-logs/klg/config.toml";
       xdg.userDirs.enable = true;
