@@ -40,8 +40,8 @@ func TestRealTaskTree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if found.Status != "in-progress" {
-		t.Errorf("agent-journal-summary status = %q, want in-progress", found.Status)
+	if found.Status != "done" {
+		t.Errorf("agent-journal-summary status = %q, want done", found.Status)
 	}
 	if found.Board == nil {
 		t.Error("agent-journal-summary has no parsed board")

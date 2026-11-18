@@ -101,9 +101,9 @@ func TestRealBoardExpectations(t *testing.T) {
 			atLeast: map[string]int{"done": 4, "open": 1},
 		},
 		{
-			path:    "docs/tasks/2026-11/secret-service-backend/.board.md",
-			status:  "active",
-			atLeast: map[string]int{"open": 8},
+			path:    "docs/tasks/2026-11/agent-journal-summary/.board.md",
+			status:  "done",
+			atLeast: map[string]int{"done": 10},
 		},
 	}
 	for _, tc := range cases {
