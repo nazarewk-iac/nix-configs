@@ -116,6 +116,8 @@ in
       {
         directory = "/var/lib/llm-stats";
         mode = "0755";
+        user = "llm-stats";
+        group = "llm-stats";
       }
       {
         directory = "/var/lib/prometheus2";
