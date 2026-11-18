@@ -2,6 +2,7 @@
 type: Task
 description: Migrate the KeePassXC secret-service entries into the rosec sops file-tree store, verify them, and retire the KDBX provider.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-14T20:45:00+01:00
 ---

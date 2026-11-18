@@ -2,6 +2,7 @@
 type: Task
 description: Extend the vendored pi-atelier status rail with Jujutsu (jj) stats and with sub-agent performance stats (live and historical TTFT and tok/s). Records what exists today, what it costs to add, and the caveats.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-02T20:16:15+01:00
 ---

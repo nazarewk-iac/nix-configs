@@ -2,6 +2,7 @@
 type: Task
 description: Unify the LLM fleet data into one centrally-configured model that servers, clients and fleet members all read, replacing the split between data/llm.nix and hosts/brys/llm-routers.nix.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-02T13:33:00+01:00
 ---

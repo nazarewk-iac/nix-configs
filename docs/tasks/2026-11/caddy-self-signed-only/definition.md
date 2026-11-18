@@ -2,6 +2,7 @@
 type: Task
 description: Make every Caddy vhost use the internal KDN CA only, and stop Caddy's automatic HTTPS from requesting public ACME certificates on brys, oams and etra.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-12T13:20:00+01:00
 ---

@@ -2,6 +2,7 @@
 type: Task
 description: Research and measure disk-offload and RAM-reduction levers for the large brys models, standalone (not enabled as served models), extending the Qwen3.8-Flash-Next tweaks.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-10-19T18:13:00+02:00
 ---

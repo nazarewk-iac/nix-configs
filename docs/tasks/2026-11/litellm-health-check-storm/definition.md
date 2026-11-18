@@ -2,6 +2,7 @@
 type: Task
 description: Identify every client and poller that reaches the llama-swap servers on brys and oams, and replace the LiteLLM per-model health probes with a host-level `/health` probe that never loads a model.
 status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-12T13:20:00+01:00
 ---
