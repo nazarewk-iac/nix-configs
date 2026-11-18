@@ -1,7 +1,7 @@
 # Shared LLM serving configuration for brys.
 #
-# Two consumers share it: the main host (hosts/brys/default.nix), which also runs a
-# desktop, and the single appliance entry (hosts/brys/llms-frontier.nix, booted as
+# Two consumers share it: the main host (hosts-den/brys/default.nix), which also runs a
+# desktop, and the single appliance entry (hosts-den/brys/llms-frontier.nix, booted as
 # `specialisation.llms`), which gives the box to the models. This file owns that shared
 # wiring so the two cannot drift: the slot assignments, the LLM secrets, the leaf-key
 # service, the model persistence directory and the ZFS ARC cap all live here.
@@ -446,7 +446,7 @@ in
       sops.mode = "0444";
     };
 
-    # Raw-decrypt the brys LLM leaf PRIVATE key from hosts/brys/certs/llm.key.sops
+    # Raw-decrypt the brys LLM leaf PRIVATE key from hosts-den/brys/certs/llm.key.sops
     # into /run/secrets (root-only tmpfs) before Caddy starts. The pub cert
     # is referenced directly from the store (no decryption). Caddy loads the key
     # via LoadCredential (see the llm slot's caddy wiring).
@@ -477,7 +477,7 @@ in
         set -euo pipefail
         mkdir -p /run/secrets/kdn/brys
         ${pkgs.sops}/bin/sops decrypt --output-type binary \
-          ${kdnConfig.self}/hosts/brys/certs/llm.key.sops \
+          ${kdnConfig.self}/hosts-den/brys/certs/llm.key.sops \
           > /run/secrets/kdn/brys/llm.key
         chmod 0400 /run/secrets/kdn/brys/llm.key
       '';

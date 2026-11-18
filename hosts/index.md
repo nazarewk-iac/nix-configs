@@ -18,5 +18,4 @@ _No concepts directly in this directory; see the child directories._
 ## Directories
 
 - **[anji](anji/index.md)** — 2 concepts: Reference 2
-- **[brys](brys/index.md)** — 2 concepts: Reference 2
 

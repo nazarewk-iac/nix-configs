@@ -49,7 +49,7 @@ keys:
         # The previous value was derived from an older key and went stale: brys decrypts nothing
         # at boot with it (`kdn-llm-leaf-key` failed with "no master key was able to decrypt").
         # The host now runs the key the repo's own host certificate covers
-        # (`hosts/brys/certs/ssh_host_ed25519-cert.pub`, fingerprint SHA256:LTZdYQxm0WAgYLMFQ…),
+        # (`hosts-den/brys/certs/ssh_host_ed25519-cert.pub`, fingerprint SHA256:LTZdYQxm0WAgYLMFQ…),
         # so this identity and that certificate agree.
         - &ssh-brys age1jg4gde9r0mcu6my04t86wskg83zttxwn7glrlqa528ncey0cd9psw8plmw
         # A hardware-bound age identity derived from brys' TPM 2.0 (`age-plugin-tpm`).
@@ -193,7 +193,7 @@ creation_rules:
           - *ssh-oams
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/brys/certs/.*\.key\.sops$'
+  - path_regex: 'hosts-den/brys/certs/.*\.key\.sops$'
     key_groups:
       - age:
           - *ssh-brys
@@ -237,7 +237,7 @@ creation_rules:
       - age:
           - *yk-oams-unattended
           - *yk-brys-unattended
-  - path_regex: 'hosts/brys/ssh-keys/.*\.sops$'
+  - path_regex: 'hosts-den/brys/ssh-keys/.*\.sops$'
     key_groups:
       - age:
           - *yk-oams-unattended
@@ -267,7 +267,7 @@ creation_rules:
   # uploads only on a difference.
   #
   # Custody: the two admin YubiKeys, in their ATTENDED (no-touch) form — the same pair that
-  # already guards `hosts/brys/certs/ssh_host_ed25519.key.sops`. Deliberately NOT the host's own
+  # already guards `hosts-den/brys/certs/ssh_host_ed25519.key.sops`. Deliberately NOT the host's own
   # SSH identity (`ssh-brys`): this key IS that identity, and a sync is a per-host operator
   # action, never a boot-time read. Touch/PIN variants would make every sync need a physical
   # touch, which buys nothing here because the file is only read on demand.

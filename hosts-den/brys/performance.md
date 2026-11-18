@@ -112,7 +112,7 @@ depth (a QD1/psync test measures latency, not the drive).
 
 ## ZFS ARC cap
 
-`hosts/brys/llm.nix` caps the ZFS ARC at 8 GiB with the kernel parameter
+`hosts-den/brys/llm.nix` caps the ZFS ARC at 8 GiB with the kernel parameter
 `zfs.zfs_arc_max=8589934592`. The ARC is a _second_ cache beside the Linux page
 cache that backs the `mmap`'d model weights. At its default `c_max` (about half
 of RAM) it grew to ~65 GB and the kernel evicted the weights to make room. The

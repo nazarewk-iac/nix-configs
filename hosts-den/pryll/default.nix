@@ -102,7 +102,7 @@ in
     kdn.locale.xkbLayout = "pl";
     kdn.locale.timezone = "Europe/Warsaw";
 
-    # The CA host certificate, modelled on `hosts/brys/ssh-ca.nix`, so the already-included
+    # The CA host certificate, modelled on `hosts-den/brys/ssh-ca.nix`, so the already-included
     # `ssh-ca` aspect issues it: sshd serves the CA-signed host certificate and clients that trust
     # the `kdn` CA verify pryll by CA instead of by a pinned TOFU key.
     #

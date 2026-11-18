@@ -158,7 +158,7 @@
           priority = 10;
         }
         # The mgmt address is static, so a literal is safe here. brys assigns it to its own `mgmt`
-        # interface (hosts/brys/default.nix, kdn.networking.ifaces."mgmt"), and etra reserves it
+        # interface (hosts-den/brys/default.nix, kdn.networking.ifaces."mgmt"), and etra reserves it
         # (hosts/etra/default.nix, router.nets.mgmt) outside the DHCP pool (.128-.159). It needs
         # no DNS and no lease, so it answers when both of those are down.
         #

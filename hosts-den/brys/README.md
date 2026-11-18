@@ -9,8 +9,9 @@ timestamp: 2026-11-18T14:11:34+01:00
 Ryzen 9 5950X workstation, 128 GB DDR4, AMD Radeon AI PRO R9700 (32 GB, Vulkan compute for the
 local LLMs). The RX 550 drives the displays.
 
-- Host config: [`hosts/brys/default.nix`](default.nix)
-- Build: `~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build`
+- Host config: [`hosts-den/brys/default.nix`](default.nix)
+- Build: `nix build .#denConfigurations.brys.config.system.build.toplevel`, copy it to the host, then `nix-env -p /nix/var/nix/profiles/system --set` + `switch-to-configuration switch`
+- The universal twin (`hosts/brys/`) was removed on 2026-11-18; this directory is the only brys config
 
 ## Power-off recovery
 

@@ -1,6 +1,6 @@
 # A minimal Prometheus, confined in a NixOS container, as a den aspect.
 #
-# Extracted from brys' inline container (hosts/brys/llm.nix) so more than one host
+# Extracted from brys' inline container (hosts-den/brys/llm.nix) so more than one host
 # can run the same thing: brys scrapes llama-swap + node_exporter, etra scrapes the
 # LiteLLM gateway. It is deliberately NOT `kdn.monitoring-prometheus-stack` (that
 # also brings Grafana, a secret key and a Caddy vhost — too much for one scrape).

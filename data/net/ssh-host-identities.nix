@@ -47,7 +47,7 @@
       "brys.priv.nb.net.int.kdn.im"
       "brys.netbird.cloud"
     ];
-    publicKeyFile = ../../hosts/brys/certs/ssh_host_ed25519_key.pub;
+    publicKeyFile = ../../hosts-den/brys/certs/ssh_host_ed25519_key.pub;
   };
 
   etra = {

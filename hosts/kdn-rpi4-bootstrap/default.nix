@@ -10,7 +10,7 @@
   # directory into `modules`, and `modules/meta` adds nothing. Without this line neither
   # `kdn.*` nor `home-manager` exists, and the `home-manager.sharedModules` below fails with
   # `The option `home-manager' does not exist`. This host carried no `imports`, so it had never
-  # evaluated. Measured 2026-09-10. Compare `hosts/brys/default.nix:126`.
+  # evaluated. Measured 2026-09-10. Compare `hosts-den/brys/default.nix:126`.
   imports = [ kdnConfig.self.nixosModules.default ];
 
   config = lib.mkMerge [

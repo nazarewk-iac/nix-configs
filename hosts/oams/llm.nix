@@ -4,7 +4,7 @@
 # prefill than brys' 32 GB R9700 on the same small models (docs/local-llms.md). The
 # small GPU models live here; brys keeps the big CPU/offload models.
 #
-# This file is deliberately leaner than hosts/brys/llm.nix:
+# This file is deliberately leaner than hosts-den/brys/llm.nix:
 #   - no TLS / Caddy LAN gate and no leaf-key decrypt: the gateway (LiteLLM on
 #     etra, task docs/tasks/2026-11/litellm-gateway/) is the single entrypoint and
 #     talks to the loopback router;
@@ -237,7 +237,7 @@ in
     ];
 
     # Expose llama-swap to the NetBird mesh so etra's LiteLLM gateway can reach
-    # oams (mirrors the brys relay, hosts/brys/llm.nix). llama-swap is loopback
+    # oams (mirrors the brys relay, hosts-den/brys/llm.nix). llama-swap is loopback
     # (127.0.0.1:39700); this narrow relay listens on 39704 and the firewall opens
     # it only on `nb-priv`, so it is mesh-only. Litellm points at
     # <oams-netbird>:39704.

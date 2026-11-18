@@ -372,7 +372,7 @@ in
     # brys-specific profile: feeds the requesty provider config and the requesty
     # DSML proxy (:9526). Auto-activated only on a host whose hostname is
     # "brys"; every other host keeps the benign global opencode skeleton.
-    profiles.hostname."brys".module = import ./hosts/brys/devenv.nix;
+    profiles.hostname."brys".module = import ./hosts-den/brys/devenv.nix;
 
     # oams-specific profile: opencode pointed at the etra LiteLLM gateway plus
     # oams' own local llama-swap loopback. Auto-activated only on a host whose

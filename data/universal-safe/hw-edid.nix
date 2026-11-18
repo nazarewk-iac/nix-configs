@@ -11,7 +11,7 @@
   deletes the file and `kdn.hw.edid.modelines` falls back to the empty set.
 
   The three entries below match the nixpkgs `hardware.display.edid.modelines` example
-  verbatim. `hosts/brys/default.nix` names `PG278Q_120.bin`, so the names must not change.
+  verbatim. `hosts-den/brys/default.nix` names `PG278Q_120.bin`, so the names must not change.
 */
 {
   config.kdn.hw.edid.modelines = {

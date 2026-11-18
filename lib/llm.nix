@@ -4,7 +4,7 @@
 # value is read from the data file, so the only place to edit is `data/llm.nix`.
 #
 #   * `mkServerModels data host profile` — the server view: what a host loads, which router, and
-#     the per-host perf. Used by `hosts/brys/llm.nix` to fill `kdn.llm.local.models`.
+#     the per-host perf. Used by `hosts-den/brys/llm.nix` to fill `kdn.llm.local.models`.
 #   * `mkPiModelsJson` — the Pi client's `models.json`, one entry per served alias.
 #   * `mkCatalog` — the orchestrator's intent table for the system prompt.
 #   * `mkMemberView data host` — a fleet member's view: the endpoint and the alias-to-model map,

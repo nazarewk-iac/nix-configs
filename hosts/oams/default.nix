@@ -523,7 +523,7 @@ in
     }
     {
       # Shared /run/configs/llms secrets (same mount as brys): HF token and
-      # llama-server API keys. The leaf cert moved to hosts/brys/ (brys only).
+      # llama-server API keys. The leaf cert moved to hosts-den/brys/ (brys only).
       kdn.security.secrets.sops.files."llms" = {
         sopsFile = "${kdnConfig.self}/llms.nonsensitive.sops.yaml";
         basePath = "/run/configs/llms";
@@ -552,7 +552,7 @@ in
 
       # The SSH host certificate. `principals` names every form a client may connect
       # with: the short name (what the `kdn-*` dispatcher checks through `HostKeyAlias`)
-      # and each FQDN. See hosts/brys/ssh-ca.nix for the same shape.
+      # and each FQDN. See hosts-den/brys/default.nix for the same shape.
       kdn.certificates.certs.ssh-host-oams = {
         ca = "kdn";
         type = "ssh-host";

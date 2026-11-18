@@ -1,6 +1,8 @@
-# brys, the LLM workstation, on the den tree. FULL carryover of `hosts/brys/` (old universal
-# tree), with one deliberate exception: the test passwords of the `kdn` and `root` accounts live in
-# `./users.data.nix` and `pass`, so a failed boot is recoverable over the KVM or SSH.
+# brys, the LLM workstation, on the den tree. This is the only brys config: the universal
+# `hosts/brys/` tree was removed on 2026-11-18 (the `llms` appliance specialisation is not ported
+# yet). The original carryover covered the old universal tree, with one deliberate exception: the
+# test passwords of the `kdn` and `root` accounts live in `./users.data.nix` and `pass`, so a
+# failed boot is recoverable over the KVM or SSH.
 #
 # The output is `denConfigurations.brys`; never add this host to `nixosConfigurations`.
 #
@@ -18,7 +20,7 @@
 # survive the port is: initrd unlocks both LUKS volumes, the TPM age identity decrypts the sops
 # secrets, and only then does sshd start. A missing aspect or a changed secret ordering turns a
 # working host into one that needs the NanoKVM. Every value in the "boot path" blocks below is
-# copied verbatim from `hosts/brys/default.nix`.
+# copied verbatim from `hosts-den/brys/default.nix`.
 {
   kdn,
   inputs,
@@ -42,7 +44,7 @@ let
   # `kdn.userProfileData` and turns each selected row into one account.
   usersData = import ./users.data.nix;
 
-  # The SSH host certificates, shared with every boot specialisation. The old `hosts/brys/ssh-ca.nix`
+  # The SSH host certificates, shared with every boot specialisation. The old `hosts-den/brys/ssh-ca.nix`
   # imports the CA DAG and the three aspects; here the host does that through `includes`, so the
   # file only carries the data.
   sshHostIdentities = import ../../data/net/ssh-host-identities.nix;
@@ -382,7 +384,7 @@ in
         bindAddress = "0.0.0.0";
         port = 8082;
         # The system sops module decrypts the key at boot and hands it to the `kdn` owner.
-        certFile = "${inputs.self}/hosts/brys/certs/zellij.pub";
+        certFile = "${inputs.self}/hosts-den/brys/certs/zellij.pub";
         keyFile = "/run/secrets/kdn/certificates/zellij-web.key";
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];
@@ -1061,7 +1063,8 @@ in
         type = "ssh-host";
         commonName = "brys";
         principals = sshHostIdentities.brys.names;
-        directory = "hosts/brys/certs";
+        directory = "hosts-den/brys/certs";
+        keyDirectory = "hosts-den/brys/ssh-keys";
         certFile = "ssh_host_ed25519-cert.pub";
         keyFile = "ssh_host_ed25519_key";
         keySource = "managed";
@@ -1072,7 +1075,8 @@ in
         type = "ssh-host";
         commonName = "brys";
         principals = sshHostIdentities.brys.names;
-        directory = "hosts/brys/certs";
+        directory = "hosts-den/brys/certs";
+        keyDirectory = "hosts-den/brys/ssh-keys";
         certFile = "ssh_host_mldsa44_ed25519-cert.pub";
         keyFile = "ssh_host_mldsa44_ed25519_key";
         keyType = "mldsa44-ed25519";
@@ -1087,7 +1091,7 @@ in
           "llama-swap.brys.priv.nb.net.int.kdn.im"
           "prometheus.brys.priv.nb.net.int.kdn.im"
         ];
-        directory = "hosts/brys/certs";
+        directory = "hosts-den/brys/certs";
         certFile = "zellij.pub";
         keyFile = "zellij.key";
         keySource = "managed";
@@ -1099,7 +1103,7 @@ in
         bindAddress = "0.0.0.0";
         port = 8082;
         # The system sops module decrypts the key at boot and hands it to the `kdn` owner.
-        certFile = "${inputs.self}/hosts/brys/certs/zellij.pub";
+        certFile = "${inputs.self}/hosts-den/brys/certs/zellij.pub";
         keyFile = "/run/secrets/kdn/certificates/zellij-web.key";
         user = "kdn";
         firewallInterfaces = [ "nb-priv" ];

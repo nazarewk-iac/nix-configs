@@ -6,7 +6,7 @@
 # cross-model serving data for each host. Every consumer derives from this file
 # and none of them repeats a model id, an alias or a context size:
 #
-#   * the server   `hosts/brys/llm.nix` projects `mkServerModels data "brys" <profile>`
+#   * the server   `hosts-den/brys/llm.nix` projects `mkServerModels data "brys" <profile>`
 #                  into `kdn.llm.local`: what to load, which router, what per-host perf.
 #   * the client   `lib/llm.nix` renders Pi's `models.json` and the orchestrator catalog
 #                  from each model's identity (`contextSize`, `pi.*`, `capabilities`, `vision`).

@@ -1,12 +1,12 @@
 # LiteLLM gateway — a single OpenAI-compatible entrypoint for the local LLM fleet.
 #
 # Task: docs/tasks/2026-11/litellm-gateway/. Host-LOCAL module (like
-# hosts/brys/llm.nix) because it is deployed only on etra.
+# hosts-den/brys/llm.nix) because it is deployed only on etra.
 #
 # ## State: LIVE (2026-11-05)
 #
 # The container runs (`autoStart = true`) and reaches brys over the NetBird mesh:
-# brys exposes llama-swap on `39704` via a narrow socat relay (hosts/brys/llm.nix,
+# brys exposes llama-swap on `39704` via a narrow socat relay (hosts-den/brys/llm.nix,
 # firewall-opened only on `nb-priv`), and `litellm-brys-egress` forwards to that
 # mesh address. Verified end to end with a real completion.
 #
@@ -30,7 +30,7 @@ let
   gatewayPort = 4000;
   egressPort = 8443;
   # brys over the NetBird mesh (nb-priv). Its llama-swap is exposed there on
-  # 39704 by a narrow relay (hosts/brys/llm.nix); 39700 itself is loopback-only.
+  # 39704 by a narrow relay (hosts-den/brys/llm.nix); 39700 itself is loopback-only.
   brysHost = "100.79.164.36";
   brysPort = 39704;
   # oams over NetBird (nb-priv), same relay pattern on 39704.

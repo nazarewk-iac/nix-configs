@@ -2,9 +2,9 @@
 #
 # Two consumers, two different goals, one file:
 #
-#   * the main profile (hosts/brys/default.nix) — a desktop that also serves the fleet,
+#   * the main profile (hosts-den/brys/default.nix) — a desktop that also serves the fleet,
 #     so a model must yield to the user;
-#   * the `llms` entry (hosts/brys/llm-appliance.nix) — a dedicated appliance that may
+#   * the `llms` entry (hosts-den/brys/llm-appliance.nix) — a dedicated appliance that may
 #     reserve the machine for throughput.
 #
 # Only the settings that are correct on **both** live here. Anything that trades

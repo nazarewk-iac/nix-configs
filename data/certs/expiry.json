@@ -1,13 +1,13 @@
 {
   "generated": "2026-11-12T21:24:20+00:00",
   "earliest": {
-    "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
+    "path": "hosts-den/brys/certs/ssh_host_ed25519-cert.pub",
     "kind": "ssh-host",
     "notAfter": "2027-01-11T05:45:44+00:00"
   },
   "certificates": [
     {
-      "path": "hosts/brys/certs/ssh_host_ed25519-cert.pub",
+      "path": "hosts-den/brys/certs/ssh_host_ed25519-cert.pub",
       "kind": "ssh-host",
       "notAfter": "2027-01-11T05:45:44+00:00"
     },
@@ -47,7 +47,7 @@
       "notAfter": "2027-02-10T19:11:14+00:00"
     },
     {
-      "path": "hosts/brys/certs/ssh_host_mldsa44_ed25519-cert.pub",
+      "path": "hosts-den/brys/certs/ssh_host_mldsa44_ed25519-cert.pub",
       "kind": "ssh-host",
       "notAfter": "2027-02-10T19:17:09+00:00"
     },
