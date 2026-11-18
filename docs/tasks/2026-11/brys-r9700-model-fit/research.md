@@ -72,32 +72,36 @@ is built for a single consumer card with tiered experts, and it is the only real
 
 ## Model fit, ranked
 
-Estimates are extrapolated from the measured oams run (12 GB card, 40.6 t/s on IQ2_XS) and the
-published single-card DS4.1 number (1× R9700, 251 GB RAM, 21–25 t/s). Treat them as ranges to beat,
-not predictions.
+> **Superseded by measurement on 2026-11-18.** The table below is the desk estimate, kept for the
+> reasoning. [measurements.md](measurements.md) has the measured numbers; several entries here are
+> wrong for this model: Flash-Next is **180B**, its real `UD-IQ1_S` is 66 GB, and llama.cpp (not
+> Strata) is the harness that was actually measured. The measured shortlist is
+> **`UD-IQ1_S` at `--n-cpu-moe 26`, 64k context, 22 t/s, plus `qwen3.5-4b` co-resident**.
 
-| # | Model | Engine | Need | Decode estimate | PLN/M* | Why |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | Flash-Next **IQ2_XS** | Strata | 39.2 GB | **50–80 t/s** | 1.4–2.2 | highest cache hit; cheapest quality tier |
-| 2 | Flash-Next **Coder IQ1_M** | Strata | 32 GB | **50–80 t/s** | 1.4–2.2 | 29.6 GB resident, 1M context on oams already |
-| 3 | Flash-Next **IQ3_XXS** | Strata | 47.0 GB | **35–55 t/s** | 2.0–3.2 | quality tier that fits with room |
-| 4 | **GLM-5.3-Flash 321B Maya-S** | Maya | 96.5 GB | **20–30 t/s** | 3.7–5.6 | new capability; AMD experimental |
-| 5 | Flash-Next **UD-Q4_K_XL** | Strata | 88 GB RAM | **20–35 t/s** | 3.2–5.6 | quality upgrade; more misses from DDR4 |
-| 6 | Dense **27–35B Q4** | llama.cpp Vulkan | 17–23 GB VRAM | **25–40 t/s** | 2.8–4.5 | fully resident, no offload |
-| 7 | **Qwen3.6-35B-A3B Q4** | llama.cpp Vulkan | 22.9 GB VRAM | **100+ t/s** | <1.2 | fully resident MoE |
-| 8 | **DeepSeek-V4.1-Flash 1.75 bpw** | Maya / Strata | 191–239 GB | **3–10 t/s** | >12 | needs SSD streaming; 128 GB RAM is below the tested 251 GB |
-| 9 | Flash-Next **Q8_0** | Strata | 136 GB RAM | — | — | does not fit |
+Estimates were extrapolated from the measured oams run (12 GB card, 40.6 t/s on IQ2_XS) and the
+published single-card DS4.1 number (1× R9700, 251 GB RAM, 21–25 t/s).
 
-\* at ~400 W system (300 W card + host), 1 PLN/kWh.
+| # | Model | Engine | Need | Decode estimate | Measured |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Flash-Next **IQ2_XS** | Strata | 39.2 GB | 50–80 t/s | **not measured**: the quant family is not the Unsloth one; `UD-IQ1_S` did **21.9 t/s** |
+| 2 | Flash-Next **Coder IQ1_M** | Strata | 32 GB | 50–80 t/s | not measured on brys |
+| 3 | Flash-Next **IQ3_XXS** | Strata | 47.0 GB | 35–55 t/s | not downloaded on brys |
+| 4 | **GLM-5.3-Flash 321B Maya-S** | Maya | 96.5 GB | 20–30 t/s | `UD-IQ2_XXS` on llama.cpp: **8.9 t/s** (CPU-bound) |
+| 5 | Flash-Next **UD-Q4_K_XL** | Strata | 111 GB RAM | 20–35 t/s | not measured |
+| 6 | Dense **27–35B Q4** | llama.cpp Vulkan | 17–23 GB VRAM | 25–40 t/s | **27–32 t/s** |
+| 7 | **Qwen3.6-35B-A3B Q4** | llama.cpp Vulkan | 20.6 GB VRAM | 100+ t/s | **121.9 t/s** |
+| 8 | **DeepSeek-V4.1-Flash 1.75 bpw** | Maya / Strata | 233 GB | 3–10 t/s | **no**: exceeds 157 GB combined |
+| 9 | Flash-Next **Q8_0** | Strata | 188 GB RAM | — | **no**: exceeds RAM |
 
-### Why 1–3 first
+### What the measurement changed
 
-- The R9700 is a **maintainer-tested Strata target** (`rx9070` package, gfx1201). No source build,
-  no experimental flag.
-- The existing llama-swap setup already pins `1002:7551`, so a Strata run does not need new host
-  config; it needs the host to be free.
-- The cache grows from ~8 GB of VRAM on oams to ~28 GB here. That is the single largest lever on
-  decode speed, and it is measurable in one afternoon.
+- llama.cpp with `--n-cpu-moe` is the harness that was measured, not Strata. It is already pinned
+  to `1002:7551`, it serves through llama-swap today, and it needed no new package.
+- The VRAM expert cache is the lever, and it works: `n-cpu-moe 26` at 64k holds 19.8 GiB and gives
+  **22 t/s**. Going below 6 overcommits the card and the decode collapses.
+- Strata remains untested on brys: it is an AppImage/Terminal install, and its `rx9070` engine
+  package was never fetched here. Treat its oams numbers (40.6 t/s on a 12 GB card) as the target
+  to beat, not a result.
 
 ### Why Maya is the interesting unknown
 
