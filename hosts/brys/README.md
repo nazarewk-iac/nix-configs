@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: brys host — Ryzen 5950X / 128 GB DDR4 workstation. Also serves local LLMs via the kdn.llm.local slot.
-timestamp: 2026-11-18T13:59:16+01:00
+timestamp: 2026-11-18T14:11:34+01:00
 ---
 
 # brys host
@@ -25,6 +25,11 @@ NanoKVM USB cable) together with the mains lead.
 
 Observed on 2026-11-18: a greeter-initiated shutdown left brys dark for about 25 minutes; it
 returned after the power lead was pulled.
+
+The NanoKVM reports the same fault as a dead KVM: no screenshot frame and `write /dev/hidg0: i/o
+timeout`. Before touching the KVM, check `/sys/class/udc/*/state` on the KVM host. `not attached`
+means the machine does not enumerate the gadget, which fits a powered-off brys. The KVM's power
+LED input reads `1` even when the machine is off, so it proves nothing.
 
 Reference and independent research:
 <https://assistant.kagi.com/chat/6a8520e2-c7b2-4bb4-97d2-3c5247e1c25e>

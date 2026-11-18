@@ -3,7 +3,7 @@ type: Task
 description: Turn the verified NanoKVM operating knowledge into a skill and a doc, so any agent can screenshot, type, click and power a machine through the KVM without re-deriving the MCP recipe.
 status: open
 authored_by: agent
-timestamp: 2026-10-27T19:35:00+01:00
+timestamp: 2026-11-18T14:11:34+01:00
 ---
 
 # NanoKVM operations an agent can rely on
@@ -68,11 +68,12 @@ Two devices now exist with the same software:
 
 Three distinct faults, and they must not be confused:
 
-| Symptom                                     | Evidence                                                                                                | Meaning                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`           | no HDMI signal: the source is off, asleep, or the display is off |
-| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it  |
-| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                       | the guest display went to sleep; the link is fine                |
+| Symptom                                     | Evidence                                                                                                                                 | Meaning                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`                                            | no HDMI signal: the source is off, asleep, or the display is off |
+| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host`                                  | the USB HID gadget is wedged, or the host is not enumerating it  |
+| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                                                        | the guest display went to sleep; the link is fine                |
+| both fail together                          | `retCode: -1`, `failed to capture screenshot`, `hidg0` timeout, `/sys/class/udc/*/state` `not attached`, `/proc/cvitek/vi` `VIDevFPS: 0` | the host is off or asleep, not the KVM; check host power first   |
 
 What was tried, and what it cost:
 
@@ -89,12 +90,49 @@ harmless key (`ShiftLeft`) and require a success return **before** any step that
 depends on typing. A `timeout after 50ms: write /dev/hidg0` return is the
 signal to switch to a physical hand-off, not to retry.
 
+### A powered-off host looks exactly like a dead KVM (`kvm-26e2`, 2026-11-18)
+
+When `brys` was powered off, both paths failed at once: `cube_screenshot`
+returned `retCode: -1` / `failed to capture screenshot`, every key and text
+injection returned `timeout after 50ms: write /dev/hidg0: i/o timeout`, and
+`dmesg` repeated `usb_gadget_wakeup` / `wakeup: signalling skipped: is not
+allowed by host`. A UDC rebind re-bound the gadget and did not restore HID.
+
+Three probes identify the host rather than the KVM:
+
+1. `/sys/class/udc/*/state` — `configured` means the host enumerates the
+   gadget; `not attached` means it does not.
+2. `/proc/cvitek/vi` — `VIDevFPS: 0` and `VISofCh0Cnt: 0` mean no HDMI input
+   frames reach the capture pipeline.
+3. `/kvmapp/kvm/state` — `0` means the server is not streaming; `1` means it is.
+
+On `kvm-26e2` the ATX power-LED input (`gpio504`) read `1` for the whole outage,
+so it is **not** a reliable "host is on" signal. A power-key pulse (`gpio503`)
+and a WoL magic packet did not start the host; the owner had to press the
+physical button. `brys` also has a PSU latch that needs an AC disconnect, see
+[`hosts/brys/README.md`](../../../../hosts/brys/README.md).
+
+Two facts this corrects:
+
+- **The MCP screenshot and a browser stream coexist.** With the browser holding
+  the stream (`state=1`, `now_fps=10`), an MCP `cube_screenshot` returned
+  `ok: true` and a 55 KB 1920x1080 JPEG. A failed screenshot is not evidence
+  that another client holds the capture.
+- **A UDC rebind cannot fix a host that is off.** The rebind only helps when the
+  host is on and the gadget is wedged.
+
 ## Power control: not available on these devices
 
 Verified with the owner on 2026-10-27: scripted power control exists only for
 `brys` and the NAS mini-PCs `pwet`, `turo` and `yost`. For `gaz`, the mini-PCs and
 `pryll` there is **no** power API, no ATX header wired to the KVM, and no relay.
 `press-and-hold the power button` is therefore always a human action.
+
+On `kvm-26e2` (`brys`) the Beta ATX pins are `gpio503` (power key), `gpio504`
+(power LED, input) and `gpio505` (reset). A power-key pulse and a reset pulse did
+not start `brys` on 2026-11-18, and the LED read `1` throughout. Treat ATX power
+as best-effort: it is not a guaranteed recovery path, and it cannot clear the PSU
+latch that `brys` has.
 
 The skill must say this plainly, so no agent spends an hour looking for a power
 endpoint that does not exist, and so every boot step is planned as a hand-off.
