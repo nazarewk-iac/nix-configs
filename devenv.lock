@@ -1985,11 +1985,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794699081,
-        "narHash": "sha256-51GSx0zdYpe/ZBHJaSUNdgSa8L2fDHmhP3PC4Sclu1c=",
+        "lastModified": 1794983517,
+        "narHash": "sha256-NbjV2iwzKMFoWepISqEtryXe7UftJc/WJULjebosemo=",
         "owner": "nazarewk-iac",
         "repo": "rosec",
-        "rev": "4605bda5900fe558193b33bf875149d0ec2b2953",
+        "rev": "4db02a95144eecc6eea55d45dd8e1a07e6e04bb3",
         "type": "github"
       },
       "original": {
