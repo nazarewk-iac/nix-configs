@@ -140,6 +140,7 @@ let
         cfg.package
         cfg.providers.sops.sopsPackage
         cfg.providers.sops.agePluginYubikeyPackage
+        pkgs.age-plugin-tpm
         pkgs.fuse3
       ]
       ++ cfg.extraPackages

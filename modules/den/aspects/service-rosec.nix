@@ -122,6 +122,7 @@ in
             cfg.package
             cfg.providers.sops.sopsPackage
             cfg.providers.sops.agePluginYubikeyPackage
+            pkgs.age-plugin-tpm
             pkgs.fuse3
           ]
           ++ cfg.extraPackages
@@ -549,39 +550,28 @@ in
           };
         })
 
-        (lib.mkIf cfg.rosecd.enable {
-          # The package's socket unit is not enabled by default, and Home Manager has no
-          # `systemd.user.units` to mask it with; leave it alone.
+        # The package ships `share/systemd/user/rosecd.service`, and the profile's
+        # `share/systemd/user` is on the user unit search path, so the daemon unit is the
+        # package's own. Override it with a drop-in instead of redefining it: the PATH and
+        # `SOPS_AGE_KEY_FILE` the provider needs, and the ordering after the identity merge.
+        # `kdn-secret-service.service` is an alias of the implementation, not a second unit.
+        {
+          home.file.".config/systemd/user/rosecd.service.d/10-kdn.conf".text = ''
+            [Unit]
+            Wants=rosec-keys.service
+            After=rosec-keys.service
 
-          systemd.user.services."${cfg.rosecd.unitName}" = {
-            Unit = {
-              Description = lib.mkDefault "rosec Secret Service daemon (sops file tree)";
-              Documentation = [ "https://github.com/jmylchreest/rosec" ];
-              # Headless: the daemon serves CLI clients over SSH and in a TTY too.
-              PartOf = [ "default.target" ];
-              # Do not order after `default.target` while also being `WantedBy` it: systemd reports
-              # "Transaction order is cyclic" when the target is restarted.
-              After = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
-              Wants = lib.optional cfg.providers.sops.keyGeneration.enable "rosec-keys.service";
-            };
-            aliases = lib.optional (cfg.rosecd.unitName != "rosecd") "rosecd.service";
+            [Service]
+            Environment="PATH=${servicePath}"
+            Environment="SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
+          '';
 
-            Service = {
-              Type = "dbus";
-              BusName = "org.freedesktop.secrets";
-              ExecStart = lib.mkForce (lib.getExe' cfg.package "rosecd");
-              Environment = [
-                "PATH=${servicePath}"
-                "SOPS_AGE_KEY_FILE=${cfg.providers.sops.key_file}"
-              ];
-              Restart = "on-failure";
-              RestartSec = 2;
-              TimeoutStartSec = lib.mkDefault "60s";
-            };
-
-            Install.WantedBy = [ "default.target" ];
-          };
-        })
+          # Home Manager has no alias option; a relative symlink is the systemd alias form.
+          home.activation.rosec-alias = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            mkdir -p "$HOME/.config/systemd/user"
+            ln -sfn rosecd.service "$HOME/.config/systemd/user/kdn-secret-service.service"
+          '';
+        }
 
         (lib.mkIf cfg.conflictNotification.use {
           # The state directory exists before the first run.

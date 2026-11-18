@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The rosec Secret Service provider on this tree — the fork, the two store modes, the derived unlock-once identity, the module options, how to update it, the conflict workflow, and the KeePassXC migration.
-timestamp: 2026-11-18T16:35:24+01:00
+timestamp: 2026-11-18T18:05:03+01:00
 ---
 
 # rosec Secret Service
@@ -59,10 +59,19 @@ upstream unit does not cover:
    process under that name, with `rosecd.service` as an alias.
 
 Measured on 2026-11-18, the two hosts run **different** units: oams runs the custom
-`kdn-secret-service.service`; brys runs the upstream `rosecd.service` (installed from the rosec
-flake's Home Manager module). The target is one set on both: the upstream unit plus a single
-drop-in (`PATH`, `SOPS_AGE_KEY_FILE`, `Wants`/`After=rosec-keys`), with the desktop name-holder
-retired. `rosec-keys.service`, `rosec-unlock.service` and `rosec-conflicts` stay as our additions.
+`kdn-secret-service.service`; brys runs the upstream `rosecd.service` that the **package** ships
+(`share/systemd/user/rosecd.service`, found through the user profile's `share/systemd/user`, and
+D-Bus-activated by the package's `org.freedesktop.secrets.service` file).
+
+brys now keeps that unit and adds a **drop-in**, `~/.config/systemd/user/rosecd.service.d/10-kdn.conf`
+(`PATH`, `SOPS_AGE_KEY_FILE`, `Wants`/`After=rosec-keys`), plus the alias
+`kdn-secret-service.service -> rosecd.service` (a relative symlink, the systemd alias form). The
+desktop name-holder is not a second unit any more. `rosec-keys.service`, `rosec-unlock.service`
+and `rosec-conflicts` stay as our additions.
+
+oams still defines the custom unit; the same drop-in + alias shape is the pending change there
+(the NixOS default `overrideStrategy = "asDropinIfExists"` makes `systemd.packages` plus a partial
+`systemd.user.services.rosecd` definition a drop-in, so the shape ports directly).
 
 ## Store modes (fixed at creation)
 
