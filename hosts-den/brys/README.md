@@ -27,6 +27,12 @@ NanoKVM USB cable) together with the mains lead.
 Observed on 2026-11-18: a greeter-initiated shutdown left brys dark for about 25 minutes; it
 returned after the power lead was pulled.
 
+**A warm `reboot` can also land in the fault.** A `reboot` on 2026-11-18 stopped at the same dead
+state (no network, no HDMI, `udc` still `configured`). The NanoKVM **reset** pulse recovered it:
+`echo out > /sys/class/gpio/gpio505/direction; echo 1 > .../value; sleep 1; echo 0 > .../value`
+on `kvm-26e2`. The PSU stays on across a reset, so the AC-disconnect latch does not engage. Try the
+reset before asking for a physical power press.
+
 The NanoKVM reports the same fault as a dead KVM: no screenshot frame and `write /dev/hidg0: i/o
 timeout`. Before touching the KVM, check `/sys/class/udc/*/state` on the KVM host. `not attached`
 means the machine does not enumerate the gadget, which fits a powered-off brys. The KVM's power

@@ -140,7 +140,14 @@ host state. Use the three probes above instead.
 Power control is not wired on every device. `gaz`, the NAS mini-PCs and `pryll` have no ATX header
 or relay, so a power press is a human action. On `brys` a pulse did not start the machine during the
 2026-11-18 outage: that host has a PSU latch that needs an AC disconnect, see
-[`hosts/brys/README.md`](../hosts/brys/README.md).
+[`hosts/brys/README.md`](../hosts-den/brys/README.md).
+
+**The reset pin is the recovery that works on `brys`.** When the host is on but dead (no network, no
+HDMI, `udc` still `configured`), pulsing `gpio505` resets it without removing power, so the PSU latch
+never engages. Measured 2026-11-18: after a `reboot` landed in the dead state, the reset brought the
+host back in about 90 s, while a power pulse does nothing. Pulse it with
+`echo out > /sys/class/gpio/gpio505/direction; echo 1 > /sys/class/gpio/gpio505/value; sleep 1;
+echo 0 > /sys/class/gpio/gpio505/value` over SSH to `kvm-26e2`.
 
 ## Per-device notes
 
