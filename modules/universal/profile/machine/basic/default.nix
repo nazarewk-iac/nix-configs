@@ -39,6 +39,15 @@ in
             services.flatpak.enable = lib.mkDefault true;
             systemd.services.flatpak-repo = {
               wantedBy = [ "multi-user.target" ];
+              # The remote is fetched from flathub.org, so the first boot attempt must wait for
+              # the network and its DNS. Retry too: a DHCP lease can still be settling when
+              # network-online is reached on a slow link.
+              after = [ "network-online.target" ];
+              wants = [ "network-online.target" ];
+              serviceConfig = {
+                Restart = "on-failure";
+                RestartSec = "10s";
+              };
               path = [ config.services.flatpak.package ];
               script = ''
                 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
