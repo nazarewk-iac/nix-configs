@@ -98,6 +98,28 @@ func Load(root string) (*Store, error) {
 		}
 		return store.Sessions[i].LastTouched.After(store.Sessions[j].LastTouched)
 	})
+	// A run that continues past midnight can have two day-prefixed directories for one session.
+	// The sidecar usually lives in the older one; share it with the others so the summary, JSON
+	// and the TUI see the same identity.
+	sidecars := map[string]*sessionid.Sidecar{}
+	for _, session := range store.Sessions {
+		if session.Sidecar == nil {
+			continue
+		}
+		key := session.Harness + "\x00" + session.ID
+		if _, ok := sidecars[key]; !ok {
+			sidecars[key] = session.Sidecar
+		}
+	}
+	for _, session := range store.Sessions {
+		if session.Sidecar != nil {
+			continue
+		}
+		if sidecar, ok := sidecars[session.Harness+"\x00"+session.ID]; ok {
+			clone := *sidecar
+			session.Sidecar = &clone
+		}
+	}
 	return store, nil
 }
 

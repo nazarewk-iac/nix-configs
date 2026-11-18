@@ -89,6 +89,10 @@ headings, and the task pair when `--task` is given.
 - `--tail N` sets the worklog heading count.
 - `--all` prints one compact line per session, newest first, limited to 20.
 - `--full` removes the item and worklog limits.
+- `--atuin` adds the sidecar's Atuin link: the thread UUID, message count and model. A session
+  with no link prints `ATUIN    not linked`. With `--all`, each line ends in `atuin:<uuid>` or
+  `atuin:not-linked`; widen with `--width` when the line truncates. It reads the sidecar only,
+  so it works without the Atuin CLI.
 
 Default limits: 3 items per section, 5 worklog headings, 24 lines for one session.
 
@@ -212,6 +216,10 @@ transcript stays in Atuin's encrypted store. The thread's real start time replac
 
 Atuin is optional. Without the binary, with capture off, or with an empty store, the command prints
 `atuin-unavailable` or `atuin-empty` and exits 0. `atuin list|show|search` read the same CLI.
+
+`summary --atuin` reads that sidecar block without calling Atuin. A session id that spans two
+day-prefixed directories shares one sidecar: the loader copies the link to the other run, so the
+newest run shows the same thread.
 
 `session backfill` attributes an existing history. For each change it takes the session from a
 sidecar that records the change ID first, then from the Atuin Thread whose
@@ -337,6 +345,9 @@ Every read command supports `--json` and emits one envelope:
 `data` is the payload of the command: `session` and optional `task` for `summary`; `sessions` for
 `sessions`; `tasks` for `tasks`; `task` for `task`; `board` for `board`; `worklog` for `worklog`;
 `errors` and `warnings` for `doctor`. `summary --all` uses the `sessions` payload.
+
+`summary --atuin` only changes the text view; JSON always carries the link as
+`session.sidecar.atuin` (`thread_id`, `message_count`, `model`, `updated_at`).
 
 Optional times are omitted, never a zero time. Internal fields such as line numbers and raw
 frontmatter maps stay out of the output. JSON ignores `--width` and color.

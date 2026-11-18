@@ -26,6 +26,8 @@ type Options struct {
 	Tail     int
 	Now      time.Time
 	RunCount int
+	// ShowAtuin adds the Atuin Thread link (UUID and message count) to a summary line.
+	ShowAtuin bool
 }
 
 // Defaults fills the renderer defaults.
@@ -88,6 +90,9 @@ func Summary(w io.Writer, o Options, s *journal.Session, t *task.Task) error {
 		header += fmt.Sprintf("  (1 of %d runs)", o.RunCount)
 	}
 	lines = append(lines, header)
+	if o.ShowAtuin {
+		lines = append(lines, atuinLine(s))
+	}
 	if len(s.Boards) == 0 {
 		lines = append(lines, "  no boards")
 	} else {
@@ -362,9 +367,34 @@ func sessionLine(s *journal.Session, o Options) string {
 		entries = len(s.Worklog.Entries)
 	}
 	refs := len(s.TaskRefs)
-	return fmt.Sprintf("%s  %-8s  %-48s  %-10s  %s  %s  %s",
+	line := fmt.Sprintf("%s  %-8s  %-48s  %-10s  %s  %s  %s",
 		date, s.Harness, truncateMiddle(s.ID, 48), relTime(o.Now, s.LastTouched),
 		plural(boards, "board", "boards"), plural(entries, "log entry", "log entries"), plural(refs, "task", "tasks"))
+	if o.ShowAtuin {
+		if s.Sidecar != nil && s.Sidecar.Atuin.ThreadID != "" {
+			line += "  atuin:" + s.Sidecar.Atuin.ThreadID
+		} else {
+			line += "  atuin:not-linked"
+		}
+	}
+	return line
+}
+
+// atuinLine renders the sidecar's Atuin Thread link. It stays local: no Atuin CLI call, so the
+// summary keeps working when Atuin is missing or capture is off.
+func atuinLine(s *journal.Session) string {
+	if s.Sidecar == nil || s.Sidecar.Atuin.ThreadID == "" {
+		return "ATUIN    not linked"
+	}
+	a := s.Sidecar.Atuin
+	line := "ATUIN    " + a.ThreadID
+	if a.MessageCount > 0 {
+		line += "  " + plural(a.MessageCount, "message", "messages")
+	}
+	if a.Model != "" {
+		line += "  " + a.Model
+	}
+	return line
 }
 
 func taskLine(t *task.Task, o Options) string {

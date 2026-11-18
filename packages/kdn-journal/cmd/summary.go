@@ -23,6 +23,7 @@ func newSummaryCmd(app *App) *cobra.Command {
 		tail        int
 		full        bool
 		limit       int
+		showAtuin   bool
 	)
 	cmd := &cobra.Command{
 		Use:   "summary",
@@ -48,7 +49,9 @@ func newSummaryCmd(app *App) *cobra.Command {
 				if app.JSON {
 					return app.writeJSON("summary", map[string]any{"sessions": sessions}, nil)
 				}
-				return render.Sessions(app.Out, app.renderOptions(full, tail), sessions, limit)
+				o := app.renderOptions(full, tail)
+				o.ShowAtuin = showAtuin
+				return render.Sessions(app.Out, o, sessions, limit)
 			}
 			session, matches, err := selectSession(store, sessionFlag)
 			if err != nil {
@@ -84,6 +87,7 @@ func newSummaryCmd(app *App) *cobra.Command {
 			}
 			o := app.renderOptions(full, tail)
 			o.RunCount = len(matches)
+			o.ShowAtuin = showAtuin
 			if track != "" {
 				b, err := findTrack(session, track)
 				if err != nil {
@@ -101,6 +105,7 @@ func newSummaryCmd(app *App) *cobra.Command {
 	cmd.Flags().IntVar(&tail, "tail", 5, "number of worklog headings to print")
 	cmd.Flags().BoolVar(&full, "full", false, "remove item and worklog limits")
 	cmd.Flags().IntVar(&limit, "limit", 20, "maximum sessions for --all")
+	cmd.Flags().BoolVar(&showAtuin, "atuin", false, "show the Atuin Thread UUID and message count")
 	return cmd
 }
 

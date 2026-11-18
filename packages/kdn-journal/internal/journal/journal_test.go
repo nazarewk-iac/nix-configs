@@ -152,3 +152,30 @@ func TestIndexOrdersBoards(t *testing.T) {
 		t.Errorf("board order = %s", got)
 	}
 }
+
+func TestSidecarSharedAcrossDuplicateID(t *testing.T) {
+	root := t.TempDir()
+	older := time.Date(2026, 11, 15, 10, 0, 0, 0, time.Local)
+	newer := time.Date(2026, 11, 16, 10, 0, 0, 0, time.Local)
+	oldDir := session(t, root, "opencode-20261115-ses_dup", "# Board — old\n", older)
+	session(t, root, "opencode-20261116-ses_dup", "# Board — new\n", newer)
+	writeFile(t, filepath.Join(oldDir, "session.json"),
+		`{"schema_version":1,"harness":"opencode","session_id":"ses_dup","atuin":{"thread_id":"01a1e074","message_count":7}}`,
+		older)
+
+	store, err := journal.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(store.Sessions) != 2 {
+		t.Fatalf("sessions = %d, want 2", len(store.Sessions))
+	}
+	for _, s := range store.Sessions {
+		if s.Sidecar == nil {
+			t.Fatalf("%s has no sidecar", s.Name)
+		}
+		if s.Sidecar.Atuin.ThreadID != "01a1e074" || s.Sidecar.Atuin.MessageCount != 7 {
+			t.Errorf("%s atuin = %+v", s.Name, s.Sidecar.Atuin)
+		}
+	}
+}
