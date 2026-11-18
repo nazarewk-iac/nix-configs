@@ -170,6 +170,12 @@
             serviceConfig = {
               Restart = lib.mkDefault "on-failure";
               RestartSec = lib.mkDefault "5s";
+              # nixpkgs sets `RestartPreventExitStatus = 1` to stop a restart loop on a bad
+              # config. Caddy also exits 1 when a listen address is not assigned yet, which is
+              # the NetBird race this block exists to survive. Clear the list so the retry
+              # happens; the lifted start limit bounds nothing, but a bad config repeats a
+              # clear log line every 5 s instead of hiding.
+              RestartPreventExitStatus = lib.mkForce [ ];
             };
             after = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
             wants = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
