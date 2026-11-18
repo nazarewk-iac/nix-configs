@@ -107,8 +107,10 @@ published single-card DS4.1 number (1× R9700, 251 GB RAM, 21–25 t/s).
 
 - GLM-5.3-Flash is **321B with about 18B active** and a 1M context. That is a class above
   flash-next, and `Maya-S` fits entirely in 157 GB of memory.
-- All published R9700 numbers are **two cards** (44 t/s at 256K). A single card has to be measured;
-  the honest estimate is roughly half, 20–30 t/s.
+- All published R9700 numbers are **two cards** (44 t/s at 256K). **Measured on one card: 8.9 t/s
+  decode, 14.3 t/s prefill** (llama.cpp, `UD-IQ2_XXS`, `n-cpu-moe 36`, 16 threads). The estimate of
+  20–30 t/s was wrong by 2-3x: GLM-5.3-Flash is bound by the CPU computing the RAM-resident
+  experts, not by VRAM or the link.
 - AMD is **experimental**. Expect setup friction and check the AMD doc before the run.
 
 ### BigMoeOnEdge: the generic alternative
