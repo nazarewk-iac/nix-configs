@@ -107,6 +107,9 @@
 !/data/certs/expiry.json
 !/hosts/*/certs/*.pub
 !/hosts/*/certs/*.key.sops
+!/hosts-den/*/certs/*.pub
+!/hosts-den/*/certs/*.key.sops
+!/hosts-den/*/ssh-keys/*.sops
 
 # devenv-managed symlinks into /nix/store — never commit these
 /.agents/rules/basic-memory*.md
