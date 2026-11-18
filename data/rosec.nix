@@ -7,8 +7,13 @@
 #
 # Host-specific switches stay in the host: `use` (den) / `enable` (universal) for the daemon, and
 # `conflictNotification` for the desktop integration.
-{ ... }:
+{ pkgs, ... }:
 {
+  # The provider shells out to the age plugin for whichever identity the key file holds. The
+  # YubiKey plugin comes with the provider's own PATH in the custom unit; the upstream unit
+  # inherits the user profile, so both plugins belong there.
+  home.packages = [ pkgs.age-plugin-tpm ];
+
   kdn.services.rosec = {
     providers.sops = {
       # The store is a file tree under Nextcloud. It is copied from oams while the nextcloud

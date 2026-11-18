@@ -31,6 +31,7 @@
         "power"
         "samba"
         "scanner"
+        "tss"
         "tty"
         "video"
         "weechat"
