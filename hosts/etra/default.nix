@@ -154,6 +154,27 @@ in
 
       # A headless router. Remove documentation and diagnostic tooling.
       kdn.minimalServer = true;
+      # The kdn synced shares. `large` is omitted on purpose: the router keeps the small state.
+      kdn.services.syncthing =
+        let
+          st = import ../../data/syncthing.nix;
+          self = "etra";
+          mine = [
+            "secret-stores"
+            "small"
+            "medium"
+          ];
+        in
+        {
+          enable = true;
+          devices = builtins.removeAttrs st.devices [ self ];
+          shares = builtins.listToAttrs (
+            map (share: {
+              name = share;
+              value = builtins.filter (host: host != self && builtins.hasAttr host st.devices) st.shares.${share};
+            }) mine
+          );
+        };
     }
     # TODO: setup the dedicated YubiKey with GPG
     # TODO: setup the dedicated YubiKey with FIDO2 authentication

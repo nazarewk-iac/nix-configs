@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The declarative Syncthing shares under ~/.local/share/kdn/synced — the topology, the per-host wiring, persistence, the etra first-start step, and the recipe for adding a share.
-timestamp: 2026-11-18T18:18:15+01:00
+timestamp: 2026-11-18T18:19:59+01:00
 ---
 
 # Syncthing shares
@@ -74,9 +74,11 @@ share becomes a folder at `${config.xdg.dataHome}/kdn/synced/<share>`, type `sen
   })
 ```
 
-The universal tree (`oams`, `etra`) needs the same two options added to
+The universal tree carries the same two options in
 `modules/universal/services/syncthing/default.nix`; the NixOS-level values reach Home Manager
 through the existing `home-manager.sharedModules` bridge, so the host block is the same shape.
+`hosts/oams/default.nix` holds all four shares and `hosts/etra/default.nix` holds three (no
+`large`), both with the peers filtered to the known device IDs.
 
 ## Persistence
 
@@ -103,9 +105,12 @@ through the existing `home-manager.sharedModules` bridge, so the host block is t
 ## Rollout order
 
 1. **oams and brys** with the two known device IDs (this is what `data/syncthing.nix` hold now).
-2. **etra**: enable the aspect, deploy, then `stc id` on etra and put the ID in
-   `data/syncthing.nix`. Deploy all three again. Until then etra holds the folders locally but
-   has no peer.
+2. **etra**: the host is wired but not deployed yet. Switch it, then `stc id` on etra and put
+   the ID in `data/syncthing.nix` (uncomment the `etra` device). Deploy all three again. Until
+   then etra holds the folders locally but has no peer, and oams/brys do not list etra.
+
+   oams and etra switch through the repository's remote helper:
+   `./nixos-rebuild.sh switch remote=oams` and `remote=etra`.
 3. Verify with `stc folders`, `stc devices` and `stc folder_errors` on each host.
 
 ## First start and device-ID preservation

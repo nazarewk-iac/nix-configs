@@ -470,6 +470,30 @@ in
       };
     }
     {
+      # The kdn synced shares. The topology lives in data/syncthing.nix; a peer without a device
+      # ID yet (etra before its first start) is filtered out until its ID is filled in.
+      kdn.services.syncthing =
+        let
+          st = import ../../data/syncthing.nix;
+          self = "oams";
+          mine = [
+            "secret-stores"
+            "small"
+            "medium"
+            "large"
+          ];
+        in
+        {
+          devices = builtins.removeAttrs st.devices [ self ];
+          shares = builtins.listToAttrs (
+            map (share: {
+              name = share;
+              value = builtins.filter (host: host != self && builtins.hasAttr host st.devices) st.shares.${share};
+            }) mine
+          );
+        };
+    }
+    {
       # Shared /run/configs/llms secrets (same mount as brys): HF token and
       # llama-server API keys. The leaf cert moved to hosts/brys/ (brys only).
       kdn.security.secrets.sops.files."llms" = {
