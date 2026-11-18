@@ -146,8 +146,8 @@ or relay, so a power press is a human action. On `brys` a pulse did not start th
 
 - **`brys`** (`kvm-26e2`, Beta): the console was the only view during the den migration. The host
   runs SDDM on Wayland with the `chili` theme; the greeter layout selector is dead (SDDM 0.21 does
-  not populate it on Wayland) and the real layout is `pl`. The password fields therefore use the
-  Polish key positions.
+  not populate it on Wayland) and the real layout is `pl`. Polish is QWERTY: a password types as
+  usual, and only the AltGr layer differs (ą, ć, ę, ł, ń, ó, ś, ź, ż).
 - **`anji`** (`kvm-2795`, Beta): a Mac mini; the KVM is the only path when macOS blocks SSH. No
   power header.
 - **`gaz`** (`kvm-fa56`, Alpha): a Chromebook; video and HID are independent paths. Probe HID before

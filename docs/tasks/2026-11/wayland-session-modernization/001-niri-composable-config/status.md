@@ -3,7 +3,7 @@ type: Status
 description: The Niri PoC starts and works on brys, but the session services are Sway-scoped, so the bar, notifications, portals and XWayland do not start.
 status: in-progress
 authored_by: agent
-timestamp: 2026-11-18T14:30:12+01:00
+timestamp: 2026-11-18T15:05:41+01:00
 ---
 
 # Niri PoC — build-ready, live test pending
@@ -96,6 +96,24 @@ So the build note "the Home Manager waybar, swaync and kanshi services start fro
   `recent-windows` action in 26.04.
 - `move-column-to-workspace` keeps Niri's default focus behaviour; the Sway binding does not follow
   the window. A live decision is needed if the difference matters.
+
+## Fixed after the live test
+
+- The shared services moved to `graphical-session.target`: waybar, swaync, kanshi, the portals,
+  the polkit agent and the secret service. The Sway envs target is ordering only.
+- `niri.service` gets `Wants=graphical-session.target`, so the plain `niri-session` control starts
+  the services too.
+- `Niri (UWSM)` is generated as well; it needs `niri --session` (see
+  [../002-sway-uwsm-session/status.md](../002-sway-uwsm-session/status.md)).
+- keepassxc now starts after the generic target. It had aborted in Qt's `init_platform` because it
+  started before the session environment existed.
+- nwg-panel creates its runtime config directory before the first write.
+- The waybar/`tray.target` ordering cycle is gone, so a logout stops `graphical-session.target` and
+  the next login starts a fresh set.
+
+Verified on brys: plain `Niri` and `Niri (UWSM)` both start waybar (tray host), swaync, kanshi,
+the portals, keepassxc, kdeconnect, blueman, flameshot and rosecd. `nextcloud-client` needed
+`startInBackground = false` to stay active.
 
 ## Verification commands
 

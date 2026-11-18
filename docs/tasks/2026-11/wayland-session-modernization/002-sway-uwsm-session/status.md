@@ -1,9 +1,9 @@
 ---
 type: Status
-description: The opt-in UWSM A/B session is in both trees and build-proven; the destructive phase waits for the live A/B.
-status: parked
+description: Both UWSM sessions ran live on brys; the session services now start from the generic target, and Niri needs `--session` for UWSM's notify handshake.
+status: in-progress
 authored_by: agent
-timestamp: 2026-11-18T00:15:00+01:00
+timestamp: 2026-11-18T15:05:31+01:00
 ---
 
 # Sway/UWSM A/B — built, opt-in, live test pending
@@ -43,6 +43,53 @@ Rebuild and switch, then log in to `Sway (UWSM)` from the greeter. The control s
 5. `nixos-rebuild switch` does not restart the compositor.
 
 The task's scorecard and the full phase plan live in [definition.md](definition.md).
+
+## Live A/B 2026-11-18 (brys, den, `kdn.desktop-sway.uwsm.use = true`)
+
+### `Sway (UWSM)`
+
+- `graphical-session.target` is active, `wayland-wm@sway.service` runs the compositor, and
+  `SWAYSOCK` plus `XCURSOR_*` reach the user manager.
+- Portals (gateway, gtk, wlr), `rosecd` and swaync start.
+- waybar and kanshi did **not** start: the Home Manager `wayland.systemd.target` was the
+  Sway-specific `kdn-sway-…-session.target`. The den aspect now points it at
+  `graphical-session.target`, and the Sway envs target is ordering only (`After`, never
+  `Requires`), so a Niri or UWSM login cannot wait for a Sway-only unit.
+
+### `Niri (UWSM)`
+
+- Supported: `programs.uwsm.waylandCompositors.niri` generates `Niri (UWSM)`.
+- The entry **must** pass `niri --session`. Plain `niri` never runs `uwsm finalize`, so
+  `wayland-wm@niri.service` stays in `Type=notify`-activating, the session target never starts,
+  and the login shows a bare desktop. Measured 2026-11-18: `graphical-session.target` inactive,
+  no `NIRI_SOCKET` in the manager, `wayland-wm@niri.service` dead after the timeout.
+- With `--session`, `NIRI_SOCKET`/`WAYLAND_DISPLAY` reach the manager and the same app set starts.
+
+### The app set (both Niri sessions)
+
+Active after the fixes: waybar (the tray host), swaync, kanshi, `xdg-desktop-portal`
+(+gtk, wlr), keepassxc, kdeconnect, blueman-applet, flameshot, rosecd.
+
+- `nextcloud-client`: `startInBackground = true` adds `--background`, which forks; the
+  `Type=simple` unit went inactive within a second and no tray icon appeared. The den aspect now
+  runs the client in the foreground.
+- `nwg-panel` is Sway-only and stays inactive under Niri.
+
+### The ordering cycle that leaked a whole session
+
+waybar had `BindsTo=tray.target`; `tray.target` Wants waybar; flameshot Requires `tray.target`;
+flameshot is `PartOf` the generic target; the target Wants waybar. On logout systemd logged
+`Found ordering cycle … Unable to break cycle starting with graphical-session.target/stop`, so the
+target never stopped. The next login found it already active, started none of its Wants, and the
+old session's apps stayed on screen. Dropping `BindsTo=tray.target` broke the cycle; the target now
+stops cleanly and each login starts a fresh set.
+
+### Still open from the scorecard
+
+- Exit, second exit and crash-then-relogin (the stop path now works, but the crash case is not
+  exercised).
+- `nixos-rebuild switch` not restarting the compositor (the test restarted `display-manager`
+  explicitly).
 
 ## What still waits
 
