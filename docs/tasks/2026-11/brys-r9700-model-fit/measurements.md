@@ -26,7 +26,8 @@ edit the expansion, not the row.
 | `llamacpp` | `vk-srv8k/N-t16` | `llama-server --fit off -fa on -c 8192 --n-cpu-moe N -t 16 --threads-batch 16`. |
 | `llamacpp` | `cpu` | no GPU offload. Kept only as a reference point; not a served configuration. |
 | `bmoe` | `bmoe-auto` | `bmoe-cli --auto --no-probe-io -c 2048`. The planner measures the machine, then places tensors. |
-| `bmoe` | `bmoe-stream` | the same with `--moe-stream --auto --plan-explain`: experts stay in RAM and VRAM acts as an expert cache. |
+| `bmoe` | `bmoe-stream` | the same with `--moe-stream --auto`: experts stay in RAM and VRAM acts as an expert cache. |
+| `llamacpp` | `vk-srv2k/6` | `llama-server --fit off -fa on -c 2048 --n-cpu-moe 6 -t 16`. The same-context twin of `bmoe-stream`. |
 
 Both harnesses read the **same GGUF files**. A model is downloaded once; `llamacpp` and `bmoe` are
 two ways to run it.
@@ -156,21 +157,25 @@ required a host reset; the mmap path has not repeated it.
 
 ## Harness comparison on the same file
 
-Qwen3.8-Flash-Next `UD-IQ1_S`, same GGUF, same card:
+Qwen3.8-Flash-Next `UD-IQ1_S`, same GGUF, same card, 2k context for the apples-to-apples pair:
 
 | harness | config | ctx | decode t/s | prefill t/s | note |
 | --- | --- | ---: | ---: | ---: | --- |
 | llamacpp | vk-moe6 | 0 | **30.9** | **481.1** | llama-bench |
+| llamacpp | `vk-srv2k/6` | 2k | **30.7** | 38.3 | llama-server, `-t 16`, whole card (31.4 GiB) |
+| bmoe | `bmoe-stream` | 2k | **29.5** | **60.6** | `--moe-stream --auto`, 26.6 GB expert cache, load 13 s |
 | llamacpp | vk-srv32k/24 | 32k | **20.4** | 52.5 | llama-server |
-| bmoe | bmoe-auto | 2k | 8.2 | 2.4 | its planner chose a host-expert placement; model load 66 s |
-| bmoe | bmoe-stream | 2k | see below | | |
+| bmoe | bmoe-auto | 2k | 8.2 | 2.4 | `--auto` chose a host-expert placement |
+
+**Decode is a tie; BigMoeOnEdge is 58 % faster on prefill** (60.6 vs 38.3) and leaves VRAM headroom
+because its cache is a budget it controls rather than "fill the card". Its failure mode is the
+default: without `--moe-stream` the planner runs a host-expert placement and drops to 8.2 t/s while
+still printing a 45 t/s projection for the placement it did not choose.
 
 BigMoeOnEdge's planner is the interesting part: it probes the machine, prices every device's expert
 and dense bandwidth on the model's own quantized blocks, and prints the plan with a reason per knob.
-On this host it **predicted 45.45 t/s** for a 26.6 GB device expert cache (92 % of routed bytes
-resident) against 24.55 t/s for the fitter's placement — but `--auto` then ran the fitter's
-placement, which measured 8.2 t/s. Its own predicted number is above llama.cpp's 30.9; its executed
-default is far below it.
+That is useful for a machine whose VRAM/RAM split is not obvious; llama.cpp gives no such reasoning
+and needs the `n-cpu-moe` value found by trial.
 
 ## ROCm / HIP
 
