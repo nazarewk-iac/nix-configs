@@ -158,6 +158,13 @@ in
         enable = true;
         routerEngine = "matrix";
         debug = true;
+        # One tier of mutually-exclusive small models. They co-reside with the frontier in `main`:
+        # flash-next holds ~21 GiB of VRAM at `nCpuMoe = 24` and the biggest member here is
+        # 2.6 GB, so the pair fits the 32 GB card (measured 24.2 GiB total).
+        #
+        # `qwen3.5-35b-a3b` is deliberately NOT a tier any more. It needs 20.5 GB of VRAM on its
+        # own, which no longer fits beside a 21 GiB frontier on the 32 GB card. It stays served on
+        # its router and evicts the frontier when it loads.
         coResidentTiers = [
           [
             "gemma-4-e4b"
@@ -168,7 +175,6 @@ in
             "qwen3.5-2b"
             "qwen3.5-4b"
           ]
-          [ "qwen3.5-35b-a3b" ]
         ];
         vulkanDeviceSelect = "1002:7551!";
       };
@@ -295,32 +301,36 @@ in
       contextSize = 1048576;
     };
     "qwen3.8-flash-next" = {
-      # RETIRED 2026-11-13: `set = "retired"`, aliases dropped, no longer a persistent model.
-      # The local frontier left the fleet on electricity grounds — 2.36 tok/s decode is far
-      # below the 10 tok/s floor for a served model, and it pinned ~14 GiB in RAM. The plan
-      # and review depth it carried now runs on the Requesty SaaS qwen pair through the gateway
-      # (pi `planner` on `qwen3.8-flash`, `reviewer` on `tensorx/qwen3.8-flash-next`), and the
-      # harness default is `deepseek-v4.1-flash-1017`. The full registration stays so the
-      # measurements and a one-word re-enable survive.
+      # RE-ENABLED 2026-11-18 on the R9700, measured. The 2026-11-13 retirement was correct for
+      # the 8 GB W6600 (2.36 t/s decode, CPU-only). The 32 GB R9700 runs the same model at
+      # **20.4 t/s decode / 52.5 t/s prefill at 32k context**, with 21 GiB of VRAM and a small
+      # model still able to co-reside. The harness change is `nCpuMoe`: the MoE experts of the
+      # first 24 of 48 layers stay in RAM, the rest live in VRAM. Measurements:
+      # docs/tasks/2026-11/brys-r9700-model-fit/measurements.md.
       #
-      # History: the deep aliases landed here when qwen3.8-27b was dropped. Measured on
-      # 2026-11-04 on the same prompt: 27b on 8 CPU threads produced 0.80 tok/s, flash-next
-      # on 16 threads 2.36 tok/s. The dense 27b was three times slower AND had a smaller
-      # window (131k vs 1M), so it bought nothing for a deep tier and cost a model slot.
+      # The quant moved to `UD-IQ1_S` (62 GB, 3 shards). `UD-IQ4_XS` (the old 88 GB 3-shard set)
+      # leaves too little RAM for the KV cache plus a co-resident model, and it is a stale
+      # upstream revision. The measured 32k tune does not transfer to another quant.
+      aliases = [
+        "chat-deep-slow"
+        "code-deep-slow"
+        "tools-deep-slow"
+        "reason-deep-slow"
+      ];
       capabilities = {
-        # Measured throughput (docs/local-llms.md). Decode 2.36 t/s on 16 CPU threads;
-        # warm prefill ~30 t/s, but a COLD 1M-token prefill is hours, so the derived
-        # stream_timeout from contextSize/prefill is the real first-token budget.
+        # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 24`,
+        # 32k context, mmap load. Not an estimate.
         rates = {
-          decode = 2.36;
-          prefill = 30.0;
-          mode = "CPU";
+          decode = 20.4;
+          prefill = 52.5;
+          mode = "GPU";
         };
-        loadSeconds = 90;
-        operation = "cpu";
+        # 62 GB of weights from ZFS, then the load. Measured ~30 s warm, more when cold.
+        loadSeconds = 45;
+        operation = "gpu";
       };
       pi = {
-        contextWindow = 524288;
+        contextWindow = 32768;
         maxTokens = 32768;
       };
       # A reasoning model served with `perf.reasoning = "auto"`. `thinkingLevelMap` tells the Pi
@@ -336,42 +346,50 @@ in
           high = "xhigh";
         };
       };
-      gpu = false;
+      gpu = true;
       # Vision is deliberately OFF. The projector loads ~0.8 GB and every image prompt pays a
-      # CPU prefill: measured 2026-11-04, a 256px icon took 259 s and a 2560px terminal
-      # screenshot did not finish in 900 s. Use the VL models for images.
-      contextSize = 1048576;
+      # CPU prefill. Use the VL models for images.
+      contextSize = 262144;
       hosts.brys = {
-        set = "retired";
-        servedContext = 1048576;
+        set = "main";
+        servedContext = 32768;
         common = {
           download = {
             enable = true;
-            glob = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-*.gguf";
+            glob = "UD-IQ1_S/Qwen3.8-Flash-Next-UD-IQ1_S-*.gguf";
             minBytes = 10000000;
           };
           enable = true;
-          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfFile = "UD-IQ1_S/Qwen3.8-Flash-Next-UD-IQ1_S-00001-of-00003.gguf";
           hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
           perf = {
-            batchSize = 4096;
+            batchSize = 2048;
             cacheRam = 8192;
             cacheTypeK = "q8_0";
             cacheTypeV = "q8_0";
             checkpointMinStep = 900;
-            ctxCheckpoints = 32;
+            ctxCheckpoints = 8;
             kvUnified = true;
-            mmap = null;
-            parallel = 2;
+            # mmap, NOT `none`: with `none` the 62 GB read plus the Vulkan upload is what wedged
+            # RADV on the 102 GB GLM model; mmap is the safe path on this host.
+            loadMode = "mmap";
+            # The expert split that measured 20.4 t/s at 32k. Raising it costs decode, lowering
+            # it overcommits VRAM and the KV cache evicts experts (14.6 t/s at nCpuMoe 6).
+            nCpuMoe = 24;
+            nGpuLayers = 99;
+            parallel = 1;
             reasoning = "auto";
             reasoningEffort = "low";
-            ropeFreqBase = 10000000;
-            ropeScale = 4.0;
-            ropeScaling = "yarn";
             sessionHeaders = "x-session-id";
-            sessionMaxSessions = 64;
-            ubatchSize = 4096;
-            yarnOrigCtx = 262144;
+            sessionMaxSessions = 16;
+            ubatchSize = 512;
+            # llama-server's auto-fit aborts when a model does not fit and `--n-gpu-layers` is
+            # set, then silently serves from the CPU. The explicit placement above is the whole
+            # point, so the fit pass is turned off.
+            extraFlags = [
+              "--fit"
+              "off"
+            ];
           };
         };
       };
