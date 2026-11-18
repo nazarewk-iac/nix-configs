@@ -107,13 +107,27 @@ The model is **180B total, 48 layers, 512 experts, top-10**, 262k native context
 | llamacpp | **vk-srv64k/26 + small** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
 | llamacpp | `qwen3.5-4b` beside it | 16k | — | 119.1 | 185.9 |
 | llamacpp | vk-srv64k/26 | 64k | 19.8 GiB | **20.9** | 32.3 |
-| llamacpp | **llama-swap `chat-deep-slow`** | 64k | 19.8 GiB | **21.9** | 49.3 |
+| llamacpp | **llama-swap `chat-deep-slow`** | 64k | 19.8 GiB | **21.9** | 255-289 (sustained) |
 | llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
 
 The last two rows are the **served** path, not a hand-run server: the preset in `data/llm.nix`
 (`nGpuLayers 99`, `nCpuMoe 26`, `loadMode mmap`, `extraFlags ["--fit" "off"]`, `parallel 1`,
 `cacheTypeK/V q8_0`, `--threads 16` from the host default, served at 64k). Two llama-servers stay up
 together with 23.0 GiB of VRAM in total, and neither loses throughput when the other runs.
+
+**Prefill, measured properly.** A 16-token prompt reports ~50 t/s because the fixed per-request
+cost dominates. Four real prompt lengths at the served preset:
+
+| prompt tokens | prefill t/s | wall |
+| ---: | ---: | ---: |
+| 2572 | 257.3 | 10.0 s |
+| 8496 | 288.9 | 29.4 s |
+| 11016 | 272.4 | 40.5 s |
+| 21516 | 255.1 | 84.4 s |
+
+So the sustained rate is **255-289 t/s**, roughly flat to 21.5k tokens. A 64k prompt would take
+about 4-5 minutes. This is the number the fleet must use for `rates.prefill`: it derives the first
+token timeout from `contextSize / prefill`.
 
 **64k is the right served window, not 32k.** At `n-cpu-moe 26` the 64k KV cache costs the same VRAM
 as the 32k tune at `n-cpu-moe 24` (19.8 vs 21.0 GiB) and decodes the same or slightly faster
