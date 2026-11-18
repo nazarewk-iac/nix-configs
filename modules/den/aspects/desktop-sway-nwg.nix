@@ -360,6 +360,9 @@ let
                       tempdir="$(mktemp -d /tmp/nwg-panel-set-configs.XXXXXX)"
                       trap 'rm -rf "$tempdir" || :' EXIT
                       mkdir -p "$tempdir"
+                      # The runtime creates these files before any HM write exists, so the
+                      # directory is not guaranteed. Create it instead of failing the unit.
+                      mkdir -p "$(dirname "$calendar_path")" "$(dirname "$config_path")"
                       test -e "$calendar_path" || jq -n '{}' >"$calendar_path"
                       if test -e "$config_path" ; then
                         jq -S '.' "$config_path" > "$tempdir/config.json"
