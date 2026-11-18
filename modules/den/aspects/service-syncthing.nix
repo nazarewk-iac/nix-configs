@@ -181,6 +181,11 @@
           # and the store file `#include`s `.stignore-local` for the non-managed host one-offs.
           # `.stignore-local` is ignored (so it never travels); the `.stignore` itself is never
           # synced by Syncthing.
+          # The user-wide copy: the same patterns, independent of any share, for reference and
+          # for tools outside Syncthing. The per-folder `.stignore` symlinks duplicate it by
+          # design; the store file adds the `.stignore-local` include.
+          home.file.".config/kdn/syncthing/ignore-common".text =
+            lib.concatStringsSep "\n" cfg.ignorePatterns + "\n";
           home.activation.syncthing-ignores = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             for folder in ${lib.concatMapStringsSep " " (share: "\"$HOME/.local/share/kdn/synced/${share}\"") (lib.attrNames cfg.shares)} "$HOME/dev"; do
               [ -d "$folder" ] || continue

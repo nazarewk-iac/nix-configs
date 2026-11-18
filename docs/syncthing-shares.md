@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The declarative Syncthing shares under ~/.local/share/kdn/synced — the topology, the per-host wiring, persistence, the etra first-start step, and the recipe for adding a share.
-timestamp: 2026-11-18T20:36:16+01:00
+timestamp: 2026-11-18T20:42:17+01:00
 ---
 
 # Syncthing shares
@@ -130,6 +130,11 @@ module) and ends with:
 The include is the **non-managed host one-off** file at `<folder>/.stignore-local`. The activation
 creates it empty when missing and never touches its content. `.stignore-local` is itself in the
 ignore list, so it stays local; the `.stignore` is never synced by Syncthing either.
+
+The same pattern list is also kept as a user-wide store file at
+`~/.config/kdn/syncthing/ignore-common`, independent of any share — a stable path for reference and
+for tools outside Syncthing. It duplicates the symlink target by design (the target adds the
+`.stignore-local` include).
 
 Two properties matter:
 
