@@ -32,27 +32,35 @@ timestamp: 2026-11-18T12:00:00+01:00
 
 ## Findings
 
-Full analysis and sources: [research.md](research.md).
+Full analysis and sources: [research.md](research.md). Measured numbers, harness configs and the
+fit curves: [measurements.md](measurements.md).
 
-| # | Model | Engine | Resident need | Fits? | Expected decode (single R9700) |
+**Status 2026-11-18: measured, not estimated.** The R9700 ran every downloaded model, the frontier
+fits, and the numbers are in `measurements.md`.
+
+| # | Model | Harness | Resident need | Fits? | Measured decode |
 |---|---|---|---|---:|---|
-| 1 | Qwen3.8-Flash-Next IQ2_XS | Strata | 39.2 GB | yes | 45–70 t/s (estimate) |
-| 2 | Qwen3.8-Flash-Next IQ3_XXS | Strata | 47.0 GB | yes | 35–55 t/s (estimate) |
-| 3 | Qwen3.8-Flash-Next Coder IQ1_M | Strata | 32 GB | yes | 50–80 t/s (estimate) |
-| 3b | Flash-Next IQ3_XXS | **BigMoeOnEdge** | 47 GB | yes | 50–70 t/s (70 measured at 24 GB + 96 GB RAM) |
-| 4 | Qwen3.8-Flash-Next UD-Q4_K_XL | Strata | 88 GB RAM | yes | 20–35 t/s (estimate) |
-| 5 | GLM-5.3-Flash 321B Maya-S | Maya | 96.5 GB | yes | 20–30 t/s (unverified; 2 cards = 44 t/s) |
-| 6 | Dense 27–35B, Q4 | llama.cpp Vulkan | 17–23 GB VRAM | yes | 25–40 t/s |
-| 7 | Qwen3.6-35B-A3B Q4 | llama.cpp Vulkan | 22.9 GB VRAM | yes | 100 t/s or more |
-| 8 | DeepSeek V4.1-Flash 1.75 bpw | Maya / Strata | 191–239 GB | SSD-streamed | low, 3–10 t/s |
-| 9 | Qwen3.8-Flash-Next Q8_0 | Strata | 136 GB RAM | **no** | — |
+| 1 | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 6` | 62 GB | yes | **30.9 t/s** at an empty context, **20.4 t/s** at 32k |
+| 2 | Qwen3.8-Flash-Next + `qwen3.5-4b` | llama.cpp Vulkan, both resident | 24.2 GiB VRAM | yes | **20.1 t/s** frontier + **119.1 t/s** small |
+| 3 | GLM-5.3-Flash 321B `UD-IQ2_XXS` | llama.cpp Vulkan, `n-cpu-moe 36`, 16 threads | 102 GB | yes | **8.9 t/s** (CPU-bound) |
+| 4 | Qwen3.5-35B-A3B | llama.cpp Vulkan, all layers on GPU | 20.5 GB VRAM | yes | **120.7 t/s** |
+| 5 | Gemma-4-26B-A4B | llama.cpp Vulkan, all layers on GPU | 13.4 GB VRAM | yes | **134.0 t/s** |
+| 6 | Dense 27–31B (qwen3.8-27b, gemma-4-31b) | llama.cpp Vulkan, all layers on GPU | 15–17 GB VRAM | yes | **30–32 t/s** |
+| 7 | Qwen3.8-Flash-Next `UD-IQ1_S` | BigMoeOnEdge `--auto` | 62 GB | yes | 8.2 t/s (worse than llama.cpp) |
+| 8 | DeepSeek V4.1-Flash `UD-IQ1_S` 233 GB | any | 233 GB+ | **no** | exceeds 157 GB combined |
+| 9 | Qwen3.8-Flash-Next `Q8_0` 188 GB | any | 188 GB | **no** | exceeds RAM |
+
+The shortlist to run is now simple: **flash-next `UD-IQ1_S` at `n-cpu-moe 24` plus a small model
+beside it**. It is the only configuration that gives frontier quality, 20 t/s, and a co-resident
+worker at once. GLM-5.3-Flash works but is CPU-bound at 8.9 t/s; keep it only if a 321B model is
+needed at any price.
 
 Rows 1–3 are the natural first runs: the R9700 is a tested Strata target, the expert cache grows
 from 12 GB on oams to 32 GB here, and the existing llama-swap wiring already pins the card.
-Row 3b is the same model under a **model-agnostic** engine (BigMoeOnEdge) so one server could later
-cover flash-next, Qwen3.6-35B-A3B, dense models and the DeepSeek/GLM GGUFs. Row 5 is the only route
-to a 321B model on this box. See [research.md](research.md) for the full engine survey, including
-the engines rejected because they are CUDA-, AVX-512- or Strix-Halo-only.
+Row 7 is the model-agnostic harness (BigMoeOnEdge) on the same GGUF; its planner predicted 45 t/s
+but its executed default delivered 8.2. Row 8 is out of reach. See [research.md](research.md) for the
+full engine survey, including the engines rejected because they are CUDA-, AVX-512- or
+Strix-Halo-only.
 
 ## Measurement aliases
 

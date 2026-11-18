@@ -1,0 +1,194 @@
+---
+type: Research
+description: Measured throughput of every model on the R9700, the fit curves for Qwen3.8-Flash-Next and GLM-5.3-Flash, and the harness comparison on host brys, 2026-11-18.
+task: ../definition.md
+authored_by: agent
+timestamp: 2026-11-18T23:30:00+01:00
+---
+
+# Measured on brys with the R9700
+
+Every number is from host `brys` on 2026-11-18, GPU `gpu-r9700`
+(Radeon AI PRO R9700, 31.86 GiB, gfx1201), CPU 5950X (AVX2, no AVX-512), 125 GiB usable RAM.
+The GPU sits in a PCIe 4.0 **x8** slot.
+
+## Configuration short names
+
+Each table row names its **harness**, and a **config** short name. The short name is expanded here;
+edit the expansion, not the row.
+
+| harness | config | what it means |
+| --- | --- | --- |
+| `llamacpp` | `vk-full` | `llama-bench -ngl 99 -fa on -p 512 -n 128 -r 2`. Every tensor in VRAM. Prefill is 512 tokens, decode 128, empty context. |
+| `llamacpp` | `vk-moe6` … `vk-moe40` | the same bench with `--n-cpu-moe N`: the expert tensors of the first N of 48 layers stay in RAM. |
+| `llamacpp` | `vk-srv32k/N` | `llama-server --fit off -fa on -c 32768 --n-cpu-moe N`, `-t 8`, mmap load. Measured from `/v1/chat/completions` `timings`. |
+| `llamacpp` | `vk-srv32k/N+small` | the same, with a second `llama-server` holding `qwen3.5-4b` (`-ngl 99`, `-c 16384`) at the same time. |
+| `llamacpp` | `vk-srv8k/N-t16` | `llama-server --fit off -fa on -c 8192 --n-cpu-moe N -t 16 --threads-batch 16`. |
+| `llamacpp` | `cpu` | no GPU offload. Kept only as a reference point; not a served configuration. |
+| `bmoe` | `bmoe-auto` | `bmoe-cli --auto --no-probe-io -c 2048`. The planner measures the machine, then places tensors. |
+| `bmoe` | `bmoe-stream` | the same with `--moe-stream --auto --plan-explain`: experts stay in RAM and VRAM acts as an expert cache. |
+
+Both harnesses read the **same GGUF files**. A model is downloaded once; `llamacpp` and `bmoe` are
+two ways to run it.
+
+## Every downloaded model, GPU-resident
+
+`file GB` is what `llama-bench` reports as the loaded model size.
+
+| model | harness | config | file GB | decode t/s | prefill t/s |
+| --- | --- | --- | ---: | ---: | ---: |
+| qwen3.5-0.8b | llamacpp | vk-full | 0.5 | **324.1** | 15266.6 |
+| qwen3.5-2b | llamacpp | vk-full | 1.2 | **236.7** | 9915.6 |
+| tmax-2b | llamacpp | vk-full | 1.2 | 236.1 | 9936.0 |
+| mellum-2.1-12b-a2.5b-thinking | llamacpp | vk-full | 7.5 | **233.6** | 5691.6 |
+| gemma-4-e2b | llamacpp | vk-full | 2.9 | 211.2 | 8018.9 |
+| lfm2.5-24b-a2b | llamacpp | vk-full | 13.5 | **211.1** | 5279.6 |
+| granite-4.2-3b | llamacpp | vk-full | 2.1 | 174.4 | 6188.6 |
+| qwen3-omni-30b-a3b | llamacpp | vk-full | 17.3 | 171.4 | 4207.3 |
+| qwen3-vl-30b-a3b | llamacpp | vk-full | 17.3 | 169.7 | 4173.1 |
+| ministral-3-3b-instruct | llamacpp | vk-full | 2.0 | 164.2 | 6650.2 |
+| ministral-3-3b-reasoning | llamacpp | vk-full | 2.0 | 164.0 | 6755.1 |
+| nemotron-3-nano-30b-a3b | llamacpp | vk-full | 22.9 | 144.7 | 4171.1 |
+| qwen3.5-4b | llamacpp | vk-full | 2.5 | 137.6 | 5069.5 |
+| gemma-4-26b-a4b | llamacpp | vk-full | 13.4 | 134.0 | 3501.6 |
+| nemotron-3.5-lightning-30b | llamacpp | vk-full | 23.5 | 133.9 | 4279.0 |
+| ornith-1.5-35b-a3b | llamacpp | vk-full | 20.2 | 131.9 | 4048.2 |
+| gemma-4-e4b | llamacpp | vk-full | 4.8 | 127.8 | 4847.1 |
+| glm-4.7-flash | llamacpp | vk-full | 17.0 | 126.7 | 3768.7 |
+| qwen3.6-35b-a3b | llamacpp | vk-full | 20.6 | 121.9 | 3938.1 |
+| qwen3.5-35b-a3b | llamacpp | vk-full | 20.5 | 120.7 | 3936.5 |
+| olmo-3-7b-instruct | llamacpp | vk-full | 4.2 | 115.6 | 4336.3 |
+| qwen3-vl-8b-instruct | llamacpp | vk-full | 4.7 | 105.2 | 3616.2 |
+| granite-4.2-8b | llamacpp | vk-full | 5.0 | 94.9 | 3617.7 |
+| ministral-3-8b-reasoning | llamacpp | vk-full | 4.8 | 91.5 | 3813.9 |
+| ministral-3-8b-instruct | llamacpp | vk-full | 4.8 | 90.8 | 3842.2 |
+| tmax-9b | llamacpp | vk-full | 5.2 | 90.4 | 3734.4 |
+| qwen3.5-9b | llamacpp | vk-full | 5.3 | 90.0 | 3755.2 |
+| mimo-v2.6-qwen-9b | llamacpp | vk-full | 5.4 | 87.6 | 3580.9 |
+| gemma-4-12b | llamacpp | vk-full | 6.6 | 67.0 | 2161.7 |
+| qwen3.8-27b | llamacpp | vk-full | 15.3 | 32.4 | 1194.1 |
+| qwen3.6-27b | llamacpp | vk-full | 15.7 | 31.4 | 1160.1 |
+| granite-4.2-30b | llamacpp | vk-full | 16.5 | 31.3 | 1081.6 |
+| gemma-4-31b | llamacpp | vk-full | 17.1 | 29.9 | 1030.5 |
+| olmo-3.1-32b | llamacpp | vk-full | 18.1 | 29.4 | 984.1 |
+| seed-oss-36b | llamacpp | vk-full | 20.3 | 26.9 | 871.9 |
+
+Also present, not generative: `qwen3-embedding-4b`, `qwen3-reranker-4b`.
+
+**Reading of the table.** Every model up to 23.5 GB runs fully in VRAM. The MoE models win:
+13-23 GB of weights with 2-5B active parameters give **120-211 t/s**, while dense 27-36B models sit
+at **27-32 t/s** and dense 8-12B at 67-95 t/s. The card is not the limit for any of them; the 5950X
+never ran.
+
+## Qwen3.8-Flash-Next: 180B in 32 GB
+
+The model is **180B total, 48 layers, 512 experts, top-10**, 262k native context
+(`Qwen4ExpForConditionalGeneration`). `UD-IQ1_S` is 62 GB in 3 shards.
+
+| harness | config | ctx | VRAM | decode t/s | prefill t/s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| llamacpp | vk-moe6 | 0 | — | **30.9** | **481.1** |
+| llamacpp | vk-moe8 | 0 | — | 29.8 | 454.7 |
+| llamacpp | vk-moe10 | 0 | — | 28.0 | 373.9 |
+| llamacpp | vk-moe12 | 0 | — | 27.2 | 393.0 |
+| llamacpp | vk-moe14 | 0 | — | 26.5 | 377.9 |
+| llamacpp | vk-moe16 | 0 | — | 24.3 | 349.8 |
+| llamacpp | vk-moe22 | 0 | — | 22.0 | 280.5 |
+| llamacpp | vk-moe28 | 0 | — | 19.6 | 219.2 |
+| llamacpp | vk-moe34 | 0 | — | 18.1 | 208.4 |
+| llamacpp | vk-moe40 | 0 | — | 16.2 | 162.9 |
+| llamacpp | vk-moe2 / 3 / 4 | 0 | — | 12.8 / 31.0 / 12.3 | 131 / 129 / 125 |
+| llamacpp | `-ngl 99` untuned | 0 | — | 3.9 | 89.4 |
+| llamacpp | vk-srv32k/6 | 32k | 31.7 GiB | 14.6 | 38.1 |
+| llamacpp | vk-srv32k/24 | 32k | 21.0 GiB | **20.4** | 52.5 |
+| llamacpp | vk-srv32k/24+small | 32k | 24.2 GiB | 20.1 | 19.1 |
+| llamacpp | `qwen3.5-4b` beside it | 16k | — | 119.1 | 185.9 |
+| llamacpp | **llama-swap `chat-deep-slow`** | 32k | 20.5 GiB | **22.1** | 31.7 |
+| llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 32k | 23.7 GiB | **22.0** + **103.6** | — |
+
+The last two rows are the **served** path, not a hand-run server: the preset in `data/llm.nix`
+(`nGpuLayers 99`, `nCpuMoe 24`, `loadMode mmap`, `extraFlags ["--fit" "off"]`, `parallel 1`,
+`cacheTypeK/V q8_0`, `--threads 16` from the host default). Two llama-servers stay up together on
+ports 10016/10017 with 23.7 GiB of VRAM in total, and neither loses throughput when the other runs.
+
+The prefill collapse below `n-cpu-moe 6` is the signal that the expert tensors no longer fit: VRAM
+is overcommitted and the driver starts evicting. `n-cpu-moe 3` is an artifact (decode fine,
+prefill collapsed) and should not be used.
+
+**At a real context the tune moves.** The KV cache at 32k eats the VRAM the experts had at an empty
+context, so `n-cpu-moe 6` (best at context 0) is overcommitted for a chat: 31.7 GiB and 14.6 t/s.
+`n-cpu-moe 24` with `--load-mode none` uses 21 GiB and gives 20.4 t/s / 52.5 prefill. **A served
+frontier model must be tuned at the context it serves, not at an empty one.**
+
+## Co-residency: the frontier plus a small model
+
+| harness | config | VRAM | decode t/s | prefill t/s |
+| --- | --- | ---: | ---: | ---: |
+| llamacpp | vk-srv32k/24 (flash-next alone) | 21.0 GiB | 20.4 | 52.5 |
+| llamacpp | vk-srv32k/24+small (flash-next) | 24.2 GiB | 20.1 | 19.1 |
+| llamacpp | vk-srv32k/24+small (`qwen3.5-4b`) | — | **119.1** | 185.9 |
+
+**62 GB of frontier model coexists with a 2.5 GB model in 24.2 GiB of VRAM and ~95 GiB of free
+RAM**, and the frontier loses nothing (20.4 → 20.1 t/s). A 9B model (5.3 GB) fits the same
+headroom. This is the shape to serve: frontier at `n-cpu-moe 24`, a small model fully offloaded,
+both resident.
+
+## GLM-5.3-Flash: 321B in 157 GB of memory
+
+321B, 45 layers, 288 experts, top-8, 1M context. `UD-IQ2_XXS` is 102 GB in 4 shards, and it fits in
+125 GiB of RAM with room for the KV cache.
+
+| harness | config | ctx | VRAM | decode t/s | prefill t/s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| llamacpp | vk-srv8k/40 | 8k | 18.7 GiB | 8.1 | 9.3 |
+| llamacpp | vk-srv8k/38 | 8k | 22.9 GiB | 8.3 | 11.0 |
+| llamacpp | vk-srv8k/36 | 8k | 27.0 GiB | 8.5 | 12.2 |
+| llamacpp | vk-srv8k/36-t16 | 8k | 28.9 GiB | **8.9** | **14.3** |
+
+**GLM-5.3-Flash is CPU-bound here.** Pushing 5 → 9 layers of experts into VRAM (18.7 → 27 GiB) buys
+0.4 t/s. The 5950X computes the RAM-resident experts, and it is the wall. 16 threads add a little
+over 8 (8.5 → 8.9 decode, 12.2 → 14.3 prefill).
+
+**A load-mode trap.** `--load-mode none` on this 102 GB model makes RADV fail with
+`Not enough memory for command submission` → `device lost on Vulkan0` at load. mmap works. One
+attempt with `--load-mode none` also left a task in uninterruptible sleep holding all 32 GiB and
+required a host reset; the mmap path has not repeated it.
+
+## Harness comparison on the same file
+
+Qwen3.8-Flash-Next `UD-IQ1_S`, same GGUF, same card:
+
+| harness | config | ctx | decode t/s | prefill t/s | note |
+| --- | --- | ---: | ---: | ---: | --- |
+| llamacpp | vk-moe6 | 0 | **30.9** | **481.1** | llama-bench |
+| llamacpp | vk-srv32k/24 | 32k | **20.4** | 52.5 | llama-server |
+| bmoe | bmoe-auto | 2k | 8.2 | 2.4 | its planner chose a host-expert placement; model load 66 s |
+| bmoe | bmoe-stream | 2k | see below | | |
+
+BigMoeOnEdge's planner is the interesting part: it probes the machine, prices every device's expert
+and dense bandwidth on the model's own quantized blocks, and prints the plan with a reason per knob.
+On this host it **predicted 45.45 t/s** for a 26.6 GB device expert cache (92 % of routed bytes
+resident) against 24.55 t/s for the fitter's placement — but `--auto` then ran the fitter's
+placement, which measured 8.2 t/s. Its own predicted number is above llama.cpp's 30.9; its executed
+default is far below it.
+
+## ROCm / HIP
+
+`llama-cpp` with `rocmSupport = true` installs from cache (`llama-cpp-0.9.0`, ROCm 7.2.4), but on
+this host **HIP finds no device**: `ggml_cuda_init: failed to initialize ROCm: no ROCm-capable
+device is detected`. The kernel side is healthy — KFD exposes the card as `gfx_target_version
+120001` (gfx1201, 128 SIMDs) and `rocm-smi` lists both GPUs — but `rocminfo` fails `hsa_init` with
+`HSA_STATUS_ERROR` even as root. Until that is solved, the GPU path on brys is Vulkan only.
+
+## WAN shaping
+
+Unconstrained, a Hugging Face download from this host reaches **105 MB/s (845 Mbit/s)** on a
+1 Gbit/s WAN. `hosts-den/brys/wan-shaping.nix` caps inbound TCP/443 at 600 Mbit/s (68-70 MB/s)
+with an `ifb` + `tbf` pair, so a 100 GB quant takes ~25 minutes and 400 Mbit/s stay free for
+everyone else. Measured alternatives: `trickle` under-delivers 3x; the `drek` border router shapes
+but its DSA counters cannot be trusted to tune the rate (a 200 Mbit setting delivered 446 Mbit/s).
+
+## Disk
+
+The model dataset (`/var/lib/kdn/llms/models`, `brys-main/brys/impermanence/usr/data`) held **745 GB
+free** before this run. `UD-IQ1_S` costs 62 GB and `GLM-5.3-Flash UD-IQ2_XXS` 102 GB; 581 GB remain.

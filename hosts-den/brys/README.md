@@ -50,14 +50,25 @@ The grunt and surveyed sets co-reside on the R9700 by tier; the frontier
 (Qwen3.8-Flash-Next at 1M context, YaRN x4) retired from the fleet on
 2026-11-13 on electricity grounds, so the `main` router is empty.
 
-One boot-selected appliance specialisation exists (normally selected from the
-bootloader; `nixos-rebuild switch --specialisation <name>` also activates one in
-place):
+The `llms` appliance specialisation from the universal tree is **not ported** to the den host
+yet. Only the `desktop` boot profile exists, so the served context sizes are the ones that share
+RAM with a browser (see `data/llm.nix` `servers.brys.profiles.desktop`).
 
-- `llms` (`llms-frontier.nix`) — the whole fleet on one llama-swap process,
-  plus the isolcpus/ARC kernel tuning the desktop profile does not apply.
+## WAN shaping
 
-It shares `llm-appliance.nix` and `llm-config.nix` with the main profile.
+A model download from Hugging Face reaches ~105 MB/s (845 Mbit/s) on this host, which is more
+than the 1 Gbit/s WAN carries together with anything else: every other host then sees stalled
+handshakes. `wan-shaping.nix` caps **inbound TCP/443** at 600 Mbit/s on `kdn-eth-2g`, with an
+`ifb` device and a `tbf` qdisc. A 100 GB quant then lands in about 25 minutes and the other
+400 Mbit/s stay free. LAN, SSH, the llama-swap API and uploads are not shaped.
+
+Measured 2026-11-18: a 300 Mbit setting delivered 34.5 MB/s; the shipped 600 Mbit setting
+delivers 68-70 MB/s with the qdisc reporting `overlimits`. Service: `kdn-wan-shaping`
+(`systemctl disable --now kdn-wan-shaping` turns it off).
+
+Rejected alternatives: `trickle` under-delivers by 3x at these rates; the `drek` border router
+(OpenWrt, Cortex-A53) shapes, but its DSA port counters do not report the shaped traffic and a
+200 Mbit cake setting delivered 446 Mbit/s, so it cannot be tuned there.
 
 The exact deployed state — models, serving endpoint, download mode and rate
 cap, persistence, and secrets — is documented in
