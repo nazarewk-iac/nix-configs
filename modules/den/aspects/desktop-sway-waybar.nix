@@ -273,8 +273,10 @@ let
           ]
         );
 
-        systemd.user.services.waybar.Unit.BindsTo = [ "tray.target" ];
-        systemd.user.services.waybar.Unit.Requires = [ cfg.envsTarget ];
+        # No `BindsTo = [ "tray.target" ]`: `tray.target` already Wants waybar, and the pair
+        # formed an ordering cycle through flameshot and `graphical-session.target`. The cycle
+        # made `graphical-session.target/stop` fail, so a logout left the bar and every app
+        # running for the next session. Ordered after the Sway envs target when it exists.
         systemd.user.services.waybar.Unit.After = [ cfg.envsTarget ];
         systemd.user.services.waybar.Service.ExecStartPost = [ "${pkgs.coreutils}/bin/sleep 3" ];
 

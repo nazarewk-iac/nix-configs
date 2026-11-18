@@ -794,23 +794,22 @@ let
           };
 
           systemd.user.services."xdg-desktop-portal" = {
-            requires = [ cfg.systemd.envs.target ];
+            # A portal outlives the compositor only until the generic session target stops. The
+            # Sway envs target is ordering only: under Niri or UWSM it is not in the transaction.
             after = [ cfg.systemd.envs.target ];
-            partOf = [ cfg.systemd.session.target ];
+            partOf = [ "graphical-session.target" ];
             serviceConfig.Slice = "background.slice";
           };
 
           systemd.user.services."xdg-desktop-portal-gtk" = {
-            requires = [ cfg.systemd.envs.target ];
             after = [ cfg.systemd.envs.target ];
-            partOf = [ cfg.systemd.session.target ];
+            partOf = [ "graphical-session.target" ];
             serviceConfig.Slice = "background.slice";
           };
 
           systemd.user.services."${cfg.systemd.polkit-agent.name}" = {
             description = cfg.systemd.polkit-agent.service;
-            partOf = [ cfg.systemd.session.target ];
-            requires = [ cfg.systemd.envs.target ];
+            partOf = [ "graphical-session.target" ];
             after = [ cfg.systemd.envs.target ];
             script = cfg.polkitAgent.command;
             serviceConfig.Slice = "background.slice";
@@ -965,9 +964,8 @@ let
 
           systemd.user.services."${cfg.systemd.secrets-service.name}" = {
             description = cfg.systemd.secrets-service.service;
-            requires = [ cfg.systemd.envs.target ];
             after = [ cfg.systemd.envs.target ];
-            partOf = [ cfg.systemd.session.target ];
+            partOf = [ "graphical-session.target" ];
             script = lib.mkDefault "${pkgs.coreutils}/bin/sleep infinity";
             serviceConfig.Slice = "background.slice";
             serviceConfig.Type = "dbus";
@@ -1091,17 +1089,20 @@ let
               };
             };
             systemd.user.services.flameshot.Unit = {
+              # Ordered after the Sway env when that target is part of the transaction, but not
+              # requiring it: a Niri or UWSM login has no `kdn-sway` envs target to wait for.
               After = lib.mkForce [
                 "tray.target"
                 cfg.systemd.envs.target
               ];
-              Requires = lib.mkForce [
-                "tray.target"
-                cfg.systemd.envs.target
-              ];
+              Requires = lib.mkForce [ "tray.target" ];
             };
 
-            wayland.systemd.target = lib.mkDefault cfg.systemd.session.target;
+            # The generic target, not the Sway-specific one. Every session that starts
+            # `graphical-session.target` (the kdn-sway bundle, `niri-session`, UWSM) then starts the
+            # same bar, notifications, tray and portals. The Sway targets keep only the Sway-only
+            # pieces: the compositor, the env wait and the tray binding.
+            wayland.systemd.target = lib.mkDefault "graphical-session.target";
 
             wayland.windowManager.sway.enable = true;
             wayland.windowManager.sway.systemd.enable = false;
@@ -1334,7 +1335,7 @@ let
             ];
 
             # `desktop-sway-kanshi` runs the daemon; this aspect states which target starts it.
-            services.kanshi.systemdTarget = lib.mkDefault cfg.systemd.session.target;
+            services.kanshi.systemdTarget = lib.mkDefault "graphical-session.target";
           }
           {
             # `desktop-sway-nwg-shell` supplies the drawer. The old tree read the same two values
