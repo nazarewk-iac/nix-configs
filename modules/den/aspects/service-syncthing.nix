@@ -84,6 +84,49 @@
         '';
       };
 
+      options.kdn.services.syncthing.ignorePatterns = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          # Agent journals and boards are handover data; keep them although they live under
+          # `.cache`. The negations must precede the broad ignore: the first match wins.
+          "!**/.cache/agents"
+          "!**/.cache/agents/**"
+          "**/.cache/*"
+          # Build outputs and caches: rebuilt on each host, never synced.
+          "**/.devenv"
+          "**/.direnv"
+          "**/result"
+          "**/result-*"
+          "**/node_modules"
+          "**/target"
+          "**/dist"
+          "**/build"
+          "**/.next"
+          "**/.nuxt"
+          "**/.svelte-kit"
+          "**/.turbo"
+          "**/.parcel-cache"
+          "**/.gradle"
+          "**/.zig-cache"
+          "**/zig-out"
+          "**/__pycache__"
+          "**/*.pyc"
+          "**/.pytest_cache"
+          "**/.mypy_cache"
+          "**/.ruff_cache"
+          # jj rewrites these while a command runs; a scan can catch a file that is already gone.
+          # The VCS internals are machine-local and change while commands run; the working
+          # trees still sync. Unrooted names match at any depth in Syncthing.
+          ".jj"
+          ".git"
+        ];
+        description = ''
+          Common `.stignore` patterns, written into every share and `~/dev` on activation.
+          Host one-offs belong in `~/.stignore-<host>` and are appended there; this list must
+          stay host-neutral.
+        '';
+      };
+
       options.kdn.services.syncthing.persist.usrData = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         readOnly = true;
@@ -129,6 +172,24 @@
               devices = peers;
             }) cfg.shares;
           };
+          # One generated `.stignore` per folder: the Nix list, then the host one-offs from
+          # `~/.stignore-*` (outside the synced tree, so they never travel). The `.stignore`
+          # itself is never synced by Syncthing.
+          home.file.".config/kdn/syncthing/ignore-common".text =
+            lib.concatStringsSep "\n" cfg.ignorePatterns + "\n";
+          home.activation.syncthing-ignores = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            for folder in ${lib.concatMapStringsSep " " (share: "\"$HOME/.local/share/kdn/synced/${share}\"") (lib.attrNames cfg.shares)} "$HOME/dev"; do
+              [ -d "$folder" ] || continue
+              {
+                cat "$HOME/.config/kdn/syncthing/ignore-common"
+                for f in "$HOME"/.stignore-*; do
+                  [ -f "$f" ] || continue
+                  cat "$f"
+                done
+              } > "$folder/.stignore"
+            done
+          '';
+
           # Syncthing refuses a pre-created empty folder without its `.stfolder` marker, and it
           # treats a missing path as an error. Create the share roots and the markers during
           # activation, so a fresh host starts clean.

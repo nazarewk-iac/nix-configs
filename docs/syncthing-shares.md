@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The declarative Syncthing shares under ~/.local/share/kdn/synced — the topology, the per-host wiring, persistence, the etra first-start step, and the recipe for adding a share.
-timestamp: 2026-11-18T18:29:59+01:00
+timestamp: 2026-11-18T19:49:00+01:00
 ---
 
 # Syncthing shares
@@ -115,6 +115,45 @@ device IDs.
    oams and etra switch through the repository's remote helper:
    `./nixos-rebuild.sh switch remote=oams` and `remote=etra`.
 3. Verify with `stc folders`, `stc devices` and `stc folder_errors` on each host.
+
+## Ignore patterns
+
+The `.stignore` of every share **and** `~/dev` is generated on activation from one Nix list,
+`kdn.services.syncthing.ignorePatterns` (the same default in the den aspect and the universal
+module). The host-specific extras are appended from `~/.stignore-<something>` files outside the
+synced tree, so they never travel to the other hosts.
+
+Two properties matter:
+
+- Syncthing uses **first match wins**, so the agent-journal negation must come before the broad
+  `.cache` ignore:
+
+  ```
+  !**/.cache/agents
+  !**/.cache/agents/**
+  **/.cache/*
+  ```
+
+  That keeps `.cache/agents/**` (the session worklogs and boards, the handover artifact) while
+  skipping every other `.cache` child.
+- The list also skips `.devenv`, `.direnv`, `result*`, `node_modules`, `target`, `dist`, `build`,
+  the JS/Java/Zig caches, Python caches, and the VCS internals `.jj` / `.git`. The VCS state is
+  machine-local and changes while commands run — jj's `op_heads` and `extra/heads` vanish between
+  a listing and a hash, which is what produced the scan errors. The working trees still sync.
+  Unrooted names (`.jj`, `.git`) match at any depth in Syncthing; recursive `**/` patterns were
+  not enough for the nested repository internals.
+
+The write happens in `home.activation.syncthing-ignores`; the common list is a store file at
+`~/.config/kdn/syncthing/ignore-common`, and the activation concatenates it with any
+`~/.stignore-*` file into `<folder>/.stignore`. The `.stignore` itself is never synced by
+Syncthing. A host one-off is therefore one file:
+
+```sh
+echo '**/some-local-cache' > ~/.stignore-$(hostname -s)
+```
+
+The scan applies a changed `.stignore` on the next scan; force one with
+`stc rescan <folder>` (or wait for the watcher).
 
 ## First start and device-ID preservation
 
