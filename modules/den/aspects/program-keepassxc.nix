@@ -109,6 +109,11 @@
             Unit.Description = "KeePassXC password manager";
             Unit.ConditionPathExists = cfg.service.searchDirs;
             Unit.Wants = [ "ssh-agent.service" ];
+            # The wrapper starts Qt; without `WAYLAND_DISPLAY`/`DISPLAY` the platform plugin
+            # aborts. Under the Sway bundle the envs target gated this; under Niri and UWSM the
+            # generic target is reached only after the session env is imported, so order on it.
+            Unit.PartOf = [ "graphical-session.target" ];
+            Unit.After = [ "graphical-session.target" ];
             Service = {
               Slice = "background.slice";
               # `simple`, not `notify`. The wrapper unlocks the database with `pass`, which can wait
