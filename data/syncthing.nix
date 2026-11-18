@@ -11,8 +11,7 @@
   devices = {
     oams = "3L5US77-RUQ4V73-BJ2ETE3-RBLVZBS-55JPSFL-I6D2WF2-3Z4KPX5-XX5PKAD";
     brys = "LFK67FC-57LG7TR-5WQULWG-32R6PQ7-3HMHFIB-DORO4WT-L6PTIYE-C5GWNAI";
-    # etra: fill after its first Syncthing start (`stc id`), then re-deploy the three hosts.
-    # etra = "";
+    etra = "QSMJQOZ-PKLRCZ4-SYONVHB-YIV2RDN-R23KMQO-TAH4MED-WJ2EQJE-GSICUAX";
   };
 
   shares = {
