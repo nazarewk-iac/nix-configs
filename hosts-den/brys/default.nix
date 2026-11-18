@@ -745,12 +745,35 @@ in
       # The `virt-containers` aspect publishes the list; the host states the bucket once.
       kdn.disks.persist."usr/data".directories = config.kdn.virtualisation.containers.persist.usrData;
 
+      # The rosec key file is on the disposable home. Seed it from the TPM identity (root-only)
+      # before the user manager starts, so the boot-time `rosec-unlock` finds it. The user's
+      # `rosec-keys` merge preserves the existing lines.
+      systemd.services.kdn-rosec-tpm-key = {
+        description = "seed the rosec key file with the brys TPM age identity";
+        wantedBy = [ "multi-user.target" ];
+        before = [
+          "user@${toString config.users.users.kdn.uid}.service"
+          "display-manager.service"
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.writeShellScript "kdn-rosec-tpm-key" ''
+            install -d -m 0700 -o kdn -g users /home/kdn/.config/sops/age
+            install -m 0600 -o kdn -g users /var/lib/sops-tpm/tpm-identity.txt /home/kdn/.config/sops/age/rosec-keys.txt
+          ''}";
+        };
+      };
+
       # The Syncthing shares and the sync state are state, not disposable home content: the
       # shares hold the pre-Nextcloud secret stores, and the index must survive a rollback.
       # These are user-level buckets, not the system-level `kdn.disks.persist`.
       kdn.disks.userDefaults.persist."usr/data".directories = [
         ".local/share/kdn/synced"
         ".local/share/syncthing"
+        # The dev tree (checkouts, Syncthing `dev` folder) is state; the old host persisted it and
+        # the den port dropped the entry, so a reboot left `~/dev` unmounted.
+        "dev"
       ];
       kdn.disks.userDefaults.persist."usr/config".directories = [
         ".config/syncthing"
