@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: brys host — Ryzen 5950X / 128 GB DDR4 workstation. Also serves local LLMs via the kdn.llm.local slot.
-timestamp: 2026-08-30T00:00:00+02:00
+timestamp: 2026-11-18T13:59:16+01:00
 ---
 
 # brys host
@@ -11,6 +11,30 @@ local LLMs). The RX 550 drives the displays.
 
 - Host config: [`hosts/brys/default.nix`](default.nix)
 - Build: `~/dev/github.com/nazarewk-iac/nix-configs/nixos-rebuild.sh build`
+
+## Power-off recovery
+
+brys has a motherboard or PSU fault: after any power-off (front-panel button, NanoKVM ATX
+pulse, or a greeter shutdown), the machine can fail to start again. The power LED stays on, but
+there is no POST, no HDMI signal, and the USB devices do not enumerate. A power-on press, a
+reset pulse and a WoL magic packet do nothing.
+
+The machine recovers only after it is fully disconnected from AC for 20-60 minutes. USB devices
+backfeed enough power to keep the fault latched, so unplug the USB peripherals (including the
+NanoKVM USB cable) together with the mains lead.
+
+Observed on 2026-11-18: a greeter-initiated shutdown left brys dark for about 25 minutes; it
+returned after the power lead was pulled.
+
+Reference and independent research:
+<https://assistant.kagi.com/chat/6a8520e2-c7b2-4bb4-97d2-3c5247e1c25e>
+
+Operational notes:
+
+- Never pulse the NanoKVM power key to "test" a running host. A short ATX press is a clean
+  shutdown request.
+- The SDDM greeter puts its power control in the top-right corner. Keyboard focus can land
+  there, and `Space` activates it. Change the session with the mouse, not with `Shift+Tab`.
 
 ## Local LLM serving
 
