@@ -21,8 +21,15 @@
         services.nextcloud-client.startInBackground = false;
         # The client quits when it finds no StatusNotifier host. Waybar (the host) starts in the
         # same transaction, so give it a moment before the client checks.
-        systemd.user.services.nextcloud-client.Service.ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
-        systemd.user.services.nextcloud-client.Service.Restart = "on-failure";
+        # The client reads its credentials from the Secret Service at start. Without this
+        # ordering it races rosec: it finds no owner (or a locked provider), gives up and shows
+        # the browser login. The unlock unit requires the daemon, so this also starts rosec.
+        systemd.user.services.nextcloud-client = {
+          Unit.Wants = [ "rosec-unlock.service" ];
+          Unit.After = [ "rosec-unlock.service" ];
+          Service.ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
+          Service.Restart = "on-failure";
+        };
 
         kdn.apps.nextcloud-client = {
           enable = true;

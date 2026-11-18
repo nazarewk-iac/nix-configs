@@ -28,8 +28,12 @@ in
             services.nextcloud-client.enable = true;
             services.nextcloud-client.package = config.kdn.apps.nextcloud-client.package.final;
             services.nextcloud-client.startInBackground = true;
-            systemd.user.services.nextcloud-client.Service = {
-              Restart = "on-failure";
+            # Wait for the Secret Service unlock before the client reads its credentials;
+            # otherwise it races rosec and shows the browser login.
+            systemd.user.services.nextcloud-client = {
+              Unit.Wants = [ "rosec-unlock.service" ];
+              Unit.After = [ "rosec-unlock.service" ];
+              Service.Restart = "on-failure";
             };
             kdn.apps.nextcloud-client = {
               enable = true;
