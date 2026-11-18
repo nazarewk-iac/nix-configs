@@ -55,6 +55,12 @@
       cfg = config.kdn.services.syncthing;
 
       filterPackages = import ../common/filter-packages.nix { inherit lib; };
+
+      # One generated ignore file per folder: the common patterns plus the per-host include.
+      # `.stignore` symlinks to this store path; the include file is the host's.
+      commonIgnore = pkgs.writeText "kdn-stignore" (
+        lib.concatStringsSep "\n" cfg.ignorePatterns + "\n#include .stignore-local\n"
+      );
     in
     {
       options.kdn.services.syncthing.guiAddress = lib.mkOption {
@@ -115,10 +121,9 @@
           "**/.mypy_cache"
           "**/.ruff_cache"
           # jj rewrites these while a command runs; a scan can catch a file that is already gone.
-          # The VCS internals are machine-local and change while commands run; the working
-          # trees still sync. Unrooted names match at any depth in Syncthing.
-          ".jj"
-          ".git"
+          # The VCS state is carried between machines on purpose; never ignore .git/.jj.
+          # The per-host include file is the one thing that must stay local.
+          ".stignore-local"
         ];
         description = ''
           Common `.stignore` patterns, written into every share and `~/dev` on activation.
@@ -172,21 +177,15 @@
               devices = peers;
             }) cfg.shares;
           };
-          # One generated `.stignore` per folder: the Nix list, then the host one-offs from
-          # `~/.stignore-*` (outside the synced tree, so they never travel). The `.stignore`
-          # itself is never synced by Syncthing.
-          home.file.".config/kdn/syncthing/ignore-common".text =
-            lib.concatStringsSep "\n" cfg.ignorePatterns + "\n";
+          # The common patterns are one store file; every folder's `.stignore` is a symlink to it,
+          # and the store file `#include`s `.stignore-local` for the non-managed host one-offs.
+          # `.stignore-local` is ignored (so it never travels); the `.stignore` itself is never
+          # synced by Syncthing.
           home.activation.syncthing-ignores = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             for folder in ${lib.concatMapStringsSep " " (share: "\"$HOME/.local/share/kdn/synced/${share}\"") (lib.attrNames cfg.shares)} "$HOME/dev"; do
               [ -d "$folder" ] || continue
-              {
-                cat "$HOME/.config/kdn/syncthing/ignore-common"
-                for f in "$HOME"/.stignore-*; do
-                  [ -f "$f" ] || continue
-                  cat "$f"
-                done
-              } > "$folder/.stignore"
+              ln -sfn ${commonIgnore} "$folder/.stignore"
+              [ -e "$folder/.stignore-local" ] || : > "$folder/.stignore-local"
             done
           '';
 
