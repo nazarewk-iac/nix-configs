@@ -174,7 +174,9 @@ in
           programs.uwsm = {
             enable = true;
             waylandCompositors.sway = {
-              prettyName = "Sway (UWSM)";
+              # The NixOS module appends " (UWSM)" to the name, so keep the bare compositor
+              # name here and the greeter shows "Sway (UWSM)".
+              prettyName = "Sway";
               comment = "Sway managed by UWSM (A/B)";
               binPath = "/run/current-system/sw/bin/sway";
             };
