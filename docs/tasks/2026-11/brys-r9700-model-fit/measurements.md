@@ -12,6 +12,22 @@ Every number is from host `brys` on 2026-11-18, GPU `gpu-r9700`
 (Radeon AI PRO R9700, 31.86 GiB, gfx1201), CPU 5950X (AVX2, no AVX-512), 125 GiB usable RAM.
 The GPU sits in a PCIe 4.0 **x8** slot.
 
+## Method
+
+- **Sweep of the downloaded models**: `llama-bench` from the served build
+  (`llama-cpp-sessions-vulkan-noblas-0.6.0-unstable-2026-10-09`), `-ngl 99 -fa on -p 512
+  -n 128 -r 2`, `MESA_VK_DEVICE_SELECT=1002:7551!`. So *prefill* is 512 tokens and *decode* is
+  128 tokens, at an empty context. Every model fit fully in VRAM.
+- **Fit curves**: the same `llama-bench` with `--n-cpu-moe N`, then `llama-server` for the
+  end-to-end check (`/v1/chat/completions` `timings`).
+- **Served numbers**: through `llama-swap` on port 39700, with the preset from `data/llm.nix`.
+- `decode` = generation rate, `prefill` = prompt processing. A real chat at long context is
+  bounded by prefill for the prompt and by decode for the answer.
+- **Check `mem_info_vram_used` is near zero before every run.** A stray `llama-server` left from an
+  earlier test keeps its buffers, and the next server then places fewer layers on the card without
+  failing: the same served preset read **22.3 t/s at 19.8 GiB** on a clean card and **7.4 t/s at
+  12.8 GiB** when a forgotten server held the rest. Restart `llama-swap` after any hand-run server.
+
 ## Configuration short names
 
 Each table row names its **harness**, and a **config** short name. The short name is expanded here;
