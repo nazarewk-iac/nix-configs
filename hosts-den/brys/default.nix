@@ -754,7 +754,9 @@ in
       # untouched, so Sway still starts by default. The repo's own secret service owns
       # `org.freedesktop.secrets`, so the portal's Secret interface names no second backend.
       kdn.desktop-niri = {
-        session = "niri-session";
+        # `niri-uwsm` adds the UWSM-managed entry beside the plain `niri-session` one. UWSM starts
+        # `graphical-session.target`, which is what brings up the bar, portals and the app set.
+        session = "niri-uwsm";
         portal.secret = "none";
         useNautilus = true;
 

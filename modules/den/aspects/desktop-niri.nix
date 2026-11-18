@@ -799,6 +799,11 @@ in
             useNautilus = config.kdn.desktop-niri.useNautilus;
           };
 
+          # `niri.service` binds to `graphical-session.target` but does not pull it here, so a
+          # plain `niri-session` login starts no session services. Make the pull explicit; the
+          # unit is ordered `Before` the target, so the bar and portals start after niri is up.
+          systemd.user.services.niri.wants = [ "graphical-session.target" ];
+
           # The repository's own secret service claims `org.freedesktop.secrets`. The nixpkgs
           # module turns gnome-keyring on and points the portal's Secret interface at it; both
           # would fight the repo unit, so both are overridden.
@@ -815,9 +820,14 @@ in
           programs.uwsm = {
             enable = true;
             waylandCompositors.niri = {
-              prettyName = "Niri (UWSM)";
-              comment = "Niri managed by UWSM";
+              # The NixOS module appends " (UWSM)", so keep the bare name here.
+              prettyName = "Niri";
+              comment = "Niri managed by UWSM (A/B)";
               binPath = "/run/current-system/sw/bin/niri";
+              # `wayland-wm@.service` is `Type=notify` and waits for `uwsm finalize`. Plain niri
+              # never sends it, so the session target stays inactive and no service starts.
+              # `--session` is niri's systemd mode: it imports the environment and notifies.
+              extraArgs = [ "--session" ];
             };
           };
         })
