@@ -1089,13 +1089,12 @@ let
               };
             };
             systemd.user.services.flameshot.Unit = {
-              # Ordered after the Sway env when that target is part of the transaction, but not
-              # requiring it: a Niri or UWSM login has no `kdn-sway` envs target to wait for.
-              After = lib.mkForce [
-                "tray.target"
-                cfg.systemd.envs.target
-              ];
-              Requires = lib.mkForce [ "tray.target" ];
+              # No `tray.target` coupling: `tray.target` Wants waybar, waybar is wanted by
+              # `graphical-session.target`, and flameshot is ordered after that target. The three
+              # formed a start cycle that made systemd delete flameshot's start job under UWSM.
+              # Only the Sway envs target remains as ordering when it is in the transaction.
+              After = lib.mkForce [ cfg.systemd.envs.target ];
+              Requires = lib.mkForce [ ];
             };
 
             # The generic target, not the Sway-specific one. Every session that starts

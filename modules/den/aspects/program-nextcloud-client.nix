@@ -19,6 +19,9 @@
         # within a second and the tray icon never appears. Run the client in the foreground so
         # the unit tracks the real process.
         services.nextcloud-client.startInBackground = false;
+        # The client quits when it finds no StatusNotifier host. Waybar (the host) starts in the
+        # same transaction, so give it a moment before the client checks.
+        systemd.user.services.nextcloud-client.Service.ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
         systemd.user.services.nextcloud-client.Service.Restart = "on-failure";
 
         kdn.apps.nextcloud-client = {
