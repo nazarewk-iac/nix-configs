@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The declarative Syncthing shares under ~/.local/share/kdn/synced — the topology, the per-host wiring, persistence, the etra first-start step, and the recipe for adding a share.
-timestamp: 2026-11-18T18:19:59+01:00
+timestamp: 2026-11-18T18:29:59+01:00
 ---
 
 # Syncthing shares
@@ -75,10 +75,13 @@ share becomes a folder at `${config.xdg.dataHome}/kdn/synced/<share>`, type `sen
 ```
 
 The universal tree carries the same two options in
-`modules/universal/services/syncthing/default.nix`; the NixOS-level values reach Home Manager
-through the existing `home-manager.sharedModules` bridge, so the host block is the same shape.
-`hosts/oams/default.nix` holds all four shares and `hosts/etra/default.nix` holds three (no
-`large`), both with the peers filtered to the known device IDs.
+`modules/universal/services/syncthing/default.nix`. On oams and etra the values must be set in a
+`home-manager.sharedModules` entry, **not** only at the NixOS level: the old tree's
+`kdnConfig.util.ifHMParent` bridge copies the NixOS `cfg` into Home Manager, but it did not carry
+the newly added `devices`/`shares` fields (measured 2026-11-18 — the NixOS eval had the shares,
+the Home Manager eval was `{}`). `hosts/oams/default.nix` holds all four shares and
+`hosts/etra/default.nix` holds three (no `large`), both with the peers filtered to the known
+device IDs.
 
 ## Persistence
 

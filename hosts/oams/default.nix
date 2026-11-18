@@ -494,6 +494,34 @@ in
         };
     }
     {
+      # The bridge from the NixOS-level `kdn.services.syncthing` does not carry the new
+      # `devices`/`shares` fields into the Home Manager evaluation, so set them there directly.
+      home-manager.sharedModules = [
+        (
+          { ... }:
+          let
+            st = import ../../data/syncthing.nix;
+            self = "oams";
+            mine = [
+              "secret-stores"
+              "small"
+              "medium"
+              "large"
+            ];
+          in
+          {
+            kdn.services.syncthing.devices = builtins.removeAttrs st.devices [ self ];
+            kdn.services.syncthing.shares = builtins.listToAttrs (
+              map (share: {
+                name = share;
+                value = builtins.filter (host: host != self && builtins.hasAttr host st.devices) st.shares.${share};
+              }) mine
+            );
+          }
+        )
+      ];
+    }
+    {
       # Shared /run/configs/llms secrets (same mount as brys): HF token and
       # llama-server API keys. The leaf cert moved to hosts/brys/ (brys only).
       kdn.security.secrets.sops.files."llms" = {

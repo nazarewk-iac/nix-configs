@@ -149,7 +149,33 @@ in
       kdn.hostName = "etra";
 
       system.stateVersion = "24.11";
-      home-manager.sharedModules = [ { home.stateVersion = "24.11"; } ];
+      home-manager.sharedModules = [
+        { home.stateVersion = "24.11"; }
+        (
+          { ... }:
+          let
+            st = import ../../data/syncthing.nix;
+            self = "etra";
+            mine = [
+              "secret-stores"
+              "small"
+              "medium"
+            ];
+          in
+          {
+            kdn.services.syncthing = {
+              enable = true;
+              devices = builtins.removeAttrs st.devices [ self ];
+              shares = builtins.listToAttrs (
+                map (share: {
+                  name = share;
+                  value = builtins.filter (host: host != self && builtins.hasAttr host st.devices) st.shares.${share};
+                }) mine
+              );
+            };
+          }
+        )
+      ];
       networking.hostId = "6dc8c4d7"; # cut -c-8 </proc/sys/kernel/random/uuid
 
       # A headless router. Remove documentation and diagnostic tooling.
