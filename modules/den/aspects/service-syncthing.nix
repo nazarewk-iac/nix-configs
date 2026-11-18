@@ -129,11 +129,14 @@
               devices = peers;
             }) cfg.shares;
           };
-          # Syncthing creates a folder path at start; create the empty share roots first and keep
-          # them even when a share has no files yet.
-          home.file = lib.genAttrs (
-            map (share: ".local/share/kdn/synced/${share}/.keep") (lib.attrNames cfg.shares)
-          ) (_: { text = ""; });
+          # Syncthing refuses a pre-created empty folder without its `.stfolder` marker, and it
+          # treats a missing path as an error. Create the share roots and the markers during
+          # activation, so a fresh host starts clean.
+          home.activation.syncthing-share-markers = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            for share in ${lib.concatStringsSep " " (lib.attrNames cfg.shares)}; do
+              mkdir -p "$HOME/.local/share/kdn/synced/$share/.stfolder"
+            done
+          '';
           services.syncthing.extraOptions = [
             # see https://docs.syncthing.net/users/syncthing.html
             "--config=${config.xdg.configHome}/syncthing"
