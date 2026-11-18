@@ -321,8 +321,12 @@ in
         # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 26`,
         # 64k context, mmap load. Not an estimate.
         rates = {
-          decode = 20.9;
-          prefill = 52.5;
+          decode = 21.9;
+          # Sustained prefill, measured 2026-11-18 in four lengths (2.5k/8.5k/11k/21.5k tokens):
+          # 257/289/272/255 t/s. A short prompt reports far less because the fixed overheads
+          # dominate; the fleet derives its stream timeout from this number, so it must be the
+          # sustained rate, not a 16-token reading.
+          prefill = 255.0;
           mode = "GPU";
         };
         # 62 GB of weights from ZFS, then the load. Measured ~30 s warm, more when cold.
