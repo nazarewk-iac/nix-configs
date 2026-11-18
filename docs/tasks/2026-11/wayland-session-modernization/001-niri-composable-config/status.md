@@ -1,9 +1,9 @@
 ---
 type: Status
-description: The Niri PoC is implemented and build-validated on the den tree; the live session checklist waits for brys to return.
-status: parked
+description: The Niri PoC starts and works on brys, but the session services are Sway-scoped, so the bar, notifications, portals and XWayland do not start.
+status: in-progress
 authored_by: agent
-timestamp: 2026-11-17T13:00:00+01:00
+timestamp: 2026-11-18T14:30:12+01:00
 ---
 
 # Niri PoC — build-ready, live test pending
@@ -35,19 +35,57 @@ default session's.
 - `layout`, `input` and `animations` are typed sections. `extraKdl` is the escape hatch.
 - The bind assertion fails the build on a duplicate chord or a missing `source`.
 
-## What waits for the live test
+## Live test 2026-11-18 (brys, SDDM → `niri-session`)
 
-1. Log in to `niri-session` from SDDM on brys.
-2. Walk [shortcuts.research.md](shortcuts.research.md) row by row; mark each `reproduced`,
+What works:
+
+- Login from the greeter. `loginctl` reports `Type=wayland`, `Desktop=niri`, `Active=yes`, seat0.
+- The user manager carries `WAYLAND_DISPLAY=wayland-1`, `DISPLAY=:0`, `NIRI_SOCKET`,
+  `XDG_CURRENT_DESKTOP=niri`, `XDG_SESSION_TYPE=wayland`.
+- `Super+Enter` spawns the terminal; tiling and the keybinding overlay work.
+- `niri msg --json outputs` reports `DP-4` at 2560x1440 — the real monitor, not the KVM.
+- `rosecd.service` owns `org.freedesktop.secrets` (PID 33500 in the user manager).
+
+What fails — **the session services are Sway-scoped**:
+
+- `graphical-session.target` stays inactive. `niri.service` has
+  `BindsTo=graphical-session.target`, but the start does not pull the target here.
+- `waybar`, `swaync` and `kanshi` are `PartOf`/`WantedBy` `kdn-sway-kdn-sway-session.target`,
+  not the generic target. They do not start in Niri, and a manual start dies with the Sway
+  target.
+- `xdg-desktop-portal*` are `requires`/`partOf` the Sway envs/session targets too. Starting the
+  portal pulls the whole Sway graph: the Sway compositor started inside the Niri login, then
+  failed on the DRM device, and its bar and autostart apps appeared on screen.
+- `xwayland-satellite` is in `environment.systemPackages`, but nothing spawns it, so X11 clients
+  have no path.
+
+The unit graph that causes it (from `systemctl --user show`):
+
+- `kdn-sway-kdn-sway-sway.service`: `bindsTo = [ "graphical-session.target" "...-session.target" ]`.
+- `kdn-sway-kdn-sway-session.target`: `bindsTo = [ "graphical-session.target" "...-sway.service" ]`.
+- `xdg-desktop-portal.service`: `requires = [ "...-envs.target" ]`,
+  `partOf = [ "...-session.target" ]`.
+
+So the build note "the Home Manager waybar, swaync and kanshi services start from
+`graphical-session.target`" is wrong: they start from the Sway-specific target.
+
+## What waits now
+
+1. Walk [shortcuts.research.md](shortcuts.research.md) row by row; mark each `reproduced`,
    `alternative` or `accepted-loss`.
-3. Confirm `systemctl --user show-environment` carries `WAYLAND_DISPLAY`, `DISPLAY`,
-   `NIRI_SOCKET`, `XDG_CURRENT_DESKTOP`.
-4. Confirm portals and screencast, XWayland (`xwayland-satellite`), waybar, swaync, swaylock,
-   swayidle, screenshots.
-5. Record the UWSM A/B. The `niri-uwsm` branch exists (`kdn.desktop-niri.session`), and the
+2. Record the UWSM A/B. The `niri-uwsm` branch exists (`kdn.desktop-niri.session`), and the
    plain `niri-session` is the control.
-6. Decide the Secret Service owner. The PoC sets `portal.secret = "none"`, so the repository's
-   `kdn-secret-service` owns `org.freedesktop.secrets` and the portal starts no second keyring.
+3. Decide the session-scope fix (below).
+
+## The fix the test demands
+
+1. Give Niri its own session scope, or make the shared services generic and make
+   `niri.service` start `graphical-session.target`.
+2. Keep the Sway compositor and its env/tray targets out of the generic target, so a Niri login
+   cannot start Sway.
+3. Spawn `xwayland-satellite` from the Niri session.
+4. Decide the bar and notification config: the HM waybar config uses `sway/*` modules; Niri needs
+   `niri/*` or compositor-agnostic modules.
 
 ## Known deviations from Sway
 
