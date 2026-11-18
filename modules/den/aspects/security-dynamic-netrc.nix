@@ -47,15 +47,20 @@
         ];
         text = ''
           mkdir -p /etc/nix/netrc.d
+          tmp="$(mktemp /etc/nix/netrc.XXXXXX)"
           {
             find /etc/nix/netrc.d -name '*.netrc' \
               -exec printf '# START %s\n' {} \; \
               -exec cat {} \; \
               -exec printf '# END %s\n\n' {} \;
-          } >/etc/nix/netrc.tmp
-          chmod 0644 /etc/nix/netrc.tmp
-          # Replace a pre-existing file or symlink (a sops template may put one here) atomically.
-          mv -f /etc/nix/netrc.tmp /etc/nix/netrc
+          } > "$tmp"
+          chmod 0644 "$tmp"
+          # `/etc/nix/netrc` is a bind mount from the persistence layer on a preserved host, so
+          # a rename onto it fails with EBUSY. Copy through the mount instead; the write window
+          # is one short `cat`, and the next path trigger regenerates a partial file.
+          cat "$tmp" > /etc/nix/netrc
+          chmod 0644 /etc/nix/netrc
+          rm -f "$tmp"
         '';
       };
     in
