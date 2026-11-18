@@ -753,6 +753,10 @@ in
       # The Niri evaluation session. It is a second entry in the greeter; `defaultSession` is
       # untouched, so Sway still starts by default. The repo's own secret service owns
       # `org.freedesktop.secrets`, so the portal's Secret interface names no second backend.
+      # The rosec provider values are user-level and shared with oams through one Home Manager
+      # module, so the store path, identity and recipient cannot drift between the two hosts.
+      home-manager.users.kdn.imports = [ ../../data/rosec.nix ];
+
       kdn.desktop-niri = {
         # `niri-uwsm` adds the UWSM-managed entry beside the plain `niri-session` one. UWSM starts
         # `graphical-session.target`, which is what brings up the bar, portals and the app set.

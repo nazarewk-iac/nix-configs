@@ -1,14 +1,17 @@
 ---
 type: How-To
 description: The rosec Secret Service provider on this tree — the fork, the two store modes, the derived unlock-once identity, the module options, how to update it, the conflict workflow, and the KeePassXC migration.
-timestamp: 2026-11-14T23:15:00+01:00
+timestamp: 2026-11-18T16:10:37+01:00
 ---
 
 # rosec Secret Service
 
 `rosec` is the Secret Service daemon (`org.freedesktop.secrets`) this tree uses. It runs as a
 user service and stores secrets in the **`rosec-sops` provider**: a sops-encrypted file tree
-under `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/`.
+under `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/`. The provider values are
+user-level, so they live in one Home Manager module, [`data/rosec.nix`](../data/rosec.nix),
+imported by both the universal tree (oams) and the den tree (brys); the two render the same
+`config.toml`.
 
 The daemon comes from the **`nazarewk-iac/rosec` fork** (`github:nazarewk-iac/rosec`), which adds
 the native provider. The fork's own maintenance guide is `docs/MAINTAINING.md` in that
@@ -25,7 +28,8 @@ YubiKeys**. One unlock per session; item reads and writes then cost no YubiKey o
 | Package           | `inputs.rosec.packages.<system>.rosec` (the fork's flake output)                                                |
 | Module (classic)  | `modules/universal/services/rosec/default.nix`                                                                  |
 | Module (den)      | `modules/den/aspects/service-rosec.nix`                                                                         |
-| Host config       | `hosts/oams/default.nix` (`kdn.services.rosec`)                                                                 |
+| Host config       | `hosts/oams/default.nix` and `hosts-den/brys/default.nix` (`kdn.services.rosec`)                                |
+| Provider values   | `data/rosec.nix`, a Home Manager module imported by both hosts: store path, key file, identity, recipient      |
 | Provider config   | rendered to `~/.config/rosec/config.toml` whenever `enable` or `conflictNotification.enable` is on              |
 | Store             | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/`                                                 |
 | Store mode        | `<store>/.rosec-store.yaml` (`mode: derived` on oams)                                                           |
