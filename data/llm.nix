@@ -318,10 +318,10 @@ in
         "reason-deep-slow"
       ];
       capabilities = {
-        # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 24`,
-        # 32k context, mmap load. Not an estimate.
+        # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 26`,
+        # 64k context, mmap load. Not an estimate.
         rates = {
-          decode = 20.4;
+          decode = 20.9;
           prefill = 52.5;
           mode = "GPU";
         };
@@ -330,7 +330,7 @@ in
         operation = "gpu";
       };
       pi = {
-        contextWindow = 32768;
+        contextWindow = 65536;
         maxTokens = 32768;
       };
       # A reasoning model served with `perf.reasoning = "auto"`. `thinkingLevelMap` tells the Pi
@@ -352,7 +352,10 @@ in
       contextSize = 262144;
       hosts.brys = {
         set = "main";
-        servedContext = 32768;
+        # 64k, not 32k: at `nCpuMoe 26` the 64k KV cache costs the same VRAM as the 32k tune at
+        # `nCpuMoe 24` (19.8 GiB) and decodes slightly faster (20.9 vs 20.4 t/s). Measured
+        # 2026-11-18, docs/tasks/2026-11/brys-r9700-model-fit/measurements.md.
+        servedContext = 65536;
         common = {
           download = {
             enable = true;
@@ -373,9 +376,10 @@ in
             # mmap, NOT `none`: with `none` the 62 GB read plus the Vulkan upload is what wedged
             # RADV on the 102 GB GLM model; mmap is the safe path on this host.
             loadMode = "mmap";
-            # The expert split that measured 20.4 t/s at 32k. Raising it costs decode, lowering
-            # it overcommits VRAM and the KV cache evicts experts (14.6 t/s at nCpuMoe 6).
-            nCpuMoe = 24;
+            # The expert split that measured 20.9 t/s at 64k in 19.8 GiB. Raising it costs
+            # decode; lowering it overcommits VRAM and the KV cache evicts experts (14.6 t/s at
+            # `nCpuMoe 6` with a 32k window).
+            nCpuMoe = 26;
             nGpuLayers = 99;
             parallel = 1;
             reasoning = "auto";
