@@ -400,7 +400,7 @@ model with no measurement. A dash means not applicable.
 
 | model                      | host | gpu       | harness  | config    | class        | params (active)                  | license     | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in                                | note                                                                                                  |
 | -------------------------- | ---- | --------- | -------- | --------- | ------------ | -------------------------------- | ----------- | ------- | ------------ | ------- | ----- | ---------- | ----------- | ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| qwen3.8-flash-next         | brys | gpu-r9700 | llamacpp | srv-r9700 | frontier     | —                                | —           | 62      | 32768        | —       | —     | 22.1       | 52.5        | GPU  | swap main + tier-1 small model (co-resident) | RE-ENABLED 2026-11-18 on the R9700 (UD-IQ1_S, --n-cpu-moe 24); the 2.36 t/s CPU row was the W6600 era |
+| qwen3.8-flash-next         | brys | gpu-r9700 | llamacpp | srv-r9700 | frontier     | —                                | —           | 62      | 65536        | —       | —     | 21.9       | 49.3        | GPU  | swap main + tier-1 small model (co-resident) | RE-ENABLED 2026-11-18 on the R9700 (UD-IQ1_S, --n-cpu-moe 26, 64k); the 2.36 t/s CPU row was the W6600 era |
 | deepseek-v4-flash          | brys | —         | —        | —         | frontier     | ~180B MoE                        | custom      | 103     | 327680       | —       | —     | —          | —           | —    | swap main                                    |                                                                                                       |
 | qwen3.5-4b                 | brys | gpu-w6600 | llamacpp | srv-w6600 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 114     | 643   | 60.8       | 158.0       | GPU  | swap with_grunt (:39705)                     |                                                                                                       |
 | qwen3.5-4b                 | brys | cpu       | llamacpp | srv-cpu   | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 2118    | 4733  | 13.0       | 68.7        | CPU  | swap with_grunt (:39705)                     |                                                                                                       |
@@ -462,7 +462,7 @@ Every row names its GPU tag and its harness + config. The short names expand to:
 | --- | --- | --- |
 | `srv-w6600` | `llamacpp` | `llama-server` through llama-swap on the **8 GB W6600** (gfx1032). All rows before 2026-11-17. |
 | `srv-cpu` | `llamacpp` | the same server with `-ngl 0`: no GPU offload. Kept for reference. |
-| `srv-r9700` | `llamacpp` | `llama-server` on the **32 GB R9700** (gfx1201), `--n-cpu-moe 24 --fit off -c 32768 --load-mode mmap`, `--threads 16`. The served flash-next preset. |
+| `srv-r9700` | `llamacpp` | `llama-server` on the **32 GB R9700** (gfx1201), `--n-cpu-moe 26 --fit off -c 65536 --load-mode mmap`, `--threads 16`. The served flash-next preset. |
 | `vk-full` | `llamacpp` | `llama-bench -ngl 99`: every tensor in VRAM. |
 | `bmoe-auto` | `bmoe` | BigMoeOnEdge `--auto`: its planner measures the machine and places the tensors. |
 
@@ -620,7 +620,7 @@ other models keep `parallel=1`. Context sizes:
 
 | model              | native | max | served | RSS GiB | note                                                                    |
 | ------------------ | -----: | --: | -----: | ------: | ----------------------------------------------------------------------- |
-| qwen3.8-flash-next |   256k |  1M |     1M |    54.1 | YaRN x4: --rope-scale 4, orig 262144                                    |
+| qwen3.8-flash-next |   256k |  1M |    64k |    62.0 | RE-ENABLED 2026-11-18 on the R9700: `UD-IQ1_S` 62 GB, `--n-cpu-moe 26`, native 64k window (no YaRN), 21.9 t/s |
 | qwen3.8-27b        |   256k |  1M |      - |       - | DROPPED 2026-11-04: 0.80 tok/s on 8 CPU threads, slower than flash-next |
 | qwen3.5-35b-a3b    |   256k |  1M |   256k |    25.1 | native, fits beside the frontier                                        |
 | qwen3-next-80b     |   256k |   - |   128k |       - | no GGUF on disk, cannot be served                                       |

@@ -28,6 +28,7 @@ edit the expansion, not the row.
 | `bmoe` | `bmoe-auto` | `bmoe-cli --auto --no-probe-io -c 2048`. The planner measures the machine, then places tensors. |
 | `bmoe` | `bmoe-stream` | the same with `--moe-stream --auto`: experts stay in RAM and VRAM acts as an expert cache. |
 | `llamacpp` | `vk-srv2k/6` | `llama-server --fit off -fa on -c 2048 --n-cpu-moe 6 -t 16`. The same-context twin of `bmoe-stream`. |
+| `llamacpp` | `vk-srv64k/26` | `llama-server --fit off -fa on -c 65536 --n-cpu-moe 26 --cache-type-k/v q8_0 -t 16`. The served preset. |
 
 Both harnesses read the **same GGUF files**. A model is downloaded once; `llamacpp` and `bmoe` are
 two ways to run it.
@@ -103,14 +104,20 @@ The model is **180B total, 48 layers, 512 experts, top-10**, 262k native context
 | llamacpp | vk-srv32k/6 | 32k | 31.7 GiB | 14.6 | 38.1 |
 | llamacpp | vk-srv32k/24 | 32k | 21.0 GiB | **20.4** | 52.5 |
 | llamacpp | vk-srv32k/24+small | 32k | 24.2 GiB | 20.1 | 19.1 |
+| llamacpp | **vk-srv64k/26 + small** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
 | llamacpp | `qwen3.5-4b` beside it | 16k | — | 119.1 | 185.9 |
-| llamacpp | **llama-swap `chat-deep-slow`** | 32k | 20.5 GiB | **22.1** | 31.7 |
-| llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 32k | 23.7 GiB | **22.0** + **103.6** | — |
+| llamacpp | vk-srv64k/26 | 64k | 19.8 GiB | **20.9** | 32.3 |
+| llamacpp | **llama-swap `chat-deep-slow`** | 64k | 19.8 GiB | **21.9** | 49.3 |
+| llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
 
 The last two rows are the **served** path, not a hand-run server: the preset in `data/llm.nix`
-(`nGpuLayers 99`, `nCpuMoe 24`, `loadMode mmap`, `extraFlags ["--fit" "off"]`, `parallel 1`,
-`cacheTypeK/V q8_0`, `--threads 16` from the host default). Two llama-servers stay up together on
-ports 10016/10017 with 23.7 GiB of VRAM in total, and neither loses throughput when the other runs.
+(`nGpuLayers 99`, `nCpuMoe 26`, `loadMode mmap`, `extraFlags ["--fit" "off"]`, `parallel 1`,
+`cacheTypeK/V q8_0`, `--threads 16` from the host default, served at 64k). Two llama-servers stay up
+together with 23.0 GiB of VRAM in total, and neither loses throughput when the other runs.
+
+**64k is the right served window, not 32k.** At `n-cpu-moe 26` the 64k KV cache costs the same VRAM
+as the 32k tune at `n-cpu-moe 24` (19.8 vs 21.0 GiB) and decodes the same or slightly faster
+(20.9 vs 20.4 t/s). Doubling the window is free.
 
 The prefill collapse below `n-cpu-moe 6` is the signal that the expert tensors no longer fit: VRAM
 is overcommitted and the driver starts evicting. `n-cpu-moe 3` is an artifact (decode fine,

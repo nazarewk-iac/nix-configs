@@ -40,8 +40,8 @@ fits, and the numbers are in `measurements.md`.
 
 | # | Model | Harness | Resident need | Fits? | Measured decode |
 |---|---|---|---|---:|---|
-| 1 | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 6` | 62 GB | yes | **30.9 t/s** at an empty context, **20.4 t/s** at 32k |
-| 2 | Qwen3.8-Flash-Next + `qwen3.5-4b` | llama.cpp Vulkan, both resident | 24.2 GiB VRAM | yes | **20.1 t/s** frontier + **119.1 t/s** small |
+| 1 | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 26` @ 64k | 62 GB | yes | **30.9 t/s** empty context, **21.9 t/s** served at 64k |
+| 2 | Qwen3.8-Flash-Next + `qwen3.5-4b` | llama.cpp Vulkan, both resident | 23.0 GiB VRAM | yes | **21.9 t/s** frontier + **125.4 t/s** small |
 | 3 | GLM-5.3-Flash 321B `UD-IQ2_XXS` | llama.cpp Vulkan, `n-cpu-moe 36`, 16 threads | 102 GB | yes | **8.9 t/s** (CPU-bound) |
 | 4 | Qwen3.5-35B-A3B | llama.cpp Vulkan, all layers on GPU | 20.5 GB VRAM | yes | **120.7 t/s** |
 | 5 | Gemma-4-26B-A4B | llama.cpp Vulkan, all layers on GPU | 13.4 GB VRAM | yes | **134.0 t/s** |
@@ -50,9 +50,9 @@ fits, and the numbers are in `measurements.md`.
 | 8 | DeepSeek V4.1-Flash `UD-IQ1_S` 233 GB | any | 233 GB+ | **no** | exceeds 157 GB combined |
 | 9 | Qwen3.8-Flash-Next `Q8_0` 188 GB | any | 188 GB | **no** | exceeds RAM |
 
-The shortlist to run is now simple: **flash-next `UD-IQ1_S` at `n-cpu-moe 24` plus a small model
-beside it**. It is the only configuration that gives frontier quality, 20 t/s, and a co-resident
-worker at once. GLM-5.3-Flash works but is CPU-bound at 8.9 t/s; keep it only if a 321B model is
+The shortlist to run is now simple: **flash-next `UD-IQ1_S` at `n-cpu-moe 26`, 64k, plus a small
+model beside it**. It is the only configuration that gives frontier quality, ~22 t/s, and a
+co-resident worker at once. GLM-5.3-Flash works but is CPU-bound at 8.9 t/s; keep it only if a 321B model is
 needed at any price.
 
 Rows 1–3 are the natural first runs: the R9700 is a tested Strata target, the expert cache grows
