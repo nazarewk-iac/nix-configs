@@ -1,7 +1,7 @@
 ---
 type: How-To
 description: The declarative Syncthing shares under ~/.local/share/kdn/synced — the topology, the per-host wiring, persistence, the etra first-start step, and the recipe for adding a share.
-timestamp: 2026-11-18T20:42:17+01:00
+timestamp: 2026-11-18T20:57:12+01:00
 ---
 
 # Syncthing shares
@@ -124,17 +124,23 @@ generated file, `kdn-stignore`, which contains the list from
 module) and ends with:
 
 ```
-#include .stignore-local
+#include .stignore.local
 ```
 
-The include is the **non-managed host one-off** file at `<folder>/.stignore-local`. The activation
-creates it empty when missing and never touches its content. `.stignore-local` is itself in the
-ignore list, so it stays local; the `.stignore` is never synced by Syncthing either.
+The include is generated on every activation by concatenating the **non-managed host one-off**
+files `<folder>/.stignore-*`. A host one-off is one or more files per folder:
+
+```sh
+echo '**/some-local-cache' > ~/dev/.stignore-$(hostname -s)
+```
+
+`.stignore.local` and the `.stignore-*` sources are in the ignore list, so they stay local; the
+`.stignore` is never synced by Syncthing either.
 
 The same pattern list is also kept as a user-wide store file at
 `~/.config/kdn/syncthing/ignore-common`, independent of any share — a stable path for reference and
 for tools outside Syncthing. It duplicates the symlink target by design (the target adds the
-`.stignore-local` include).
+`.stignore.local` include).
 
 Two properties matter:
 
@@ -154,12 +160,6 @@ Two properties matter:
   JS/Java/Zig caches and Python caches. jj rewrites `op_heads`/`extra/heads` while a command runs,
   so a scan can occasionally report one of those files as vanished between listing and hashing;
   the next scan clears it. That transient status is the price of syncing the VCS state.
-
-A host one-off is one file per folder:
-
-```sh
-echo '**/some-local-cache' >> ~/dev/.stignore-local
-```
 
 ## First start and device-ID preservation
 
