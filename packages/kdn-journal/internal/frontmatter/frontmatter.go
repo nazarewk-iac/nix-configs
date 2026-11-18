@@ -132,6 +132,10 @@ func ParseTime(value string) (time.Time, bool) {
 	layouts := []string{
 		time.RFC3339Nano,
 		time.RFC3339,
+		// ISO 8601 without seconds, as session worklog headings use:
+		// `## 2026-11-14T05:09+01:00`.
+		"2006-01-02T15:04Z07:00",
+		"2006-01-02T15:04",
 		"2006-01-02 15:04:05 -0700",
 		"2006-01-02 15:04:05",
 		"2006-01-02",

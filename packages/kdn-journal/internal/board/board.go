@@ -99,6 +99,10 @@ var (
 	dateHeadingRE   = regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
 	statePhraseRE   = regexp.MustCompile(`(?i)(?:^|\s)(?:—|–|-|:)\s*\*{0,2}(done|complete|completed|closed|shipped|committed|verified|pass|passed|blocked|blocker|waiting|on hold|gated|dropped|cancelled|abandoned|n/a|wontfix)\*{0,2}\b`)
 	parentheticalRE = regexp.MustCompile(`(?i)\((done|blocked|dropped)\)`)
+	// A `done` cell can carry a qualifier that names the current state. `DONE (parked,
+	// in-progress)` records that the close-out action happened, but the task is still parked;
+	// the qualifier wins over the leading `done`.
+	openQualifierRE = regexp.MustCompile(`(?:^|[^a-z])(?:in-progress|in progress|parked|wip|ongoing|still open)(?:[^a-z]|$)`)
 )
 
 // ParseFile reads and parses one board file.
@@ -410,6 +414,11 @@ func applyState(item *Item, state string) {
 	norm := strings.ToLower(strings.TrimSpace(state))
 	norm = strings.TrimRight(norm, " .,:;—–-")
 	if norm == "" {
+		return
+	}
+	// A qualifier that names an open state wins over a leading `done`: `DONE (parked,
+	// in-progress)` records the close-out action, but the task is still parked.
+	if openQualifierRE.MatchString(norm) {
 		return
 	}
 	// A state cell that starts with a known word followed by a separator is that state; this

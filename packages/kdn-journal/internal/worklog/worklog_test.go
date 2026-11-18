@@ -96,6 +96,26 @@ func TestDateAnywhereInHeading(t *testing.T) {
 	}
 }
 
+func TestTimestampWithoutSeconds(t *testing.T) {
+	// A bare ISO 8601 heading, as the 2026-11-14 session journal uses. RFC3339 needs
+	// seconds, so this form used to parse as an undated entry and render as "—".
+	w := parseWorklog(t, "## 2026-11-14T05:09+01:00\n\ntext\n", "session/worklog.md")
+	if len(w.Entries) != 1 {
+		t.Fatalf("entries = %v, want 1", entryHeadings(w.Entries))
+	}
+	entry := w.Entries[0]
+	if !entry.HasTimestamp {
+		t.Fatal("HasTimestamp = false, want true")
+	}
+	if !entry.Precise {
+		t.Error("Precise = false, want true")
+	}
+	want := time.Date(2026, 11, 14, 5, 9, 0, 0, time.FixedZone("", 3600))
+	if !entry.Timestamp.Equal(want) {
+		t.Errorf("Timestamp = %s, want %s", entry.Timestamp, want)
+	}
+}
+
 func TestUndatedHeading(t *testing.T) {
 	w := parseWorklog(t, "## Plan review\n\ntext\n", "session/worklog.md")
 	if len(w.Entries) != 1 {

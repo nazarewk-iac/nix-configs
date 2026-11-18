@@ -292,6 +292,31 @@ func TestThreeColumnItemStateWhere(t *testing.T) {
 	}
 }
 
+func TestDoneWithOpenQualifierStaysOpen(t *testing.T) {
+	data := `## State
+
+| task | action | state |
+| --- | --- | --- |
+| closed | close | DONE |
+| parked | close | DONE (parked, in-progress) |
+`
+	b := parseBoard(t, data, "session/board.md")
+
+	now := b.Items(board.KindNow)
+	if len(now) != 2 {
+		t.Fatalf("now items = %v, want 2", boardTexts(now))
+	}
+	if closed := boardItem(t, now, "closed"); !closed.Done {
+		t.Errorf("closed = %+v, want done", closed)
+	}
+	if parked := boardItem(t, now, "parked"); parked.Done {
+		t.Errorf("parked = %+v, want open despite the leading DONE", parked)
+	}
+	if counts := b.Counts(); counts.Done != 1 || counts.Open != 1 {
+		t.Errorf("Counts = %+v, want one done and one open", counts)
+	}
+}
+
 func TestTrackScopeStateTable(t *testing.T) {
 	data := `## Tracks
 
