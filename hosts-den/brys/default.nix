@@ -743,6 +743,17 @@ in
       # The `virt-containers` aspect publishes the list; the host states the bucket once.
       kdn.disks.persist."usr/data".directories = config.kdn.virtualisation.containers.persist.usrData;
 
+      # The Syncthing shares and the sync state are state, not disposable home content: the
+      # shares hold the pre-Nextcloud secret stores, and the index must survive a rollback.
+      # These are user-level buckets, not the system-level `kdn.disks.persist`.
+      kdn.disks.userDefaults.persist."usr/data".directories = [
+        ".local/share/kdn/synced"
+        ".local/share/syncthing"
+      ];
+      kdn.disks.userDefaults.persist."usr/config".directories = [
+        ".config/syncthing"
+      ];
+
       # --- desktop ----------------------------------------------------------
       kdn.desktop-sway.portals.debug = true;
 
@@ -755,7 +766,33 @@ in
       # `org.freedesktop.secrets`, so the portal's Secret interface names no second backend.
       # The rosec provider values are user-level and shared with oams through one Home Manager
       # module, so the store path, identity and recipient cannot drift between the two hosts.
-      home-manager.users.kdn.imports = [ ../../data/rosec.nix ];
+      home-manager.users.kdn.imports = [
+        ../../data/rosec.nix
+        # The Syncthing shares this host holds. The topology lives in `data/syncthing.nix`; a
+        # peer without a device ID yet (etra before its first start) is left out of the share.
+        (
+          { lib, ... }:
+          let
+            st = import ../../data/syncthing.nix;
+            self = "brys";
+            mine = [
+              "secret-stores"
+              "small"
+              "medium"
+              "large"
+            ];
+          in
+          {
+            kdn.services.syncthing.devices = builtins.removeAttrs st.devices [ self ];
+            kdn.services.syncthing.shares = builtins.listToAttrs (
+              map (share: {
+                name = share;
+                value = builtins.filter (host: host != self && builtins.hasAttr host st.devices) st.shares.${share};
+              }) mine
+            );
+          }
+        )
+      ];
 
       kdn.desktop-niri = {
         # `niri-uwsm` adds the UWSM-managed entry beside the plain `niri-session` one. UWSM starts

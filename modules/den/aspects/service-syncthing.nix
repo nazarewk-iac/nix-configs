@@ -66,6 +66,24 @@
         '';
       };
 
+      options.kdn.services.syncthing.devices = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        description = ''
+          Peer devices, as `<name> = <device id>`. The host passes the peers of its shares; the
+          device IDs come from `stc id` on the peer.
+        '';
+      };
+
+      options.kdn.services.syncthing.shares = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = { };
+        description = ''
+          The shares this host holds, as `<share> = [ <peer names> ]`. Each share becomes one
+          Syncthing folder at `~/.local/share/kdn/synced/<share>`, shared with the named peers.
+        '';
+      };
+
       options.kdn.services.syncthing.persist.usrData = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         readOnly = true;
@@ -88,6 +106,7 @@
         {
           kdn.services.syncthing.persist.usrData = [
             ".local/share/syncthing"
+            ".local/share/kdn/synced"
           ];
           kdn.services.syncthing.persist.usrConfig = [
             ".config/syncthing"
@@ -97,6 +116,24 @@
           home.packages = filterPackages [ pkgs.stc-cli ];
 
           services.syncthing.enable = true;
+          # Additive: the pre-existing `~/dev` folder and its device pairing stay untouched.
+          services.syncthing.overrideDevices = false;
+          services.syncthing.overrideFolders = false;
+          services.syncthing.settings = {
+            devices = lib.mapAttrs (_: id: { inherit id; }) cfg.devices;
+            folders = lib.mapAttrs (share: peers: {
+              enable = true;
+              path = "${config.xdg.dataHome}/kdn/synced/${share}";
+              label = "kdn/${share}";
+              type = "sendreceive";
+              devices = peers;
+            }) cfg.shares;
+          };
+          # Syncthing creates a folder path at start; create the empty share roots first and keep
+          # them even when a share has no files yet.
+          home.file = lib.genAttrs (
+            map (share: ".local/share/kdn/synced/${share}/.keep") (lib.attrNames cfg.shares)
+          ) (_: { text = ""; });
           services.syncthing.extraOptions = [
             # see https://docs.syncthing.net/users/syncthing.html
             "--config=${config.xdg.configHome}/syncthing"
