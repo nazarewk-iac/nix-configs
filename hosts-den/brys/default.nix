@@ -746,6 +746,10 @@ in
       # --- desktop ----------------------------------------------------------
       kdn.desktop-sway.portals.debug = true;
 
+      # The Sway/UWSM A/B. The `kdn-sway` session stays the default; this adds the UWSM-managed
+      # entry so the greeter offers both for the live comparison.
+      kdn.desktop-sway.uwsm.use = true;
+
       # The Niri evaluation session. It is a second entry in the greeter; `defaultSession` is
       # untouched, so Sway still starts by default. The repo's own secret service owns
       # `org.freedesktop.secrets`, so the portal's Secret interface names no second backend.
