@@ -565,8 +565,20 @@ time, logs a status line after each, and skips files already present.
 
 ## Example deployment: brys
 
-The **brys** host (Ryzen 5950X, 128 GB DDR4, CPU-only with an effectively
-unusable 8 GB AMD GPU for this workload) is the primary deployment of this
+> **2026-11-17: the card and the server changed. The subsections below are partly history.**
+> brys ran a W6600 (8 GB) and a `llama-server` router until then. It now runs a **Radeon AI PRO
+> R9700 (32 GB)** with **llama-swap on `:39700`**, and the frontier is served by **Strata** profiles
+> behind a profile manager on `:8181` (`hosts-den/brys/strata-profiles.nix`). Current rates:
+> 66.7 t/s decode / 2779 t/s prefill at 256k (Strata, IQ2_XS), against 22.3 t/s / 255 t/s for
+> llama.cpp Vulkan on the same card. The full sweep and every current number live in
+> [docs/tasks/2026-11/brys-r9700-model-fit/measurements.md](tasks/2026-11/brys-r9700-model-fit/measurements.md).
+>
+> Superseded here, kept only so the reasoning is traceable: **Serving endpoint** (the old `:39703`
+> router and `:9530` compat proxy), **Boot specialisations**, **`--lazy-mode` SSD offload**,
+> **Qwen3.8-Flash-Next on brys (2026-10-06)**, **Concurrency (2026-10-07)**, and the W6600 decode
+> figures in [hosts-den/brys/performance.md](../hosts-den/brys/performance.md), which now marks them.
+
+The **brys** host (Ryzen 5950X, 128 GB DDR4, one 32 GB R9700) is the primary deployment of this
 slot.
 
 ### Serving endpoint
@@ -1201,8 +1213,10 @@ is no cert-generation logic in the module system.
 ### Hardware and performance
 
 The box hardware, the ZFS mirror and the ARC cap, the measured memory bandwidth,
-and the per-model resident footprints are in
-[hosts/brys/performance.md](../hosts/brys/performance.md).
+the model-load memory burst, and the per-model resident footprints are in
+[hosts-den/brys/performance.md](../hosts-den/brys/performance.md). That file leads with a "what is
+current and what is superseded" table: the per-model footprints and the warm-decode table there are
+W6600-era history and are marked as such.
 
 ### `--lazy-mode` SSD offload (brys)
 
