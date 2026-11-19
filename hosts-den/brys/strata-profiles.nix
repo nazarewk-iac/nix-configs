@@ -130,6 +130,38 @@ in
     };
   };
 
+  # ---------------------------------------------------------------- cache drop before a load
+  #
+  # A Strata load is one ~95 GiB allocation burst on a 125 GiB host with no swap. With 40-48 GiB of
+  # the pack still sitting in the page cache, reclaim cannot keep up and the kernel OOM-kills the
+  # engine mid-load (measured 2026-11-19: every failing load ended at 88-98 GiB RSS with `free` at
+  # zero). The cache is the cheap side of that trade: the pool reads the pack back at 7.7 GB/s
+  # (`dd iflag=direct`), so dropping it costs seconds and returns tens of GiB.
+  #
+  # Writing `/proc/sys/vm/drop_caches` needs root, and the manager runs as `llm-server`, so it asks
+  # for this one unit. The sudoers rule names the exact command and nothing else.
+  systemd.services.strata-drop-cache = {
+    description = "Drop the page cache before a Strata model load";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = false;
+      # `sync` first: `drop_caches` only discards clean pages.
+      ExecStart = "${pkgs.runtimeShell} -c 'sync; echo 3 > /proc/sys/vm/drop_caches'";
+    };
+  };
+
+  security.sudo.extraRules = [
+    {
+      users = [ "llm-server" ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/systemctl start strata-drop-cache.service";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # ---------------------------------------------------------------- Strata as a service
   systemd.services.strata-frontier = {
     description = "Strata frontier (Qwen3.8-Flash-Next) on :8080";

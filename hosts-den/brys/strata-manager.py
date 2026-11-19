@@ -33,6 +33,9 @@ PROFILES = f"{DATA}/strata/profiles"
 STATE = f"{DATA}/strata/manager-state.json"
 PORT = 8181
 ENGINE_PORT = 8080
+# One sudoers-named command: the cache drop is the only privileged action the manager takes.
+SUDO = "/run/wrappers/bin/sudo"
+SYSTEMCTL = "/run/current-system/sw/bin/systemctl"
 
 ENV = dict(
     os.environ,
@@ -150,6 +153,35 @@ def tell_swap_to_unload():
         pass
 
 
+def drop_caches():
+    """Release the pack's page cache before a load.
+
+    The load is a ~95 GiB burst on a 125 GiB host with no swap. With 40-48 GiB of the pack still
+    cached, reclaim cannot keep up and the kernel OOM-kills the engine mid-load (measured
+    2026-11-19: every failing load ended at 88-98 GiB RSS with `free` at zero, while the same
+    profile loaded fine on a fresh boot). The cache is the cheap side of the trade: the pool reads
+    the pack back at 7.7 GB/s, so the drop costs seconds and returns tens of GiB.
+
+    The write needs root, so it goes through one sudoers-named unit. A failure here is reported and
+    ignored: a load without the drop should still be attempted.
+    """
+    try:
+        p = subprocess.run(
+            [SUDO, "-n", SYSTEMCTL, "start", "strata-drop-cache.service"],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if p.returncode != 0:
+            print(
+                f"strata-manager: cache drop failed ({p.returncode}): "
+                f"{(p.stderr or '').strip()[:200]}",
+                flush=True,
+            )
+    except Exception as e:  # noqa: BLE001 - never block a switch on the cache drop
+        print(f"strata-manager: cache drop error: {e}", flush=True)
+
+
 def select(profile):
     with lock:
         cur = state().get("profile")
@@ -167,6 +199,7 @@ def select(profile):
         # invalidated, so the next request re-selects instead of proxying to a stale port.
         tell_swap_to_unload()
         stop_engine()
+        drop_caches()
         ok, out = start_engine(profile)
         if not ok:
             save({"profile": None})
