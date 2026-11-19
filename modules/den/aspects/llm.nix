@@ -1867,7 +1867,10 @@
             # group can reach a host directory that the DynamicUser does not own.
             llama-swap.serviceConfig = {
               PrivateUsers = lib.mkForce false;
-              ReadOnlyPaths = [ cfg.modelsDir ];
+              # Do NOT also list `modelsDir` in `ReadOnlyPaths`: systemd resolves a path that
+              # appears in both lists as read-only, so a swap host would mount the model dataset
+              # read-only while `ReadWritePaths` looked correct. Every child that writes beside a
+              # model (an engine log, a materialised profile) then fails with EROFS.
               ReadWritePaths = [
                 cfg.modelsDir
               ]

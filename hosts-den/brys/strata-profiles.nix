@@ -83,7 +83,10 @@ in
   # ---------------------------------------------------------------- Strata as a service
   systemd.services.strata-frontier = {
     description = "Strata frontier (Qwen3.8-Flash-Next) on :8080";
-    wantedBy = [ "multi-user.target" ];
+    # llama-swap owns the profiles now (it starts the requested one and evicts the previous), so
+    # this unit must NOT start at boot: two engines would fight for the card and port 8080. It
+    # stays as a manual fallback: `systemctl start strata-frontier`.
+    wantedBy = lib.mkForce [ ];
     after = [ "network.target" ];
     # The engine holds a pinned arena of tens of GB and the GPU.
     serviceConfig = {
@@ -110,8 +113,17 @@ in
     DynamicUser = lib.mkForce false;
     User = lib.mkForce "llm-server";
     Group = lib.mkForce "llm-server";
-    ReadWritePaths = [ "/var/lib/kdn/llms/models" ];
+    ReadWritePaths = [
+      "/var/lib/kdn/llms/models"
+      # Strata keeps its per-user state in `$HOME/.local/state/strata` and checks that the folder
+      # is its own, mode 0700. `ProtectSystem=strict` makes /var read-only, so the home needs an
+      # explicit exception too.
+      "/var/lib/kdn/llms/home"
+    ];
   };
+
+  # The wrapper defaults the shim to the dataset copy; the sandbox hides /home, so name it here.
+  systemd.services.llama-swap.environment.ROCM_SHIM = "${engines}/rocm-skip.so";
 
   # The data tree belongs to the engine user, and everyone may read the models.
   systemd.tmpfiles.rules = [

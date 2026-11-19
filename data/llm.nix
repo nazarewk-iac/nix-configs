@@ -334,9 +334,7 @@ in
         "\${PORT}"
       ];
       hosts.brys = {
-        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
-        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
-        set = "retired";
+        set = "main";
         servedContext = 1048576;
         common = {
           enable = true;
@@ -369,9 +367,7 @@ in
         "\${PORT}"
       ];
       hosts.brys = {
-        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
-        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
-        set = "retired";
+        set = "main";
         servedContext = 1048576;
         common = {
           enable = true;
@@ -404,9 +400,7 @@ in
         "\${PORT}"
       ];
       hosts.brys = {
-        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
-        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
-        set = "retired";
+        set = "main";
         servedContext = 1048576;
         common = {
           enable = true;
