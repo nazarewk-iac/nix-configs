@@ -1086,3 +1086,47 @@ Two timing facts from the same test:
   up first with "Request aborted", so a harness timeout, not the server, is the practical limit.
 - The frontier itself was untouched the whole time: `GET /stats` showed the same seven switch
   events before and after the harness runs.
+
+## Four names, and a switch that never cuts `qfn` (2026-11-20)
+
+The alias set collapsed to the whole surface: **`qfn`** (profile-neutral), **`qfn-max`** (forces
+`max`), **`qfn-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion). The four
+`*-deep-slow` names, the two `chat-deep-slow-*` profile names and `audio-std-mid` are gone. The
+manager accepts the same words as profiles (`qfn` → `auto`, `qfn-max` → `max`, `qfn-colo` →
+`omni-fast`), so a person and a harness share one vocabulary.
+
+The llama.cpp QFN entry (`qwen3.8-flash-next`) lost its aliases as well: two served models claiming
+`chat-deep-slow` meant the gateway exposed whichever folded last.
+
+### The switch drains instead of cutting
+
+`qfn` must not be interrupted, so a switch is two phases: mark `draining` (new requests wait), wait
+for the leases the proxy holds to be released, then stop and reload. The proxy takes one lease per
+request and releases it when the response has been relayed; it also answers llama-swap's `/health`
+locally while draining, because a failed probe would make llama-swap kill the process holding the
+requests.
+
+Measured, all three levels:
+
+| level | in-flight request | switch | result |
+| --- | --- | --- | --- |
+| brys proxy, streaming 600 tokens | 602 chunks in 6.7 s | 73 s, `drain` event 6.3 s | complete stream |
+| gateway on etra, streaming 500 tokens | 502 chunks in 6.2 s | 72.5 s | complete stream |
+| **Pi harness** through the gateway | `pi -p` counted 1…400, exit 0 | 66 s | complete answer |
+
+So the harness is **delayed, not interrupted**: the switch waits for the generation it would
+otherwise have killed, and a request arriving mid-switch is served by the new engine after the
+reload.
+
+### What the harnesses need (measured)
+
+- **OpenCode's `run` delegates to a background service** whose environment is the one that started
+  it. A provider key exported for the current shell is invisible there, and the gateway answers
+  `Invalid API key`. `opencode run --standalone` starts a private server and works. Verified end to
+  end: `litellm/qfn` → etra → brys, without a profile switch.
+- **A discovery-only provider is listed but not runnable.** `opencode models` shows what the plugin
+  fetched; `opencode run --model <provider>/<id>` validates against the static catalog and answers
+  "Model unavailable". `hosts/oams/devenv.nix` therefore declares the four names statically for the
+  gateway upstream (`discovery.enable = false`), and OpenCode reaches them without the plugin.
+- **Pi works with the name directly** (`pi --model litellm/qfn`); it forwards an id its catalog does
+  not know and the gateway accepts it.

@@ -218,10 +218,19 @@ a **reload**, not a slider:
 Measured 2026-11-19. The resting profile is **`omni-fast`**: it is the only one that leaves RAM to
 spare, both models are reachable without a switch, and the frontier loses about 2 % at 1M.
 
-**Picking a model never switches the engine.** The deep aliases (`chat-deep-slow`, …) go through a
-profile-neutral entry that asks the manager for `auto`, which keeps the current profile. The only
-things that switch are an explicit `POST /select` and the two `-omni` aliases, which force their
-profile on purpose.
+There are exactly **four** names for the frontier and its companion:
+
+| name         | what it is                                                         | a request to it             |
+| ------------ | ------------------------------------------------------------------ | --------------------------- |
+| `qfn`        | the frontier, whatever profile is current (`auto`)                 | never switches              |
+| `qfn-max`    | the frontier on the whole card (UD-IQ4_XS)                         | switches to `max`           |
+| `qfn-colo`   | the frontier plus the 21.5 GB reserve the companion needs (IQ2_XS) | switches to `omni-fast`     |
+| `qwen3-omni` | the video/audio companion, loaded on demand                        | no switch, fits the reserve |
+
+**`qfn` is the name to use.** It never switches, and a switch that somebody else starts does not cut
+your request: in-flight work is drained first (the switch waits for it) and a request that arrives
+mid-switch is delayed until the new engine answers. `qfn-max` and `qfn-colo` do force a profile, so
+a caller of those may be interrupted when the other one is selected.
 
 ### Reading and steering it
 
@@ -243,19 +252,30 @@ Rules that keep a session alive:
 - **Do not ask for `max` to gain 2 %.** At 1M the difference to `omni-fast` is 71.6 vs 73.1 t/s,
   while the switch costs 50-70 s plus a re-prefill.
 - **A media task inside a `max` session** is the one case where a switch pays: `max` leaves no
-  reserve, so omni would run at 6 t/s.
+  reserve, so `qwen3-omni` would run at 6 t/s.
+
+### Two harness facts (measured 2026-11-20)
+
+- **`opencode run` uses a background service whose environment is whichever one started it.** A key
+  exported for the current process is invisible to that service, and the gateway answers
+  "Invalid API key". `opencode run --standalone` starts a private server with the current
+  environment and works.
+- **A discovery-only provider is listed but not runnable.** `opencode models` shows what the
+  discovery plugin fetched, while `opencode run --model <provider>/<id>` validates the id against
+  the static catalog and answers "Model unavailable". The four names above are declared statically
+  in the client config for that reason.
 
 ### The scenario this was built for
 
 A coding session is running. A screenshot of a BIOS/boot error arrives:
 
-1. `POST /select {"profile":"omni-fast"}` — only if the engine is not already there (check
-   `/status` first; `dry_run` says whether it would change anything).
-2. Ask the multimodal model (`audio-std-mid`, `vision-*`) for the reading. It loads beside the
-   engine; the frontier keeps its KV.
+1. `POST /select {"profile":"qfn-colo"}` — only if the engine is not already there (check
+   `/status` first; `dry_run` says whether it would change anything). The name works as a profile
+   here too.
+2. Ask `qwen3-omni` for the reading. It loads beside the engine; the frontier keeps its KV.
 3. `POST /unload` when the question is answered. VRAM comes back, the engine is untouched.
-4. Continue coding on the same engine. Return to `max` only when the work needs the better pack,
-   and do it between turns.
+4. Continue coding on the same engine. Return to `qfn-max` only when the work needs the better
+   pack, and do it between turns.
 
 ### Every event is timed
 

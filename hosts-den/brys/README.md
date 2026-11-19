@@ -52,9 +52,9 @@ Operational notes:
 
 The fleet's llama-swap runs on `127.0.0.1:39700` as `llm-server`. The frontier
 (`Qwen3.8-Flash-Next` QFN at 1M) is not a llama.cpp model any more: it is a **Strata** engine on
-`:8080`, owned by `strata-manager` (`:8181`). Three llama-swap entries call `strata-select`, which
-asks the manager and then proxies: **`qfn`** (the four `*-deep-slow` aliases, profile-neutral —
-it sends `auto`), `qfn-omni-max` and `qfn-omni-fast` (the explicit "force this profile" path).
+`:8080`, owned by `strata-manager` (`:8181`). Four llama-swap entries call `strata-select`, which
+asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`), **`qfn-max`** (forces
+`max`), **`qfn-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion, no profile at all).
 
 ### Operating points and the resting profile
 
@@ -103,14 +103,19 @@ asks for `auto`, which keeps whatever profile is current.
 
 A coding session is running and a screenshot of a BIOS/boot error arrives:
 
-1. `POST /select {"profile": "omni-fast"}` — only if `/status` says the engine is not already
+1. `POST /select {"profile": "qfn-colo"}` — only if `/status` says the engine is not already
    there; `dry_run` answers that without a reload.
-2. Ask `audio-std-mid` (or a `vision-*` alias) for the reading. It loads beside the engine; the
-   frontier keeps its KV and its conversation cache.
+2. Ask `qwen3-omni` for the reading. It loads beside the engine; the frontier keeps its KV and its
+   conversation cache.
 3. `POST /unload` when the question is answered. The VRAM comes back, the engine is untouched, and
    coding continues on the same process.
-4. Return to `max` only when the work needs the better pack, and do it between turns: a switch
-   stops the engine, so the next turn re-prefills the whole context.
+4. Return to `qfn-max` only when the work needs the better pack, and do it between turns.
+
+**A `qfn` request is never cut by a switch.** The manager drains first: it stops accepting new work,
+waits for the leases the proxy holds to be released, and only then stops the engine. A request that
+arrives during a switch waits for the new engine and is served by it. Measured 2026-11-20: a
+streaming request answered in 6.2 s while the switch that it delayed took 72.5 s, both through the
+gateway on etra and from the harness directly.
 
 ### Every step is timed
 
