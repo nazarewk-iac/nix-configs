@@ -112,6 +112,23 @@ def start_engine(profile):
     return False, "the engine did not answer within 900 s"
 
 
+def tell_swap_to_unload():
+    """Drop llama-swap's proxy children after a switch made outside llama-swap.
+
+    A switch through the manager bypasses llama-swap's bookkeeping: its entries would keep a proxy
+    pointed at a port the engine no longer serves the same way, and `/v1/models` would report the
+    previous profile as loaded. Unloading resets that view; the next request re-selects, which is a
+    no-op because the manager's own state is already correct.
+    """
+    import urllib.request
+
+    try:
+        req = urllib.request.Request("http://127.0.0.1:39700/api/models/unload", method="POST")
+        urllib.request.urlopen(req, timeout=10).read()
+    except Exception:
+        pass
+
+
 def select(profile):
     with lock:
         cur = state().get("profile")
@@ -119,6 +136,7 @@ def select(profile):
             changed = cur not in (None, "none")
             stop_engine()
             save({"profile": "none"})
+            tell_swap_to_unload()
             return {"changed": changed, "profile": "none"}
         if profile == cur:
             return {"changed": False, "profile": cur, "note": "already selected"}
@@ -128,6 +146,7 @@ def select(profile):
             save({"profile": None})
             return {"error": out, "profile": None}
         save({"profile": profile})
+        tell_swap_to_unload()
         return {"changed": True, "profile": profile}
 
 
@@ -165,6 +184,28 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write("strata-manager: " + fmt % a + "\n")
 
 
+def restore():
+    """Bring back the profile the last run left selected.
+
+    The manager's child dies with the service, so a restart (a switch, a crash) would otherwise
+    leave the state file claiming a profile that nothing serves. Restoring also makes `max` the
+    default at boot without a separate unit.
+    """
+    prof = state().get("profile")
+    if prof in (None, "none"):
+        return
+    if engine_ready():
+        return
+    print(f"strata-manager: restoring profile {prof}", flush=True)
+    ok, out = start_engine(prof)
+    print(f"strata-manager: restore {'ok' if ok else 'failed'}: {out}", flush=True)
+    if ok:
+        tell_swap_to_unload()
+    else:
+        save({"profile": None})
+
+
 if __name__ == "__main__":
     print(f"strata-manager on :{PORT}", flush=True)
+    threading.Thread(target=restore, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
