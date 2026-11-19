@@ -322,3 +322,80 @@ The measured rates agree: Strata streams cache misses over that link and still r
 decode and 2.8k t/s prefill, and llama.cpp with `--n-cpu-moe` sends **nothing** over PCIe per token
 (the experts it does not hold in VRAM are computed by the CPU in RAM). A 16 GB/s x8 link would have
 been enough for both; at x16 it is not a candidate for any slowdown seen here.
+
+## Strata configuration sweep: drafting, KV format, context, colocation
+
+All on the R9700, one card, 125 GiB RAM. `--tune skip` unless stated, IQ3_S unless stated.
+
+### DFlash2 drafting is the single biggest lever
+
+| config | ctx | decode t/s | prefill t/s |
+| --- | ---: | ---: | ---: |
+| IQ2_XS, `--mtp off` | 256k | 66.7 | 2779 |
+| IQ2_XS, `--mtp on --drafting dflash2` | 256k | **84.9** | 2834 |
+| IQ2_XS, dflash2 + `--kv q4_0` | 256k | **89.2** | 2150 |
+
+DFlash2 adds **+27 %** decode. My earlier "MTP does nothing" reading was wrong because `--mtp off`
+disabled the drafter entirely. The draft acceptance is 120-125 of 175-260 guesses.
+
+### KV format trades decode against prefill
+
+| KV | ctx | decode | prefill | note |
+| --- | ---: | ---: | ---: | --- |
+| `int8` (default) | 256k | 84.9 | 2834 | the safe default |
+| `q4_0` | 256k | 89.2 | 2150 | +5 % decode, **-24 % prefill**; perplexity +8-12 % per Strata's docs |
+| `k8v4` | 1M | 81.0 | 1904 | between the two, more precise than q4_0 |
+
+`k8v4` is the better choice for agent work: it keeps most of the prefill.
+
+### Context: 1M works, with rope scaling
+
+`--context 512k` and `--context 1m` are accepted. Strata warns: *"more than the model was trained on
+(256K). Setup adds rope scaling for it (experimental); answers may get less reliable."*
+
+| model | ctx | decode | prefill 10.5k |
+| --- | ---: | ---: | ---: |
+| IQ2_XS | 1M | **94.2** | 2103 |
+| IQ3_S | 1M | **81.0** | 1132 |
+| UD-IQ4_XS | 1M | **73.1** | 1885 |
+
+Context length costs nothing in decode here: IQ2_XS is as fast at 1M as at 256k.
+
+### The quality ladder, measured
+
+Top-token agreement with Q8_0 is Strata's own yardstick (`docs/QUANTS.md`); speed is ours at 1M.
+
+| pack | size | top-token vs Q8_0 | decode | prefill |
+| --- | ---: | ---: | ---: | ---: |
+| IQ2_XS | 39.2 GB | lower than IQ3_S | **94.2** | 2103 |
+| IQ3_XXS | 47.0 GB | — | 63.0 (256k, no dflash) | 2844 |
+| **IQ3_S** | 54.8 GB | **87.7 %** | **81.0** | 1132 |
+| UD-IQ4_XS | 93.7 GB | **88.9 %** | **73.1** | 1885 |
+| UD-Q4_K_XL | 111.3 GB | **93.1 %** | see below | |
+
+Strata calls IQ3_S the size that "matches the full model on the published tests"; the per-token
+yardstick is stricter and puts UD-Q4_K_XL 5 points higher. Everything down to UD-Q4_K_XL clears
+**40 t/s**, so quality, not speed, is the binding constraint.
+
+### Colocation: yes, with a static VRAM reserve
+
+The lever is `--set vram-reserve-mib=N`: the engine deducts it before sizing the expert cache.
+(The elastic `POST /v1/vram` is NVIDIA-only; the static reserve is not.)
+
+| Strata reserve | Strata alone | + qwen3.5-4b on llama.cpp | total VRAM |
+| --- | ---: | ---: | ---: |
+| 0 (whole card) | 81.0 | not possible | 31 GiB |
+| 6000 MiB | 68.4 | **77.6 + 126.4** | 29 GiB |
+| 4000 MiB | 73-76 | 76.5 + 130.7 | 31 GiB (tight) |
+
+**6 GB is the recommended reserve**: it fits a 4B (2.5 GB) or a 9B (5.3 GB) with headroom, and costs
+Strata about 15 % (81 → 68-78 t/s, run-to-run variance is real). The co-resident model runs fully
+offloaded at 126 t/s — no CPU fallback.
+
+### Small extras
+
+- `--draft-vocab latin` adds Polish/German/French/Spanish drafts; English is unchanged (77.5 vs
+  81.0 t/s here, within noise). For a Polish user it is free quality on Polish prompts (Strata
+  measured 188.4 → 203.2 t/s on Polish).
+- `--kv k8v4` is better than `q4_0` for agent work (prefill 1904 vs 1132 at 1M).
+
