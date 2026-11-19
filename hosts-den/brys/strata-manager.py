@@ -38,22 +38,16 @@ EVENTS = f"{DATA}/strata/events.jsonl"
 # The entries that proxy to the one engine on ENGINE_PORT. They must survive a profile switch: the
 # port and the protocol do not change, only what the engine serves, and the entry whose request
 # caused the switch is usually one of them.
-FRONTIER_IDS = {
-    "qfn",
-    "qfn-max",
-    "qfn-omni-max",
-    "qfn-omni-fast",
-    "chat-deep-slow",
-    "code-deep-slow",
-    "tools-deep-slow",
-    "reason-deep-slow",
-    "chat-deep-slow-omni",
-    "chat-deep-slow-fast",
-}
+FRONTIER_IDS = {"qfn", "qfn-max", "qfn-colo"}
 PORT = 8181
 ENGINE_PORT = 8080
 # A rough cost per profile, from the 2026-11-19 measurements: a reload plus the page-cache drop.
 EXPECTED_SECONDS = {"max": 70, "omni-max": 70, "omni-fast": 55}
+# One vocabulary for people and harnesses: the three model names the fleet exposes also name the
+# profile they select. `qfn` keeps whatever is current, exactly like the model of that name.
+PROFILE_ALIASES = {"qfn": "auto", "qfn-max": "max", "qfn-colo": "omni-fast"}
+# The longest a switch waits for in-flight requests before it stops the engine anyway.
+DRAIN_TIMEOUT = 300
 # One sudoers-named command: the cache drop is the only privileged action the manager takes.
 SUDO = "/run/wrappers/bin/sudo"
 SYSTEMCTL = "/run/current-system/sw/bin/systemctl"
@@ -70,6 +64,23 @@ if os.access(SHIM, os.R_OK):
     ENV["LD_PRELOAD"] = SHIM
 
 lock = threading.Lock()
+
+# ---------------------------------------------------------------- the drain, and why it exists
+#
+# `qfn` must never cut a request: a harness that asked for the profile-neutral name keeps its
+# request, and only waits. So a switch is a two-phase operation here:
+#
+#   1. mark DRAINING; new requests are told to wait instead of being forwarded;
+#   2. wait for the leases already granted to be released, then stop the engine.
+#
+# The proxy (strata-proxy.py) takes one lease per request and releases it when the response has
+# been relayed. A request that arrives after step 1 waits for `ready` and is served by the new
+# engine. `qfn-max` and `qfn-colo` get the same treatment even though they may interrupt: the
+# delay is never worse than the interruption they asked for.
+leases = {}
+leases_lock = threading.Lock()
+draining = threading.Event()
+lease_seq = 0
 
 
 # llama-swap owns the companion processes, so the manager cannot time their loads directly. It
@@ -421,6 +432,40 @@ def drop_caches():
         print(f"strata-manager: cache drop error: {e}", flush=True)
 
 
+def grant_lease():
+    """Take one lease for a request about to be forwarded, or report that the engine is switching."""
+    global lease_seq
+    if draining.is_set():
+        return {"wait": True, "reason": "the engine is switching profiles"}
+    with leases_lock:
+        lease_seq += 1
+        leases[lease_seq] = time.time()
+        return {"lease": lease_seq}
+
+
+def release_lease(ident):
+    with leases_lock:
+        started = leases.pop(ident, None)
+    if started is not None:
+        event("request", seconds=round(time.time() - started, 1))
+
+
+def wait_for_drain():
+    """Block until every granted lease is released, or the timeout expires."""
+    t0 = time.time()
+    deadline = t0 + DRAIN_TIMEOUT
+    while time.time() < deadline:
+        with leases_lock:
+            running = len(leases)
+        if running == 0:
+            return True, round(time.time() - t0, 1)
+        time.sleep(0.25)
+    with leases_lock:
+        running = len(leases)
+    event("drain_timeout", running=running)
+    return False, round(time.time() - t0, 1)
+
+
 def select(profile, dry_run=False):
     with lock:
         cur = state().get("profile")
@@ -479,10 +524,21 @@ def select(profile, dry_run=False):
         # VRAM back; unloading first also resets llama-swap's view, which the switch has just
         # invalidated, so the next request re-selects instead of proxying to a stale port.
         t0 = time.time()
-        tell_swap_to_unload()
-        stop_engine()
-        drop_caches()
-        ok, out = start_engine(profile)
+        # Phase 1: stop accepting work, let what is already running finish. `qfn` requests are
+        # delayed by this, never cut. Same-profile requests returned above, so they never reach it.
+        draining.set()
+        try:
+            drained, waited = wait_for_drain()
+            if waited:
+                event("drain", seconds=round(waited, 1), clean=drained)
+            tell_swap_to_unload()
+            stop_engine()
+            drop_caches()
+            ok, out = start_engine(profile)
+        finally:
+            # Phase 2 ends here: whatever is left of the old engine is gone and the new one either
+            # answers or has failed, so waiting callers may try again.
+            draining.clear()
         elapsed = round(time.time() - t0)
         if not ok:
             save({"profile": None})
@@ -535,6 +591,9 @@ class Handler(BaseHTTPRequestHandler):
             body["loaded_companions"] = [
                 m for m, v in COMPANIONS.items() if v["loaded"]
             ]
+            with leases_lock:
+                body["in_flight"] = len(leases)
+            body["draining"] = draining.is_set()
             self._send(200, body)
             return
         if self.path.startswith("/stats"):
@@ -558,6 +617,16 @@ class Handler(BaseHTTPRequestHandler):
             )
         except Exception:
             return self._send(400, {"error": "body must be JSON"})
+        if self.path.startswith("/lease"):
+            self._send(200, grant_lease())
+            return
+        if self.path.startswith("/release"):
+            ident = body.get("lease")
+            if not isinstance(ident, int):
+                return self._send(400, {"error": "lease must be an integer"})
+            release_lease(ident)
+            self._send(200, {"released": ident})
+            return
         if self.path.startswith("/unload"):
             try:
                 self._send(200, unload(body.get("model")))
@@ -567,6 +636,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.startswith("/select"):
             return self._send(404, {"error": "not found"})
         profile = body.get("profile")
+        profile = PROFILE_ALIASES.get(profile, profile)
         # `auto` keeps whatever profile the manager holds: it is what a harness alias uses when the
         # model name must not decide the engine.
         if profile not in ("max", "omni-max", "omni-fast", "auto", "none"):
