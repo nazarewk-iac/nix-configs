@@ -601,3 +601,27 @@ Settings that produced those numbers, all measured on this card:
 14.7 at 32, **17.5 t/s at 24** (12 GiB of VRAM, the rest of the experts on the laptop CPU). brys
 gives 157-160 t/s for the same model. The 9x gap is the card plus DDR4 on a full desktop CPU; the
 companion belongs on brys.
+
+### Final tuned stack, measured end to end
+
+`hack/brys-frontier.sh up` on brys, then `qwen3-omni-30b-a3b` through llama-swap
+(`audio-std-mid`, now served at 16k on the GPU):
+
+| process           | model                             | settings                                                                        |              decode |
+| ----------------- | --------------------------------- | ------------------------------------------------------------------------------- | ------------------: |
+| Strata :8080      | QFN `UD-IQ4_XS` 1M                | DFlash2, k8v4, latin, reserve 21.5 GB, kv-resident 4k, 15 GB conversation cache |   **41.3-46.6 t/s** |
+| llama-swap :39700 | `qwen3-omni-30b-a3b` 16k + mmproj | full offload                                                                    | **100.8-102.8 t/s** |
+
+Together: 31 GiB of 31.8 GiB of VRAM, 84 GiB of RAM used and **41 GiB free**. Omni at 16k is twice
+as fast as at 32k (101 vs 57 t/s) because 32k no longer fits the reserve and llama.cpp had to keep
+layers on the CPU. That is why the served context moved: `data/llm.nix` now serves omni at 16384 and
+marks it `operation = "gpu"` (it still said `cpu` from the W6600 era).
+
+### A regression the formatter pass caused, and the fix
+
+`nix build` of the brys toplevel failed after the formatter-convergence commit:
+`kdn-sops-secrets` stopped with `E203 whitespace before ':'`. `ruff format` had re-spaced a complex
+slice (`line[start : end]`) in the den twin of `kdn-sops-secrets.py`, and the den aspect did **not**
+carry the `flakeIgnore = [ "E203" "E501" ]` that the universal twin already had. Added there; the
+build is green again. The general lesson: a formatter and a lint gate must be converged together,
+which is exactly what `docs/formatter-convergence.md` asks for.

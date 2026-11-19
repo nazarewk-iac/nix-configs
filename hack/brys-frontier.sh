@@ -74,6 +74,7 @@ case "$action" in
   up)
     export XDG_DATA_HOME=$DATA LD_PRELOAD=$SHIM
     "$STRATA" launch --stop >/dev/null 2>&1 || true
+    systemctl --user stop strata-frontier 2>/dev/null || true
     systemctl --user reset-failed strata-frontier 2>/dev/null || true
     sleep 3
     systemd-run --user --collect --unit=strata-frontier --setenv=XDG_DATA_HOME="$DATA" \
