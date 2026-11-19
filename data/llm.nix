@@ -304,10 +304,15 @@ in
     # Strata is not llama-server: each entry names a complete command instead of a generated
     # llama-server invocation. `strata-serve` (hosts-den/brys/strata-serve.nix + .sh) materialises
     # one profile config and runs `strata serve` in the foreground on the port llama-swap passes.
-    # The three profiles are mutually exclusive because they all sit in the `main` group; a switch
-    # costs one model load (about 30-60 s). Measured numbers:
-    # docs/tasks/2026-11/brys-r9700-model-fit/measurements.md
-    "qfn-max" = {
+    # The profiles are mutually exclusive (they share the `main` group) and a switch costs one
+    # engine reload, 50-70 s. Measured: docs/tasks/2026-11/brys-r9700-model-fit/measurements.md
+    #
+    # `qfn` is deliberately **profile-neutral**: it asks the manager for `auto`, which keeps
+    # whatever profile is current. So choosing a model in the harness never reloads the engine —
+    # the profile is chosen out of band (`POST /select` on :8181, or `hack/brys-frontier.sh up`).
+    # The two `qfn-omni-*` entries below are the explicit "force this profile" path for a caller
+    # that knows it needs the reserve, and they do pay the reload.
+    "qfn" = {
       aliases = [
         "chat-deep-slow"
         "code-deep-slow"
@@ -326,10 +331,10 @@ in
       gpu = true;
       contextSize = 1048576;
 
-      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      # `auto`: keep the manager's current profile, so the model name cannot trigger a reload.
       command = [
         "/run/current-system/sw/bin/strata-select"
-        "max"
+        "auto"
         "--port"
         "\${PORT}"
       ];

@@ -1,47 +1,45 @@
 #!/usr/bin/env bash
-# Start or stop the brys frontier stack: Strata serving Qwen3.8-Flash-Next at 1M, with a VRAM
-# reserve that leaves room for a media model (qwen3-omni-30b-a3b) on the same card.
+# Drive the Strata profile manager on brys: switch the one engine, optionally for a bounded time.
 #
-# Measured 2026-11-19 on the R9700 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
-#   UD-IQ4_XS  1M + DFlash2 + k8v4 + 20 GB reserve -> ~50 t/s, 104 GiB RAM used, 21 GiB free
-#   qwen3-omni-30b-a3b beside it (with its mmproj)  -> 157 t/s, 20 GiB of VRAM
+# The manager (:8181) owns the engine. llama-swap's entries call `strata-select`, which asks the
+# manager and then proxies; this script is the human and agent entry point to the same switch.
 #
-# The engine is a signed download, not a Nix package. Its HIP runtime needs the KFD shim while the
-# RX 550 is in the box: hack/rocm-skip-legacy-gpu.c.
+# Measured on the R9700, 2026-11-19 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
+#
+#   profile    pack + reserve                frontier decode        RAM left with it
+#   max        UD-IQ4_XS, whole card         94.8-100.4 t/s short   2-3 GiB
+#                                            73.1 t/s at 1M
+#   omni-max   UD-IQ4_XS + 21.5 GB reserve   59.2-62.0 t/s short    3-5 GiB
+#                                            42.3 t/s at 1M
+#   omni-fast  IQ2_XS    + 21.5 GB reserve   88.3 t/s short         23-27 GiB
+#                                            71.6 t/s at 1M
+#
+# The companion (qwen3-omni-30b-a3b, video and audio) answers at 96.9-98.8 t/s inside either
+# reserve. Co-loaded beside `max` instead it gets about 1 GiB of VRAM and runs at 6.1 t/s, so a
+# media request is worth a real switch, not a co-load.
+#
+# The resting profile is `omni-fast`: both models are reachable, and only it leaves RAM to spare.
+# A `--ttl` loan flips to another profile and comes back by itself.
 #
 # Usage:
-#   hack/brys-frontier.sh up [--pack UD-IQ4_XS]   # start Strata (and print how to load omni)
-#   hack/brys-frontier.sh down                    # stop Strata
-#   hack/brys-frontier.sh status                  # what is running on the card
+#   hack/brys-frontier.sh up                                   # select the resting profile
+#   hack/brys-frontier.sh up --profile max --ttl 2h            # a quality session, then back
+#   hack/brys-frontier.sh down                                 # stop the engine, free the card
+#   hack/brys-frontier.sh status                               # profile, models, RAM, VRAM
 set -uo pipefail
 
-# The Terminal's own `strata` is a generic ELF that NixOS cannot start; the FHS wrapper from
-# `nix build .#strata` is the one to call. Override with STRATA_BIN when the store path moves.
-STRATA=${STRATA_BIN:-$(command -v strata 2>/dev/null || echo /nix/store/kvxg49ar4h8bqqf0qpi1sdvzw4y96l32-strata-0/bin/strata)}
-DATA=${STRATA_DATA_HOME:-/var/lib/kdn/llms/models/.bench/xdg}
-MODELS=${STRATA_MODELS:-/var/lib/kdn/llms/models/.bench/strata/models}
-SHIM=${ROCM_SHIM:-/home/kdn/.local/lib/rocm-skip.so}
-LLAMACPP_MODELS=/var/lib/kdn/llms/models/unsloth/Qwen3.8-Flash-Next-GGUF
-PORT=${STRATA_PORT:-8080}
 MANAGER=${STRATA_MANAGER:-127.0.0.1:8181}
+RESTING=${STRATA_RESTING_PROFILE:-omni-fast}
+PORT=${STRATA_PORT:-8080}
 VRAM=/sys/class/drm/card1/device/mem_info_vram_used
-RESERVE=21500    # MiB left for the media model (omni at 16k needs ~21 GiB)
-KV_RESIDENT=4096 # tokens of K/V kept in VRAM; older K/V is read from RAM
-CONV_CACHE=15000 # MiB of parked conversation K/V in RAM (~1.5M tokens at 10 KB/token)
-MEM_LIMIT=112000 # MiB the engine may use, so the desktop keeps a margin
 
-pack=UD-IQ4_XS
-profile=max # the default operating point: the frontier alone on the whole card
-ttl=        # optional: revert to $default_profile after this long (`30m`, `2h`)
-default_profile=max
+profile=
+ttl=
+json=
 action=${1:-status}
 shift || true
 while [ $# -gt 0 ]; do
   case "$1" in
-  --pack)
-    pack=$2
-    shift 2
-    ;;
   --profile)
     profile=$2
     shift 2
@@ -50,109 +48,93 @@ while [ $# -gt 0 ]; do
     ttl=$2
     shift 2
     ;;
+  --resting)
+    RESTING=$2
+    shift 2
+    ;;
+  --json)
+    json=1
+    shift
+    ;;
   *)
     echo "unknown option: $1" >&2
     exit 2
     ;;
   esac
 done
-# Three operating points, measured 2026-11-19 (task measurements.md):
-#   max        UD-IQ4_XS, whole card (1 GB reserve for the draft head)  73.1 t/s, no companion
-#   omni-max   UD-IQ4_XS, 21.5 GB reserve                              42.3 t/s + omni 101 t/s
-#   omni-fast  IQ2_XS,    21.5 GB reserve                              71.6 t/s + omni 101 t/s
-if [ -n "$profile" ]; then
-  case "$profile" in
-  max)
-    pack=UD-IQ4_XS
-    RESERVE=1024
-    KV_RESIDENT=32768
-    ;;
-  omni-max)
-    pack=UD-IQ4_XS
-    RESERVE=21500
-    KV_RESIDENT=4096
-    ;;
-  omni-fast)
-    pack=IQ2_XS
-    RESERVE=21500
-    KV_RESIDENT=4096
-    ;;
-  *)
-    echo "unknown profile: $profile" >&2
-    exit 2
-    ;;
-  esac
-fi
+: "${profile:=$RESTING}"
 
-model_path() {
-  case "$pack" in
-  UD-IQ4_XS | UD-Q4_K_XL | UD-Q5_K_XL) echo "$LLAMACPP_MODELS/$pack" ;;
-  Coder) echo "$MODELS/coder-IQ1_M" ;;
-  *) echo "$MODELS/$pack" ;;
-  esac
-}
-family() {
-  case "$pack" in
-  UD-*) echo unsloth ;;
-  Coder) echo coder ;;
-  Swift*) echo swift ;;
-  Gyro*) echo gyro ;;
-  *) echo qwen ;;
-  esac
-}
-model_id() {
-  case "$pack" in
-  Coder) echo IQ1_M ;;
-  *) echo "$pack" ;;
-  esac
+select_profile() {
+  curl -sS -m 1000 -X POST "http://$MANAGER/select" \
+    -H 'Content-Type: application/json' -d "{\"profile\":\"$1\"}"
 }
 
 status() {
-  local v=$(cat "$VRAM")
-  echo "vram used: $((v / 1073741824)) GiB of 31.8"
-  echo "ram:       $(free -g | sed -n 2p)"
-  curl -s -m 2 "http://127.0.0.1:$PORT/v1/models" 2>/dev/null | head -c 160
-  echo
-  curl -s -m 2 http://127.0.0.1:8091/health 2>/dev/null && echo " (media model up on :8091)"
+  local st
+  st=$(curl -sS -m 5 "http://$MANAGER/status" 2>/dev/null) || st=''
+  if [ -z "$st" ]; then
+    echo "profile:  (manager not answering on $MANAGER)"
+  else
+    python3 - "$st" <<'PY'
+import json, sys
+d = json.loads(sys.argv[1])
+print(f"profile:  {d.get('profile')}")
+ls = d.get("last_switch")
+if ls:
+    ago = d.get("last_switch_seconds_ago")
+    ok = "" if ls.get("ok") else " FAILED"
+    print(f"switch:   {ls.get('from')} -> {ls.get('to')} in {ls.get('seconds')}s, "
+          f"{ago}s ago, cause={ls.get('cause')}{ok}")
+else:
+    print("switch:   none recorded yet")
+PY
+  fi
+  echo -n "engine:   "
+  curl -s -m 5 -o /dev/null -w "http %{http_code}\n" "http://127.0.0.1:$PORT/v1/models" 2>/dev/null ||
+    echo "(not serving)"
+  echo -n "models:   "
+  curl -s -m 5 "http://127.0.0.1:39700/v1/models" 2>/dev/null | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print([m['id'] for m in d['data'] if (m.get('status') or {}).get('value') == 'loaded'] or 'none')
+" 2>/dev/null || echo "(llama-swap not answering)"
+  echo "vram:     $(($(cat "$VRAM") / 1073741824)) GiB of 31.8"
+  free -g | sed -n 2p | sed 's/^/ram:      /'
 }
 
 case "$action" in
 up)
-  # The manager owns the engine; selecting a profile is a no-op when it is already current.
-  reply=$(curl -sS -m 1000 -X POST "http://$MANAGER/select" \
-    -H 'Content-Type: application/json' -d "{\"profile\":\"$profile\"}") || {
+  reply=$(select_profile "$profile") || {
     echo "the manager is not answering on $MANAGER" >&2
     exit 1
   }
   echo "select $profile -> $reply"
-  # A timed loan: a systemd timer reverts to the default after the TTL. It lives outside the
-  # manager on purpose, so a manager restart cannot drop the revert, and a failed revert cannot
-  # block the manager (the failure mode of an internal timer).
+  # A timed loan: a transient systemd unit reverts to the resting profile when the TTL runs out. It
+  # lives outside the manager on purpose, so a manager restart cannot drop the revert and a failing
+  # revert cannot hold the manager's lock (the failure mode of an in-process timer).
   if [ -n "$ttl" ]; then
     sudo -n systemctl stop strata-revert 2>/dev/null || true
     sudo -n systemd-run --unit=strata-revert --on-active="$ttl" --collect \
       -- curl -sS -m 900 -X POST "http://$MANAGER/select" \
-      -H 'Content-Type: application/json' -d "{\"profile\":\"$default_profile\"}" >/dev/null
-    echo "scheduled: revert to $default_profile in $ttl (unit strata-revert)"
+      -H 'Content-Type: application/json' -d "{\"profile\":\"$RESTING\"}" >/dev/null
+    echo "scheduled: back to $RESTING in $ttl (unit strata-revert)"
   fi
   ;;
 down)
-  curl -sS -m 900 -X POST "http://$MANAGER/select" \
-    -H 'Content-Type: application/json' -d '{"profile":"none"}'
+  select_profile none
   echo
   ;;
 status)
-  curl -sS -m 5 "http://$MANAGER/status"
-  echo
-  curl -s -m 5 "http://127.0.0.1:39700/v1/models" 2>/dev/null | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print([(m['id'], m.get('status', {}).get('value')) for m in d['data'] if m['id'].startswith('qfn')])
-" 2>/dev/null || true
-  echo "vram: $(($(cat /sys/class/drm/card1/device/mem_info_vram_used) / 1073741824)) GiB"
+  if [ -n "$json" ]; then
+    # One object for an agent to parse: the manager's own view plus the llama-swap view.
+    curl -sS -m 5 "http://$MANAGER/status" || echo '{"error":"manager not answering"}'
+    echo
+    exit 0
+  fi
+  status
   ;;
 *)
-  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast] [--ttl 30m]" >&2
+  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast|none] [--ttl 30m] [--resting <profile>]" >&2
   exit 2
   ;;
 esac

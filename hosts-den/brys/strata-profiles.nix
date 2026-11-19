@@ -4,9 +4,13 @@
 # its own files"), so it must run as the owner of its data tree. It also must not run as a human
 # account: the engine pins tens of GB and holds the GPU.
 #
-# `max` is the default profile: the frontier alone on the whole card, which is the fastest single
-# model this host has. `omni-max` and `omni-fast` reserve 21.5 GB for qwen3-omni-30b (video/audio)
-# and trade about a third of the frontier's decode for it.
+# `omni-fast` is the resting profile, measured 2026-11-19 on this host: the frontier reads
+# 88.3 t/s (short context) and 71.6 t/s at 1M with the IQ2_XS pack, the companion answers at
+# 98.8 t/s beside it, and the box keeps **23-27 GiB** of RAM free. Every alternative costs
+# something worse: `max` (UD-IQ4_XS, whole card) is 94.8-100.4 t/s but leaves 2-3 GiB free and a
+# media request then runs the companion at 6.1 t/s on the CPU; `omni-max` keeps the better pack but
+# drops the frontier to 59-62 t/s and still leaves 3-5 GiB. Flip to `max` deliberately for a
+# quality-critical session, with a TTL so the box returns here.
 { lib, pkgs, ... }:
 let
   # The KFD shim: ROCm 7.2 aborts `hsa_init` because the RX 550 (gfx803) reports a deprecated
@@ -26,9 +30,9 @@ let
     '';
   };
 
-  # The profile the service starts with. Change this one value, or run
-  # `hack/brys-frontier.sh up --profile <name>` for a one-off.
-  defaultProfile = "max";
+  # The profile the service starts with, and the profile a timed loan returns to. Change this one
+  # value, or run `hack/brys-frontier.sh up --profile <name> --ttl <duration>` for a one-off.
+  defaultProfile = "omni-fast";
 
   # One parent for everything the LLM stack owns, so a second machine can share it by mounting the
   # same datasets. `models` and `engines` live on usr/data, `sessions` on usr/cache, `home` on
