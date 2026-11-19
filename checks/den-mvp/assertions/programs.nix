@@ -1,4 +1,4 @@
-# The assertion set for layer-C batch 8: the 40 `program-*` aspects. `../tests.nix` imports this file
+# The assertion set for layer-C batch 8: the 41 `program-*` aspects. `../tests.nix` imports this file
 # and registers the result as `den-eval-programs`.
 #
 # Every assertion is `{ name; expected; actual; }`, the shape `mkEvalCheck` needs.
@@ -10,15 +10,15 @@
 # | `nixosPlain` | nixos | all 15 `nixos` targets of the batch evaluate together with **no** consumer data |
 # | `nixosData` | nixos | each option the batch declares reaches the native option |
 # | `darwinPlain` | darwin | all 8 `darwin` targets evaluate together |
-# | `homeLinux` | homeManager | all 37 `homeManager` targets evaluate on a Linux home |
-# | `homeDarwin` | homeManager | the same 37 evaluate on a darwin home, and every Linux-only body drops |
+# | `homeLinux` | homeManager | all 38 `homeManager` targets evaluate on a Linux home |
+# | `homeDarwin` | homeManager | the same 38 evaluate on a darwin home, and every Linux-only body drops |
 # | `homeData` | homeManager | each option the batch declares reaches the native option |
 #
 # ## Why one subject holds every aspect of a class
 #
-# 40 aspects give 60 (aspect, class) pairs. `den-eval-instantiate` already forces each pair alone, so
+# 41 aspects give 61 (aspect, class) pairs. `den-eval-instantiate` already forces each pair alone, so
 # a per-aspect subject here would repeat that work. A merged subject proves the part that no other
-# check reaches: the 40 aspects compose. No two of them write one option at one priority, and no
+# check reaches: the 41 aspects compose. No two of them write one option at one priority, and no
 # aspect needs a class the harness does not hold.
 #
 # ## Why this file builds one home harness of its own
@@ -112,6 +112,7 @@ let
     "program-gnupg"
     "program-handlr"
     "program-kdeconnect"
+    "program-kdn-tools"
     "program-keepassxc"
     "program-logseq"
     "program-matrix"
@@ -418,7 +419,7 @@ let
 
     # ---------------------------------------------------------------- homeLinux
     {
-      name = "all 37 homeManager targets of this batch force together on a Linux home";
+      name = "all 38 homeManager targets of this batch force together on a Linux home";
       expected = true;
       actual = builtins.isString homeLinux.home.activationPackage.drvPath;
     }
@@ -442,6 +443,46 @@ let
       name = "dconf runs in the user session";
       expected = true;
       actual = homeLinux.dconf.enable;
+    }
+    {
+      name = "the agent tooling installs all nine CLIs on a Linux home";
+      expected = true;
+      actual =
+        let
+          names = packageNames homeLinux.home.packages;
+        in
+        builtins.all (n: builtins.elem n names) [
+          "kdn-journal"
+          "kdn-jj-meta"
+          "kdn-okf"
+          "okf-agent-memory"
+          "ai-xf"
+          "okf-guard"
+          "okf-rs"
+          "okflint"
+          "okph"
+        ];
+    }
+    {
+      name = "the four skill files are linked into all three harness roots";
+      expected = true;
+      actual =
+        let
+          roots = [
+            ".agents/skills"
+            ".config/opencode/skills"
+            ".pi/agent/skills"
+          ];
+          entries = [
+            "kdn-journal/SKILL.md"
+            "kdn-jj-meta/SKILL.md"
+            "kdn-okf/SKILL.md"
+            "okf-memory"
+          ];
+        in
+        builtins.all (
+          root: builtins.all (entry: homeLinux.home.file ? ${root + "/" + entry}) entries
+        ) roots;
     }
     {
       name = "kdeconnect runs on a Linux home";
@@ -514,7 +555,7 @@ let
 
     # ---------------------------------------------------------------- homeDarwin
     {
-      name = "all 37 homeManager targets of this batch force together on a darwin home";
+      name = "all 38 homeManager targets of this batch force together on a darwin home";
       expected = true;
       actual = builtins.isString homeDarwin.home.activationPackage.drvPath;
     }
@@ -611,6 +652,7 @@ let
     program-gnupg = "den-eval-programs (bare nixos, bare darwin, bare Linux home, bare darwin home)";
     program-handlr = "den-eval-programs (bare nixos, bare darwin, bare Linux home, bare darwin home)";
     program-kdeconnect = "den-eval-programs (bare nixos, bare Linux home, bare darwin home)";
+    program-kdn-tools = "den-eval-programs (bare Linux home, bare darwin home)";
     program-keepass = "den-eval-programs (bare nixos)";
     program-keepassxc = "den-eval-programs (bare Linux home, bare darwin home)";
     program-logseq = "den-eval-programs (bare Linux home, bare darwin home)";

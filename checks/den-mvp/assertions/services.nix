@@ -171,6 +171,8 @@ let
       ]
     )).config;
 
+  # `service-rosec` is Linux-only in practice: the rosec package has no darwin build, so the
+  # aspect stays out of the darwin home subject.
   homeAspects = [
     "service-syncthing"
     "virt-containers"
@@ -182,7 +184,7 @@ let
 
   homeLinux =
     (bareLinuxHome (
-      modulesFor "homeManager" homeAspects
+      modulesFor "homeManager" (homeAspects ++ [ "service-rosec" ])
       ++ [
         {
           kdn.virtualisation.containers.hooksDirs = [ "/placeholder/oci-hooks" ];
@@ -480,6 +482,16 @@ in
 
   # ---------------------------------------------------------------- homeLinux
   {
+    name = "the rosec aspect keeps the upstream unit and ships the drop-in";
+    expected = true;
+    actual = homeLinux.home.file ? ".config/systemd/user/rosecd.service.d/10-kdn.conf";
+  }
+  {
+    name = "the rosec alias is created by activation";
+    expected = true;
+    actual = homeLinux.home.activation ? rosec-alias;
+  }
+  {
     name = "syncthing runs on a Linux home";
     expected = true;
     actual = homeLinux.services.syncthing.enable;
@@ -496,6 +508,7 @@ in
       "containers/policy.json"
       "containers/registries.conf"
       "containers/storage.conf"
+      "containers/storage.conf.d/99-user.conf"
     ];
     actual = containerFiles homeLinux;
   }

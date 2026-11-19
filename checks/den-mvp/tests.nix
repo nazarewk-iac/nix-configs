@@ -3600,6 +3600,7 @@ let
     service-nextcloud-client = "den-eval-services (bare nixos, with and without a secret)";
     service-postgresql = "den-eval-services (bare nixos)";
     service-printing = "den-eval-services (bare nixos, plain and with one printer)";
+    service-rosec = "den-eval-services (bare home, Linux)";
     service-samba = "den-eval-services (bare nixos, plain and with consumer data)";
     service-syncthing = "den-eval-services (bare home, darwin and Linux)";
     service-zammad = "den-eval-services (bare nixos, privileged and unprivileged port)";
