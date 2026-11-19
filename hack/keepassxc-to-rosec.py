@@ -135,14 +135,18 @@ def read_secret(bus: str, uuid: str) -> bytes:
         env={**os.environ, "DBUS_SESSION_BUS_ADDRESS": bus},
     )
     if cp.returncode != 0:
-        raise RuntimeError(f"secret-tool lookup {UUID_ATTR}={uuid} exited {cp.returncode}")
+        raise RuntimeError(
+            f"secret-tool lookup {UUID_ATTR}={uuid} exited {cp.returncode}"
+        )
     return cp.stdout
 
 
 def read_items(bus: str) -> list[Item]:
     """Read every item from every collection on ``bus``."""
     items: list[Item] = []
-    collections = busctl(bus, SERVICE_PATH, "org.freedesktop.Secret.Service", "Collections")
+    collections = busctl(
+        bus, SERVICE_PATH, "org.freedesktop.Secret.Service", "Collections"
+    )
     for collection in collections:
         for path in busctl(bus, collection, COLLECTION_IFACE, "Items"):
             attributes = busctl(bus, path, ITEM_IFACE, "Attributes")
@@ -241,7 +245,9 @@ def contact_sheet(items: list[Item], statuses: dict[str, str]) -> dict:
             {
                 "uuid": item.uuid,
                 "label": item.label,
-                "attribute_names": sorted(name for name, value in item.attributes.items() if value),
+                "attribute_names": sorted(
+                    name for name, value in item.attributes.items() if value
+                ),
                 "secret_len": len(item.secret),
                 "status": statuses.get(item.uuid, "unknown"),
             }
@@ -259,12 +265,17 @@ def dry_run(items: list[Item]) -> int:
     )
     print(f"dry-run: attribute names: {', '.join(info['attribute_names'])}")
     if bad:
-        print(f"dry-run: {len(bad)} items emit TOML that does not round-trip", file=sys.stderr)
+        print(
+            f"dry-run: {len(bad)} items emit TOML that does not round-trip",
+            file=sys.stderr,
+        )
         return 1
     return 0
 
 
-def apply(items: list[Item], dest_bus: str, provider: str) -> tuple[dict[str, str], dict]:
+def apply(
+    items: list[Item], dest_bus: str, provider: str
+) -> tuple[dict[str, str], dict]:
     statuses: dict[str, str] = {}
     errors: list[dict] = []
     imported = 0
@@ -276,12 +287,18 @@ def apply(items: list[Item], dest_bus: str, provider: str) -> tuple[dict[str, st
         # previous copy first.  The delete fails when the item is absent, which
         # is the normal first run.
         run_rosec(dest_bus, "item", "delete", "-y", f"{UUID_ATTR}={item.uuid}")
-        cp = run_rosec(dest_bus, "item", "import", "--provider", provider, stdin=item.toml)
+        cp = run_rosec(
+            dest_bus, "item", "import", "--provider", provider, stdin=item.toml
+        )
         if cp.returncode != 0:
             # The report never carries the command's text: a parser error can quote the input.
             statuses[item.uuid] = "error: import failed"
             errors.append(
-                {"uuid": item.uuid, "label": item.label, "error": f"import exited {cp.returncode}"}
+                {
+                    "uuid": item.uuid,
+                    "label": item.label,
+                    "error": f"import exited {cp.returncode}",
+                }
             )
         else:
             statuses[item.uuid] = "imported"
@@ -310,7 +327,9 @@ def check(items: list[Item], dest_bus: str, statuses: dict[str, str]) -> dict:
         if found.secret != item.secret:
             fields.append(f"secrets.{SECRET_NAME}")
         if fields:
-            mismatches.append({"uuid": item.uuid, "label": item.label, "fields": fields})
+            mismatches.append(
+                {"uuid": item.uuid, "label": item.label, "fields": fields}
+            )
             if not statuses.get(item.uuid, "").startswith("error"):
                 statuses[item.uuid] = "mismatch"
         else:
@@ -356,8 +375,12 @@ def self_test() -> int:
         assert "service" not in parsed["attributes"], "empty attribute must be dropped"
     text_item, binary_item = SELF_TEST_ITEMS
     parsed_text = tomllib.loads(text_item.toml)
-    assert parsed_text["attributes"]["Notes"] == "line one\nline two\ttabbed", "notes are public attributes"
-    assert parsed_text["attributes"]["xdg:schema"] == "org.gnome.keyring.NetworkPassword"
+    assert parsed_text["attributes"]["Notes"] == "line one\nline two\ttabbed", (
+        "notes are public attributes"
+    )
+    assert (
+        parsed_text["attributes"]["xdg:schema"] == "org.gnome.keyring.NetworkPassword"
+    )
     assert parsed_text["secrets"][SECRET_NAME] == "pw-with-\n-newline"
     binary = tomllib.loads(binary_item.toml)["secrets"][SECRET_NAME]
     assert base64.b64decode(binary["base64"]) == binary_item.secret
@@ -368,15 +391,33 @@ def self_test() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--from", dest="source_bus", default=os.environ.get("DBUS_SESSION_BUS_ADDRESS", ""))
-    parser.add_argument("--to", dest="dest_bus", default=os.environ.get("DBUS_SESSION_BUS_ADDRESS", ""))
-    parser.add_argument("--provider", default="sops", help="rosec provider id (default: sops)")
-    parser.add_argument("--dry-run", action="store_true", help="read the source and report; no writes")
-    parser.add_argument("--apply", action="store_true", help="delete by Uuid, then import into the destination")
-    parser.add_argument("--check", action="store_true", help="compare the destination with the source")
+    parser.add_argument(
+        "--from",
+        dest="source_bus",
+        default=os.environ.get("DBUS_SESSION_BUS_ADDRESS", ""),
+    )
+    parser.add_argument(
+        "--to", dest="dest_bus", default=os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
+    )
+    parser.add_argument(
+        "--provider", default="sops", help="rosec provider id (default: sops)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="read the source and report; no writes"
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="delete by Uuid, then import into the destination",
+    )
+    parser.add_argument(
+        "--check", action="store_true", help="compare the destination with the source"
+    )
     parser.add_argument("--migrate", action="store_true", help="--apply, then --check")
     parser.add_argument("--report", help="write a JSON report")
-    parser.add_argument("--self-test", action="store_true", help="run the built-in mapping self-test")
+    parser.add_argument(
+        "--self-test", action="store_true", help="run the built-in mapping self-test"
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
@@ -388,7 +429,9 @@ def main(argv: list[str] | None = None) -> int:
     if (args.apply or args.migrate or args.check) and not args.dest_bus:
         parser.error("--to or DBUS_SESSION_BUS_ADDRESS is required")
     if (args.apply or args.migrate or args.check) and args.source_bus == args.dest_bus:
-        parser.error("--from and --to are the same bus; a copy into itself proves nothing")
+        parser.error(
+            "--from and --to are the same bus; a copy into itself proves nothing"
+        )
 
     items = read_items(args.source_bus)
     if args.dry_run:
@@ -400,7 +443,10 @@ def main(argv: list[str] | None = None) -> int:
         # half-populate the store.
         bad = validate(items)
         if bad:
-            print(f"error: {len(bad)} items emit TOML that does not round-trip; no writes", file=sys.stderr)
+            print(
+                f"error: {len(bad)} items emit TOML that does not round-trip; no writes",
+                file=sys.stderr,
+            )
             return 1
 
     statuses: dict[str, str] = {}
@@ -420,7 +466,9 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"check: {len(items)} items match the source")
         if result["extra"]:
-            print(f"check: {len(result['extra'])} destination items are not in the source")
+            print(
+                f"check: {len(result['extra'])} destination items are not in the source"
+            )
     if args.apply or args.migrate:
         # The authoritative failure list comes from the apply step, not from the
         # status map: the check would otherwise mask a failed import.

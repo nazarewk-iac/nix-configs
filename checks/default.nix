@@ -535,8 +535,8 @@ denTests.checks
     in
     pkgs.runCommand "check-markdown-format"
       {
-        # `find` and `xargs` come from the stdenv; prettier is the absolute store path that
-        # `treefmt.nix` names, so this check cannot run a different build of it.
+        # `find` comes from findutils. Prettier is the absolute store path that `treefmt.nix` names,
+        # so this check cannot run a different build of it.
         nativeBuildInputs = [ pkgs.findutils ];
       }
       ''

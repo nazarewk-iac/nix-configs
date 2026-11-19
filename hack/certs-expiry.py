@@ -60,7 +60,9 @@ def x509_not_after(path: pathlib.Path) -> dt.datetime:
     ).stdout.strip()
     _, _, stamp = out.partition("=")
     # `openssl x509 -enddate` prints GMT explicitly; `%Z` does not carry it into the datetime.
-    return dt.datetime.strptime(stamp.strip(), "%b %d %H:%M:%S %Y %Z").replace(tzinfo=dt.timezone.utc)
+    return dt.datetime.strptime(stamp.strip(), "%b %d %H:%M:%S %Y %Z").replace(
+        tzinfo=dt.timezone.utc
+    )
 
 
 def collect() -> dict:
@@ -86,7 +88,9 @@ def collect() -> dict:
 
     entries.sort(key=lambda entry: entry["notAfter"])
     return {
-        "generated": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+        "generated": dt.datetime.now(dt.timezone.utc)
+        .replace(microsecond=0)
+        .isoformat(),
         "earliest": entries[0],
         "certificates": entries,
     }
@@ -96,26 +100,39 @@ def write() -> int:
     summary = collect()
     SUMMARY.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY.write_text(json.dumps(summary, indent=2) + "\n")
-    print(f"wrote {SUMMARY.relative_to(ROOT)}: {len(summary['certificates'])} certificates, "
-          f"earliest {summary['earliest']['notAfter']}")
+    print(
+        f"wrote {SUMMARY.relative_to(ROOT)}: {len(summary['certificates'])} certificates, "
+        f"earliest {summary['earliest']['notAfter']}"
+    )
     return 0
 
 
 def check() -> int:
     fresh = collect()
     if not SUMMARY.exists():
-        print(f"{SUMMARY.relative_to(ROOT)} is missing; run hack/certs-expiry.py", file=sys.stderr)
+        print(
+            f"{SUMMARY.relative_to(ROOT)} is missing; run hack/certs-expiry.py",
+            file=sys.stderr,
+        )
         return 1
     committed = json.loads(SUMMARY.read_text())
     if committed.get("certificates") == fresh["certificates"]:
         return 0
-    print(f"{SUMMARY.relative_to(ROOT)} is stale; run hack/certs-expiry.py", file=sys.stderr)
+    print(
+        f"{SUMMARY.relative_to(ROOT)} is stale; run hack/certs-expiry.py",
+        file=sys.stderr,
+    )
     # Say which entries differ, so a stale summary in CI is actionable without a local rerun.
-    before = {entry["path"]: entry["notAfter"] for entry in committed.get("certificates", [])}
+    before = {
+        entry["path"]: entry["notAfter"] for entry in committed.get("certificates", [])
+    }
     after = {entry["path"]: entry["notAfter"] for entry in fresh["certificates"]}
     for path in sorted(set(before) | set(after)):
         if before.get(path) != after.get(path):
-            print(f"  {path}: committed {before.get(path)}, actual {after.get(path)}", file=sys.stderr)
+            print(
+                f"  {path}: committed {before.get(path)}, actual {after.get(path)}",
+                file=sys.stderr,
+            )
     return 1
 
 
@@ -143,8 +160,12 @@ def remind() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--check", action="store_true", help="exit 1 when the summary is stale")
-    group.add_argument("--remind", action="store_true", help="print a warning when expiry is close")
+    group.add_argument(
+        "--check", action="store_true", help="exit 1 when the summary is stale"
+    )
+    group.add_argument(
+        "--remind", action="store_true", help="print a warning when expiry is close"
+    )
     args = parser.parse_args()
     if args.check:
         return check()
