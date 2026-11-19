@@ -15,7 +15,9 @@
 #   hack/brys-frontier.sh status                  # what is running on the card
 set -uo pipefail
 
-STRATA=${STRATA_BIN:-/var/lib/kdn/llms/models/.bench/bin/strata}
+# The Terminal's own `strata` is a generic ELF that NixOS cannot start; the FHS wrapper from
+# `nix build .#strata` is the one to call. Override with STRATA_BIN when the store path moves.
+STRATA=${STRATA_BIN:-$(command -v strata 2>/dev/null || echo /nix/store/kvxg49ar4h8bqqf0qpi1sdvzw4y96l32-strata-0/bin/strata)}
 DATA=${STRATA_DATA_HOME:-/var/lib/kdn/llms/models/.bench/xdg}
 MODELS=${STRATA_MODELS:-/var/lib/kdn/llms/models/.bench/strata/models}
 SHIM=${ROCM_SHIM:-/home/kdn/.local/lib/rocm-skip.so}
@@ -72,8 +74,9 @@ case "$action" in
   up)
     export XDG_DATA_HOME=$DATA LD_PRELOAD=$SHIM
     "$STRATA" launch --stop >/dev/null 2>&1 || true
+    systemctl --user reset-failed strata-frontier 2>/dev/null || true
     sleep 3
-    systemd-run --user --unit=strata-frontier --setenv=XDG_DATA_HOME="$DATA" \
+    systemd-run --user --collect --unit=strata-frontier --setenv=XDG_DATA_HOME="$DATA" \
       --setenv=LD_PRELOAD="$SHIM" -p KillMode=none -p TimeoutStartSec=1800 -- \
       "$STRATA" launch --model-path "$(model_path)" --family "$(family)" --model "$(model_id)" \
       --context 1m --vision off --tune skip --mtp on --drafting dflash2 --kv k8v4 \
