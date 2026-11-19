@@ -234,3 +234,36 @@ but its DSA counters cannot be trusted to tune the rate (a 200 Mbit setting deli
 
 The model dataset (`/var/lib/kdn/llms/models`, `brys-main/brys/impermanence/usr/data`) held **745 GB
 free** before this run. `UD-IQ1_S` costs 62 GB and `GLM-5.3-Flash UD-IQ2_XXS` 102 GB; 581 GB remain.
+
+## Strata on the same card — the harness that wins
+
+Strata Terminal 0.2.16 with the signed **HIP `rx9070` engine 0.1.62**, serving the **GSQ-RCO
+`IQ2_XS` pack** (63 GiB, copied from oams over the LAN, no download). The engine's own ROCm
+runtime hits the Lexa doorbell bug; the shim in `hack/rocm-skip-legacy-gpu.c` hides the gfx803
+node from the KFD topology, and then it starts unmodified.
+
+| ctx | VRAM | decode t/s | prefill t/s (10.5k prompt) |
+| ---: | ---: | ---: | ---: |
+| 32k | 31.0 GiB | **66.9** | 2822 |
+| 64k | 31.0 GiB | **67.0** | 2817 |
+| 128k | 31.0 GiB | **68.6** | 2799 |
+| 256k | 31.0 GiB | **66.7** | 2779 |
+
+Decode is flat from 32k to the model's **native 256k**, and prefill is ~2.8k t/s. MTP on/off made no
+difference (67.2 vs 66.9). The engine reports an expert cache of 24.9 GiB and ~864 MiB of VRAM free.
+
+**Against llama.cpp on this box:** 66.9 vs 22.3 t/s decode (3.0x) and 2822 vs 255 t/s prefill
+(11x), at four times the context. The comparison is not quant-for-quant — llama.cpp cannot read the
+GSQ-RCO pack at all (it rejects `UD-IQ1_S` as "a GGUF Strata cannot run" in the other direction; the
+two engines use different quant families). It is a harness comparison: best Strata config against
+best llama.cpp config.
+
+| harness | model | ctx | decode | prefill |
+| --- | --- | ---: | ---: | ---: |
+| Strata + HIP | GSQ-RCO IQ2_XS, 63 GiB | 256k | **66.7** | **2779** |
+| llama.cpp Vulkan | UD-IQ1_S, 62 GB, `n-cpu-moe 26` | 64k | 22.3 | 255 |
+| BigMoeOnEdge Vulkan | UD-IQ1_S, `--moe-stream` | 2k | 29.5 | 60.6 |
+
+Strata is the engine to serve on this host. The cost is that its packs are its own format: a
+llama.cpp GGUF cannot be reused, and the reverse.
+

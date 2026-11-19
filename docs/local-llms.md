@@ -400,6 +400,7 @@ model with no measurement. A dash means not applicable.
 
 | model                      | host | gpu       | harness  | config    | class        | params (active)                  | license     | file GB | ctx (served) | RssAnon | VmRSS | decode t/s | prefill t/s | mode | registered in                                | note                                                                                                  |
 | -------------------------- | ---- | --------- | -------- | --------- | ------------ | -------------------------------- | ----------- | ------- | ------------ | ------- | ----- | ---------- | ----------- | ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| qwen3.8-flash-next (Strata) | brys | gpu-r9700 | strata | strata-hip | frontier | 180B / ~18B active | — | 63 | 262144 | — | — | 66.7 | 2779 | GPU | standalone :8080, not llama-swap | Best config on this host: 3x decode and 11x prefill over llama.cpp; GSQ-RCO IQ2_XS pack, 256k native |
 | qwen3.8-flash-next         | brys | gpu-r9700 | llamacpp | srv-r9700 | frontier     | —                                | —           | 62      | 65536        | —       | —     | 21.9       | 255        | GPU  | swap main + tier-1 small model (co-resident) | RE-ENABLED 2026-11-18 on the R9700 (UD-IQ1_S, --n-cpu-moe 26, 64k); the 2.36 t/s CPU row was the W6600 era |
 | deepseek-v4-flash          | brys | —         | —        | —         | frontier     | ~180B MoE                        | custom      | 103     | 327680       | —       | —     | —          | —           | —    | swap main                                    |                                                                                                       |
 | qwen3.5-4b                 | brys | gpu-w6600 | llamacpp | srv-w6600 | grunt        | 4B dense (hybrid Gated-DeltaNet) | Apache-2.0  | 2.6     | 16384        | 114     | 643   | 60.8       | 158.0       | GPU  | swap with_grunt (:39705)                     |                                                                                                       |
@@ -465,6 +466,7 @@ Every row names its GPU tag and its harness + config. The short names expand to:
 | `srv-r9700` | `llamacpp` | `llama-server` on the **32 GB R9700** (gfx1201), `--n-cpu-moe 26 --fit off -c 65536 --load-mode mmap`, `--threads 16`. The served flash-next preset. |
 | `vk-full` | `llamacpp` | `llama-bench -ngl 99`: every tensor in VRAM. |
 | `bmoe-auto` | `bmoe` | BigMoeOnEdge `--auto`: its planner measures the machine and places the tensors. |
+| `strata-hip` | `strata` | Strata Terminal 0.2.16, signed HIP `rx9070` engine 0.1.62, `--tune skip --mtp off`, serving a GSQ-RCO pack. Needs `hack/rocm-skip-legacy-gpu.c` while the Lexa is in the box. |
 
 Hardware tags: `gpu-w6600` (8 GB RDNA2), `gpu-r9700` (32 GB RDNA4), `gpu-rx6800m` (12 GB RDNA2,
 oams), `cpu` (no GPU). A row whose `gpu` is `—` was never measured.

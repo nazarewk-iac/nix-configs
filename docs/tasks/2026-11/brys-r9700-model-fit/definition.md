@@ -40,7 +40,8 @@ fits, and the numbers are in `measurements.md`.
 
 | # | Model | Harness | Resident need | Fits? | Measured decode |
 |---|---|---|---|---:|---|
-| 1 | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 26` @ 64k | 62 GB | yes | **30.9 t/s** empty context, **21.9 t/s** served at 64k |
+| 1 | Qwen3.8-Flash-Next GSQ-RCO `IQ2_XS` | **Strata (HIP)** | 63 GiB | yes | **66.7 t/s** at 256k, prefill 2779 t/s |
+| 1b | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 26` @ 64k | 62 GB | yes | **30.9 t/s** empty context, **21.9 t/s** served at 64k |
 | 2 | Qwen3.8-Flash-Next + `qwen3.5-4b` | llama.cpp Vulkan, both resident | 23.0 GiB VRAM | yes | **21.9 t/s** frontier + **125.4 t/s** small |
 | 3 | GLM-5.3-Flash 321B `UD-IQ2_XXS` | llama.cpp Vulkan, `n-cpu-moe 36`, 16 threads | 102 GB | yes | **8.9 t/s** (CPU-bound) |
 | 4 | Qwen3.5-35B-A3B | llama.cpp Vulkan, all layers on GPU | 20.5 GB VRAM | yes | **120.7 t/s** |
@@ -50,9 +51,12 @@ fits, and the numbers are in `measurements.md`.
 | 8 | DeepSeek V4.1-Flash `UD-IQ1_S` 233 GB | any | 233 GB+ | **no** | exceeds 157 GB combined |
 | 9 | Qwen3.8-Flash-Next `Q8_0` 188 GB | any | 188 GB | **no** | exceeds RAM |
 
-The shortlist to run is now simple: **flash-next `UD-IQ1_S` at `n-cpu-moe 26`, 64k, plus a small
-model beside it**. It is the only configuration that gives frontier quality, ~22 t/s, and a
-co-resident worker at once. GLM-5.3-Flash works but is CPU-bound at 8.9 t/s; keep it only if a 321B model is
+**Strata wins outright** on this card: 66.7 t/s decode and 2779 t/s prefill at the native 256k,
+against 21.9 / 255 for llama.cpp at 64k. The price is that Strata reads only its own GSQ-RCO packs,
+so the llama.cpp GGUF we already have cannot feed it, and the reverse.
+
+The llama.cpp configuration stays useful as the co-residency path: `UD-IQ1_S` at `n-cpu-moe 26`,
+64k, plus a small model beside it in 23 GiB of VRAM. GLM-5.3-Flash works but is CPU-bound at 8.9 t/s; keep it only if a 321B model is
 needed at any price.
 
 Rows 1–3 are the natural first runs: the R9700 is a tested Strata target, the expert cache grows
