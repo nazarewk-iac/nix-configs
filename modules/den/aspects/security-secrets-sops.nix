@@ -263,6 +263,14 @@ let
         libraries = with pkgs.python3Packages; [
           fire
         ];
+        # `ruff format` (the repo formatter) puts spaces around the colon of a complex slice
+        # (`line[start : end]`); pycodestyle's E203 calls that "whitespace before ':'". E203 is the
+        # documented black/ruff-compatible exception, so it is ignored rather than fought. The
+        # universal twin already carried this list.
+        flakeIgnore = [
+          "E203"
+          "E501"
+        ];
       }
       (
         lib.pipe ./security-secrets-sops/kdn-sops-secrets.py [
