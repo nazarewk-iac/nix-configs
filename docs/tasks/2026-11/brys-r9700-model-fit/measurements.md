@@ -1064,3 +1064,25 @@ Per transition: `max → omni-fast` 50 s, `omni-fast → max` 69 s. A restore at
 This is the table a switching skill should quote. Add to it by running the scenario, not by
 guessing: `hack/probe-qfn-omni-scenario.py` replays the whole story and prints `GET /stats` at the
 end.
+
+### What the harnesses can actually reach (2026-11-19)
+
+Both harnesses on `oams` (OpenCode and Pi) are configured with the **LiteLLM gateway** on `etra`,
+not with a direct brys upstream. That gateway exposes 31 models, and they are the grunt and surveyed
+tier only: `chat-std-fast`, `chat-std-mid`, `code-std-fast`, … — **no `chat-deep-slow`**, so neither
+harness can reach QFN through the gateway today. A request for it is rejected with
+`Invalid model name passed in model=chat-deep-slow`.
+
+The path to QFN is direct (`https://brys.lan.etra.net.int.kdn.im/v1`), and `hosts/oams/devenv.nix`
+says the direct brys upstream was dropped: "off-host traffic goes through the gateway". So on oams
+the frontier is currently unreachable from a harness, while the design above assumes it is the
+default model. Wiring `chat-deep-slow`, `chat-deep-slow-omni` and `chat-deep-slow-fast` into the
+gateway (or restoring a direct `brys` upstream) is the missing step for the scenario to be real
+end to end.
+
+Two timing facts from the same test:
+
+- A gateway request for an unloaded grunt model took **190 s** end to end (load plus queue). Pi gave
+  up first with "Request aborted", so a harness timeout, not the server, is the practical limit.
+- The frontier itself was untouched the whole time: `GET /stats` showed the same seven switch
+  events before and after the harness runs.
