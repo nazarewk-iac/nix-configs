@@ -68,18 +68,18 @@ border and check whether two downloading hosts get equal rates. In the expected 
 not, because both flows share one destination address.
 
 The task brief asks for "a per-source-IP HTB tree on `lan`". Read literally, that tree would shape
-only traffic *toward* the LAN, where the source is a remote server — so it would shape the
+only traffic _toward_ the LAN, where the source is a remote server — so it would shape the
 download by the wrong key. This note keeps the tree but splits it by direction: source-keyed on
 `wan` for the upload, destination-keyed on `lan` for the download. The tree shape, the reserved
 class and the bulk cap are unchanged; only the interface and the match key move.
 
 ## Three pieces
 
-| Piece | Where                       | Direction                | Technology                                                                       |
-| ----- | --------------------------- | ------------------------ | -------------------------------------------------------------------------------- |
-| A     | `wan` egress                | upload                   | HTB tree keyed by source marks, `cake` leaf for unnamed hosts                    |
-| B     | `wan` ingress via `ifb4wan` | download, aggregate only | `cake … ingress` — **fallback**, see below |
-| C     | `lan` egress                | download, per host       | HTB tree keyed by destination marks, `cake` leaf for unnamed hosts               |
+| Piece | Where                       | Direction                | Technology                                                         |
+| ----- | --------------------------- | ------------------------ | ------------------------------------------------------------------ |
+| A     | `wan` egress                | upload                   | HTB tree keyed by source marks, `cake` leaf for unnamed hosts      |
+| B     | `wan` ingress via `ifb4wan` | download, aggregate only | `cake … ingress` — **fallback**, see below                         |
+| C     | `lan` egress                | download, per host       | HTB tree keyed by destination marks, `cake` leaf for unnamed hosts |
 
 Pieces A and C are the same tree shape on different interfaces. Only the interface and the match
 key differ. Piece C is the preferred download shaper. Piece B exists for the case where the `lan`
@@ -248,11 +248,11 @@ classes and loses the host names. Prefer the static map: fewer classes, readable
 
 ## Composition with `drek`
 
-| `drek` state                  | Piece A (upload tree)     | Piece C (download tree on lan) | Piece B (ifb fallback) |
-| ----------------------------- | ------------------------- | ------------------------------ | ---------------------- |
-| Unshaped (today)              | rate = measured up × 0.90 | parent at measured down × 0.90 | off                    |
-| Shapes upload only (Option S) | rate = `drek` up (equal)  | parent at measured down × 0.90 | off                    |
-| Shapes both directions        | rate = `drek` up (equal)  | parent at `drek` down (equal), shallow rates | off |
+| `drek` state                  | Piece A (upload tree)     | Piece C (download tree on lan)               | Piece B (ifb fallback) |
+| ----------------------------- | ------------------------- | -------------------------------------------- | ---------------------- |
+| Unshaped (today)              | rate = measured up × 0.90 | parent at measured down × 0.90               | off                    |
+| Shapes upload only (Option S) | rate = `drek` up (equal)  | parent at measured down × 0.90               | off                    |
+| Shapes both directions        | rate = `drek` up (equal)  | parent at `drek` down (equal), shallow rates | off                    |
 
 "Deep" means one class per named host plus a reserved `prio 1` host, in the `lan` tree and in the
 `wan` tree. "Shallow" means a single shaped parent with a `cake` leaf and no per-host children —

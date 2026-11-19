@@ -147,7 +147,7 @@ group 37: 0000:10:00.4
 
 The two "Navi 10 XL" bridges are **not** on the motherboard. They are the R9700's own PCIe switch:
 the card presents an upstream port, a downstream port, and then the GPU and its audio function. The
-Lexa is on a *different* CPU root port (`00:03.2`) with no bridge in between.
+Lexa is on a _different_ CPU root port (`00:03.2`) with no bridge in between.
 
 This is the single most important correction to the task's premise. The premise said "it shares
 bridges with the Lexa in the topology — this may be the fatal blocker". It does not:
@@ -322,16 +322,16 @@ every RDNA4 and AMD document uses, so it is the one to use first.
 
 From the project README:
 
-| Hypervisor | Restrictions |
-| --- | --- |
-| `qemu` | — |
-| `cloud-hypervisor` | no 9p shares |
-| `firecracker` | no 9p/virtiofs shares (and no PCI: virtio-MMIO only) |
-| `crosvm` | 9p shares broken |
-| `kvmtool` | no virtiofs shares, no control socket |
-| `stratovirt` | no 9p shares, no control socket |
-| `alioth` | no 9p shares, no control socket |
-| `vfkit` | macOS only, no 9p shares, no tap/bridge networking |
+| Hypervisor         | Restrictions                                         |
+| ------------------ | ---------------------------------------------------- |
+| `qemu`             | —                                                    |
+| `cloud-hypervisor` | no 9p shares                                         |
+| `firecracker`      | no 9p/virtiofs shares (and no PCI: virtio-MMIO only) |
+| `crosvm`           | 9p shares broken                                     |
+| `kvmtool`          | no virtiofs shares, no control socket                |
+| `stratovirt`       | no 9p shares, no control socket                      |
+| `alioth`           | no 9p shares, no control socket                      |
+| `vfkit`            | macOS only, no 9p shares, no tap/bridge networking   |
 
 `firecracker` is therefore **not** an option for a GPU: it has no PCIe bus to assign a device onto.
 
@@ -379,10 +379,10 @@ flake builds it, and `microvm@<guest>.service` is the lifecycle.
 
 ### 4.1 What the guest must read
 
-| Model | Quant | Size on disk | Shards |
-| --- | --- | ---: | ---: |
-| Qwen3.8-Flash-Next | `UD-IQ1_S` | **62 GB** | 3 |
-| GLM-5.3-Flash 321B | `UD-IQ2_XXS` | **102 GB** | 4 |
+| Model              | Quant        | Size on disk | Shards |
+| ------------------ | ------------ | -----------: | -----: |
+| Qwen3.8-Flash-Next | `UD-IQ1_S`   |    **62 GB** |      3 |
+| GLM-5.3-Flash 321B | `UD-IQ2_XXS` |   **102 GB** |      4 |
 
 Both go through `llama.cpp` with `--fit off` and `mmap`. The expert tensors stay in RAM and the CPU
 computes them, so essentially the whole file is read by the guest.
@@ -392,11 +392,11 @@ computes them, so essentially the whole file is read by the guest.
 From `hosts-den/brys/performance.md` (manual `llama-server`, `mmap`, threads 12, one model at a
 time):
 
-| Model | File | Load | Effective read rate |
-| --- | ---: | ---: | ---: |
-| `qwen3-coder-next` | 45 G | ~105 s | ~430 MB/s |
-| `qwen3-next-80b` | 46 G | ~99 s | ~465 MB/s |
-| `gpt-oss-120b` | 58.5 G | ~129 s | ~450 MB/s |
+| Model              |   File |   Load | Effective read rate |
+| ------------------ | -----: | -----: | ------------------: |
+| `qwen3-coder-next` |   45 G | ~105 s |           ~430 MB/s |
+| `qwen3-next-80b`   |   46 G |  ~99 s |           ~465 MB/s |
+| `gpt-oss-120b`     | 58.5 G | ~129 s |           ~450 MB/s |
 
 So a 62 GB model costs about **135 s** on the host today. The limit is not the ZFS device (measured
 ~2.0-2.2 GB/s cold at high queue depth) but the mmap page-fault pattern, which is closer to serial.
@@ -407,12 +407,12 @@ strictly worse than the host.
 
 ### 4.3 The four mechanisms
 
-| Mechanism | Cache copies | Measured or sourced rate | Notes |
-| --- | --- | ---: | --- |
-| **virtio-blk, zvol, `cache=none`** | 1 | ~2.0 GB/s cold (brys NVMe+ZFS measured) | one page cache; matches `mmap` |
-| virtiofs, `virtiofsd`, no DAX | **2** | 650 MB/s single-queue, 2.5 GB/s multi-queue (qemu-devel 2020); 134-154 MB/s real 4k/1M (Proxmox 2025) | FUSE; guest + host both cache |
-| virtio-9p | 2 | ~397 MB/s multi-queue, ~98 MB/s single-queue (same source) | legacy; worst semantics |
-| NFS over virtio-net | 2 | TCP-bound; loopback NFS is fast but adds a copy and a daemon | no advantage over block |
+| Mechanism                          | Cache copies |                                                                              Measured or sourced rate | Notes                          |
+| ---------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------: | ------------------------------ |
+| **virtio-blk, zvol, `cache=none`** | 1            |                                                               ~2.0 GB/s cold (brys NVMe+ZFS measured) | one page cache; matches `mmap` |
+| virtiofs, `virtiofsd`, no DAX      | **2**        | 650 MB/s single-queue, 2.5 GB/s multi-queue (qemu-devel 2020); 134-154 MB/s real 4k/1M (Proxmox 2025) | FUSE; guest + host both cache  |
+| virtio-9p                          | 2            |                                            ~397 MB/s multi-queue, ~98 MB/s single-queue (same source) | legacy; worst semantics        |
+| NFS over virtio-net                | 2            |                                          TCP-bound; loopback NFS is fast but adds a copy and a daemon | no advantage over block        |
 
 The qemu-devel numbers (2020, `fio`, sequential read, ramfs backing) are the cleanest same-host
 comparison available:
@@ -440,11 +440,11 @@ A block device has exactly one cache: the guest's. That is also the cache `mmap`
 
 ### 4.5 The RAM ceiling
 
-| Guest workload | Guest RAM | Host left of 125 GiB | Comment |
-| --- | ---: | ---: | --- |
-| flash-next `UD-IQ1_S` (62 GB) + 64k KV | ~72 GiB | ~53 GiB | fits with room |
-| GLM-5.3-Flash `UD-IQ2_XXS` (102 GB) | ~112 GiB | ~13 GiB | desktop + 8 GiB ARC + qemu compete |
-| both at once | ~120 GiB | ~5 GiB | no |
+| Guest workload                         | Guest RAM | Host left of 125 GiB | Comment                            |
+| -------------------------------------- | --------: | -------------------: | ---------------------------------- |
+| flash-next `UD-IQ1_S` (62 GB) + 64k KV |   ~72 GiB |              ~53 GiB | fits with room                     |
+| GLM-5.3-Flash `UD-IQ2_XXS` (102 GB)    |  ~112 GiB |              ~13 GiB | desktop + 8 GiB ARC + qemu compete |
+| both at once                           |  ~120 GiB |               ~5 GiB | no                                 |
 
 Today the host gives the whole page cache to whichever model is resident, which is why the 102 GB
 GLM row exists at all. A VM trades that flexibility for isolation. That is the honest cost, and it
@@ -461,6 +461,7 @@ Navi 48):
 > `0xFFFF` everywhere and reports "stuck in D3."
 >
 > **The fix: lock the GPU in D0 before unbinding.**
+>
 > ```
 > echo 0 > /sys/bus/pci/devices/$GPU/d3cold_allowed
 > echo "on" > /sys/bus/pci/devices/$GPU/power/control
@@ -471,11 +472,11 @@ idle at `D0` when no model is loaded.
 
 Three more statements from the same guide, each with a consequence for brys:
 
-| Claim | Consequence |
-| --- | --- |
-| "No reset bug on Navi 48 (unlike RDNA 1-3). The card resets cleanly via PSP on kernel ≥ 6.13." | Plausible and matches the `flr` we measured, but a Proxmox thread reports an "RX 9070 reset bug", so it needs P2. |
+| Claim                                                                                                                        | Consequence                                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "No reset bug on Navi 48 (unlike RDNA 1-3). The card resets cleanly via PSP on kernel ≥ 6.13."                               | Plausible and matches the `flr` we measured, but a Proxmox thread reports an "RX 9070 reset bug", so it needs P2.                                                |
 | "Do NOT pre-bind the GPU to `vfio-pci` at boot … let `amdgpu` own the card at boot, then hand it to `vfio-pci` at VM start." | brys already behaves this way: `softdep amdgpu pre: vfio-pci` orders module load but no `vfio-pci.ids=` exists. microvm.nix's `pci-setup` also unbinds at start. |
-| "Do NOT use `disable_idle_d3=1`. It makes D3 issues worse on Navi 48." | Do not copy the common `disable_idle_d3=1` advice from older AMD guides. |
+| "Do NOT use `disable_idle_d3=1`. It makes D3 issues worse on Navi 48."                                                       | Do not copy the common `disable_idle_d3=1` advice from older AMD guides.                                                                                         |
 
 And the failure mode that costs a host reboot:
 
@@ -588,13 +589,13 @@ real capability. It is not a present need, and the definition says so.
 
 ## 9. What the tests must prove, stated as numbers
 
-| Step | Number to beat | Why that number |
-| --- | --- | --- |
-| P1 | `rocminfo` lists `gfx1201`, and `grep -c gfx803` returns 0 | the whole section-2 argument |
-| P2 | 5/5 start-stop cycles | the definition of "the card resets" |
-| P3 | ≥ 1.5 GB/s read; 62 GB load ≤ 120 s | the host baseline is ~135 s; a slower share is a regression |
-| P4 | ≥ 20.8 t/s decode, ≥ 242 t/s prefill | 5 % of the measured host 21.9 / 255-289 |
-| P5 | API back after `systemctl restart microvm@llm`, no host reboot | the availability claim |
+| Step | Number to beat                                                 | Why that number                                             |
+| ---- | -------------------------------------------------------------- | ----------------------------------------------------------- |
+| P1   | `rocminfo` lists `gfx1201`, and `grep -c gfx803` returns 0     | the whole section-2 argument                                |
+| P2   | 5/5 start-stop cycles                                          | the definition of "the card resets"                         |
+| P3   | ≥ 1.5 GB/s read; 62 GB load ≤ 120 s                            | the host baseline is ~135 s; a slower share is a regression |
+| P4   | ≥ 20.8 t/s decode, ≥ 242 t/s prefill                           | 5 % of the measured host 21.9 / 255-289                     |
+| P5   | API back after `systemctl restart microvm@llm`, no host reboot | the availability claim                                      |
 
 A fail at P1 or P4 ends the idea. A fail at P3 means "use a zvol". A fail at P2 means the host
 reboot coupling is unchanged and the strongest argument for the VM disappears.
