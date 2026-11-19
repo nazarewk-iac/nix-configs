@@ -30,7 +30,7 @@ CONV_CACHE=15000 # MiB of parked conversation K/V in RAM (~1.5M tokens at 10 KB/
 MEM_LIMIT=112000 # MiB the engine may use, so the desktop keeps a margin
 
 pack=UD-IQ4_XS
-profile=
+profile=max # the default operating point: the frontier alone on the whole card
 action=${1:-status}
 shift || true
 while [ $# -gt 0 ]; do
@@ -111,28 +111,31 @@ status() {
 
 case "$action" in
 up)
-  export XDG_DATA_HOME=$DATA LD_PRELOAD=$SHIM
-  "$STRATA" launch --stop >/dev/null 2>&1 || true
-  systemctl --user stop strata-frontier 2>/dev/null || true
-  systemctl --user reset-failed strata-frontier 2>/dev/null || true
-  sleep 3
-  systemd-run --user --collect --unit=strata-frontier --setenv=XDG_DATA_HOME="$DATA" \
-    --setenv=LD_PRELOAD="$SHIM" -p KillMode=none -p TimeoutStartSec=1800 -- \
-    "$STRATA" launch --model-path "$(model_path)" --family "$(family)" --model "$(model_id)" \
-    --context 1m --vision off --tune skip --mtp on --drafting dflash2 --kv k8v4 \
-    --draft-vocab latin --set vram-reserve-mib=$RESERVE --set kv-resident=$KV_RESIDENT \
-    --set conversation-cache-mib=$CONV_CACHE --set memory-limit-mib=$MEM_LIMIT \
-    --access local --port "$PORT" --no-tui --yes
-  echo "Strata is starting with pack $pack; it downloads a draft head on the first run."
-  echo "Media model: it is already registered in llama-swap as the 'audio-std-mid' alias,"
-  echo "or run llama-server directly on :8091 with --mmproj qwen3-omni-30b-a3b-mmproj.gguf."
+  # `max` is the system service, so the fleet and the CLI agree on one engine.
+  if [ "$profile" = max ]; then
+    sudo -n systemctl reset-failed strata-frontier 2>/dev/null || true
+    sudo -n systemctl start strata-frontier
+    echo "strata-frontier (max) starting on :$PORT"
+  else
+    sudo -n systemctl stop strata-frontier 2>/dev/null || true
+    sudo -n systemctl reset-failed strata-frontier-alt 2>/dev/null || true
+    sudo -n systemd-run --unit=strata-frontier-alt --collect -p User=llm-server -p Group=llm-server \
+      -p LimitMEMLOCK=infinity -p MemoryMax=112G \
+      -p Environment=HOME=/var/lib/kdn/llms/home \
+      -p Environment=XDG_DATA_HOME=/var/lib/kdn/llms/models/.bench/xdg \
+      -p Environment=STRATA_DATA_HOME=/var/lib/kdn/llms/models/.bench/xdg \
+      -p Environment=LD_PRELOAD=/var/lib/kdn/llms/models/.bench/rocm-skip.so \
+      -- /run/current-system/sw/bin/strata-serve "$profile" --port "$PORT"
+    echo "strata-frontier-alt ($profile) starting on :$PORT"
+  fi
   ;;
 down)
-  XDG_DATA_HOME=$DATA LD_PRELOAD=$SHIM "$STRATA" launch --stop
+  sudo -n systemctl stop strata-frontier strata-frontier-alt 2>/dev/null || true
+  echo "stopped"
   ;;
 status) status ;;
 *)
-  echo "usage: $0 {up|down|status} [--pack NAME]" >&2
+  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast]" >&2
   exit 2
   ;;
 esac
