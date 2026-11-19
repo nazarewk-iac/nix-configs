@@ -184,7 +184,9 @@ in
       repository = "/mnt/usb-backup/pryll";
       passwordFile = "/run/secrets/restic-pryll-password";
       paths = [ "/home/bn" ];
-      timerConfig = { OnCalendar = "daily"; };
+      timerConfig = {
+        OnCalendar = "daily";
+      };
     };
 
     # profile-baseline sets users.mutableUsers = false, and the root profile (selected below) hands

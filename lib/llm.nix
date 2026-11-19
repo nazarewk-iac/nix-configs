@@ -33,9 +33,9 @@ let
     in
     (h ? ${host})
     && (h.${host}.common.enable or true)
-    && lib.any (
-      prof: builtins.elem h.${host}.set data.servers.${host}.profiles.${prof}.sets
-    ) (builtins.attrNames data.servers.${host}.profiles);
+    && lib.any (prof: builtins.elem h.${host}.set data.servers.${host}.profiles.${prof}.sets) (
+      builtins.attrNames data.servers.${host}.profiles
+    );
   isServed = m: lib.any (host: servedOn host m) hostNames;
 
   # The models a client or catalog may name: only those served somewhere.

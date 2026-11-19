@@ -52,8 +52,8 @@ A den-to-den `drvPath` comparison is still valid, because den never reads `self`
 
 ## The hosts
 
-| Directory | Class   | System          | Old-tree twin  | Aspects                                                                                       |
-| --------- | ------- | --------------- | -------------- | --------------------------------------------------------------------------------------------- |
+| Directory | Class   | System          | Old-tree twin          | Aspects                                                                                       |
+| --------- | ------- | --------------- | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `brys/`   | `nixos` | `x86_64-linux`  | **removed** 2026-11-18 | the whole old surface, plus the Niri session; `users.data.nix` carries the test passwords     |
-| `orr/`    | `nixos` | `aarch64-linux` | `hosts/orr/`   | `nix-config`, `nix-remote-builder`                                                            |
-| `pryll/`  | `nixos` | `x86_64-linux`  | `hosts/pryll/` | `hw-*`, `locale`, `nix-config`, `secrets`, `user`, `disks`, `desktop-kde`, `stylix`, `ssh-ca` |
+| `orr/`    | `nixos` | `aarch64-linux` | `hosts/orr/`           | `nix-config`, `nix-remote-builder`                                                            |
+| `pryll/`  | `nixos` | `x86_64-linux`  | `hosts/pryll/`         | `hw-*`, `locale`, `nix-config`, `secrets`, `user`, `disks`, `desktop-kde`, `stylix`, `ssh-ca` |
