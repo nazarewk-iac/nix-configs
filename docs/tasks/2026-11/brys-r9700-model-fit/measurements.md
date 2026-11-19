@@ -900,17 +900,40 @@ zero, the kernel killed it, `OOMPolicy=stop` stopped the manager, the manager re
 profile, and the cycle repeated (restart counter 3). Raising `vm.min_free_kbytes` to 2 GiB and
 `vm.watermark_scale_factor` to 200 changed nothing: the burst still reached 93 GiB and still died.
 
-What *did* work was a reboot. With a fresh page cache and a cold ZFS ARC the same `max` profile
-loaded and served (30 GiB VRAM, 30 GiB RSS, ready in about 90 s). The load is a ~95 GiB transient on
-a 125 GiB host with **no swap**, and the warm state (40-48 GiB of page cache, 7 GiB of ARC, mlocked
-KV) leaves no room for it.
+A reboot made the same `max` profile load and serve (30 GiB VRAM, 30 GiB RSS, ready in about 90 s).
+So the load is a ~95 GiB transient on a 125 GiB host with **no swap**, and the warm state (40-48 GiB
+of page cache, 7 GiB of ARC, mlocked KV) leaves no room for it.
 
-Consequences to design around:
+### The fix: drop the page cache before every load
 
-- A profile switch on brys is only reliable while the host memory state is fresh. Treat `max` as the
-  operating point you boot into, not one you flip to and from during a session.
-- Freeing page cache before a load should be the first thing tried (`sync; echo 3 >
-  /proc/sys/vm/drop_caches`); it needs root, so the manager cannot do it as `llm-server`.
-- The alternative levers are a smaller resident footprint (a lower `--kv-resident` or an explicit
-  `--expert-cache` cap, at a decode cost) or a small zram cushion, which is the opposite of the
-  current "no swap" default.
+The pack's cached pages are the cheap side of that trade. `hack`-free implementation, all in
+`hosts-den/brys/strata-profiles.nix` and `strata-manager.py`:
+
+1. a root oneshot `strata-drop-cache.service` that runs `sync; echo 3 > /proc/sys/vm/drop_caches`;
+2. one sudoers line, `llm-server` may run exactly
+   `/run/current-system/sw/bin/systemctl start strata-drop-cache.service` and nothing else;
+3. the manager calls it after `stop_engine()` and before `start_engine()`.
+
+Reading the pack back is not the cost it looked like: the pool is an NVMe mirror and
+`dd iflag=direct` measures **7.7 GB/s**, so a warm drop costs seconds. The cold-load figure in the
+older tables (601-837 s) was a first-ever read of a fresh pack, not this.
+
+Measured with the drop in place, back to back on a warm host:
+
+| step                      | result                                  |
+| ------------------------- | --------------------------------------- |
+| `POST /select omni-max`   | 64 s, engine ready, no OOM              |
+| `POST /select max`        | 67 s, engine ready, **30 GiB VRAM**     |
+| kernel OOM kills          | 0                                       |
+| manager failures          | 0 (previously: restart counter 3+ loops) |
+
+The drop ran three times in a row (20:22, 20:26, 20:28) and each switch completed, including the
+`max` switch that had OOMed twice before. A request through llama-swap then answered in 0.75 s, an
+omni request beside it in 47 s, and the frontier again in 0.23 s — QFN untouched by the companion.
+
+Two things this does not change:
+
+- `max` still leaves the host at `available 2 GB` while serving; the margin exists only during the
+  load, which is exactly when it is needed.
+- `max` ↔ `omni-max` still costs a full reload. The drop makes the reload survive, not free.
+
