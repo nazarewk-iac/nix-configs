@@ -51,5 +51,17 @@
   boot.kernel.sysctl = {
     "vm.compaction_proactiveness" = 0;
     "fs.file-max" = 1048576;
+    # A model load is one huge allocation burst (about 95 GiB of anon at its peak) taken while the
+    # pack is being read into page cache. The defaults (min_free 66 MiB, scale 0.1 %) wake kswapd
+    # late, so the burst can consume free memory before reclaim starts: measured 2026-11-19, every
+    # failing load ended at RSS 88-98 GiB with `free` at 0.
+    #
+    # Honest limit: these two do **not** make a load fit. With them the failing load still reached
+    # 93 GiB and still died; only a reboot (a fresh page cache and ARC) made the same profile load
+    # and serve. They stay because a floor of 2 GiB free plus earlier reclaim is cheaper for the
+    # burst than a free-fall to zero, and they cost nothing at steady state, where a served model
+    # holds its pages and nothing is reclaimed.
+    "vm.min_free_kbytes" = 2097152;
+    "vm.watermark_scale_factor" = 200;
   };
 }
