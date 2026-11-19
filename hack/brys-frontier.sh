@@ -23,6 +23,7 @@ MODELS=${STRATA_MODELS:-/var/lib/kdn/llms/models/.bench/strata/models}
 SHIM=${ROCM_SHIM:-/home/kdn/.local/lib/rocm-skip.so}
 LLAMACPP_MODELS=/var/lib/kdn/llms/models/unsloth/Qwen3.8-Flash-Next-GGUF
 PORT=${STRATA_PORT:-8080}
+MANAGER=${STRATA_MANAGER:-127.0.0.1:8181}
 VRAM=/sys/class/drm/card1/device/mem_info_vram_used
 RESERVE=21500    # MiB left for the media model (omni at 16k needs ~21 GiB)
 KV_RESIDENT=4096 # tokens of K/V kept in VRAM; older K/V is read from RAM
@@ -31,6 +32,8 @@ MEM_LIMIT=112000 # MiB the engine may use, so the desktop keeps a margin
 
 pack=UD-IQ4_XS
 profile=max # the default operating point: the frontier alone on the whole card
+ttl=        # optional: revert to $default_profile after this long (`30m`, `2h`)
+default_profile=max
 action=${1:-status}
 shift || true
 while [ $# -gt 0 ]; do
@@ -41,6 +44,10 @@ while [ $# -gt 0 ]; do
     ;;
   --profile)
     profile=$2
+    shift 2
+    ;;
+  --ttl)
+    ttl=$2
     shift 2
     ;;
   *)
@@ -111,31 +118,41 @@ status() {
 
 case "$action" in
 up)
-  # `max` is the system service, so the fleet and the CLI agree on one engine.
-  if [ "$profile" = max ]; then
-    sudo -n systemctl reset-failed strata-frontier 2>/dev/null || true
-    sudo -n systemctl start strata-frontier
-    echo "strata-frontier (max) starting on :$PORT"
-  else
-    sudo -n systemctl stop strata-frontier 2>/dev/null || true
-    sudo -n systemctl reset-failed strata-frontier-alt 2>/dev/null || true
-    sudo -n systemd-run --unit=strata-frontier-alt --collect -p User=llm-server -p Group=llm-server \
-      -p LimitMEMLOCK=infinity -p MemoryMax=112G \
-      -p Environment=HOME=/var/lib/kdn/llms/home \
-      -p Environment=XDG_DATA_HOME=/var/lib/kdn/llms/models/.bench/xdg \
-      -p Environment=STRATA_DATA_HOME=/var/lib/kdn/llms/models/.bench/xdg \
-      -p Environment=LD_PRELOAD=/var/lib/kdn/llms/models/.bench/rocm-skip.so \
-      -- /run/current-system/sw/bin/strata-serve "$profile" --port "$PORT"
-    echo "strata-frontier-alt ($profile) starting on :$PORT"
+  # The manager owns the engine; selecting a profile is a no-op when it is already current.
+  reply=$(curl -sS -m 1000 -X POST "http://$MANAGER/select" \
+    -H 'Content-Type: application/json' -d "{\"profile\":\"$profile\"}") || {
+    echo "the manager is not answering on $MANAGER" >&2
+    exit 1
+  }
+  echo "select $profile -> $reply"
+  # A timed loan: a systemd timer reverts to the default after the TTL. It lives outside the
+  # manager on purpose, so a manager restart cannot drop the revert, and a failed revert cannot
+  # block the manager (the failure mode of an internal timer).
+  if [ -n "$ttl" ]; then
+    sudo -n systemctl stop strata-revert 2>/dev/null || true
+    sudo -n systemd-run --unit=strata-revert --on-active="$ttl" --collect \
+      -- curl -sS -m 900 -X POST "http://$MANAGER/select" \
+      -H 'Content-Type: application/json' -d "{\"profile\":\"$default_profile\"}" >/dev/null
+    echo "scheduled: revert to $default_profile in $ttl (unit strata-revert)"
   fi
   ;;
 down)
-  sudo -n systemctl stop strata-frontier strata-frontier-alt 2>/dev/null || true
-  echo "stopped"
+  curl -sS -m 900 -X POST "http://$MANAGER/select" \
+    -H 'Content-Type: application/json' -d '{"profile":"none"}'
+  echo
   ;;
-status) status ;;
+status)
+  curl -sS -m 5 "http://$MANAGER/status"
+  echo
+  curl -s -m 5 "http://127.0.0.1:39700/v1/models" 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print([(m['id'], m.get('status', {}).get('value')) for m in d['data'] if m['id'].startswith('qfn')])
+" 2>/dev/null || true
+  echo "vram: $(($(cat /sys/class/drm/card1/device/mem_info_vram_used) / 1073741824)) GiB"
+  ;;
 *)
-  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast]" >&2
+  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast] [--ttl 30m]" >&2
   exit 2
   ;;
 esac
