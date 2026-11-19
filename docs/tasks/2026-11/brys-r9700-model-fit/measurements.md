@@ -625,3 +625,43 @@ slice (`line[start : end]`) in the den twin of `kdn-sops-secrets.py`, and the de
 carry the `flakeIgnore = [ "E203" "E501" ]` that the universal twin already had. Added there; the
 build is green again. The general lesson: a formatter and a lint gate must be converged together,
 which is exactly what `docs/formatter-convergence.md` asks for.
+
+### Why the frontier drops to 42 t/s with omni resident, and the pack ladder
+
+Decode is set by how much of each token's expert bytes the card holds. With the 21.5 GB reserve, omni
+takes 20 GiB and Strata keeps about **5 GiB of expert cache**. Measured with omni loaded:
+
+| pack        | expert bytes | experts in RAM | cache share |       decode | RAM used |
+| ----------- | -----------: | -------------: | ----------: | -----------: | -------: |
+| **IQ2_XS**  |     35.5 GiB |   61 GiB total |       ~14 % | **71.6 t/s** |   61 GiB |
+| Coder IQ1_M |       23 GiB |   52 GiB total |       ~22 % | **54.0 t/s** |   52 GiB |
+| IQ3_S       |       50 GiB |   75 GiB total |       ~10 % |     49.2 t/s |   75 GiB |
+| UD-IQ4_XS   |     55.4 GiB |   84 GiB total |        ~9 % |     42.3 t/s |   84 GiB |
+
+**RAM cannot replace the expert cache.** It already holds every expert the card does not: Strata keeps
+them in an arena and _computes_ the misses on the CPU (it does not upload them, which is why
+`pcie-frac` hurt). At 0.8-1.2 GB of expert reads per token, DDR4 at ~28 GB/s is 23x slower than the
+card at 640 GB/s, so moving cache from VRAM to RAM lowers decode rather than raising it. The _context_
+cache is the opposite case and does live in RAM: the KV is ~10 KB/token, streamed from host memory,
+which is why 1M tokens cost 10 GB of RAM and not 10 GB of VRAM.
+
+Three ways to recover the lost decode, in order of cost:
+
+1. **Run omni on demand** instead of always: QFN alone reaches 73.1 t/s at 1M. The price is a ~60 s
+   reload of whichever model is swapped.
+2. **A smaller companion quant**: omni at Q3 is ~14 GB, so a 17 GB reserve returns ~4.5 GiB of cache
+   to Strata (roughly +8-10 t/s). It costs companion quality, which matters for video.
+3. **A smaller frontend pack**: IQ2_XS gives 71.6 t/s beside omni, at a lower quality tier.
+
+### Omni at 16k: images and short video, measured
+
+| input                               | prompt tokens | answer                     |
+| ----------------------------------- | ------------: | -------------------------- |
+| one 256x256 frame                   |            84 | "Red"                      |
+| four frames (red/green/blue/yellow) |           286 | "Red, Green, Blue, Yellow" |
+| sixteen frames                      |          1076 | "16"                       |
+
+So a frame costs about **67 tokens**. A 16k window therefore holds **~230 frames** (plus the prompt),
+which is a few minutes of video at a 1 fps sample or about 30 s at 8 fps. A single image costs 84
+tokens, so images are never the limit. 16k is a deliberate trade: at 32k omni needs 22 GiB, no longer
+fits the reserve, and llama.cpp keeps layers on the CPU (57 t/s instead of 101).
