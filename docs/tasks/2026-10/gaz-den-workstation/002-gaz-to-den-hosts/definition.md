@@ -80,8 +80,9 @@ it.
 
 ## Hard constraints
 
-- Never add `gaz` to `nixosConfigurations`. A den host stays in
-  `denConfigurations`, or two k8s modules look it up by name and fail.
+- A den host **is** wired into `nixosConfigurations`, so `nixos-rebuild`, `nh` and the build farm
+  find it. `flake.hosts` stays old-tree-only: two k8s modules look up `kdn.networking.*` there by
+  name and a den host declares none of those options.
 - `networking.hostId` must be unique and must be recorded. ZFS will not import
   without it.
 - Do not copy `brys`'s device paths or `hostId`.

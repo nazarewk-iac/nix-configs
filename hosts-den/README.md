@@ -15,12 +15,12 @@ directory's own README states "These entities exist to build. They never activat
 
 ## The shape of a host
 
-| Item        | Rule                                                                                         |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| Path        | `hosts-den/<name>/default.nix`                                                               |
-| `meta.json` | **none.** The host file states its own system and its own class.                             |
-| Output      | `denConfigurations.<name>`, plus `denDevenvShells.<name>` from `den.policies.host-to-devenv` |
-| Name        | the same short name as the old-tree twin in `hosts/`                                         |
+| Item        | Rule                                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Path        | `hosts-den/<name>/default.nix`                                                                                                |
+| `meta.json` | **none.** The host file states its own system and its own class.                                                              |
+| Output      | `denConfigurations.<name>` and `nixosConfigurations.<name>`, plus `denDevenvShells.<name>` from `den.policies.host-to-devenv` |
+| Name        | the same short name as the old-tree twin in `hosts/`                                                                          |
 
 The loader keeps a directory alone, so this file stays out of the module list.
 
@@ -29,13 +29,18 @@ The loader keeps a directory alone, so this file stays out of the module list.
 The output prefix keeps the two apart, and the compare command stays short:
 
 ```bash
-nix eval --json '.#nixosConfigurations.orr.config.nix.settings.substituters'
-nix eval --json '.#denConfigurations.orr.config.nix.settings.substituters'
+nix eval --json '.#hosts.orr.nix.settings.substituters'                 # the old tree
+nix eval --json '.#denConfigurations.orr.config.nix.settings.substituters'  # den
 ```
 
-**Never add a den host to `nixosConfigurations`.** `flake.nix` merges that output into
-`flake.hosts`, and two k8s modules do a by-name lookup there. A den host holds none of the
-`kdn.networking.*` options, so such a lookup fails or returns a wrong address.
+A den host **is** wired into the standard `nixosConfigurations`, so `nixos-rebuild`, `nh` and the
+build farm find a den-replaced host by its usual output name. Den wins where a name exists in both
+trees (`orr`, `pryll` are mid-migration twins, and the old-tree `orr` no longer evaluates).
+
+`flake.hosts` is different: it stays **universal-only**. Two k8s modules do a by-name lookup there
+for `kdn.networking.*`, which a den host does not declare, so the root flake binds the old-tree
+NixOS set once and feeds it to `flake.hosts` while merging den on top for `nixosConfigurations`.
+Never write a den host's config into `flake.hosts`.
 
 ## Compare a value, never a `drvPath`
 

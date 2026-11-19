@@ -54,9 +54,12 @@ let
   #
   # A host directory holds `default.nix` and nothing else is required. It carries **no `meta.json`**:
   # the host file states its own system and its own class. See ../../hosts-den/README.md.
-  denHostModules = denLib.mapAttrsToList (name: _: ../../hosts-den + "/${name}") (
-    denLib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../hosts-den)
-  );
+  # The directory names under `hosts-den/`. Kept separately because the root flake needs the real
+  # host names to tell a deployable den host from the build-only test entities den also evaluates
+  # (`host-nixos`, `host-darwin`). Reusing this one read keeps the two lists from drifting.
+  denHostDirs = denLib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../hosts-den);
+
+  denHostModules = denLib.mapAttrsToList (name: _: ../../hosts-den + "/${name}") denHostDirs;
 
   eval = denLib.evalModules {
     specialArgs.inputs = denInputs;
@@ -167,6 +170,17 @@ in
   # path in both classes.
   flake.denConfigurations =
     eval.config.flake.darwinConfigurations // eval.config.flake.nixosConfigurations;
+
+  # The two classes separately, for the root flake's output wiring: `nixosConfigurations` must carry
+  # the den NixOS hosts so `nixos-rebuild`, `nh` and the build farm find them, while the darwin ones
+  # go to `darwinConfigurations`. `denConfigurations` stays the flat, compare-friendly view.
+  flake.denNixosConfigurations = denLib.filterAttrs (name: _: denHostDirs ? ${name}) (
+    eval.config.flake.nixosConfigurations
+  );
+  flake.denDarwinConfigurations = denLib.filterAttrs (name: _: denHostDirs ? ${name}) (
+    eval.config.flake.darwinConfigurations
+  );
+  flake.denHostNames = builtins.attrNames denHostDirs;
   flake.denDevenvShells = eval.config.flake.devenvShells;
   flake.denHomeConfigurations = eval.config.flake.homeConfigurations;
 

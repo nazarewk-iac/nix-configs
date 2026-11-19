@@ -36,13 +36,13 @@ The host is not in `hosts-den/` at all. `hosts-den/` holds one host: `orr`.
 `modules/den/flake-module.nix` reads `hosts-den/` with `builtins.readDir` and
 imports every directory. A new host is one directory, with no wiring edit.
 
-| Rule                                                                                                                                                    | Source                |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| Path is `hosts-den/<name>/default.nix`.                                                                                                                 | `hosts-den/README.md` |
-| There is **no** `meta.json`; the file states its own system and class.                                                                                  | same                  |
-| The output is `denConfigurations.<name>`, **not** `nixosConfigurations.<name>`.                                                                         | same                  |
-| A den host must **never** be added to `nixosConfigurations`; two k8s modules do a by-name lookup there and would see a host with no `kdn.networking.*`. | same                  |
-| Compare **option values**, never `drvPath`; the baseline profile copies the whole repo into the store.                                                  | same                  |
+| Rule                                                                                                                                        | Source                |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Path is `hosts-den/<name>/default.nix`.                                                                                                     | `hosts-den/README.md` |
+| There is **no** `meta.json`; the file states its own system and class.                                                                      | same                  |
+| The output is `denConfigurations.<name>`, and the host is also merged into `nixosConfigurations.<name>`.                                    | `hosts-den/README.md` |
+| `flake.hosts` must stay old-tree-only: two k8s modules do a by-name lookup there for `kdn.networking.*`, which a den host does not declare. | same                  |
+| Compare **option values**, never `drvPath`; the baseline profile copies the whole repo into the store.                                      | same                  |
 
 The one existing host, `hosts-den/orr/default.nix`, is a skeleton:
 

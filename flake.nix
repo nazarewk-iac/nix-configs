@@ -216,6 +216,27 @@
       # modules/den-pkgs. A host opts in by setting nixpkgs.pkgs to self.pkgs.<system>.<variant>.
       supportedSystems = builtins.filter (system: system != "x86_64-darwin") (import inputs.systems);
       denPkgsLib = import ./modules/den-pkgs { inherit inputs self; };
+
+      # The universal (old-tree) NixOS hosts, built once. Two outputs need them and they must agree:
+      # `flake.nixosConfigurations` merges den on top, while `flake.hosts` must stay universal-only.
+      # Binding the set here is what lets those two differ for a name that exists in both trees.
+      universalNixosConfigurations = lib.pipe self.hostConfigurations [
+        (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
+        (builtins.mapAttrs (
+          _: host:
+          lib.nixosSystem {
+            inherit (host) system specialArgs;
+            modules = host.modules ++ [
+              (
+                { kdnConfig, ... }:
+                {
+                  config.kdn.hostName = lib.mkDefault kdnConfig.hostName;
+                }
+              )
+            ];
+          }
+        ))
+      ];
     in
     (flake-parts.lib.mkFlake { inherit inputs; } {
       # `inputs.systems` is `nix-systems/default`, which still lists `x86_64-darwin`. Nixpkgs
@@ -474,8 +495,11 @@
         ))
         (lib.attrsets.filterAttrs (_: host: host != { }))
       ];
+      # Universal hosts only, on purpose: this is what the k8s modules read `kdn.networking.*` from,
+      # and a den host declares none of those options. It uses the bound universal set, not
+      # `self.nixosConfigurations`, which now carries den on top.
       flake.hosts = lib.attrsets.mapAttrs (_: value: value.config) (
-        self.darwinConfigurations // self.nixosConfigurations
+        self.darwinConfigurations // universalNixosConfigurations
       );
       flake.nixosModules.default = ./modules/universal;
       flake.mkSlots =
@@ -504,23 +528,16 @@
             users = rendered.renderUsers;
           };
         };
-      flake.nixosConfigurations = lib.pipe self.hostConfigurations [
-        (lib.attrsets.filterAttrs (_: host: host.moduleType == "nixos"))
-        (builtins.mapAttrs (
-          _: host:
-          lib.nixosSystem {
-            inherit (host) system specialArgs;
-            modules = host.modules ++ [
-              (
-                { kdnConfig, ... }:
-                {
-                  config.kdn.hostName = lib.mkDefault kdnConfig.hostName;
-                }
-              )
-            ];
-          }
-        ))
-      ];
+      # Den hosts are wired into the standard `nixosConfigurations`, so `nixos-rebuild`, `nh` and the
+      # build farm find a den-replaced host by its usual output. **Den wins on a name that exists in
+      # both trees** (`orr`, `pryll` are mid-migration twins and their universal twin is stale: the
+      # universal `orr` no longer evaluates at all). `flake.hosts` above still reads the universal
+      # entry, because two k8s modules look up `kdn.networking.*` there and a den host declares none
+      # of those options.
+      #
+      # `denNixosConfigurations` already excludes the build-only test entities from `checks/den-mvp`
+      # (`host-nixos`, `host-darwin`): the den module filters to the directories under `hosts-den/`.
+      flake.nixosConfigurations = universalNixosConfigurations // (self.denNixosConfigurations or { });
       flake.darwinModules.default = ./modules/universal;
       flake.darwinConfigurations = lib.pipe self.hostConfigurations [
         (lib.attrsets.filterAttrs (_: host: host.moduleType == "darwin"))
