@@ -665,3 +665,49 @@ So a frame costs about **67 tokens**. A 16k window therefore holds **~230 frames
 which is a few minutes of video at a 1 fps sample or about 30 s at 8 fps. A single image costs 84
 tokens, so images are never the limit. 16k is a deliberate trade: at 32k omni needs 22 GiB, no longer
 fits the reserve, and llama.cpp keeps layers on the CPU (57 t/s instead of 101).
+
+## Parallelism: how many sessions the QFN profile carries
+
+Strata serves N concurrent engine slots with `--parallel N` (1-8); a request beyond that queues.
+Measured on the QFN-only profile (UD-IQ4_XS, 1M, `kv-resident 4096`), 192-token answers:
+
+| parallel |  wall |    aggregate | per session |
+| -------: | ----: | -----------: | ----------- |
+|        1 | 2.2 s | **87.7 t/s** | 89.8        |
+|        4 | 7.9 s | **97.5 t/s** | 25.0-27.2   |
+
+**Four sessions run comfortably, each at ~26 t/s, and together they buy only +11 % aggregate**
+(97.5 against 87.7). Decode is memory-bandwidth bound, so concurrent sessions share the same
+expert-cache bandwidth instead of adding any; the engine does not make more tokens per second with
+more callers, it only interleaves them. That is the honest ceiling: one session is the fast path,
+four sessions are the comfortable "several agents, none of them in a hurry" mode, and eight would
+divide the same throughput eight ways.
+
+Session _count_ is a different number from live slots:
+
+- **Live** — `--parallel`, up to 8 slots, each holding its own conversation K/V.
+- **Remembered** — the conversation cache (`--conversation-cache-mib`, 15 GB here = ~1.5M tokens)
+  keeps idle conversations' K/V whole, so a returning thread resumes without a re-read. At 10 KB per
+  token that is ~5 threads of 256k or ~1 of 1M, resident.
+- **Archived** — session files (`slot_save_path` + `POST /slots/0?action=save|restore`) put a thread
+  on disk, so the number of retained threads has no memory ceiling.
+
+RAM is what bounds the middle tier, not the card: the card holds one expert cache shared by every
+slot.
+
+## Registering the profiles in llama-swap: built, blocked by the sandbox
+
+The three profiles can be expressed as llama-swap entries: the data model gained a `command` field
+that replaces the generated `llama-server` cmd, and `hosts-den/brys/strata-serve.sh` materialises a
+profile config and runs `strata serve --profile ... --port ${PORT}` in the foreground. The rendered
+config is exactly `cmd: /run/current-system/sw/bin/strata-serve omni-fast --port ${PORT}`.
+
+It does not start inside llama-swap's unit. Three blockers were found and removed (read-only dataset,
+missing `HOME`, DynamicUser ownership), and the fourth remains: Strata refuses its own files under the
+unit's sandbox (`Strata is not allowed to open one of its own files`), even with `User = kdn` and
+`ReadWritePaths` on the dataset. `strata repair-access` reports nothing to fix, so the check is
+failing on a sandbox rule, not on ownership.
+
+The entries therefore sit `set = "retired"` in `data/llm.nix`; the working path is the CLI:
+`hack/brys-frontier.sh up --profile max|omni-max|omni-fast`. Finishing the integration needs one of:
+run llama-swap outside the sandbox for that unit, or find the exact rule Strata trips.
