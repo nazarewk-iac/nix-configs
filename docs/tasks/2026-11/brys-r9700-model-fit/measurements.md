@@ -249,6 +249,15 @@ node from the KFD topology, and then it starts unmodified.
 | 128k | 31.0 GiB | **68.6** | 2799 |
 | 256k | 31.0 GiB | **66.7** | 2779 |
 
+Two quants, both at 256k:
+
+| pack | size | decode t/s | prefill t/s (10.5k) | VRAM |
+| --- | ---: | ---: | ---: | ---: |
+| GSQ-RCO **IQ2_XS** | 63 GiB | **66.7** | 2779 | 31.0 GiB |
+| GSQ-RCO **IQ3_XXS** | 70 GiB | **63.0** | 2844 | 31.1 GiB |
+
+The better quant costs 5 % decode and buys a quality tier; both fill the card.
+
 Decode is flat from 32k to the model's **native 256k**, and prefill is ~2.8k t/s. MTP on/off made no
 difference (67.2 vs 66.9). The engine reports an expert cache of 24.9 GiB and ~864 MiB of VRAM free.
 
