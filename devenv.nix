@@ -144,30 +144,32 @@ let
     ];
   };
 
-  piWrapped = (pi.lib.mkCodingAgent {
-    inherit pkgs;
-    modules = [ { pi.coding-agent = piAgent; } ];
-  }).package;
+  piWrapped =
+    (pi.lib.mkCodingAgent {
+      inherit pkgs;
+      modules = [ { pi.coding-agent = piAgent; } ];
+    }).package;
 
   # ClankTalk is a mode, not the default: the launcher loads only the ClankTalk extension and
   # `model-discovery` (providers, not tools), and disables Pi's own discovery. The repository
   # wrapper cannot be reused as is, because it passes every extension with an explicit `-e`,
   # and explicit paths survive `--no-extensions`.
-  clankPiWrapped = (pi.lib.mkCodingAgent {
-    inherit pkgs;
-    modules = [
-      {
-        pi.coding-agent = piAgent // {
-          extensions = [
-            "${clankTalk}/lib/clank-talk/src/js/harnesses/pi.js"
-            ext.model-discovery
-          ];
-          skills = [ ];
-          extraArgs = [ "--no-extensions" ];
-        };
-      }
-    ];
-  }).package;
+  clankPiWrapped =
+    (pi.lib.mkCodingAgent {
+      inherit pkgs;
+      modules = [
+        {
+          pi.coding-agent = piAgent // {
+            extensions = [
+              "${clankTalk}/lib/clank-talk/src/js/harnesses/pi.js"
+              ext.model-discovery
+            ];
+            skills = [ ];
+            extraArgs = [ "--no-extensions" ];
+          };
+        }
+      ];
+    }).package;
 
   clankPi = pkgs.writeShellScriptBin "clank-pi" ''
     set -euo pipefail
@@ -185,6 +187,27 @@ let
     # variable in the process that loads the plugin; the background service would not see it.
     exec opencode --standalone "$@"
   '';
+
+  # The `jj fix` file set, derived from the one formatter registration in `treefmt.nix`. A list here
+  # would be a second file set that drifts from the formatter: the hand-written list this replaces
+  # missed `*.pyi`, `*.envrc` and `*.envrc.*`, which treefmt already formats. `treefmt --stdin`
+  # applies the same exclude globs, so a generated `index.md` stays out of a fix too.
+  #
+  # The include globs come from the evaluated module, because most programs leave `includes` at the
+  # treefmt-nix default. `treefmt-nix` is reached through the self input for the same reason
+  # `inputs.nix-configs.packages` is: devenv gets its inputs from `devenv.yaml`, which does not
+  # declare it.
+  fixPatterns =
+    let
+      treefmt-nix = inputs.nix-configs.inputs.treefmt-nix.lib;
+      settings = (treefmt-nix.evalModule pkgs (import ./treefmt.nix { })).config.settings;
+      toJjGlob = include: "glob:'**/${include}'";
+    in
+    pkgs.lib.unique (
+      builtins.concatMap (formatter: map toJjGlob formatter.includes) (
+        builtins.attrValues settings.formatter
+      )
+    );
 in
 {
   imports = inputs.nix-configs.denLib.imports {
@@ -240,13 +263,10 @@ in
       # extension (plus model-discovery); `clank-opencode` sets KDN_CLANK_TALK for the gated shim.
       clankPi
       clankOpenCode
-      # The Markdown formatter. It is installed here so that `jj fix` can call a bare `prettier`,
-      # which is a stable name, instead of a `/nix/store/...` path that a rebuild would move.
-      # `treefmt.nix` enables the same program for `nix fmt`.
-      pkgs.prettier
       # The `hack/*.py` helpers, including the certificate-expiry summary the shell entry reads.
       pkgs.python3
-    ] ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+    ]
+    ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       # ClankTalk's `in a sandbox` uses bubblewrap on Linux. The launchers are in this shell, so the
       # binary must be on PATH; without it, a sandboxed tool refuses to run. macOS uses sandbox-exec.
       pkgs.bubblewrap
@@ -305,6 +325,10 @@ in
     # `revsets.fix` defaults to `reachable(@, mutable())`, so a fix also reaches mutable ancestors.
     # That is jj's default and it is what makes the feature useful: a forgotten table gets aligned
     # when a descendant changes it.
+    #
+    # `patterns` comes from `fixPatterns` above, which reads the include globs out of `treefmt.nix`.
+    # It is not a second file set: the same file that names each tool also names the extensions the
+    # tool claims.
     kdn.jj.config.fix.tools.treefmt = {
       # The wrapper already carries its own `--config-file`; `--stdin $path` makes it read this
       # file's content from stdin and pick the formatter by the extension of `$path`. jj passes the
@@ -317,19 +341,7 @@ in
         "--stdin"
         "$path"
       ];
-      patterns = [
-        "glob:'**/*.nix'"
-        "glob:'**/*.md'"
-        "glob:'**/*.mdx'"
-        "glob:'**/*.py'"
-        "glob:'**/*.go'"
-        "glob:'**/*.sh'"
-        "glob:'**/*.bash'"
-        "glob:'**/*.toml'"
-        "glob:'**/*.json'"
-        "glob:'**/*.yaml'"
-        "glob:'**/*.yml'"
-      ];
+      patterns = fixPatterns;
     };
 
     # `mcp-servers-nix` is a `devenv.yaml` input, so the aspect cannot reach it. The shell

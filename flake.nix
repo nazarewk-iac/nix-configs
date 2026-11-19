@@ -237,8 +237,9 @@
           };
         })
         ./modules/den/flake-module.nix
-        # `nix fmt` and the check: one formatter for Markdown (and room for more). Nix stays with
-        # `kdn-nix-fmt`; see treefmt.nix for why.
+        # `nix fmt`, `jj fix` and the `markdown-format` check all read `treefmt.nix`: one formatter
+        # per language, one file set, one options block. See treefmt.nix and
+        # docs/formatter-convergence.md.
         inputs.treefmt-nix.flakeModule
       ];
 
