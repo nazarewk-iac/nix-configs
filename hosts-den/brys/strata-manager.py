@@ -18,6 +18,7 @@ Measured on the R9700 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
   different profile 47-180 s (engine reload, warm page cache)
   none              2-5 s (drain and stop)
 """
+
 import json
 import os
 import time
@@ -60,7 +61,9 @@ def save(s):
 
 
 def run(args, timeout=900):
-    p = subprocess.run([STRATA, *args], env=ENV, capture_output=True, text=True, timeout=timeout)
+    p = subprocess.run(
+        [STRATA, *args], env=ENV, capture_output=True, text=True, timeout=timeout
+    )
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
@@ -71,7 +74,9 @@ def engine_ready(timeout=2):
     import urllib.request
 
     try:
-        urllib.request.urlopen(f"http://127.0.0.1:{ENGINE_PORT}/v1/models", timeout=timeout).read()
+        urllib.request.urlopen(
+            f"http://127.0.0.1:{ENGINE_PORT}/v1/models", timeout=timeout
+        ).read()
         return True
     except Exception:
         return False
@@ -97,10 +102,24 @@ def start_engine(profile):
     global child
     cfg = f"{PROFILES}/strata-{profile}.json"
     if not os.path.exists(cfg):
-        return False, f"no profile config at {cfg}; run `strata serve --profile` once for it"
+        return (
+            False,
+            f"no profile config at {cfg}; run `strata serve --profile` once for it",
+        )
     child = subprocess.Popen(
-        [STRATA, "serve", "--profile", cfg, "--host", "127.0.0.1", "--port", str(ENGINE_PORT)],
-        env=ENV, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        [
+            STRATA,
+            "serve",
+            "--profile",
+            cfg,
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(ENGINE_PORT),
+        ],
+        env=ENV,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     deadline = time.time() + 900
     while time.time() < deadline:
@@ -123,7 +142,9 @@ def tell_swap_to_unload():
     import urllib.request
 
     try:
-        req = urllib.request.Request("http://127.0.0.1:39700/api/models/unload", method="POST")
+        req = urllib.request.Request(
+            "http://127.0.0.1:39700/api/models/unload", method="POST"
+        )
         urllib.request.urlopen(req, timeout=10).read()
     except Exception:
         pass
@@ -134,19 +155,23 @@ def select(profile):
         cur = state().get("profile")
         if profile == "none":
             changed = cur not in (None, "none")
+            tell_swap_to_unload()
             stop_engine()
             save({"profile": "none"})
-            tell_swap_to_unload()
             return {"changed": changed, "profile": "none"}
         if profile == cur:
             return {"changed": False, "profile": cur, "note": "already selected"}
+        # Drop llama-swap's children **before** the reload, never after it. They keep a companion
+        # resident (omni is about 17 GB of VRAM and 2 GB of RAM) and the incoming engine wants that
+        # VRAM back; unloading first also resets llama-swap's view, which the switch has just
+        # invalidated, so the next request re-selects instead of proxying to a stale port.
+        tell_swap_to_unload()
         stop_engine()
         ok, out = start_engine(profile)
         if not ok:
             save({"profile": None})
             return {"error": out, "profile": None}
         save({"profile": profile})
-        tell_swap_to_unload()
         return {"changed": True, "profile": profile}
 
 
@@ -169,7 +194,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.startswith("/select"):
             return self._send(404, {"error": "not found"})
         try:
-            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
+            body = json.loads(
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            )
         except Exception:
             return self._send(400, {"error": "body must be JSON"})
         profile = body.get("profile")
