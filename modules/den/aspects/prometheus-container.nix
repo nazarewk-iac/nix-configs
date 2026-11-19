@@ -124,18 +124,21 @@
                 port = cfg.port;
                 inherit (cfg) retentionTime;
                 extraFlags = [ "--storage.tsdb.retention.size=${cfg.retentionSize}" ] ++ cfg.extraFlags;
-                scrapeConfigs = map (t: {
-                  job_name = t.job;
-                  scrape_interval = t.interval;
-                  static_configs = [ { targets = t.targets; } ];
-                }
-                // lib.optionalAttrs (t.metricsPath != null) { metrics_path = t.metricsPath; }
-                // lib.optionalAttrs (t.authorizationFile != null) {
-                  authorization = {
-                    type = "Bearer";
-                    credentials_file = t.authorizationFile;
-                  };
-                }) cfg.targets;
+                scrapeConfigs = map (
+                  t:
+                  {
+                    job_name = t.job;
+                    scrape_interval = t.interval;
+                    static_configs = [ { targets = t.targets; } ];
+                  }
+                  // lib.optionalAttrs (t.metricsPath != null) { metrics_path = t.metricsPath; }
+                  // lib.optionalAttrs (t.authorizationFile != null) {
+                    authorization = {
+                      type = "Bearer";
+                      credentials_file = t.authorizationFile;
+                    };
+                  }
+                ) cfg.targets;
               };
               system.stateVersion = "26.05";
             };

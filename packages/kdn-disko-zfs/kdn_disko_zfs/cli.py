@@ -25,7 +25,9 @@ def say(*parts: object) -> None:
     print(">", *parts, file=sys.stderr)
 
 
-def run(cmd: list[str], *, check: bool = True, capture: bool = False, sudo: bool = False) -> str:
+def run(
+    cmd: list[str], *, check: bool = True, capture: bool = False, sudo: bool = False
+) -> str:
     full = ["sudo", *cmd] if sudo else cmd
     say(" ".join(full))
     if capture:
@@ -49,12 +51,15 @@ def target_system(repo: str, host: str) -> str:
         f'c = f.nixosConfigurations."{host}".config; in '
         "c.system.build.toplevel.system"
     )
-    return run(["nix", "eval", "--impure", "--raw", "--expr", expr], capture=True).strip()
+    return run(
+        ["nix", "eval", "--impure", "--raw", "--expr", expr], capture=True
+    ).strip()
 
 
 def resolve_disko_zfs(target_sys: str, repo: str) -> str:
     local_sys = run(
-        ["nix", "eval", "--impure", "--raw", "--expr", "builtins.currentSystem"], capture=True
+        ["nix", "eval", "--impure", "--raw", "--expr", "builtins.currentSystem"],
+        capture=True,
     ).strip()
     if target_sys == local_sys:
         found = shutil.which("disko-zfs")
@@ -62,7 +67,10 @@ def resolve_disko_zfs(target_sys: str, repo: str) -> str:
             return str(Path(found).resolve())
     say(f"building disko-zfs for {target_sys} (repo flake input)")
     expr = f'let f = builtins.getFlake "{repo}"; in f.inputs.disko-zfs.packages."{target_sys}".default'
-    out = run(["nix", "build", "--impure", "--no-link", "--print-out-paths", "--expr", expr], capture=True)
+    out = run(
+        ["nix", "build", "--impure", "--no-link", "--print-out-paths", "--expr", expr],
+        capture=True,
+    )
     return str(Path(out.strip().splitlines()[-1]) / "bin" / "disko-zfs")
 
 
@@ -76,7 +84,9 @@ class Context:
         if not (Path(self.repo) / "flake.nix").is_file():
             sys.exit(f"error: no flake.nix in {self.repo} (pass -r PATH)")
         self.tmp = tempfile.mkdtemp(prefix="kdn-disko-zfs.")
-        self.spec_path = Path(args.spec_file) if args.spec_file else Path(self.tmp) / "spec.json"
+        self.spec_path = (
+            Path(args.spec_file) if args.spec_file else Path(self.tmp) / "spec.json"
+        )
         self.remote_spec = f"/tmp/kdn-disko-zfs-{self.host}.json"
         self._binary: str | None = None
         self._target_sys: str | None = None
@@ -86,7 +96,9 @@ class Context:
         try:
             out = subprocess.run(
                 ["git", "-C", str(Path.cwd()), "rev-parse", "--show-toplevel"],
-                check=True, text=True, capture_output=True,
+                check=True,
+                text=True,
+                capture_output=True,
             ).stdout.strip()
             return out or str(Path.cwd())
         except subprocess.CalledProcessError:
@@ -111,7 +123,14 @@ class Context:
     def gen_spec(self) -> dict:
         say(f"nix eval: derive disko ZFS datasets for '{self.host}' from {self.repo}")
         raw = run(
-            ["nix", "eval", "--impure", "--json", "--expr", core.gen_spec_expr(self.repo, self.host)],
+            [
+                "nix",
+                "eval",
+                "--impure",
+                "--json",
+                "--expr",
+                core.gen_spec_expr(self.repo, self.host),
+            ],
             capture=True,
         )
         spec = core.parse_spec(raw)
@@ -127,11 +146,20 @@ class Context:
     def _remote_bin(self) -> str:
         say(f"nix copy --to ssh-ng://{self.ssh_host} (disko-zfs)")
         rc = subprocess.run(
-            ["nix", "copy", "--no-check-sigs", "--to", f"ssh-ng://{self.ssh_host}", self.binary()],
+            [
+                "nix",
+                "copy",
+                "--no-check-sigs",
+                "--to",
+                f"ssh-ng://{self.ssh_host}",
+                self.binary(),
+            ],
             check=False,
         ).returncode
         if rc != 0:
-            sys.exit(f"error: failed to copy disko-zfs to {self.ssh_host} (nix copy rc={rc})")
+            sys.exit(
+                f"error: failed to copy disko-zfs to {self.ssh_host} (nix copy rc={rc})"
+            )
         return self.binary()
 
     def host_show(self) -> dict:
@@ -142,7 +170,9 @@ class Context:
             say(f"ssh {self.ssh_host} sudo {binpath} show")
             out = subprocess.run(
                 ["ssh", *SSH_OPTS, self.ssh_host, "sudo", binpath, "show"],
-                check=True, text=True, capture_output=True,
+                check=True,
+                text=True,
+                capture_output=True,
             ).stdout
         return json.loads(out)
 
@@ -150,18 +180,42 @@ class Context:
         if self.is_local:
             return str(self.spec_path)
         say(f"scp {self.spec_path} -> {self.ssh_host}:{self.remote_spec}")
-        subprocess.run(["scp", *SSH_OPTS, "-q", str(self.spec_path), f"{self.ssh_host}:{self.remote_spec}"], check=True)
+        subprocess.run(
+            [
+                "scp",
+                *SSH_OPTS,
+                "-q",
+                str(self.spec_path),
+                f"{self.ssh_host}:{self.remote_spec}",
+            ],
+            check=True,
+        )
         return self.remote_spec
 
     def host_disko(self, *args: str) -> str:
         spec_on_host = self._push_spec()
         if self.is_local:
-            return run([self.binary(), *args, "--spec", spec_on_host], capture=True, sudo=True)
+            return run(
+                [self.binary(), *args, "--spec", spec_on_host], capture=True, sudo=True
+            )
         binpath = self.binary()
-        say(f"ssh {self.ssh_host} sudo {binpath} {' '.join(args)} --spec {spec_on_host}")
+        say(
+            f"ssh {self.ssh_host} sudo {binpath} {' '.join(args)} --spec {spec_on_host}"
+        )
         return subprocess.run(
-            ["ssh", *SSH_OPTS, self.ssh_host, "sudo", binpath, *args, "--spec", spec_on_host],
-            check=True, text=True, capture_output=True,
+            [
+                "ssh",
+                *SSH_OPTS,
+                self.ssh_host,
+                "sudo",
+                binpath,
+                *args,
+                "--spec",
+                spec_on_host,
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
         ).stdout
 
 
@@ -198,7 +252,9 @@ def cmd_plan(ctx: Context, apply: bool = False) -> None:
     ctx.binary()
     if not ctx.args.dry_run:
         live = ctx.host_show()
-        ignored = core.compute_ignored(core.dataset_names(spec), core.dataset_names(live))
+        ignored = core.compute_ignored(
+            core.dataset_names(spec), core.dataset_names(live)
+        )
         if ignored:
             say(f"auto-ignoring {len(ignored)} undeclared live datasets")
             ctx.write_spec(core.merge_ignores(spec, ignored))
@@ -226,14 +282,32 @@ def build_parser() -> argparse.ArgumentParser:
             "unless --force."
         ),
     )
-    p.add_argument("command", nargs="?", default="plan", choices=["spec", "show", "plan", "apply"])
-    p.add_argument("-H", "--host", help="target host / flake attr (default: this machine)")
-    p.add_argument("--ssh-host", dest="ssh_host", help="ssh target if it differs from --host")
-    p.add_argument("-r", "--repo", help="repo checkout with the flake (default: git root)")
+    p.add_argument(
+        "command", nargs="?", default="plan", choices=["spec", "show", "plan", "apply"]
+    )
+    p.add_argument(
+        "-H", "--host", help="target host / flake attr (default: this machine)"
+    )
+    p.add_argument(
+        "--ssh-host", dest="ssh_host", help="ssh target if it differs from --host"
+    )
+    p.add_argument(
+        "-r", "--repo", help="repo checkout with the flake (default: git root)"
+    )
     p.add_argument("-s", "--spec-file", help="spec path to write/read (default: temp)")
-    p.add_argument("--dry-run", action="store_true", help="do not contact the host; print implied creates")
-    p.add_argument("--force", action="store_true", help="apply even if destructive commands are present")
-    p.add_argument("-y", "--yes", action="store_true", help="apply without the confirmation pause")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="do not contact the host; print implied creates",
+    )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="apply even if destructive commands are present",
+    )
+    p.add_argument(
+        "-y", "--yes", action="store_true", help="apply without the confirmation pause"
+    )
     p.add_argument("--disko-zfs", dest="disko_zfs", help="disko-zfs binary to use")
     return p
 

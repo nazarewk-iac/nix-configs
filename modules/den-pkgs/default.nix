@@ -36,9 +36,7 @@ let
 in
 {
   # `<flake>.pkgs.<system>.{default,...}`
-  forSystem =
-    system:
-    {
-      default = mk { inherit system; };
-    };
+  forSystem = system: {
+    default = mk { inherit system; };
+  };
 }

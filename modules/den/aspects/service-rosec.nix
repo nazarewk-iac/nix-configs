@@ -170,10 +170,7 @@ in
         let
           raw = cfg.providers.sops.keyGeneration.keyFile;
         in
-        if lib.hasPrefix "~/" raw then
-          "\"$HOME/${lib.removePrefix "~/" raw}\""
-        else
-          lib.escapeShellArg raw;
+        if lib.hasPrefix "~/" raw then "\"$HOME/${lib.removePrefix "~/" raw}\"" else lib.escapeShellArg raw;
 
       keyMergeScript = pkgs.writeShellApplication {
         name = "rosec-keys-merge";
@@ -188,7 +185,9 @@ in
           touch "$keyFile"
           {
             cat "$keyFile"
-          ${lib.concatMapStringsSep "\n" (script: "  ${lib.getExe script} || true") cfg.providers.sops.keyGeneration.scripts}
+          ${lib.concatMapStringsSep "\n" (
+            script: "  ${lib.getExe script} || true"
+          ) cfg.providers.sops.keyGeneration.scripts}
           } | sed '/^[[:space:]]*$/d' | sort -u > "$keyFile.tmp"
           mv "$keyFile.tmp" "$keyFile"
           chmod 600 "$keyFile"
@@ -524,30 +523,30 @@ in
           # Also install it when only the key generation is on: a host that runs the upstream
           # daemon (the flake's Home Manager unit) still needs the one unlock step, and the
           # expect wrapper answers the CLI's "Press Enter" prompt without a tty.
-          systemd.user.services.rosec-unlock = lib.mkIf (
-            cfg.rosecd.unlock.enable || cfg.providers.sops.keyGeneration.enable
-          ) {
-            Unit = {
-              Description = "Unlock the rosec sops store after the Secret Service daemon starts";
-              Requires = [ "${cfg.rosecd.unitName}.service" ];
-              After = [ "${cfg.rosecd.unitName}.service" ];
-            };
-            Install.WantedBy = [ "default.target" ];
-            Service = {
-              Type = "oneshot";
-              TimeoutStartSec = "120s";
-              ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
-                exec ${pkgs.expect}/bin/expect -c '
-                  set timeout 90
-                  spawn ${lib.getExe' cfg.package "rosec"} unlock
-                  expect {
-                    -re "Press Enter|No password needed" { send "\r"; exp_continue }
-                    eof
-                  }
-                '
-              ''}";
-            };
-          };
+          systemd.user.services.rosec-unlock =
+            lib.mkIf (cfg.rosecd.unlock.enable || cfg.providers.sops.keyGeneration.enable)
+              {
+                Unit = {
+                  Description = "Unlock the rosec sops store after the Secret Service daemon starts";
+                  Requires = [ "${cfg.rosecd.unitName}.service" ];
+                  After = [ "${cfg.rosecd.unitName}.service" ];
+                };
+                Install.WantedBy = [ "default.target" ];
+                Service = {
+                  Type = "oneshot";
+                  TimeoutStartSec = "120s";
+                  ExecStart = "${pkgs.writeShellScript "rosec-unlock" ''
+                    exec ${pkgs.expect}/bin/expect -c '
+                      set timeout 90
+                      spawn ${lib.getExe' cfg.package "rosec"} unlock
+                      expect {
+                        -re "Press Enter|No password needed" { send "\r"; exp_continue }
+                        eof
+                      }
+                    '
+                  ''}";
+                };
+              };
         })
 
         # The package ships `share/systemd/user/rosecd.service`, and the profile's

@@ -39,7 +39,7 @@ upsert_fdo_key() {
       if (!seen) { print ""; print "[FdoSecrets]"; print key "=" value }
       else if (sec && !found) print key "=" value
     }
-  ' "$ini" > "$ini.tmp" && mv "$ini.tmp" "$ini"
+  ' "$ini" >"$ini.tmp" && mv "$ini.tmp" "$ini"
 }
 upsert_fdo_key Enabled "$FDO_ENABLED"
 upsert_fdo_key UnlockBeforeSearch false

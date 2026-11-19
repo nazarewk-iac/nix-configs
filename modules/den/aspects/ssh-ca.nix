@@ -70,13 +70,15 @@ let
 
   # One `known_hosts` entry per fleet host, generated from the committed public key. A host that is
   # missing from the inventory gets no generated pin and keeps whatever its own declaration says.
-  fleetKnownHosts = lib: lib.mapAttrs' (
-    name: host:
-    lib.nameValuePair "kdn-host-${name}" {
-      hostNames = host.names;
-      publicKeyFile = host.publicKeyFile;
-    }
-  ) fleet;
+  fleetKnownHosts =
+    lib:
+    lib.mapAttrs' (
+      name: host:
+      lib.nameValuePair "kdn-host-${name}" {
+        hostNames = host.names;
+        publicKeyFile = host.publicKeyFile;
+      }
+    ) fleet;
 
   # Declared in every class: a consumer sets it from a host file (nixos) or from a home module, and
   # each class is a separate evaluation.
@@ -308,9 +310,10 @@ in
     {
       imports = [ declaration ];
       config = lib.mkIf (sshCa != null && hostCerts != [ ]) {
-        services.openssh.extraConfig = lib.concatMapStrings (cert: serverDirectives (mkSshCaPubKey pkgs (
-          caCertPath config sshCa
-        )) cert.keyPath cert.deployedCertPath) hostCerts;
+        services.openssh.extraConfig = lib.concatMapStrings (
+          cert:
+          serverDirectives (mkSshCaPubKey pkgs (caCertPath config sshCa)) cert.keyPath cert.deployedCertPath
+        ) hostCerts;
         programs.ssh.knownHosts = fleetKnownHosts lib // {
           kdn-ssh-ca = {
             certAuthority = true;

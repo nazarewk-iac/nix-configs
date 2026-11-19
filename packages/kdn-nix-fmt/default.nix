@@ -26,7 +26,6 @@ mkPythonScript {
     structlog
   '';
   runtimeDeps = with pkgs; [
-    alejandra
     nixfmt
   ];
 }

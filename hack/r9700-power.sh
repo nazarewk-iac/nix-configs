@@ -179,14 +179,22 @@ attr() {
 # Microwatt to watt, as an integer.
 uw_to_w() {
   local uw="$1"
-  case "$uw" in '' | *[!0-9]*) printf '?'; return 0 ;; esac
+  case "$uw" in '' | *[!0-9]*)
+    printf '?'
+    return 0
+    ;;
+  esac
   printf '%d' "$((uw / 1000000))"
 }
 
 # Millidegree Celsius to degree Celsius, as an integer.
 uw_to_millideg() {
   local v="$1"
-  case "$v" in '' | *[!0-9]*) printf '?'; return 0 ;; esac
+  case "$v" in '' | *[!0-9]*)
+    printf '?'
+    return 0
+    ;;
+  esac
   printf '%d' "$((v / 1000))"
 }
 
@@ -337,7 +345,10 @@ cmd_preset() {
 
 case "$SUBCOMMAND" in
 show | set | preset) resolve_card ;;
-'') usage >&2; exit 1 ;;
+'')
+  usage >&2
+  exit 1
+  ;;
 *) die "unknown command: $SUBCOMMAND (see --help)" ;;
 esac
 

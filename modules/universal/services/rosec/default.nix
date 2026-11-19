@@ -184,10 +184,7 @@ let
     let
       raw = cfg.providers.sops.keyGeneration.keyFile;
     in
-    if lib.hasPrefix "~/" raw then
-      "\"$HOME/${lib.removePrefix "~/" raw}\""
-    else
-      lib.escapeShellArg raw;
+    if lib.hasPrefix "~/" raw then "\"$HOME/${lib.removePrefix "~/" raw}\"" else lib.escapeShellArg raw;
 
   keyMergeScript = pkgs.writeShellApplication {
     name = "rosec-keys-merge";
@@ -202,7 +199,9 @@ let
       touch "$keyFile"
       {
         cat "$keyFile"
-      ${lib.concatMapStringsSep "\n" (script: "  ${lib.getExe script} || true") cfg.providers.sops.keyGeneration.scripts}
+      ${lib.concatMapStringsSep "\n" (
+        script: "  ${lib.getExe script} || true"
+      ) cfg.providers.sops.keyGeneration.scripts}
       } | sed '/^[[:space:]]*$/d' | sort -u > "$keyFile.tmp"
       mv "$keyFile.tmp" "$keyFile"
       chmod 600 "$keyFile"
@@ -502,11 +501,13 @@ in
     # The `readOnly` outputs (`conflictScript` and `servicePath`) are not forwarded: each evaluation
     # derives its own from the same defaults, and a `mkDefault` on a `readOnly` option aborts with
     # "read-only, but set multiple times".
-    (kdnConfig.util.ifTypes [ "nixos" ] (lib.mkIf cfg.rosecd.enable {
-      systemd.user.services."${cfg.rosecd.unitName}" = rosecdUnit;
-      systemd.user.units."rosecd.socket".enable = false;
-      systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable unlockUnit;
-    }))
+    (kdnConfig.util.ifTypes [ "nixos" ] (
+      lib.mkIf cfg.rosecd.enable {
+        systemd.user.services."${cfg.rosecd.unitName}" = rosecdUnit;
+        systemd.user.units."rosecd.socket".enable = false;
+        systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable unlockUnit;
+      }
+    ))
 
     (kdnConfig.util.ifHMParent (
       lib.mkIf needsHomeManager {
@@ -529,12 +530,11 @@ in
         # The `rosec` CLI and the conflict command reach the user profile, so a terminal can run
         # `rosec provider sops unlock` and `rosec-conflicts --list` without the daemon.
         {
-          kdn.env.packages =
-            [
-              cfg.package
-              cfg.conflictScript
-            ]
-            ++ lib.optional cfg.providers.sops.keyGeneration.enable keyGenScript;
+          kdn.env.packages = [
+            cfg.package
+            cfg.conflictScript
+          ]
+          ++ lib.optional cfg.providers.sops.keyGeneration.enable keyGenScript;
         }
 
         # The provider config is also the CLI's config: `rosec-sops conflicts list|show|resolve`

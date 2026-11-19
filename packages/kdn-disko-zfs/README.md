@@ -9,7 +9,7 @@ pinned flake input).
 disko creates datasets **only at install time**. On an installed host, adding a
 dataset to `hosts/<host>/disko.nix` writes it into `fileSystems` on the next
 switch, but the dataset is never created — so the mount fails and activation can
-hang. `disko-zfs` fills that gap: it compares a JSON *spec* of the desired
+hang. `disko-zfs` fills that gap: it compares a JSON _spec_ of the desired
 datasets against the live pool and emits `zfs create` / `zfs set` commands.
 
 ## Spec, per machine
@@ -24,12 +24,12 @@ kdn-disko-zfs spec -H oams        # print the spec JSON for a host
 
 ## Commands
 
-| command            | does                                                              |
-| ------------------ | ----------------------------------------------------------------- |
-| `spec`             | print the generated spec JSON                                     |
-| `show`             | dump the live pool's spec (what exists now)                       |
-| `plan` *(default)* | `show` + `plan`; prints additive and destructive commands, changes nothing |
-| `apply`            | apply the additive commands                                       |
+| command            | does                                                                       |
+| ------------------ | -------------------------------------------------------------------------- |
+| `spec`             | print the generated spec JSON                                              |
+| `show`             | dump the live pool's spec (what exists now)                                |
+| `plan` _(default)_ | `show` + `plan`; prints additive and destructive commands, changes nothing |
+| `apply`            | apply the additive commands                                                |
 
 Options: `-H/--host`, `-r/--repo`, `-s/--spec-file`, `--dry-run`, `--force`,
 `--disko-zfs`.

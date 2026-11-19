@@ -15,5 +15,5 @@ generated: true
 
 ## Concepts
 
-- **[kdn-nix-fmt](README.md)** — Formatter wrapper choosing alejandra or nixfmt based on git remote. · `README` · `stable` · `unverified`
+- **[kdn-nix-fmt](README.md)** — A thin wrapper around nixfmt, the Nix formatter that `nix fmt` runs. · `README` · `stable` · `unverified`
 

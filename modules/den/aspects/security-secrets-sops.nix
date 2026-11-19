@@ -272,7 +272,11 @@ let
       );
 
   packagesOf =
-    { lib, pkgs, config }:
+    {
+      lib,
+      pkgs,
+      config,
+    }:
     let
       filterPackages = import ../common/filter-packages.nix { inherit lib; };
     in

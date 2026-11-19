@@ -96,15 +96,15 @@ let
           default = 0;
           example = 30;
           description = ''
-          Wait up to this many seconds for a USABLE TPM before the decrypt, and then continue
-          regardless. The TPM is busy early in boot (cryptsetup unseals the LUKS volumes and
-          libvirtd opens a TPM secret in the same seconds), and the resource manager then answers
-          `Esys_Load` with a TPM error. On 2026-11-04 that made the boot-time decrypt fail, so
-          `kdn-secrets.target` was never reached and sshd failed its dependency.
+            Wait up to this many seconds for a USABLE TPM before the decrypt, and then continue
+            regardless. The TPM is busy early in boot (cryptsetup unseals the LUKS volumes and
+            libvirtd opens a TPM secret in the same seconds), and the resource manager then answers
+            `Esys_Load` with a TPM error. On 2026-11-04 that made the boot-time decrypt fail, so
+            `kdn-secrets.target` was never reached and sshd failed its dependency.
 
-          `0` disables the wait. The probe is opt-in per host: it costs up to this many seconds of
-          boot, and most hosts do not need it because their SSH host key is already a recipient.
-                  '';
+            `0` disables the wait. The probe is opt-in per host: it costs up to this many seconds of
+            boot, and most hosts do not need it because their SSH host key is already a recipient.
+          '';
         };
         identityFile = lib.mkOption {
           type = lib.types.str;
@@ -153,29 +153,29 @@ let
                 ];
 
                 text = ''
-                  output="''${1:-"-"}"
-                  if test "$output" == "-" ; then
-                    output="/dev/stdout"
-                  else
-                    outdir="''${output%/*}"
-                    test "$outdir" == "$output" || mkdir -p "$outdir"
-                  fi
-                  # BEST-EFFORT per source. A key source that is merely UNAVAILABLE must not
-                  # abort the others. The YubiKey generator errors when `pcscd` is not yet up at
-                  # boot ("PC/SC error: Access was denied"), and with `set -e` that killed the
-                  # whole subshell — so the SSH host-key identity was never written, `sops`
-                  # found no working key, `sops-install-secrets` failed, `kdn-secrets.target`
-                  # failed, and sshd's dependency took SSH down with it (oams, 2026-11-05; the
-                  # same class as the brys incident of 2026-11-04). Each source is now
-                  # independent: it contributes its keys if it can, and is skipped otherwise.
-                  {
-                    while IFS= read -r _kdn_gen_script; do
-                      [ -n "$_kdn_gen_script" ] || continue
-                      "$_kdn_gen_script" || true
-                    done <<'__KDN_GEN_SCRIPTS__'
-${text}
-__KDN_GEN_SCRIPTS__
-                  } >"$output"
+                                    output="''${1:-"-"}"
+                                    if test "$output" == "-" ; then
+                                      output="/dev/stdout"
+                                    else
+                                      outdir="''${output%/*}"
+                                      test "$outdir" == "$output" || mkdir -p "$outdir"
+                                    fi
+                                    # BEST-EFFORT per source. A key source that is merely UNAVAILABLE must not
+                                    # abort the others. The YubiKey generator errors when `pcscd` is not yet up at
+                                    # boot ("PC/SC error: Access was denied"), and with `set -e` that killed the
+                                    # whole subshell — so the SSH host-key identity was never written, `sops`
+                                    # found no working key, `sops-install-secrets` failed, `kdn-secrets.target`
+                                    # failed, and sshd's dependency took SSH down with it (oams, 2026-11-05; the
+                                    # same class as the brys incident of 2026-11-04). Each source is now
+                                    # independent: it contributes its keys if it can, and is skipped otherwise.
+                                    {
+                                      while IFS= read -r _kdn_gen_script; do
+                                        [ -n "$_kdn_gen_script" ] || continue
+                                        "$_kdn_gen_script" || true
+                                      done <<'__KDN_GEN_SCRIPTS__'
+                  ${text}
+                  __KDN_GEN_SCRIPTS__
+                                    } >"$output"
                 '';
               }
             )
@@ -307,7 +307,12 @@ __KDN_GEN_SCRIPTS__
 
   # What both host classes share: the sops-nix key settings and the `sops` wrapper overlay.
   hostShared =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     {
       # Fake the file presence, or the install fails. See
       # https://github.com/Mic92/sops-nix/issues/65 . sops-nix imports the SSH key on its own.
@@ -357,25 +362,26 @@ __KDN_GEN_SCRIPTS__
       # service) goes with it, and the host is reachable only over the KVM. Measured twice:
       # 2026-10-27/28 in the old tree, and 2026-11-04 with this edge added. The ordering is
       # already safe: `dev-tpmrm0.device` and `RequiresMountsFor` cover the real dependencies.
-      systemd.services.sops-install-secrets.after =
-        lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
-      systemd.services.sops-install-secrets.wants =
-        lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      systemd.services.sops-install-secrets.after = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
+      systemd.services.sops-install-secrets.wants = lib.optional config.kdn.security.secrets.age.tpm.enable "dev-tpmrm0.device";
       systemd.services.sops-install-secrets.serviceConfig = {
         Restart = lib.mkDefault "on-failure";
         RestartSec = lib.mkDefault 5;
-        ExecStartPre = lib.optional (config.kdn.security.secrets.age.tpm.enable && config.kdn.security.secrets.age.tpm.waitSeconds > 0) (
-          pkgs.writeShellScript "kdn-sops-wait-tpm" ''
-            if [ ! -e /dev/tpmrm0 ]; then exit 0; fi
-            deadline=$(( $(date +%s) + ${toString config.kdn.security.secrets.age.tpm.waitSeconds} ))
-            while [ "$(date +%s)" -lt "$deadline" ]; do
-              if ${pkgs.tpm2-tools}/bin/tpm2_getrandom 1 >/dev/null 2>&1; then exit 0; fi
-              sleep 2
-            done
-            echo "kdn-sops-wait-tpm: TPM still busy after ${toString config.kdn.security.secrets.age.tpm.waitSeconds} s; continuing with the other identities" >&2
-            exit 0
-          ''
-        );
+        ExecStartPre =
+          lib.optional
+            (config.kdn.security.secrets.age.tpm.enable && config.kdn.security.secrets.age.tpm.waitSeconds > 0)
+            (
+              pkgs.writeShellScript "kdn-sops-wait-tpm" ''
+                if [ ! -e /dev/tpmrm0 ]; then exit 0; fi
+                deadline=$(( $(date +%s) + ${toString config.kdn.security.secrets.age.tpm.waitSeconds} ))
+                while [ "$(date +%s)" -lt "$deadline" ]; do
+                  if ${pkgs.tpm2-tools}/bin/tpm2_getrandom 1 >/dev/null 2>&1; then exit 0; fi
+                  sleep 2
+                done
+                echo "kdn-sops-wait-tpm: TPM still busy after ${toString config.kdn.security.secrets.age.tpm.waitSeconds} s; continuing with the other identities" >&2
+                exit 0
+              ''
+            );
       };
       systemd.services.sops-install-secrets.unitConfig.StartLimitIntervalSec = lib.mkDefault 0;
 

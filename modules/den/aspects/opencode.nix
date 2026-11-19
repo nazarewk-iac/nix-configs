@@ -188,15 +188,17 @@
       # therefore installed as regular copies by `enterShell`, not through `devenv.files`.
       clankTalkIndexFile = pkgs.writeText "kdn-clank-talk-index.js" clankTalkIndex;
       clankTalkTuiFile = pkgs.writeText "kdn-clank-talk-tui.js" clankTalkTui;
-      clankTalkPackageFile = pkgs.writeText "kdn-clank-talk-package.json" (builtins.toJSON {
-        name = "kdn-clank-talk";
-        version = "0.0.0";
-        type = "module";
-        exports = {
-          "." = "./index.js";
-          "./tui" = "./tui.js";
-        };
-      });
+      clankTalkPackageFile = pkgs.writeText "kdn-clank-talk-package.json" (
+        builtins.toJSON {
+          name = "kdn-clank-talk";
+          version = "0.0.0";
+          type = "module";
+          exports = {
+            "." = "./index.js";
+            "./tui" = "./tui.js";
+          };
+        }
+      );
 
       opencodeBin = pkgs.writeShellScriptBin "opencode" ''
         set -euo pipefail

@@ -9,7 +9,13 @@ class ComputeIgnoredTest(unittest.TestCase):
     def test_undeclared_live_dataset_is_ignored(self):
         ignored = core.compute_ignored(
             spec_datasets=["pool/fs/var/lib/kdn"],
-            live_datasets=["pool", "pool/fs", "pool/fs/var/lib/kdn", "pool/containers", "pool/containers/storage"],
+            live_datasets=[
+                "pool",
+                "pool/fs",
+                "pool/fs/var/lib/kdn",
+                "pool/containers",
+                "pool/containers/storage",
+            ],
         )
         self.assertEqual(ignored, ["pool/containers", "pool/containers/storage"])
 
@@ -41,7 +47,12 @@ class ComputeIgnoredTest(unittest.TestCase):
 
 class MergeIgnoresTest(unittest.TestCase):
     def test_merges_and_dedupes(self):
-        spec = {"datasets": {}, "ignoredDatasets": ["x"], "ignoredProperties": [], "logLevel": "info"}
+        spec = {
+            "datasets": {},
+            "ignoredDatasets": ["x"],
+            "ignoredProperties": [],
+            "logLevel": "info",
+        }
         merged = core.merge_ignores(spec, ["x", "y"])
         self.assertEqual(merged["ignoredDatasets"], ["x", "y"])
         # original untouched
@@ -52,15 +63,23 @@ class DryRunTest(unittest.TestCase):
     def test_renders_create_with_properties(self):
         spec = {
             "datasets": {
-                "pool/ds": {"properties": {"mountpoint": "/ds", "com.sun:auto-snapshot": "false"}},
+                "pool/ds": {
+                    "properties": {
+                        "mountpoint": "/ds",
+                        "com.sun:auto-snapshot": "false",
+                    }
+                },
                 "pool/plain": {},
             }
         }
         cmds = core.dry_run_commands(spec)
-        self.assertEqual(cmds, [
-            "zfs create -omountpoint=/ds -ocom.sun:auto-snapshot=false pool/ds",
-            "zfs create pool/plain",
-        ])
+        self.assertEqual(
+            cmds,
+            [
+                "zfs create -omountpoint=/ds -ocom.sun:auto-snapshot=false pool/ds",
+                "zfs create pool/plain",
+            ],
+        )
 
 
 class DestructiveTest(unittest.TestCase):

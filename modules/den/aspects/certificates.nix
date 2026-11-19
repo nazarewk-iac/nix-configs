@@ -76,7 +76,11 @@ let
   # Where the decrypted private key of one leaf lives. A sops-nix class reads the runtime path it
   # declares; an `ssh-host` leaf is never a sops secret, so it reads the path `kdnctl` deploys to.
   keyPathForClass =
-    { config, name, cert }:
+    {
+      config,
+      name,
+      cert,
+    }:
     if cert.type == "ssh-host" then
       "${cert.deployedDirectory}/${cert.keyFile}"
     else
@@ -94,7 +98,12 @@ let
       trustCAs ? false,
       trustClass ? "nixos",
     }:
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.kdn.certificates;
 

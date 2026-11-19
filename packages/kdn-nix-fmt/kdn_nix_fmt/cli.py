@@ -1,10 +1,14 @@
+"""Format Nix files with `nixfmt`, the same formatter `nix fmt` runs.
+
+The repository used to choose between `alejandra` and `nixfmt` by git remote. `treefmt.nix` names
+`nixfmt` for every Nix file, so this wrapper has one tool: a second Nix formatter would rewrite the
+same bytes in a different style and `nix fmt` would flip them back.
+"""
+
 import logging
 import os
 import shlex
 import subprocess
-from collections import defaultdict
-from pathlib import Path
-from typing import Callable
 
 import fire
 import structlog
@@ -13,95 +17,19 @@ PROGRAM = "kdn-nix-fmt"
 logger: structlog.stdlib.BoundLogger = structlog.get_logger(PROGRAM)
 
 
-def run(what, cmd, log=logger, **kwargs):
+def run(cmd, log=logger, **kwargs):
     kwargs.setdefault("check", True)
     args = list(map(str, cmd))
-    log.info(f"{what}", cmd=shlex.join(args))
-    return subprocess.run(
-        args,
-        **kwargs,
-    )
+    log.info("format with nixfmt", cmd=shlex.join(args))
+    return subprocess.run(args, **kwargs)
 
 
 class CLI:
-    def __init__(self):
-        self._log = logger
-        self._formatters_cache: dict[Path, Callable[..., None]] = {}
-        self.default_formatter = self.nixfmt
-        self.remotes_formatters = {
-            "github.com/nazarewk-iac/": self.nixfmt,  # self.alejandra,
-            "github.com/nixos/": self.nixfmt,
-            "github.com/nix-community/": self.nixfmt,
-        }
-
-    def alejandra(self, *args, **kwargs):
-        run("format with alejandra", ["alejandra", *args], **kwargs)
-
-    def nixfmt(self, *args, **kwargs):
-        run("format with nixfmt", ["nixfmt", *args], **kwargs)
-
-    def _get_formatter(self, file: Path):
-        for root, formatter in self._formatters_cache.items():
-            if file.is_relative_to(root):
-                return formatter
-
-        log = self._log
-        proc = run(
-            "determine git root",
-            ["git", "rev-parse", "--show-toplevel"],
-            log=log,
-            capture_output=True,
-            check=False,
-        )
-        if proc.returncode:
-            log.info(
-                "determining git root failed, falling back to default formatter",
-                formatter=self.default_formatter,
-            )
-            self._formatters_cache[file.parent] = self.default_formatter
-            return self.default_formatter
-
-        git_root = Path(proc.stdout[:-1].decode())
-        log = log.bind(git_root=git_root)
-        if git_root in self._formatters_cache:
-            return self._formatters_cache[git_root]
-
-        proc = run(
-            "determine git remotes",
-            ["git", "remote", "-v"],
-            log=log,
-            capture_output=True,
-            check=False,
-        )
-        remotes = {
-            " ".join(line.split()[1:-1]).removeprefix("https://").removesuffix(".git")
-            for line in proc.stdout.decode().lower().splitlines()
-        }
-        for known_remote, formatter in self.remotes_formatters.items():
-            for remote in remotes:
-                if known_remote in remote:
-                    self._formatters_cache[git_root] = formatter
-                    return formatter
-
-        return self.default_formatter
+    """Format the given paths in place. With no path, read stdin and write stdout."""
 
     def __call__(self, *files):
-        if not files:
-            self.default_formatter()
-            return
-
-        by_formatter = defaultdict(list)
-
-        for filename in files:
-            file = Path(filename)
-            if filename == "-":
-                formatter = self._get_formatter(Path.cwd())
-            else:
-                formatter = self._get_formatter(file)
-            by_formatter[formatter].append(file)
-
-        for formatter, files in by_formatter.items():
-            formatter(*files)
+        # `-` is nixfmt's own stdin marker, so it passes through like any other path.
+        run(["nixfmt", *files])
 
 
 def main():

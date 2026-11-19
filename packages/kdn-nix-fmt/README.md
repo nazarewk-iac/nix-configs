@@ -1,13 +1,15 @@
 ---
 type: README
-description: Formatter wrapper choosing alejandra or nixfmt based on git remote.
-timestamp: 2025-10-22T12:03:53+02:00
+description: A thin wrapper around nixfmt, the Nix formatter that `nix fmt` runs.
+timestamp: 2026-11-19T06:30:00+01:00
 ---
 
 # kdn-nix-fmt
 
-Chooses the right formatter based on the `git remote -v` result, default to `alejandra` or `nixfmt` for
-NixOS/nix-community projects.
+Formats the named paths with `nixfmt`. It no longer chooses a formatter by git remote: `treefmt.nix`
+names `nixfmt` for every Nix file in this tree, and a second Nix formatter (`alejandra`) would
+rewrite the same bytes in another style and make `nix fmt` flip them back. The wrapper stays because
+an editor command wants a stable name and a per-file argument.
 
 # How to work with it?
 

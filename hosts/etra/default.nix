@@ -542,8 +542,7 @@ in
       # reorders that file, discovery silently drops the secret — assert it.
       assertions = [
         {
-          assertion =
-            config.kdn.security.secrets.sops.files."litellm-keys".discovered.keys == [ "clients" ];
+          assertion = config.kdn.security.secrets.sops.files."litellm-keys".discovered.keys == [ "clients" ];
           message = "litellm-keys.sops.yaml must keep `keys: { clients: … }` first; the sops leaf parser skips the first top-level line.";
         }
       ];
@@ -608,18 +607,18 @@ in
         keySource = "managed";
       };
 
-    # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
-    kdn.certificates.certs.ssh-host-etra-pq = {
-      ca = "kdn";
-      type = "ssh-host";
-      commonName = "etra";
-      principals = (import ../../data/net/ssh-host-identities.nix).etra.names;
-      directory = "hosts/etra/certs";
-      certFile = "ssh_host_mldsa44_ed25519-cert.pub";
-      keyFile = "ssh_host_mldsa44_ed25519_key";
-      keyType = "mldsa44-ed25519";
-      keySource = "managed";
-    };
+      # The post-quantum identity, offered IN ADDITION to ed25519, never instead.
+      kdn.certificates.certs.ssh-host-etra-pq = {
+        ca = "kdn";
+        type = "ssh-host";
+        commonName = "etra";
+        principals = (import ../../data/net/ssh-host-identities.nix).etra.names;
+        directory = "hosts/etra/certs";
+        certFile = "ssh_host_mldsa44_ed25519-cert.pub";
+        keyFile = "ssh_host_mldsa44_ed25519_key";
+        keyType = "mldsa44-ed25519";
+        keySource = "managed";
+      };
     }
     {
       kdn.programs.zellij.web = {

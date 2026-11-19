@@ -48,9 +48,9 @@
       # a file cannot drift (a manual `cp` goes stale on the next repo change — the bug this
       # replaces). Add an agent by adding a file to data/pi/agents/.
       agentsDir = ../../../data/pi/agents;
-      agentFiles = lib.filterAttrs
-        (name: type: type == "regular" && lib.hasSuffix ".md" name)
-        (builtins.readDir agentsDir);
+      agentFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".md" name) (
+        builtins.readDir agentsDir
+      );
     in
     {
       imports = [ declaration ];
@@ -61,9 +61,9 @@
 
         # Only the endpoints valid for THIS host: the shared gateway and router
         # everywhere, plus a serving host's own direct path when running on it.
-        models.providers =
-          (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson
-            { host = config.kdn.pi-client.hostName; };
+        models.providers = (import ../../../lib/llm.nix { inherit lib; }).mkPiModelsJson {
+          host = config.kdn.pi-client.hostName;
+        };
 
         # pi resolves the default by an EXACT provider+id lookup (findInitialModel), so the pair
         # must name a model the runtime actually holds. `litellm-dynamic` is the provider the
@@ -92,8 +92,11 @@
 
       # One symlink per agent definition (planner, reviewer, consultant, ...). This is the only
       # channel that touches ~/.pi/agent/agents/ — nothing is ever copied there by hand.
-      home.file = lib.mapAttrs' (name: _: lib.nameValuePair ".pi/agent/agents/${name}" {
-        source = agentsDir + "/${name}";
-      }) agentFiles;
+      home.file = lib.mapAttrs' (
+        name: _:
+        lib.nameValuePair ".pi/agent/agents/${name}" {
+          source = agentsDir + "/${name}";
+        }
+      ) agentFiles;
     };
 }

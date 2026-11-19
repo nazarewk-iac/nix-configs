@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+
 	hostmod "github.com/nazarewk-iac/nix-configs/tools/kdnctl/internal/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

@@ -611,7 +611,10 @@ _apply_resume() {
   local sid="${argc_harness_session:-}"
   local rflag="${argc_resume_flag---session}"
   local style="${argc_resume_flag_style:-value}"
-  [[ -z "$sid" || -z "$rflag" ]] && { printf '%s\0' "${cmd[@]}"; return 0; }
+  [[ -z "$sid" || -z "$rflag" ]] && {
+    printf '%s\0' "${cmd[@]}"
+    return 0
+  }
 
   local f="$rflag"
   [[ "$style" == "id" ]] && f="--session-id"

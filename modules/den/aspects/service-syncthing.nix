@@ -188,7 +188,11 @@
           home.file.".config/kdn/syncthing/ignore-common".text =
             lib.concatStringsSep "\n" cfg.ignorePatterns + "\n";
           home.activation.syncthing-ignores = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-            for folder in ${lib.concatMapStringsSep " " (share: "\"$HOME/.local/share/kdn/synced/${share}\"") (lib.attrNames cfg.shares)} "$HOME/dev"; do
+            for folder in ${
+              lib.concatMapStringsSep " " (share: "\"$HOME/.local/share/kdn/synced/${share}\"") (
+                lib.attrNames cfg.shares
+              )
+            } "$HOME/dev"; do
               [ -d "$folder" ] || continue
               ln -sfn ${commonIgnore} "$folder/.stignore"
               { for f in "$folder"/.stignore-*; do [ -f "$f" ] && cat "$f"; done; } > "$folder/.stignore.local"

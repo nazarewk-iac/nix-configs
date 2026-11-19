@@ -15,9 +15,24 @@
   };
 
   shares = {
-    secret-stores = [ "oams" "brys" "etra" ];
-    small = [ "oams" "brys" "etra" ];
-    medium = [ "oams" "brys" "etra" ];
-    large = [ "oams" "brys" ];
+    secret-stores = [
+      "oams"
+      "brys"
+      "etra"
+    ];
+    small = [
+      "oams"
+      "brys"
+      "etra"
+    ];
+    medium = [
+      "oams"
+      "brys"
+      "etra"
+    ];
+    large = [
+      "oams"
+      "brys"
+    ];
   };
 }

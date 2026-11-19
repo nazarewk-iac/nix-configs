@@ -138,66 +138,68 @@
         };
       };
 
-      config = lib.mkIf (cfg.domain != null) (lib.mkMerge [
-        { services.caddy.enable = true; }
+      config = lib.mkIf (cfg.domain != null) (
+        lib.mkMerge [
+          { services.caddy.enable = true; }
 
-        {
-          # This host trusts one CA: the KDN root (`data/ca/ca.pub`). Every vhost below loads a
-          # leaf from `kdn.certificates.certs`, so no name may ever reach a public ACME directory.
-          # Caddy's automatic HTTPS is the one thing that would: it starts an ACME order for any
-          # site address that carries no `tls` directive (measured on brys and oams, 2026-11-12).
-          # Turn it off for the whole process, so a vhost added later cannot start one by accident.
-          # A vhost with an explicit `tls <cert> <key>` keeps serving HTTPS.
-          services.caddy.globalConfig = "auto_https off";
+          {
+            # This host trusts one CA: the KDN root (`data/ca/ca.pub`). Every vhost below loads a
+            # leaf from `kdn.certificates.certs`, so no name may ever reach a public ACME directory.
+            # Caddy's automatic HTTPS is the one thing that would: it starts an ACME order for any
+            # site address that carries no `tls` directive (measured on brys and oams, 2026-11-12).
+            # Turn it off for the whole process, so a vhost added later cannot start one by accident.
+            # A vhost with an explicit `tls <cert> <key>` keeps serving HTTPS.
+            services.caddy.globalConfig = "auto_https off";
 
-          systemd.services.caddy.serviceConfig.LoadCredential = [
-            "web-key:${cert.keyPath}"
-          ];
-          # The key is a sops secret; start Caddy only after it is decrypted.
-          # A config reload does NOT refresh the LoadCredential key, so restart
-          # (not reload) whenever the certificate file changes — otherwise a new
-          # cert meets the old key and TLS fails with "private key does not match".
-          # Also restart on the sops KEY file change (a key-only rotation does not
-          # change certPath but does change the decrypted credential at the stable
-          # /run/secrets path). And bind to the network services that own the bind
-          # address, restarting with them so a NetBird flap re-binds cleanly.
-          systemd.services.caddy = {
-            # The NetBird unit can be `active` before its interface holds the address, so the
-            # first bind fails with `cannot assign requested address`. Keep retrying until the
-            # address appears; the start limit is lifted because the wait is unbounded.
-            startLimitIntervalSec = lib.mkForce 0;
-            startLimitBurst = lib.mkForce 0;
-            serviceConfig = {
-              Restart = lib.mkDefault "on-failure";
-              RestartSec = lib.mkDefault "5s";
-              # nixpkgs sets `RestartPreventExitStatus = 1` to stop a restart loop on a bad
-              # config. Caddy also exits 1 when a listen address is not assigned yet, which is
-              # the NetBird race this block exists to survive. Clear the list so the retry
-              # happens; the lifted start limit bounds nothing, but a bad config repeats a
-              # clear log line every 5 s instead of hiding.
-              RestartPreventExitStatus = lib.mkForce [ ];
+            systemd.services.caddy.serviceConfig.LoadCredential = [
+              "web-key:${cert.keyPath}"
+            ];
+            # The key is a sops secret; start Caddy only after it is decrypted.
+            # A config reload does NOT refresh the LoadCredential key, so restart
+            # (not reload) whenever the certificate file changes — otherwise a new
+            # cert meets the old key and TLS fails with "private key does not match".
+            # Also restart on the sops KEY file change (a key-only rotation does not
+            # change certPath but does change the decrypted credential at the stable
+            # /run/secrets path). And bind to the network services that own the bind
+            # address, restarting with them so a NetBird flap re-binds cleanly.
+            systemd.services.caddy = {
+              # The NetBird unit can be `active` before its interface holds the address, so the
+              # first bind fails with `cannot assign requested address`. Keep retrying until the
+              # address appears; the start limit is lifted because the wait is unbounded.
+              startLimitIntervalSec = lib.mkForce 0;
+              startLimitBurst = lib.mkForce 0;
+              serviceConfig = {
+                Restart = lib.mkDefault "on-failure";
+                RestartSec = lib.mkDefault "5s";
+                # nixpkgs sets `RestartPreventExitStatus = 1` to stop a restart loop on a bad
+                # config. Caddy also exits 1 when a listen address is not assigned yet, which is
+                # the NetBird race this block exists to survive. Clear the list so the retry
+                # happens; the lifted start limit bounds nothing, but a bad config repeats a
+                # clear log line every 5 s instead of hiding.
+                RestartPreventExitStatus = lib.mkForce [ ];
+              };
+              after = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
+              wants = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
+              partOf = cfg.networkServices;
+              restartTriggers = [
+                cert.certPath
+                "${toString config.kdn.certificates.repoRoot}/${cert.directory}/${cert.keyFile}.sops"
+              ];
             };
-            after = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
-            wants = [ "sops-install-secrets.service" ] ++ cfg.networkServices;
-            partOf = cfg.networkServices;
-            restartTriggers = [
-              cert.certPath
-              "${toString config.kdn.certificates.repoRoot}/${cert.directory}/${cert.keyFile}.sops"
-            ];
-          };
 
-          services.caddy.virtualHosts = {
-            ${cfg.domain} = indexVhost;
+            services.caddy.virtualHosts = {
+              ${cfg.domain} = indexVhost;
+            }
+            // serviceVhosts;
+
+            networking.firewall.interfaces = lib.genAttrs cfg.firewallInterfaces (_: {
+              allowedTCPPorts = [
+                80
+                443
+              ];
+            });
           }
-          // serviceVhosts;
-
-          networking.firewall.interfaces = lib.genAttrs cfg.firewallInterfaces (_: {
-            allowedTCPPorts = [
-              80
-              443
-            ];
-          });
-        }
-      ]);
+        ]
+      );
     };
 }

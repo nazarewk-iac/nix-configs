@@ -23,7 +23,13 @@
 #                                                 firewall admits it only from nb-priv)
 #   - egress  10.233.100.1:8443  -> brys netbird:39704 (gateway -> brys)
 # The guest's api_base is http://10.233.100.1:8443/v1.
-{ config, lib, pkgs, kdnConfig, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  kdnConfig,
+  ...
+}:
 let
   hostAddress = "10.233.100.1";
   localAddress = "10.233.100.2";
@@ -58,7 +64,10 @@ let
   # checks (#1) and the long-TTFT streaming timeouts (#6).
   data = import ../../data/llm.nix;
   llm = import ../../lib/llm.nix { inherit lib; };
-  views = { brys = llm.mkMemberView data "brys"; oams = llm.mkMemberView data "oams"; };
+  views = {
+    brys = llm.mkMemberView data "brys";
+    oams = llm.mkMemberView data "oams";
+  };
   # Deployments: one per (host, alias). `api_base`/`api_key` are per-host env vars
   # the container resolves at start (see the container ExecStart).
   # Measured rates for a base model id on this host, or null.
@@ -81,7 +90,9 @@ let
         # /v1/models + /model/info as max_input_tokens/max_output_tokens so clients
         # (and the Pi discovery extension) see the reduced window an alias advertises.
         dm = data.models.${baseId};
-        ctx = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow);
+        ctx = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
+          dm.contextSize or data.pi.defaults.contextWindow
+        );
         maxOut = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
       in
       {
@@ -105,11 +116,13 @@ let
           # disk session cache / prefix reuse, not one huge cold prefill). Capped at
           # 2h so a dead-but-connected backend cannot hang a client for longer; a
           # genuinely running prefill resumes from checkpoints, not from scratch.
-          stream_timeout = let
-            prefill = if r.prefill <= 0 then 1 else r.prefill;
-            startTokens = 100 * 1024;
-            budget = 120 + builtins.floor (startTokens / prefill);
-          in if budget > 7200 then 7200 else budget;
+          stream_timeout =
+            let
+              prefill = if r.prefill <= 0 then 1 else r.prefill;
+              startTokens = 100 * 1024;
+              budget = 120 + builtins.floor (startTokens / prefill);
+            in
+            if budget > 7200 then 7200 else budget;
         };
         model_info = {
           id = "${host}-${name}";
@@ -164,9 +177,14 @@ let
         id = "brys-chat-fast-${baseId}";
         # No per-model health probe; health is a host property (see `general_settings`).
         # Same curated budget as the alias groups (min(pi.contextWindow, native)).
-        max_input_tokens = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow);
-        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens)
-          (lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (dm.contextSize or data.pi.defaults.contextWindow));
+        max_input_tokens = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
+          dm.contextSize or data.pi.defaults.contextWindow
+        );
+        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) (
+          lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
+            dm.contextSize or data.pi.defaults.contextWindow
+          )
+        );
         supports_vision = dm.vision or false;
       }
       // lib.optionalAttrs (r != null) {
@@ -190,21 +208,20 @@ let
     # 128K max output, vision. The tensorx deployment above is 256K/256K.
     "alibaba/qwen3.8-flash"
   ];
-  requestyDeployments = map (
-    mid:
-    {
-      model_name = "requesty/${mid}";
-      litellm_params = {
-        model = "openai/${mid}";
-        api_base = "https://${requestyHost}/v1";
-        api_key = "os.environ/REQUESTY_API_KEY";
-        # Requesty's /v1/models returns no context/pricing, so fit metadata is
-        # unavailable; give a conservative first-token budget like the router default.
-        stream_timeout = 1800;
-      };
-      model_info = { id = "requesty-${builtins.replaceStrings [ "/" ] [ "-" ] mid}"; };
-    }
-  ) requestyModelIds;
+  requestyDeployments = map (mid: {
+    model_name = "requesty/${mid}";
+    litellm_params = {
+      model = "openai/${mid}";
+      api_base = "https://${requestyHost}/v1";
+      api_key = "os.environ/REQUESTY_API_KEY";
+      # Requesty's /v1/models returns no context/pricing, so fit metadata is
+      # unavailable; give a conservative first-token budget like the router default.
+      stream_timeout = 1800;
+    };
+    model_info = {
+      id = "requesty-${builtins.replaceStrings [ "/" ] [ "-" ] mid}";
+    };
+  }) requestyModelIds;
 
   # Every group name the gateway should expose on `host`: its aliases (alias -> base
   # id) PLUS the served base ids that have no alias (base id -> itself), so the
@@ -226,8 +243,8 @@ let
       # Union over every boot profile the host declares (brys has desktop +
       # appliance), so the gateway mirrors whatever set the host can boot.
       servedBaseIds = builtins.attrNames (
-        lib.foldl' (acc: prof:
-          acc // lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host prof)
+        lib.foldl' (
+          acc: prof: acc // lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host prof)
         ) { } (builtins.attrNames data.servers.${host}.profiles)
       );
       unaliasedBaseIds = builtins.filter (id: !(builtins.elem id aliasedBaseIds)) servedBaseIds;
@@ -243,7 +260,12 @@ let
   gatewayConfig = {
     model_list = modelList;
     litellm_settings = {
-      callbacks = [ "prometheus" "probe.host_probe" "fastest.fastest_fit" "enforce.scope" ];
+      callbacks = [
+        "prometheus"
+        "probe.host_probe"
+        "fastest.fastest_fit"
+        "enforce.scope"
+      ];
       drop_params = true;
       # (#6) a very long first token (huge prefill) must not be cut off. These are
       # the proxy-wide defaults; the per-deployment streaming limit is what governs
@@ -438,10 +460,10 @@ in
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 ${lib.optionalString dbEnabled ''
-                # Prisma engines from nixpkgs (the packaged prisma has none).
-                export PRISMA_SCHEMA_ENGINE_BINARY="${pkgs.prisma-engines}/bin/schema-engine"
-                export PRISMA_QUERY_ENGINE_LIBRARY="${pkgs.prisma-engines}/lib/libquery_engine.so.node"
-                export DATABASE_URL="postgresql://${dbUser}:$(cat ${dbPasswordFile})@${hostAddress}:5432/${dbName}"
+                  # Prisma engines from nixpkgs (the packaged prisma has none).
+                  export PRISMA_SCHEMA_ENGINE_BINARY="${pkgs.prisma-engines}/bin/schema-engine"
+                  export PRISMA_QUERY_ENGINE_LIBRARY="${pkgs.prisma-engines}/lib/libquery_engine.so.node"
+                  export DATABASE_URL="postgresql://${dbUser}:$(cat ${dbPasswordFile})@${hostAddress}:5432/${dbName}"
                 ''}
                 exec ${pkgs.litellm}/bin/litellm \
                   --config /etc/litellm/config.yaml \
@@ -495,7 +517,10 @@ in
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
-      RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
+      RestrictAddressFamilies = [
+        "AF_INET"
+        "AF_INET6"
+      ];
     };
   };
 
@@ -514,7 +539,11 @@ in
   systemd.services.litellm-host-probe = {
     description = "Probe brys/oams llama-swap /health over NetBird";
     wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.bash pkgs.coreutils pkgs.curl ];
+    path = [
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.curl
+    ];
     serviceConfig = {
       Type = "oneshot";
       # Cheap, idempotent writer driven by the timer below.
@@ -558,9 +587,9 @@ in
     targets = [
       {
         job = "litellm";
-        targets = [ "10.233.101.1:${toString gatewayPort}" ];  # unauthenticated /metrics (public_routes)
+        targets = [ "10.233.101.1:${toString gatewayPort}" ]; # unauthenticated /metrics (public_routes)
         interval = "15s";
-        metricsPath = "/metrics/";  # trailing slash avoids the 307 to /metrics/
+        metricsPath = "/metrics/"; # trailing slash avoids the 307 to /metrics/
       }
     ];
   };
@@ -579,7 +608,7 @@ in
     egressPort
     oamsEgressPort
     requestyProxyPort
-    6379  # routing-state Redis relay
+    6379 # routing-state Redis relay
   ];
 
   # Ingress for Caddy: a UNIX socket owned by the `caddy` user, so ONLY Caddy

@@ -18,7 +18,7 @@ class Program:
         end = len(line)
         matches = list(placeholder_pattern.finditer(line))
         for match in matches:
-            out.write(line[start:match.start()])
+            out.write(line[start : match.start()])
             path = match["path"]
             out.write(Path(path).read_text())
             start = match.end()

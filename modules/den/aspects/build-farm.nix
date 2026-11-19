@@ -324,15 +324,16 @@ in
           ) proxy.pools.${set}.builderOrder}
       '';
       haproxyConfig = proxy: ''
-        ${
-          lib.optionalString (proxy.dnsServers != [ ]) (
-            "resolvers kdn\n"
-            + lib.concatMapStrings (
-              server: "  nameserver ${server.name} ${server.address}:53\n"
-            ) (lib.imap0 (i: address: { name = "dns${toString (i + 1)}"; inherit address; }) proxy.dnsServers)
-            + "  hold valid 10s\n"
+        ${lib.optionalString (proxy.dnsServers != [ ]) (
+          "resolvers kdn\n"
+          + lib.concatMapStrings (server: "  nameserver ${server.name} ${server.address}:53\n") (
+            lib.imap0 (i: address: {
+              name = "dns${toString (i + 1)}";
+              inherit address;
+            }) proxy.dnsServers
           )
-        }
+          + "  hold valid 10s\n"
+        )}
         defaults
           mode tcp
           timeout connect 10s

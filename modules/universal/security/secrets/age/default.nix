@@ -85,7 +85,7 @@ in
 
           `0` disables the wait. The probe is opt-in per host: it costs up to this many seconds of
           boot, and most hosts do not need it because their SSH host key is already a recipient.
-                '';
+        '';
       };
       identityFile = lib.mkOption {
         type = lib.types.str;
@@ -114,29 +114,29 @@ in
               ];
 
               text = ''
-                output="''${1:-"-"}"
-                if test "$output" == "-" ; then
-                  output="/dev/stdout"
-                else
-                  outdir="''${output%/*}"
-                  test "$outdir" == "$output" || mkdir -p "$outdir"
-                fi
-                # BEST-EFFORT per source. A source that is merely UNAVAILABLE must not abort
-                # the others. At boot the YubiKey generator errors while pcscd is still coming
-                # up ("PC/SC error: Access was denied"); with `set -e` that killed the whole
-                # subshell, the SSH host-key identity was never captured, the pre-start
-                # pipeline failed, `mv` never ran, and key.txt kept no usable key — so
-                # sops-install-secrets failed and sshd's dependency took SSH down (oams
-                # 2026-11-05; same class as brys 2026-11-04). Each source now runs on its own
-                # and is skipped if it fails.
-                {
-                  while IFS= read -r _kdn_gen_script; do
-                    [ -n "$_kdn_gen_script" ] || continue
-                    "$_kdn_gen_script" || true
-                  done <<'__KDN_GEN_SCRIPTS__'
-${text}
-__KDN_GEN_SCRIPTS__
-                } >"$output"
+                                output="''${1:-"-"}"
+                                if test "$output" == "-" ; then
+                                  output="/dev/stdout"
+                                else
+                                  outdir="''${output%/*}"
+                                  test "$outdir" == "$output" || mkdir -p "$outdir"
+                                fi
+                                # BEST-EFFORT per source. A source that is merely UNAVAILABLE must not abort
+                                # the others. At boot the YubiKey generator errors while pcscd is still coming
+                                # up ("PC/SC error: Access was denied"); with `set -e` that killed the whole
+                                # subshell, the SSH host-key identity was never captured, the pre-start
+                                # pipeline failed, `mv` never ran, and key.txt kept no usable key — so
+                                # sops-install-secrets failed and sshd's dependency took SSH down (oams
+                                # 2026-11-05; same class as brys 2026-11-04). Each source now runs on its own
+                                # and is skipped if it fails.
+                                {
+                                  while IFS= read -r _kdn_gen_script; do
+                                    [ -n "$_kdn_gen_script" ] || continue
+                                    "$_kdn_gen_script" || true
+                                  done <<'__KDN_GEN_SCRIPTS__'
+                ${text}
+                __KDN_GEN_SCRIPTS__
+                                } >"$output"
               '';
             }
           )
@@ -243,10 +243,8 @@ __KDN_GEN_SCRIPTS__
             # service) goes with it, and the host is reachable only over the KVM. Measured twice:
             # 2026-10-27/28 in the old tree, and 2026-11-04 with this edge added. The ordering is
             # already safe: `dev-tpmrm0.device` and `RequiresMountsFor` cover the real dependencies.
-            systemd.services.sops-install-secrets.after =
-              lib.optional cfg.tpm.enable "dev-tpmrm0.device";
-            systemd.services.sops-install-secrets.wants =
-              lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            systemd.services.sops-install-secrets.after = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
+            systemd.services.sops-install-secrets.wants = lib.optional cfg.tpm.enable "dev-tpmrm0.device";
             systemd.services.sops-install-secrets.serviceConfig = {
               Restart = lib.mkDefault "on-failure";
               RestartSec = lib.mkDefault 5;

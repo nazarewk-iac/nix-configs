@@ -75,7 +75,11 @@ let
           description = "The Sway binding this row ports. Empty means a Niri-only addition.";
         };
         parity = lib.mkOption {
-          type = lib.types.enum [ "reproduced" "alternative" "accepted-loss" ];
+          type = lib.types.enum [
+            "reproduced"
+            "alternative"
+            "accepted-loss"
+          ];
           default = "reproduced";
           description = "The parity state from `shortcuts.research.md`.";
         };
@@ -170,7 +174,11 @@ let
       {
         chord = "${alt}+F2";
         action = "spawn";
-        args = [ "wofi" "--show" "run" ];
+        args = [
+          "wofi"
+          "--show"
+          "run"
+        ];
         source = "desktop/sway/home-manager/default.nix:145";
       }
       {
@@ -469,84 +477,129 @@ let
       {
         chord = "XF86MonBrightnessDown";
         action = "spawn";
-        args = [ "lightctl" "down" "2" ];
+        args = [
+          "lightctl"
+          "down"
+          "2"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86MonBrightnessUp";
         action = "spawn";
-        args = [ "lightctl" "up" "2" ];
+        args = [
+          "lightctl"
+          "up"
+          "2"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioRaiseVolume";
         action = "spawn";
-        args = [ "volumectl" "up" "1" ];
+        args = [
+          "volumectl"
+          "up"
+          "1"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioLowerVolume";
         action = "spawn";
-        args = [ "volumectl" "down" "1" ];
+        args = [
+          "volumectl"
+          "down"
+          "1"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioMute";
         action = "spawn";
-        args = [ "volumectl" "toggle-mute" ];
+        args = [
+          "volumectl"
+          "toggle-mute"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "${alt}+XF86AudioMute";
         action = "spawn";
-        args = [ "volumectl" "-m" "toggle-mute" ];
+        args = [
+          "volumectl"
+          "-m"
+          "toggle-mute"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioMicMute";
         action = "spawn";
-        args = [ "volumectl" "-m" "toggle-mute" ];
+        args = [
+          "volumectl"
+          "-m"
+          "toggle-mute"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioPlay";
         action = "spawn";
-        args = [ "playerctl" "play-pause" ];
+        args = [
+          "playerctl"
+          "play-pause"
+        ];
         allowWhenLocked = true;
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioPause";
         action = "spawn";
-        args = [ "playerctl" "play-pause" ];
+        args = [
+          "playerctl"
+          "play-pause"
+        ];
         allowWhenLocked = true;
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioNext";
         action = "spawn";
-        args = [ "playerctl" "next" ];
+        args = [
+          "playerctl"
+          "next"
+        ];
         allowWhenLocked = true;
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "XF86AudioPrev";
         action = "spawn";
-        args = [ "playerctl" "previous" ];
+        args = [
+          "playerctl"
+          "previous"
+        ];
         allowWhenLocked = true;
         source = "desktop/sway/home-manager/media-keys.nix";
       }
       {
         chord = "Print";
         action = "spawn";
-        args = [ "flameshot" "gui" ];
+        args = [
+          "flameshot"
+          "gui"
+        ];
         source = "desktop/sway/home-manager/media-keys.nix";
         parity = "alternative";
       }
       {
         chord = "${super}+Print";
         action = "spawn";
-        args = [ "flameshot" "gui" ];
+        args = [
+          "flameshot"
+          "gui"
+        ];
         allowInhibiting = false;
         source = "desktop/sway/home-manager/media-keys.nix";
         parity = "alternative";
@@ -556,13 +609,20 @@ let
       {
         chord = "${super}+L";
         action = "spawn";
-        args = [ "swaylock" "-f" ];
+        args = [
+          "swaylock"
+          "-f"
+        ];
         source = "desktop/sway/home-manager/swaylock.nix:25";
       }
       {
         chord = "${super}+N";
         action = "spawn";
-        args = [ "swaync-client" "-t" "-sw" ];
+        args = [
+          "swaync-client"
+          "-t"
+          "-sw"
+        ];
         source = "desktop/sway/home-manager/swaync/default.nix:19";
       }
       {
@@ -704,7 +764,10 @@ let
           '';
         };
         session = lib.mkOption {
-          type = lib.types.enum [ "niri-session" "niri-uwsm" ];
+          type = lib.types.enum [
+            "niri-session"
+            "niri-uwsm"
+          ];
           default = "niri-session";
           description = "The session model. `niri-session` is the control of the UWSM A/B.";
         };
@@ -714,7 +777,11 @@ let
           description = "Use Nautilus as the portal's file chooser.";
         };
         portal.secret = lib.mkOption {
-          type = lib.types.enum [ "gnome-keyring" "gtk" "none" ];
+          type = lib.types.enum [
+            "gnome-keyring"
+            "gtk"
+            "none"
+          ];
           default = "gnome-keyring";
           description = ''
             The `org.freedesktop.impl.portal.Secret` back-end. `none` leaves the interface to the
@@ -744,12 +811,13 @@ let
         // (lib.optionalAttrs (!b.allowInhibiting) { "allow-inhibiting" = false; })
         // (lib.optionalAttrs (!b.repeat) { repeat = false; });
 
-      renderBind =
-        b:
-        {
-          name = b.chord;
-          value = { "${b.action}" = if b.args == [ ] then { } else b.args; } // lib.optionalAttrs (bindProps b != { }) { _props = bindProps b; };
-        };
+      renderBind = b: {
+        name = b.chord;
+        value = {
+          "${b.action}" = if b.args == [ ] then { } else b.args;
+        }
+        // lib.optionalAttrs (bindProps b != { }) { _props = bindProps b; };
+      };
     in
     {
       prefer-no-csd = { };
@@ -795,7 +863,9 @@ in
           # Do NOT touch `displayManager.defaultSession`: Sway stays the default session.
           programs.niri = {
             enable = true;
-            package = lib.mkDefault (if config.kdn.desktop-niri.package == null then pkgs.niri else config.kdn.desktop-niri.package);
+            package = lib.mkDefault (
+              if config.kdn.desktop-niri.package == null then pkgs.niri else config.kdn.desktop-niri.package
+            );
             useNautilus = config.kdn.desktop-niri.useNautilus;
           };
 
@@ -807,8 +877,9 @@ in
           # The repository's own secret service claims `org.freedesktop.secrets`. The nixpkgs
           # module turns gnome-keyring on and points the portal's Secret interface at it; both
           # would fight the repo unit, so both are overridden.
-          services.gnome.gnome-keyring.enable =
-            lib.mkForce (config.kdn.desktop-niri.portal.secret == "gnome-keyring");
+          services.gnome.gnome-keyring.enable = lib.mkForce (
+            config.kdn.desktop-niri.portal.secret == "gnome-keyring"
+          );
           xdg.portal.config.niri."org.freedesktop.impl.portal.Secret" =
             lib.mkDefault config.kdn.desktop-niri.portal.secret;
 
@@ -847,7 +918,8 @@ in
       config = {
         wayland.windowManager.niri = {
           enable = true;
-          package = if config.kdn.desktop-niri.package == null then pkgs.niri else config.kdn.desktop-niri.package;
+          package =
+            if config.kdn.desktop-niri.package == null then pkgs.niri else config.kdn.desktop-niri.package;
           checkConfig = config.kdn.desktop-niri.checkConfig;
           enableDefaultConfig = false;
           settings = renderSettings lib config.kdn.desktop-niri;

@@ -56,47 +56,47 @@ EOF
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --store)
-      store="${2:?--store needs a path}"
-      shift 2
-      ;;
-    --store=*)
-      store="${1#--store=}"
-      shift
-      ;;
-    --state)
-      state_file="${2:?--state needs a path}"
-      shift 2
-      ;;
-    --state=*)
-      state_file="${1#--state=}"
-      shift
-      ;;
-    --notify)
-      notify_command="${2:?--notify needs a command}"
-      shift 2
-      ;;
-    --notify=*)
-      notify_command="${1#--notify=}"
-      shift
-      ;;
-    --list)
-      mode=list
-      shift
-      ;;
-    --dry-run)
-      mode=dry-run
-      shift
-      ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "rosec-conflicts: unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
+  --store)
+    store="${2:?--store needs a path}"
+    shift 2
+    ;;
+  --store=*)
+    store="${1#--store=}"
+    shift
+    ;;
+  --state)
+    state_file="${2:?--state needs a path}"
+    shift 2
+    ;;
+  --state=*)
+    state_file="${1#--state=}"
+    shift
+    ;;
+  --notify)
+    notify_command="${2:?--notify needs a command}"
+    shift 2
+    ;;
+  --notify=*)
+    notify_command="${1#--notify=}"
+    shift
+    ;;
+  --list)
+    mode=list
+    shift
+    ;;
+  --dry-run)
+    mode=dry-run
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "rosec-conflicts: unknown argument: $1" >&2
+    usage >&2
+    exit 1
+    ;;
   esac
 done
 
@@ -111,9 +111,9 @@ fi
 # purpose: this is a literal string test, not a path that the shell should expand.
 expand_tilde() {
   case "$1" in
-    \~/*) printf '%s/%s' "$HOME" "${1#\~/}" ;;
-    \~) printf '%s' "$HOME" ;;
-    *) printf '%s' "$1" ;;
+  \~/*) printf '%s/%s' "$HOME" "${1#\~/}" ;;
+  \~) printf '%s' "$HOME" ;;
+  *) printf '%s' "$1" ;;
   esac
 }
 
@@ -158,7 +158,8 @@ fi
 mkdir -p "$(dirname "$state_file")" 2>/dev/null || true
 known=""
 if [ -f "$state_file" ]; then
-  known="$(python3 - "$state_file" <<'PY' 2>/dev/null || true
+  known="$(
+    python3 - "$state_file" <<'PY' 2>/dev/null || true
 import json, sys
 try:
     with open(sys.argv[1], "r", encoding="utf-8") as handle:
@@ -173,7 +174,7 @@ for record in data.get("conflicts", []):
     if isinstance(record, dict) and isinstance(record.get("path"), str):
         print(record["path"])
 PY
-)"
+  )"
 fi
 
 current_sorted="$(printf '%s\n' "$conflicts" | sed '/^$/d' | LC_ALL=C sort)"
