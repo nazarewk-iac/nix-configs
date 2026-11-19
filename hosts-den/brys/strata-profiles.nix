@@ -47,6 +47,23 @@ let
     }:$PATH
     exec ${pkgs.bash}/bin/bash ${./strata-serve.sh} "$@"
   '';
+
+  # The manager owns the one engine and answers /select; `strata-select` is what llama-swap calls.
+  strataManager = pkgs.writeShellScriptBin "strata-manager" ''
+    exec ${pkgs.python3}/bin/python3 ${./strata-manager.py}
+  '';
+  strataProxy = pkgs.writeShellScriptBin "strata-proxy" ''
+    exec ${pkgs.python3}/bin/python3 ${./strata-proxy.py} "$@"
+  '';
+  strataSelect = pkgs.writeShellScriptBin "strata-select" ''
+    export PATH=${
+      pkgs.lib.makeBinPath [
+        pkgs.curl
+        pkgs.coreutils
+      ]
+    }:$PATH
+    exec ${pkgs.bash}/bin/bash ${./strata-select.sh} "$@"
+  '';
 in
 {
   # ---------------------------------------------------------------- the service account
@@ -78,7 +95,38 @@ in
   environment.systemPackages = [
     pkgs.kdn.strata
     strataServe
+    strataSelect
+    strataProxy
+    strataManager
   ];
+
+  # ---------------------------------------------------------------- the profile manager
+  #
+  # One engine, one owner, and a selection that is a no-op when the profile is already current.
+  # The llama-swap entries call `strata-select`, which asks this service and then proxies their
+  # port to the engine, so a switch between two entries that resolve to the same profile costs a
+  # TCP proxy instead of a 55 GiB reload.
+  systemd.services.strata-manager = {
+    description = "Strata profile manager (/select, /status on :8181)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "simple";
+      User = "llm-server";
+      Group = "llm-server";
+      Restart = "always";
+      RestartSec = "5s";
+      LimitMEMLOCK = "infinity";
+      MemoryMax = "118G";
+      Environment = [
+        "HOME=${llmsRoot}/home"
+        "XDG_DATA_HOME=${dataHome}"
+        "STRATA_DATA_HOME=${dataHome}"
+        "LD_PRELOAD=${rocmShim}/lib/rocm-skip.so"
+      ];
+      ExecStart = "${strataManager}/bin/strata-manager";
+    };
+  };
 
   # ---------------------------------------------------------------- Strata as a service
   systemd.services.strata-frontier = {

@@ -328,7 +328,7 @@ in
 
       # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
       command = [
-        "/run/current-system/sw/bin/strata-serve"
+        "/run/current-system/sw/bin/strata-select"
         "max"
         "--port"
         "\${PORT}"
@@ -361,7 +361,7 @@ in
 
       # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
       command = [
-        "/run/current-system/sw/bin/strata-serve"
+        "/run/current-system/sw/bin/strata-select"
         "omni-max"
         "--port"
         "\${PORT}"
@@ -394,7 +394,7 @@ in
 
       # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
       command = [
-        "/run/current-system/sw/bin/strata-serve"
+        "/run/current-system/sw/bin/strata-select"
         "omni-fast"
         "--port"
         "\${PORT}"

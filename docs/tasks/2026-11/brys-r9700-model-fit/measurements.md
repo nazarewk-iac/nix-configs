@@ -778,3 +778,40 @@ Services:
 The ROCm shim is built from `hack/rocm-skip-legacy-gpu.c` as a Nix derivation (so it cannot drift
 from the source) and copied to `.bench/rocm-skip.so` for hand-run servers; the service uses the
 store path.
+
+## A profile manager: switching without a reload when nothing changed
+
+llama-swap restarts a model on every switch because each entry owns a process. For Strata that is
+mostly wasted: two of the three profiles differ only in a start-up argument. So brys now runs
+**`strata-manager`** (:8181), which owns the single engine and answers:
+
+```
+POST /select {"profile": "max"|"omni-max"|"omni-fast"|"none"}
+GET  /status
+```
+
+`/select` diffs the request against what is already running: the same profile returns
+`{"changed": false}` in under a millisecond and touches nothing; a different profile drains the
+engine and starts the new one; `none` stops it and frees the card.
+
+The llama-swap entries do not own the engine any more. Each one calls `strata-select <profile>
+--port ${PORT}`, which asks the manager and then runs a dual-stack TCP proxy from llama-swap's port
+to the engine on 8080. llama-swap therefore pays a proxy per switch, and a model reload only when
+the profile really changed.
+
+Measured end to end:
+
+| action                                               | result                               |         time |
+| ---------------------------------------------------- | ------------------------------------ | -----------: |
+| `POST /select max` (engine cold)                     | engine started                       |         84 s |
+| `POST /select max` again                             | `changed: false`, nothing touched    | **0.0009 s** |
+| llama-swap `chat-deep-slow` while `max` is current   | served by the running engine         |      **0 s** |
+| llama-swap `chat-deep-slow-fast` (different profile) | drained and switched to omni-fast    |         50 s |
+| `POST /select none`                                  | engine stopped, VRAM 33 GiB → 74 MiB |          3 s |
+
+Two details that cost an hour:
+
+- **llama-swap health-checks `localhost`, which is `::1` here.** A proxy bound to `127.0.0.1` looks
+  dead; the proxy is one IPv6 socket with `IPV6_V6ONLY=0` so it accepts both families.
+- **`strata runtime start` takes a saved _preset_ name, not a config path**, so the manager
+  supervises `strata serve --profile <config>` as its own child instead.
