@@ -706,9 +706,23 @@ for another profile evicts it and starts that one, exactly like every other mode
 | `qfn-omni-max`  | `chat-deep-slow-omni`                                                     | UD-IQ4_XS + 21.5 GB reserve | 55 GiB + KV   |
 | `qfn-omni-fast` | `chat-deep-slow-fast`                                                     | IQ2_XS + 21.5 GB reserve    | 35 GiB + KV   |
 
-Measured: first request of a **cold** pack took 837 s (55 GiB read from ZFS with an empty page
-cache); a switch to a **warm** pack took **47 s**. That is the cost of the swap: llama.cpp and
-Strata both reload the model, and only the file cache makes it quick.
+Measured switch costs, all through the fleet:
+
+| from → to                          | what changes              |      time |
+| ---------------------------------- | ------------------------- | --------: |
+| cold start, pack not in page cache | everything                | 601-837 s |
+| `qfn-omni-fast` → a warm pack      | different pack            |      47 s |
+| `qfn-max` ↔ `qfn-omni-max`         | **only the VRAM reserve** | **180 s** |
+
+**Any switch restarts the engine, even between `qfn-max` and `qfn-omni-max`.** The two share the
+same UD-IQ4_XS pack and differ only in `--vram-reserve-mib`, but that is a start-up argument: llama-swap
+sees two model ids, evicts one ("matrix: starting swap for model qfn-omni-max, evicting" followed by
+`[strata] stopping`), and the next start reloads the whole 55 GiB. There is no runtime reserve
+change on HIP: the `POST /v1/vram` elastic call is NVIDIA-only.
+
+So the profiles are three operating points, not three sliders: pick one for a session. If the media
+companion is used at all regularly, `qfn-omni-max` is the one to stay on (42 t/s with omni always
+ready); if it is rare, stay on `qfn-max` (73 t/s) and pay one reload when a video arrives.
 
 Three walls had to come down, found by an independent bisection with `systemd-run` (one property
 flipped per probe):
