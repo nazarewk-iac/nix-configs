@@ -18,8 +18,11 @@ any node in the KFD topology reports a legacy doorbell type. The check is
 card aborts `hsa_init()` for the whole machine, and every HIP consumer reports "no
 ROCM-capable device". The R9700 is fully usable once that node is skipped: this was proved on the
 live host by rewriting the node's `capability` word in-process, and again by making the node look
-like a non-compute node. Decision: **do not install ROCm system-wide.** Build a patched ROCm per
-package, and only when a HIP-only tool needs it; keep Vulkan for llama.cpp.
+like a non-compute node. The same shim now unblocks the signed Strata engine, which carries its
+own ROCm runtime: it loads a 64 GB IQ2_XS pack and reports
+`GPU 0: AMD Radeon AI PRO R9700 (gfx1201)`. Decision: **do not install ROCm system-wide.** Use
+the shim for a bundle with its own runtime, a patched ROCm per package for a nix-built consumer,
+and keep Vulkan for llama.cpp.
 
 Related: [brys-kernel-7-zfs](../brys-kernel-7-zfs/definition.md) owns the kernel question and
 states the ZFS block on a 7.x kernel. Read it, do not edit it from here.
@@ -188,8 +191,12 @@ this card (next section).
 1. **`rocminfo` succeeds?** Nothing to do. Record the ROCm and kernel versions.
 2. **`rocminfo` fails and any node shows `(capability >> 12) & 3 != 2`?** That node is the cause.
    Do not touch the kernel, the IOMMU, `amdgpu.noretry` or the group setup.
-   - Preferred: make ROCr skip the node. Patch `rocm-runtime` so the deprecated doorbell throws
-     `HSA_STATUS_ERROR_INVALID_ISA` (upstream PR #4936). One source line, proven to work.
+   - Preferred for a binary you cannot rebuild (a signed bundle with its own HSA runtime, e.g.
+     Strata): preload [hack/rocm-skip-legacy-gpu.c](../../../../hack/rocm-skip-legacy-gpu.c) into
+     the process. See [Unblocking the bundled HIP runtime](#unblocking-the-bundled-hip-runtime).
+   - Preferred for a nix-built package: make ROCr skip the node. Patch `rocm-runtime` so the
+     deprecated doorbell throws `HSA_STATUS_ERROR_INVALID_ISA` (upstream PR #4936). One source
+     line, proven to work.
    - Alternative, if the card is unused: remove it, or keep it out of `amdgpu`. Then stock ROCm
      7.2.4 needs no patch.
 3. **The patched runtime works (case proven here)?** Wire it **per package**, never system-wide:
@@ -286,21 +293,102 @@ echo "Any node with DoorbellType != 2 aborts hsa_init() in ROCm 7.x."
 echo "Fix: skip that node in ROCr (upstream PR #4936); do not change the kernel."
 ```
 
-To confirm the cause without rebuilding ROCm, add the `LD_PRELOAD` shim from this task: copy
-`nodes/<N>/properties`, set `capability = (cap & ~0x3000) | 0x2000` (or set `simd_count 0`), and
-interpose `fopen`/`open`/`openat` to serve the copy. If `rocminfo` then succeeds, the node is the
-cause.
+To confirm the cause without rebuilding ROCm, preload the shim below. It rewrites the node's
+`properties` in memory: `capability = (cap & ~0x3000) | 0x2000`, or `simd_count 0`. If `rocminfo`
+then succeeds, the node is the cause.
+
+## Unblocking the bundled HIP runtime
+
+A signed bundle that carries its own ROCm runtime — the Strata engine at
+`.../components/engine/0.1.62-linux-x86_64-hip-rx9070/strata` with its own
+`libhsa-runtime64.so.1` and `libamdhip64.so.7` — cannot be fixed by patching nixpkgs, because its
+runtime is not the one nixpkgs builds. For those binaries the only lever is a process-local
+`LD_PRELOAD` that edits the KFD topology before the runtime parses it.
+
+The shim is [hack/rocm-skip-legacy-gpu.c](../../../../hack/rocm-skip-legacy-gpu.c). It intercepts
+`fopen`/`fopen64` and `open`/`open64`/`openat`/`openat64`, serves a memfd-backed copy for paths
+that end in `/kfd/topology/nodes/<digits>/properties`, and forwards every other call unchanged.
+Nothing on disk changes and no other process is affected.
+
+Build and run:
+
+```sh
+cc -shared -fPIC -O2 -o /tmp/rocm-skip.so hack/rocm-skip-legacy-gpu.c -ldl
+
+LD_PRELOAD=/tmp/rocm-skip.so rocminfo
+LD_PRELOAD=/tmp/rocm-skip.so llama-bench --list-devices     # any HIP binary
+LD_PRELOAD=/tmp/rocm-skip.so strata launch --model-path ... --no-tui --yes
+```
+
+The env var is inherited by every child, so one export covers a launcher and the engine it starts.
+The ROCm llama.cpp build named in the report (`/nix/store/4m7dyidw…-llama-cpp-0.9.0`) is not
+present on brys — both llama-cpp closures there are CPU/Vulkan — so the HIP check used
+`hipGetDeviceCount` from the engine's own bundled `libamdhip64.so.7`, which is the stricter case.
+
+`ROCM_SKIP_LEGACY_GPU_DEBUG=1` prints one line per rewritten node to stderr. Two modes exist:
+
+| Mode           | Value of `ROCM_SKIP_LEGACY_GPU_MODE` | Effect                                            | Measured result on brys                                                                |
+| -------------- | ------------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| skip (default) | `skip`                               | `simd_count` → 0, so `DiscoverGpu` drops the node | `rocminfo` lists CPU + `gfx1201`; `hipGetDeviceCount` → **rc 0, count 1**              |
+| doorbell       | `doorbell`                           | doorbell bits → 2, node stays visible             | `rocminfo` lists CPU + `gfx1201` + `gfx803`; `hipGetDeviceCount` → **rc 100, count 0** |
+
+The default is `skip` on purpose. The doorbell rewrite makes `hsa_init` succeed, but HIP still
+refuses to enumerate any device while the `gfx803` agent exists, so `skip` is the mode that
+actually unblocks a HIP consumer. Both modes keep the R9700 visible; only the legacy card is
+hidden.
+
+The Strata wrapper is a `bwrap` script (`strata-0-bwrap`) with no `--clearenv`, and it
+bind-mounts `/sys`, `/tmp` and `/var` from the host, so the variable and the `.so` reach the
+engine. The engine log proves the injection:
+
+```text
+[rocm-skip] node 2 (gfx 80003, doorbell 1): simd_count -> 0
+strata generate: opened 2 GPU queues in a fixed order
+strata generate: GPU 0: AMD Radeon AI PRO R9700 (gfx1201)
+strata generate: expert cache 18548 slots, 24.91 GiB of VRAM
+```
+
+Full run, with the model from the failing report:
+
+```sh
+export XDG_DATA_HOME=/var/lib/kdn/llms/models/.bench/xdg
+LD_PRELOAD=/tmp/rocm-skip.so \
+  strata launch --model-path /var/lib/kdn/llms/models/.bench/strata/models/IQ2_XS \
+  --context 32k --vision off --tune skip --mtp off --access local --port 8080 --no-tui --yes
+```
+
+Observed: `Loading the model… 45 s`, `The model is loaded and answering.`,
+`Ready: http://127.0.0.1:8080`. The engine log for that launch has no `native embedding` line and
+records `GPU 0: AMD Radeon AI PRO R9700 (gfx1201)`, `864 MiB of VRAM free with everything loaded`,
+plus one 53-token readiness request (`decode expert cache hit rate: 95.0%`). VRAM rose from 5.6 GB
+(the other session's Vulkan server) to 33.8 GB of 34.2 GB during the load, then returned to
+3.2 GB after `strata launch --stop`. The other session's `llama-server` kept running.
+
+Limits of this route:
+
+- It is per process. Every new engine start needs the variable, so the launcher that starts Strata
+  must export it.
+- It edits the values a runtime reads, not the runtime's logic. If the vendor later ships ROCr
+  with the upstream fix (issue #8801, PR #4936), drop the shim.
+- A nix-built HIP consumer should use the `rocm-runtime` patch instead. The shim remains the only
+  route for a bundle with its own runtime.
+- It assumes a dynamically linked glibc process, which the engine is (`ldd` shows libc and
+  libstdc++).
 
 ## Acceptance test
 
 1. `rocminfo` on brys prints `gfx1201` and `hipGetDeviceCount` returns 1 from a small HIP probe.
    No change to boot parameters, groups, IOMMU or the kernel.
-2. The fix lives in exactly one place: one `rocm-runtime` patch plus one consumer override.
-   `nix build` alone reproduces it; no `nixos-rebuild` is needed to change ROCm.
-3. One model from `brys-r9700-model-fit` runs under llama.cpp HIP at the same quantisation and
+2. The Strata engine starts under `LD_PRELOAD=/tmp/rocm-skip.so` without the `native embedding`
+   error, loads `IQ2_XS`, and reports `GPU 0: AMD Radeon AI PRO R9700 (gfx1201)`. Done — the
+   evidence lines are in [Unblocking the bundled HIP runtime](#unblocking-the-bundled-hip-runtime).
+3. The fix lives in exactly one place per consumer: the shim for a signed bundle, one
+   `rocm-runtime` patch plus one override for a nix-built package. `nix build` alone reproduces
+   it; no `nixos-rebuild` is needed to change ROCm.
+4. One model from `brys-r9700-model-fit` runs under llama.cpp HIP at the same quantisation and
    context as its Vulkan row, with decode and prefill recorded next to the Vulkan number. If HIP
    loses, the task keeps Vulkan and says so.
-4. `git log`/`jj log` shows no system-wide ROCm package and no kernel change from this task.
+5. `git log`/`jj log` shows no system-wide ROCm package and no kernel change from this task.
 
 ## Risks and open questions
 
