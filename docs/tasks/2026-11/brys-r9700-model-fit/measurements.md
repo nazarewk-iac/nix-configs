@@ -276,3 +276,19 @@ best llama.cpp config.
 Strata is the engine to serve on this host. The cost is that its packs are its own format: a
 llama.cpp GGUF cannot be reused, and the reverse.
 
+## Maya: blocked on packaging, not on the card
+
+Maya (the GLM-5.3-Flash / DS4.1-Flash engine) recognises the R9700 as `gfx1201, 32 GB, can be used`
+once `hack/rocm-skip-legacy-gpu.c` hides the Lexa, and its prerequisites check passes with a ROCm 7
+prefix assembled from nixpkgs (`rocmPackages.clr`, `hipblas`, `rocblas`, `rocwmma`,
+`rocm-device-libs`, `hipcc`). The **build** then fails in CMake: nixpkgs ships each ROCm package in
+its own store path, while Maya's `hip-lang-config.cmake` expects the `/opt/rocm` layout
+(`lib/x86_64-unknown-linux-gnu/cmake/hip-lang/hip-lang-targets.cmake` references files that a
+symlink farm does not satisfy).
+
+That is a packaging job, not a measurement: the fix is an FHS environment like the one
+`packages/strata/` already uses, with ROCm 7 and the compiler inside it and `ROCM_PATH=/opt/rocm`.
+Until then, GLM-5.3-Flash stays on llama.cpp at 8.9 t/s and the 321B tier is untested on Maya.
+
+What was spent: the repo clone, the Python venv, the llama.cpp source fetch, and about 30 minutes of
+fighting the CMake prefix. The model (96.5 GB) was never downloaded.
