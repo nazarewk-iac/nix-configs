@@ -302,3 +302,23 @@ fighting the CMake prefix. The model (96.5 GB) was never downloaded.
 | **Maya** for GLM-5.3-Flash | blocked on packaging (see above), not on the card. |
 | **ik_llama.cpp** | not in nixpkgs; a source build with its own Vulkan flags. Left as a task. |
 | deeper power caps (175/150 W) | the driver floor is 210 W on this card; anything lower is refused. |
+
+## PCIe: the card is at x16, and the link is not the limit
+
+Measured 2026-11-19 from sysfs and `lspci -vv`:
+
+| device | current | max |
+| --- | --- | --- |
+| R9700 `0000:0d:00.0` | **x16**, LnkSta reports 32 GT/s | x16 |
+| Lexa `0000:0e:00.0` | x8, 2.5 GT/s (downgraded) | x8 Gen3 |
+| root ports `0b:00.0` / `0c:00.0` | x16 | x16 |
+
+So the "Gen4 x8" line in the older host notes is stale, and **moving the RX 550 to another slot
+cannot help**: the R9700 already has all 16 lanes and the Lexa sits on its own CPU root port
+(`00:03.2`), not on a shared bifurcated slot. The `0b`/`0c` bridges in the R9700's path are the
+card's own PCIe switch, not a motherboard splitter.
+
+The measured rates agree: Strata streams cache misses over that link and still reaches 66.7 t/s
+decode and 2.8k t/s prefill, and llama.cpp with `--n-cpu-moe` sends **nothing** over PCIe per token
+(the experts it does not hold in VRAM are computed by the CPU in RAM). A 16 GB/s x8 link would have
+been enough for both; at x16 it is not a candidate for any slowdown seen here.
