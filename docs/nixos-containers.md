@@ -16,7 +16,7 @@ cache (plaintext prompt tokens) and `/run/secrets`.
 
 `containers.<name>` is the cheap confinement: `systemd-nspawn`, no flake input, a
 few options, and the guest is an ordinary NixOS module from this repository. The
-first instance is Prometheus on `brys` (`hosts/brys/llm.nix`).
+first instance is Prometheus on `brys` (`hosts-den/brys/llm.nix`).
 
 ## The four decisions
 

@@ -21,9 +21,9 @@ let
   # ...), derived from `data/llm.nix` so the client follows the server when an
   # alias moves. A caller that names an intent gets the model the fleet serves for
   # it, with no base-model id in the client. See
-  # ../brys/llm-agents.nix and
+  # ../../lib/llm-agents.nix and
   # ../../docs/tasks/2026-10/llm-model-expansion/alias-scheme.design.md.
-  aliasAgents = import ../brys/llm-agents.nix { inherit lib; };
+  aliasAgents = import ../../lib/llm-agents.nix { inherit lib; };
 in
 {
   imports = inputs.nix-configs.denLib.imports {
@@ -43,7 +43,7 @@ in
   #
   # These two settings keep the behaviour the old slot defaults gave on this host: the
   # Requesty cloud provider (auth from auth.json, hardcodes no model) and its credential,
-  # plus the local brys fleet reached through `kdn.llm.client.upstreams.brys` below.
+  # plus the local fleet reached through `kdn.llm.client.upstreams.litellm` below.
   kdn.opencode.settings.provider.requesty = { };
   # One subagent per purpose alias (`chat-std-fast`, `code-std-fast`, ...): the
   # caller names an intent and the server decides the model, so the served model

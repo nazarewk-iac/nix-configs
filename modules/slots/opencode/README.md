@@ -33,7 +33,7 @@ providers they want.
 
 brys runs its local DeepSeek V4 Flash (llama-swap on `127.0.0.1:39703`) and
 requesty through DSML proxies. A brys-specific devenv profile
-(`hosts/brys/devenv.nix`, imported by the primary `devenv.nix` via
+(`hosts-den/brys/devenv.nix`, imported by the primary `devenv.nix` via
 `profiles.hostname."brys".module`) supplies `kdn.opencode.settings` with the
 three providers and enables the proxy instances. See that file for the exact
 wiring.

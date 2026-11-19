@@ -13,8 +13,20 @@
 # opencode skeleton.
 {
   inputs,
+  lib,
   ...
 }:
+let
+  # One opencode subagent per brys purpose alias (chat-std-fast, code-std-fast,
+  # ...), derived from `data/llm.nix` so the client follows the server when an
+  # alias moves. This is the host that serves the fleet, so its own shell gets the
+  # agents too. See ../../lib/llm-agents.nix.
+  #
+  # NOTE: the agents name the `brys` provider. This file declares no
+  # `kdn.llm.client.upstreams.brys`, so the aliases resolve only when this shell
+  # gains that upstream; until then the agents are inert, not broken.
+  aliasAgents = import ../../lib/llm-agents.nix { inherit lib; };
+in
 {
   imports = inputs.nix-configs.denLib.imports {
     class = "devenv";
@@ -24,6 +36,9 @@
   # The wrapper exports REQUESTY_API_KEY; the `requesty-proxy` provider below reads it.
   kdn.opencode.authKeys.REQUESTY_API_KEY = "requesty";
   kdn.opencode.settings = {
+    # One subagent per purpose alias (`chat-std-fast`, `code-std-fast`, ...):
+    # the caller names an intent and the server decides the model.
+    agent = aliasAgents;
     provider = {
       # Native requesty — direct API, auth from auth.json; no model is hardcoded.
       requesty = { };

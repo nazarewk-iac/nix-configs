@@ -40,7 +40,7 @@ the same id**. Never hardcode the base model name in a client config.
 ## Every alias is also an opencode sub-agent
 
 On a host with the oams opencode profile, each purpose alias is registered as an
-opencode **subagent** with the alias as its name (`hosts/brys/llm-agents.nix`,
+opencode **subagent** with the alias as its name (`lib/llm-agents.nix`,
 generated from `data/llm.nix`). So an orchestrator delegates by naming the
 alias as the Task tool's `subagent_type`:
 

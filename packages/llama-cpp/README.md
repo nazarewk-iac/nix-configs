@@ -74,7 +74,7 @@ On brys that stalls small fresh prompts: a 124-token fresh prefill ran at
 1.0 t/s with BLAS against 10.3-17.7 t/s without (a 10-16x stall). The stall is
 specific to small prompts. A 2K prefill is 1.6x and a 16K prefill 1.2x faster
 without BLAS, and a 300-token decode is about 30% faster. `qwenGpu` in
-[hosts/brys/llm.nix](../../hosts/brys/llm.nix) now defaults to this build, so
+[hosts-den/brys/llm.nix](../../hosts-den/brys/llm.nix) now defaults to this build, so
 `llm-qwen` and `llms-frontier` use it. The full A/B is in
 [docs/local-llms.md](../../docs/local-llms.md).
 
