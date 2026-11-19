@@ -50,11 +50,76 @@ Operational notes:
 
 ## Local LLM serving
 
-brys runs several local LLMs through the standalone `kdn.llm.local` slot
-(backend: llama-server router mode, OpenAI-compatible API on `127.0.0.1:39703`).
-The grunt and surveyed sets co-reside on the R9700 by tier; the frontier
-(Qwen3.8-Flash-Next at 1M context, YaRN x4) retired from the fleet on
-2026-11-13 on electricity grounds, so the `main` router is empty.
+The fleet's llama-swap runs on `127.0.0.1:39700` as `llm-server`. The frontier
+(`Qwen3.8-Flash-Next` QFN at 1M) is not a llama.cpp model any more: it is a **Strata** engine on
+`:8080`, owned by `strata-manager` (`:8181`). Three llama-swap entries call `strata-select`, which
+asks the manager and then proxies: **`qfn`** (the four `*-deep-slow` aliases, profile-neutral —
+it sends `auto`), `qfn-omni-max` and `qfn-omni-fast` (the explicit "force this profile" path).
+
+### Operating points and the resting profile
+
+The card holds one engine at a time, and the VRAM reserve for the companion
+(`qwen3-omni-30b-a3b`, video and audio) is a start-up argument — so a profile change is a reload,
+not a slider. Measured 2026-11-19 (`docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`):
+
+| profile     | pack + reserve              |      QFN decode | omni              | RAM left      |
+| ----------- | --------------------------- | --------------: | ----------------- | ------------- |
+| `max`       | UD-IQ4_XS, whole card       | 95-100 / 73 @1M | 6.1 t/s co-loaded | 2-3 GiB       |
+| `omni-max`  | UD-IQ4_XS + 21.5 GB reserve |  59-62 / 42 @1M | 96.9 t/s, ready   | 3-5 GiB       |
+| `omni-fast` | IQ2_XS + 21.5 GB reserve    |   88 / 71.6 @1M | 98.8 t/s, ready   | **23-27 GiB** |
+
+**The resting profile is `omni-fast`** (`defaultProfile` in `strata-profiles.nix`). It is the only
+one that leaves RAM to spare, both models answer without a switch, and the frontier keeps 88 % of
+its short-context speed. A session that wants the better pack flips deliberately:
+
+```bash
+hack/brys-frontier.sh up --profile max --ttl 2h   # quality session; returns by itself
+hack/brys-frontier.sh up                          # back to the resting profile now
+hack/brys-frontier.sh down                        # stop the engine, free the card
+hack/brys-frontier.sh status                      # profile, models, RAM, VRAM
+```
+
+A flip costs 50-69 s either way (a reload plus a page-cache drop). Do not rely on omni co-loaded
+beside `max`: it gets about 1 GiB of VRAM and runs at 6.1 t/s.
+
+### The API an agent (or a person) steers it with
+
+`strata-manager` on `:8181` is the control plane, and it is the only thing that changes the
+profile. Picking a model in a harness never does: the `qfn` entry (the four `*-deep-slow` aliases)
+asks for `auto`, which keeps whatever profile is current.
+
+| call                                           | what it does                                             |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| `GET /status`                                  | profile, last switch, loaded companions                  |
+| `GET /stats`                                   | measured medians per event and per transition            |
+| `GET /events?limit=N`                          | the raw timed records                                    |
+| `POST /select {"profile": X}`                  | switch (`max`, `omni-max`, `omni-fast`, `none`)          |
+| `POST /select {"profile": X, "dry_run": true}` | what that switch would cost, without touching the engine |
+| `POST /select {"profile": "auto"}`             | keep the current profile (what a harness alias sends)    |
+| `POST /unload`                                 | unload the loaded companions; the engine is untouched    |
+| `POST /unload {"model": "audio-std-mid"}`      | unload one companion                                     |
+
+### The scenario it was built for
+
+A coding session is running and a screenshot of a BIOS/boot error arrives:
+
+1. `POST /select {"profile": "omni-fast"}` — only if `/status` says the engine is not already
+   there; `dry_run` answers that without a reload.
+2. Ask `audio-std-mid` (or a `vision-*` alias) for the reading. It loads beside the engine; the
+   frontier keeps its KV and its conversation cache.
+3. `POST /unload` when the question is answered. The VRAM comes back, the engine is untouched, and
+   coding continues on the same process.
+4. Return to `max` only when the work needs the better pack, and do it between turns: a switch
+   stops the engine, so the next turn re-prefills the whole context.
+
+### Every step is timed
+
+The manager appends one JSON line per event to `events.jsonl`:
+`switch` (from, to, seconds, cause, ok), `engine_load`, `engine_stop`, `cache_drop`,
+`companion_up`, `companion_down`. `GET /stats` aggregates n/median/p90/max per event and per
+transition, so a future switching skill quotes measured costs rather than guesses. First day of
+data (2026-11-19): switch median 42 s, `max → omni-fast` 50 s, `omni-fast → max` 69 s, engine load
+42-60 s, engine stop 3.7 s, cache drop 4.2 s, companion load 90 s, companion unload 0.6 s.
 
 The `llms` appliance specialisation from the universal tree is **not ported** to the den host
 yet. Only the `desktop` boot profile exists, so the served context sizes are the ones that share

@@ -1,8 +1,8 @@
 ---
 name: kdn-llms
-description: Pick and use a model on the kdn LLM server (brys) by its stable purpose alias. Use when choosing a model for a task, naming a model in opencode, or asking which local model to use for chat, code, vision, audio, reasoning, tools, retrieval, or orchestration.
+description: Pick and use a model on the kdn LLM server (brys) by its stable purpose alias, and steer the engine profile (max, omni-fast, omni-max) without reloading it by accident. Use when choosing a model for a task, naming a model in opencode, asking which local model to use for chat, code, vision, audio, reasoning, tools, retrieval, or orchestration, or when a session needs the multimodal companion beside the frontier.
 type: Skill
-timestamp: 2026-10-20T23:45:00+02:00
+timestamp: 2026-11-19T22:30:00+01:00
 ---
 
 # kdn-llms
@@ -203,7 +203,68 @@ full hardware inventory. All of it is in-memory and ring-buffered, so history
 needs a small poller, not a log parser. `/metrics` (Prometheus) is system-only.
 Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#observability-and-stats).
 
-## Keeping this skill current
+## The engine profile: one card, one engine, and what a switch costs
+
+On brys the frontier is **not** a llama.cpp model any more. One Strata engine serves QFN at 1M,
+and a **profile manager** on `:8181` owns it. The profile is a start-up argument, so changing it is
+a **reload**, not a slider:
+
+| profile     | what it is                         | frontier   | companion (omni)          | RAM left  |
+| ----------- | ---------------------------------- | ---------- | ------------------------- | --------- |
+| `max`       | UD-IQ4_XS pack, whole card         | 73 t/s @1M | 6 t/s co-loaded (useless) | 2-3 GiB   |
+| `omni-max`  | UD-IQ4_XS + 21.5 GB reserve        | 42 t/s @1M | 97 t/s, always ready      | 3-5 GiB   |
+| `omni-fast` | IQ2_XS + 21.5 GB reserve (resting) | 72 t/s @1M | 99 t/s, always ready      | 23-27 GiB |
+
+Measured 2026-11-19. The resting profile is **`omni-fast`**: it is the only one that leaves RAM to
+spare, both models are reachable without a switch, and the frontier loses about 2 % at 1M.
+
+**Picking a model never switches the engine.** The deep aliases (`chat-deep-slow`, …) go through a
+profile-neutral entry that asks the manager for `auto`, which keeps the current profile. The only
+things that switch are an explicit `POST /select` and the two `-omni` aliases, which force their
+profile on purpose.
+
+### Reading and steering it
+
+```bash
+curl -s http://brys:8181/status          # profile, last switch, loaded companions
+curl -s http://brys:8181/stats           # measured medians per event and per transition
+curl -s -X POST http://brys:8181/select \
+  -H 'Content-Type: application/json' -d '{"profile":"max","dry_run":true}'   # what it would cost
+```
+
+Rules that keep a session alive:
+
+- **Switch between turns, never during one.** A switch stops the engine, so an in-flight request
+  dies. The harness conversation survives, but the engine's KV cache does not: the next turn
+  re-prefills the whole context (`200k tokens ÷ 2.8k t/s ≈ 70 s`).
+- **Prefer loading the companion over switching the engine.** Inside a reserve, omni loads beside
+  the running engine (+90 s once, observed) and the frontier is untouched. `POST /unload` frees its
+  VRAM again with no engine reload.
+- **Do not ask for `max` to gain 2 %.** At 1M the difference to `omni-fast` is 71.6 vs 73.1 t/s,
+  while the switch costs 50-70 s plus a re-prefill.
+- **A media task inside a `max` session** is the one case where a switch pays: `max` leaves no
+  reserve, so omni would run at 6 t/s.
+
+### The scenario this was built for
+
+A coding session is running. A screenshot of a BIOS/boot error arrives:
+
+1. `POST /select {"profile":"omni-fast"}` — only if the engine is not already there (check
+   `/status` first; `dry_run` says whether it would change anything).
+2. Ask the multimodal model (`audio-std-mid`, `vision-*`) for the reading. It loads beside the
+   engine; the frontier keeps its KV.
+3. `POST /unload` when the question is answered. VRAM comes back, the engine is untouched.
+4. Continue coding on the same engine. Return to `max` only when the work needs the better pack,
+   and do it between turns.
+
+### Every event is timed
+
+The manager writes one JSON line per event to `events.jsonl`: `switch` (from, to, seconds, cause),
+`engine_load`, `engine_stop`, `cache_drop`, `companion_up`, `companion_down`. `GET /stats`
+aggregates them (`n`, median, p90, max, per event and per transition), so an agent can quote a
+measured cost instead of a guess. First measurement, 2026-11-19: switch median 42 s, `max →
+omni-fast` 50 s, `omni-fast → max` 69 s, engine load 42-60 s, cache drop 4-5 s, companion load
+90 s. Add a row here when a number drifts.
 
 This skill is a **living document**. Update it as we learn, in the same change
 that changes the fleet. Record:

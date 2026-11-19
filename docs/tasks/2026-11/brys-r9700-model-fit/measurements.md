@@ -937,3 +937,130 @@ Two things this does not change:
   load, which is exactly when it is needed.
 - `max` ↔ `omni-max` still costs a full reload. The drop makes the reload survive, not free.
 
+
+## Operating points: which one to rest on (2026-11-19)
+
+Four ways to have QFN and omni on one card, all measured back to back on the same host with the
+same prompt (48-96 tokens, temperature 0). "Warm" is the second request against a loaded model, so
+the load is not in the rate.
+
+| resting profile | pack + reserve                | QFN warm t/s | omni warm t/s        | RAM left        |
+| --------------- | ----------------------------- | -----------: | -------------------- | --------------- |
+| `max`           | UD-IQ4_XS, whole card         |  94.8-100.4  | 6.1 (co-loaded, CPU) | **2-3 GiB**     |
+| `omni-max`      | UD-IQ4_XS + 21.5 GB reserve   |       59.2-62.0 | **96.9**, always ready | 3-5 GiB     |
+| `omni-fast`     | IQ2_XS + 21.5 GB reserve      |         88.3 | **98.8**, always ready | **23-27 GiB** |
+| `max` again     | UD-IQ4_XS, whole card         |         93.3 | a switch away        | 3-4 GiB         |
+
+At the served 1M context the earlier sweep puts the same profiles at 73.1 t/s (`max`), 71.6
+(`omni-fast`) and 42.3 (`omni-max`), so `omni-fast` costs about **2 % at long context** and about
+**10 % at short context** — not the "third of the decode" the earlier notes assumed.
+
+Switch costs, with the page-cache drop in place: `max` → `omni-fast` 50 s, `omni-fast` → `max`
+69 s, `max` → `omni-max` 64 s. Zero OOM kills.
+
+### The resting profile is `omni-fast`
+
+`hosts-den/brys/strata-profiles.nix` sets `defaultProfile = "omni-fast"`, and that is the profile a
+timed loan returns to. Three measured reasons, in order of weight:
+
+1. **It is the only mode with RAM to spare.** 23-27 GiB available, against 2-5 GiB for every
+   alternative. Serving QFN from UD-IQ4_XS pins the box at 122 of 125 GiB, so any other workload (a
+   build, a container, the desktop) is one allocation away from the OOM killer.
+2. **Both models are ready without a switch.** The companion answers at 98.8 t/s whenever a video
+   or a voice clip arrives, instead of a 50-70 s flip plus a 47 s omni load.
+3. **The frontier keeps most of its speed**, 88.3 t/s short-context and 71.6 at 1M.
+
+The price is the pack: `IQ2_XS` is one quality tier below `UD-IQ4_XS`. A session that needs the
+better pack flips to `max` deliberately and comes back on its own:
+
+```bash
+hack/brys-frontier.sh up --profile max --ttl 2h    # quality session
+hack/brys-frontier.sh up                           # back to the resting profile now
+hack/brys-frontier.sh status                       # profile, models, RAM, VRAM
+```
+
+Verified end to end: `up --profile max --ttl 1m` flipped the engine, the transient `strata-revert`
+unit fired about 2.5 minutes later (1 min TTL plus the 69 s switch), and the host finished back on
+`omni-fast` with 25 GiB available.
+
+### Never co-load omni beside `max`
+
+The co-load is what llama-swap does on its own (`audio-std-mid` is in `with_surveyed`, which permits
+co-residence), and it works — QFN is untouched at 100.4 t/s. But with no reserve the companion gets
+about 1 GiB of VRAM and generates at **6.1 t/s**, 16× slower than the 98.8 t/s it reaches inside a
+21.5 GB reserve. A media request is worth the switch, not the co-load.
+
+### The alias caveat
+
+The fleet's deep aliases (`chat-deep-slow`, `code-deep-slow`, `tools-deep-slow`, `reason-deep-slow`)
+still select `max`, so the resting profile holds only while nothing requests them: the first such
+request flips the engine to UD-IQ4_XS and evicts the companion. That is deliberate — the aliases
+name the best pack — but it means "resting on `omni-fast`" is an idle state, not a session state.
+Pointing those aliases at `omni-fast` instead is a one-line change in `data/llm.nix`; it trades the
+quality tier for a session that never flips.
+
+## Steering the engine without reloading it (2026-11-19)
+
+The real-world shape of this problem: a coding session runs on QFN, a screenshot of a BIOS error
+arrives, the agent needs the multimodal companion for a few minutes, then the work returns to
+coding and the user wants the best pack again — **without interrupting the session**.
+
+Three facts decide the design:
+
+1. The harness holds the conversation, so a reload never loses the session. What it loses is the
+   engine's KV and conversation cache, so the next turn re-prefills (200k tokens ≈ 70 s).
+2. A profile switch stops the engine, so an in-flight request dies. Switch between turns.
+3. Inside a reserve, the companion loads beside the running engine. Outside one it gets about
+   1 GiB of VRAM and runs at 6.1 t/s.
+
+### The alias no longer decides the profile
+
+`data/llm.nix` now names the frontier entry **`qfn`** and its command is `strata-select auto`. The
+manager answers `auto` by keeping the current profile, so choosing a model in a harness — OpenCode,
+Pi, anything — never reloads the engine. The two `qfn-omni-*` entries stay as the explicit "force
+this profile" path for a caller that knows it needs the reserve.
+
+### Unloading a companion must not unload the frontier
+
+The first version unloaded *every* llama-swap model before a reload. That kills the child whose
+request asked for the switch: measured once, llama-swap started `strata-select max`, the manager
+unloaded all models ten milliseconds later, and the client got HTTP 500. The fix is to unload only
+the companions (`/api/models/unload/<id>` for every loaded id that is not a frontier entry). The
+frontier proxies stay valid across a switch — same port, same protocol — so they must survive it.
+
+### The control plane
+
+| call                                           | purpose                                                  |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| `GET /status`                                  | profile, last switch, loaded companions                  |
+| `GET /stats`                                   | n/median/p90/max per event and per transition             |
+| `GET /events?limit=N`                          | the raw timed records                                    |
+| `POST /select {"profile": X}`                  | switch                                                   |
+| `POST /select {"profile": X, "dry_run": true}` | what it would cost, without touching the engine           |
+| `POST /select {"profile": "auto"}`             | keep the current profile                                 |
+| `POST /unload[{"model": id}]`                  | unload companions, engine untouched                     |
+
+### The event journal, and what it already shows
+
+One JSON line per event in `events.jsonl`: `switch`, `engine_load`, `engine_stop`, `cache_drop`,
+`companion_up`, `companion_down`. Companion events come from a 3 s poll of llama-swap's view, so
+their load times are accurate to the poll and marked `observed`; the unload is faster than the poll
+and is recorded as "how long it was loaded", not as a duration.
+
+First day, 21 events:
+
+| event            | n | median | max  |
+| ---------------- | -: | -----: | ---: |
+| `switch`         | 6 |   42 s | 69 s |
+| `engine_load`    | 6 |   42 s | 60 s |
+| `engine_stop`    | 2 |  3.7 s | 3.8 s |
+| `cache_drop`     | 2 |  4.2 s | 4.9 s |
+| `companion_up`   | 2 | 90.1 s | 90.1 s |
+| `companion_down` | 1 |  0.6 s | 0.6 s |
+
+Per transition: `max → omni-fast` 50 s, `omni-fast → max` 69 s. A restore at manager start is
+42-45 s.
+
+This is the table a switching skill should quote. Add to it by running the scenario, not by
+guessing: `hack/probe-qfn-omni-scenario.py` replays the whole story and prints `GET /stats` at the
+end.
