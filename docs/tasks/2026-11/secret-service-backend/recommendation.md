@@ -197,7 +197,7 @@ The recorded runs (session journal `poc/results.md`, `poc/summary.md`) change th
 
 - **rosec is the primary route** — the only candidate that interops with the **deployed**
   libsecret 0.21.8.2 (30/30 DH sessions; gopass fails 20/30 with `invalid DH public value
-  length: 129`) and both external unlock channels work headlessly (`AuthProviderFromPipe`,
+length: 129`) and both external unlock channels work headlessly (`AuthProviderFromPipe`,
   `SSH_ASKPASS`). Conditions: the helper must always be configured (a locked read without it
   hangs), packaging must be solved (pinned nixpkgs 0.0.34 fails to build; 0.0.40 release binary
   is not a package), and a real-YubiKey smoke test is still owed.

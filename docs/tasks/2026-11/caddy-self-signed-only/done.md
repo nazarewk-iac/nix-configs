@@ -10,14 +10,14 @@ timestamp: 2026-11-12T13:20:00+01:00
 
 ## Changes
 
-| File | Change |
-| --- | --- |
+| File                                                        | Change                                                                                                                                                               |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `modules/universal/profile/machine/workstation/default.nix` | Remove `kdn.monitoring.prometheus-stack.caddy.grafana = "grafana.<host>.kdn.im"`. It was dead (the next line disables the stack) and it created a vhost with no TLS. |
-| `modules/den/aspects/web-exposure.nix` | Set `services.caddy.globalConfig = "auto_https off"` next to `services.caddy.enable = true`. |
-| `modules/den/aspects/service-caddy.nix` | Same. |
-| `modules/universal/services/caddy/default.nix` | Same. |
-| `modules/universal/monitoring/prometheus-stack/default.nix` | Create the Grafana vhost only when `cfg.enable` holds; document that the vhost carries no TLS of its own. |
-| `modules/den/aspects/monitoring.nix` | Document the same on the `caddy.grafana` option. |
+| `modules/den/aspects/web-exposure.nix`                      | Set `services.caddy.globalConfig = "auto_https off"` next to `services.caddy.enable = true`.                                                                         |
+| `modules/den/aspects/service-caddy.nix`                     | Same.                                                                                                                                                                |
+| `modules/universal/services/caddy/default.nix`              | Same.                                                                                                                                                                |
+| `modules/universal/monitoring/prometheus-stack/default.nix` | Create the Grafana vhost only when `cfg.enable` holds; document that the vhost carries no TLS of its own.                                                            |
+| `modules/den/aspects/monitoring.nix`                        | Document the same on the `caddy.grafana` option.                                                                                                                     |
 
 `services.caddy.globalConfig` is a `types.lines` option, so the aspect value and the nixpkgs
 module value (log settings, ports) concatenate.

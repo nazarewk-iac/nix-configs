@@ -12,6 +12,7 @@ timestamp: 2026-11-08T18:06:09+01:00
 
 `nix` does not memoize `import inputs.nixpkgs { … }`: every call is a fresh
 instantiation. The repo instantiates nixpkgs many times:
+
 - `flake.nix:466` (`meta.nixpkgs` for colmena) and `flake.nix:481`
   (`meta.nodeNixpkgs."<host>"`, one `import inputs.nixpkgs` **per host**),
 - `flake.nix:511` (easykubenix),
@@ -32,6 +33,7 @@ made impossible or loudly rejected. Related: [../2026-09/eval-performance/](../2
 ## Design sketch
 
 1. **One instantiation at the flake.** Build, once, per supported system:
+
    ```nix
    pkgsFor = system: import inputs.nixpkgs {
      inherit system;
@@ -40,6 +42,7 @@ made impossible or loudly rejected. Related: [../2026-09/eval-performance/](../2
    };
    pinnedPkgs = lib.genAttrs supportedSystems pkgsFor;
    ```
+
    Expose it as a flake output (`self.pinnedPkgs` / `legacyPackages`) and via
    `kdnConfig` so den aspects and `specialArgs` reach the same value.
 
@@ -72,9 +75,9 @@ made impossible or loudly rejected. Related: [../2026-09/eval-performance/](../2
 ## Constraints and trade-offs (must be decided in this task)
 
 - **`nixpkgs.config` can no longer vary per host.** `allowUnfree`, `cudaSupport`,
-   `permittedInsecurePackages`, etc. currently may differ per host; a single
-   instantiation forces one config per `system`. Inventory every
-   `nixpkgs.config` in the repo, unify where possible, and record any host that
+  `permittedInsecurePackages`, etc. currently may differ per host; a single
+  instantiation forces one config per `system`. Inventory every
+  `nixpkgs.config` in the repo, unify where possible, and record any host that
   genuinely needs a divergent config — the escape hatch is either a second
   deliberately-instanced pkgs (documented cost) or dropping that need.
 - **`hostPlatform` is fixed by the shared pkgs.** Cross-compilation

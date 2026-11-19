@@ -23,4 +23,3 @@ generated: true
 - **[001-benchmark-suite](001-benchmark-suite/index.md)** — 4 concepts: Research 2, Solution 1, Task 1
 - **[002-disk-offload](002-disk-offload/index.md)** — 5 concepts: Research 3, Solution 1, Task 1
 - **[003-runner-eval](003-runner-eval/index.md)** — 4 concepts: Research 2, Solution 1, Task 1
-

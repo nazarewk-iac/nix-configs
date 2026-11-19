@@ -17,4 +17,3 @@ generated: true
 
 - **[Opinion research, batch A: what users and reviewers say](opinions-batch-a.research.md)** — What real users and reviewers say about eight new local models (batch A) from Reddit r/LocalLLaMA, r/LocalLLM, Hacker News, blog reviews, and model cards; strengths, weaknesses, comparisons, and runtime gotchas, with a source for each claim. · `Research` · `stable` · `unverified`
 - **[Opinion research, batch B: what users and reviewers say](opinions-batch-b.research.md)** — What real users and reviewers say about the batch B local models (Qwen coder/VL/Omni, QwQ, North Mini Code, Tiel-Coder, the Qwen3.5/3.6 fleet, Gemma 4, GLM-4.7-Flash, Granite, Seed-OSS, OLMo, MiniCPM-V, Ternary Bonsai, Qwen3 embeddings) from Reddit r/LocalLLaMA, Hacker News, blogs, leaderboards, and model cards; strengths, weaknesses, comparisons, and runtime gotchas, with a source for each claim. · `Research` · `stable` · `unverified`
-

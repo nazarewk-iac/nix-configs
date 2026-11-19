@@ -6,8 +6,9 @@ Research is source-verified against `BerriAI/litellm` main + docs.litellm.ai.
 ## #3 Routing: preferences, parallelism, pinning, historical speed, warm models
 
 **Can I prioritise oams over brys for specific models?**
+
 - Yes, **per model group**, with `litellm_params.weight` under `routing_strategy:
-  simple-shuffle` (the key is read from `litellm_params`, NOT `model_info`). Give the
+simple-shuffle` (the key is read from `litellm_params`, NOT `model_info`). Give the
   oams deployment a higher weight for the aliases where it is faster. The group is
   the alias, so weighting is per-alias automatically.
 - To pin a **specific host** for a specific alias, declare a distinct `model_name`
@@ -17,7 +18,7 @@ Research is source-verified against `BerriAI/litellm` main + docs.litellm.ai.
   `model: <model_info.id>` request also pins one deployment but is doc-thin.
 
 **Does it track parallelism?** Yes — `routing_strategy: least-busy` uses a live
-per-deployment in-flight counter (+ short pick reservations). It counts *requests*,
+per-deployment in-flight counter (+ short pick reservations). It counts _requests_,
 not GPU slots/KV; llama-swap's real slot state is invisible to it.
 
 **Does load balancing track historical speed / latency?** Yes, with
@@ -96,16 +97,16 @@ overridden for `/metrics`), scraped at `/metrics/` (no 307). Verified up;
 
 ## Blackholed-host caveat (measured 2026-11-07, IMPORTANT)
 
-Health-check routing does **not** reliably protect against a *blackholed* host in
+Health-check routing does **not** reliably protect against a _blackholed_ host in
 this deployment, for two measured reasons:
 
 1. **The egress relay hides the blackhole.** LiteLLM probes `10.233.100.1:8444` (the
    etra-side socat relay). The relay's local accept always succeeds; only its
-   *upstream* connect to the blackholed oams hangs. So the probe sits in the
+   _upstream_ connect to the blackholed oams hangs. So the probe sits in the
    relay until its timeout, not until a fast TCP refusal.
 2. **The health cycle ran at 60 s, not the 5 s `health_check_timeout`.** Logs show
    `background_health_check_cycle_duration_exceeded_interval duration_ms=60045
-   interval_seconds=30`. `health_check_timeout` IS read (`health_check.py:530`) but
+interval_seconds=30`. `health_check_timeout` IS read (`health_check.py:530`) but
    the cycle still took 60 s — the probe's residual socket read is not bounded by
    that timeout, so a cycle exceeds the interval. `deployment_state` stayed 0 for the
    blackholed oams throughout, and real requests still hung ~120-200 s.
@@ -113,9 +114,10 @@ this deployment, for two measured reasons:
 `socat connect-timeout=5` did **not** fix it (a SYN blackhole is bounded by the
 kernel TCP timeout, not socat's inactivity timer).
 
-**What actually works today:** a *stopped* host (connection refused) fails over in
-~30 ms with no config help. A *blackholed* host is the hard case. Options, in order
+**What actually works today:** a _stopped_ host (connection refused) fails over in
+~30 ms with no config help. A _blackholed_ host is the hard case. Options, in order
 of robustness, if this must be solved:
+
 - Put the health check on the **host** side (probe `100.79.80.79:39704` directly
   from etra, where a blackhole is a real connect timeout) and feed the result via a
   custom `async_filter_deployments` — bypasses the relay-hides-it problem.
@@ -173,6 +175,7 @@ this stays a scaffold until a matching `prisma-engines` is packaged.
 ## Corrected facts, verified against the installed closure (2026-11-07)
 
 ### #1 What actually needs a DB
+
 The proxy has **44 `prisma_client is None` guards**. A DB is required for:
 virtual keys (`/key/*`), users/teams (`/user/new`, `/team/new`), **budgets**
 (spend counters), **spend logs** (`/spend/logs`, `disable_spend_logs` controls
@@ -183,18 +186,22 @@ routing and the complexity router do NOT need a DB** — they are config/in-memo
 and DB-stored models, none of which this fleet uses.
 
 ### #2 Does /metrics expose tok/s and prefill (TTFT) so we can tune later?
+
 Yes — per deployment:
+
 - `litellm_deployment_latency_per_output_token` (histogram) = seconds per output
   token, i.e. **inverse decode tok/s** per deployment.
 - `litellm_llm_api_time_to_first_token_metric` (histogram) = **TTFT** per
   deployment/model, the prefill proxy.
 - plus success/failure counters and `litellm_deployment_state`.
-So real-world decode/prefill are observable per host+model from Prometheus, and
-the measured `rates` in `data/llm.nix` can be refined from those (a periodic
-export → data file is a future nicety; not automated yet).
+  So real-world decode/prefill are observable per host+model from Prometheus, and
+  the measured `rates` in `data/llm.nix` can be refined from those (a periodic
+  export → data file is a future nicety; not automated yet).
 
 ### #3 Is config `tpm` the only source of truth, or are real measurements used?
+
 Both, for **different** strategies:
+
 - `simple-shuffle`: `weight`/`rpm`/`tpm` from config are **the only** input
   (static weighting).
 - `usage-based-routing(-v2)`: uses **live** tpm/rpm counters (Redis) against the
@@ -203,40 +210,44 @@ Both, for **different** strategies:
   `time_to_first_token_seconds` and `latency_normalized` sample lists (last 10,
   averaged over TTL) — config `tpm`/`rpm` are only ceilings. **This is the one
   that self-tunes to real speed**, in-memory per worker (Redis to share).
-So config `tpm` is a ceiling/weight, not a claim the router trusts over reality
-when you pick latency-based routing.
+  So config `tpm` is a ceiling/weight, not a claim the router trusts over reality
+  when you pick latency-based routing.
 
 ### #4 Where can `tpm` be used?
+
 1. **Rate limiting** per deployment (usage-based-routing: refuse/queue past tpm).
 2. **Weight** for `simple-shuffle` (when `weight` is unset, tpm/rpm stand in).
 3. **`max_parallel_requests` derivation** (`rpm` > `tpm/1000*6` when unset).
 4. As a **ceiling** for usage-based and latency-based routing.
-It is NOT a throughput predictor the router uses for latency (that comes from
-measurements under latency-based routing).
+   It is NOT a throughput predictor the router uses for latency (that comes from
+   measurements under latency-based routing).
 
 ### #5 The real DB blocker (corrected — my earlier reason was wrong)
+
 `prisma` 0.15.0 and `psycopg` ARE in the litellm closure — so the version is not
 the problem. The actual gaps:
+
 - **No engine binary** packaged: prisma 0.15 needs engine commit `393aa359…`
   (prisma-engines **5.17.0**); nixpkgs ships only 6.19.3 / 7.10.0, and prisma on
   `linux-nixos` has no prebuilt (the CLI hits `binaries.prisma.sh .../linux-nixos/
-  ...404`).
+...404`).
 - **No generated prisma client** and **`litellm_proxy_extras` is not installed**
   in the nixpkgs package — litellm's DB path needs `prisma generate` (schema-engine
-  + node) to produce the Python client, which the package does not bake.
-Therefore enabling `DATABASE_URL` fails at `prisma generate` / query-engine load,
-not at a version check. Fixing it is a packaging job: ship a matching
-`prisma-engines` 5.17.0 built for NixOS, bake the generated client, and add
-`litellm_proxy_extras`. That is out of scope for a config change and is why the DB
-stays an off-by-default scaffold. (A `prisma-engines_6` `query-engine` exists and
-could be tried with `PRISMA_QUERY_ENGINE_BINARY`, but without a generated client it
-is moot.)
+  - node) to produce the Python client, which the package does not bake.
+    Therefore enabling `DATABASE_URL` fails at `prisma generate` / query-engine load,
+    not at a version check. Fixing it is a packaging job: ship a matching
+    `prisma-engines` 5.17.0 built for NixOS, bake the generated client, and add
+    `litellm_proxy_extras`. That is out of scope for a config change and is why the DB
+    stays an off-by-default scaffold. (A `prisma-engines_6` `query-engine` exists and
+    could be tried with `PRISMA_QUERY_ENGINE_BINARY`, but without a generated client it
+    is moot.)
 
 ## Q&A round 2 (verified in the installed closure, 2026-11-07)
 
 ### Q1 How do routing strategies work without a DB? Memory or Redis? Is Redis persisted?
+
 - Routing state is **never** in the DB. The router builds `self.cache =
-  DualCache(redis_cache=…, in_memory_cache=InMemoryCache())` (`router.py:904`).
+DualCache(redis_cache=…, in_memory_cache=InMemoryCache())` (`router.py:904`).
   - **No Redis configured → in-memory only** (`InMemoryCache` = an in-process
     dict, no disk). State is per-worker and **lost on restart**.
   - **Redis configured → shared and durable** across workers/pods; `InMemory`
@@ -257,6 +268,7 @@ is moot.)
   `/metrics`, not something the router does itself.)
 
 ### Q2 Is prefill tok/s available, or only TTFT? Is TTFT biased for follow-ups?
+
 - There is **no direct prefill-tokens/sec metric**. Available per deployment:
   `litellm_llm_api_time_to_first_token_metric` (TTFT), and input-token counters
   (`litellm_input_tokens_metric`, `litellm_cached_tokens_metric`,
@@ -271,6 +283,7 @@ is moot.)
   request numbers in `data/llm.nix` are a starting estimate, not ground truth.
 
 ### Q3 Cold start / which models are loaded on the target?
+
 - **No cold-start or loaded-state awareness in routing.** No `cold_start` /
   `load_seconds` / `is_loaded` signal exists in the router strategies (grep: none).
   LiteLLM cannot see llama-swap's loaded/evicted state.
@@ -280,6 +293,7 @@ is moot.)
   use (Q4). Not implemented.
 
 ### Q4 Host-side healthcheck — did I implement it? Why not?
+
 - **No.** Only LiteLLM's built-in `background_health_checks` +
   `enable_health_check_routing` are enabled; measured (see the blackhole section)
   they do not skip a blackholed host behind the etra relay, because the relay
@@ -294,11 +308,12 @@ is moot.)
 ## Implemented 2026-11-07: durable state + host-side probe
 
 ### Durable routing state (Redis + AOF)
+
 - `services.redis.servers.litellm` on etra: `bind 127.0.0.1`, `appendOnly=true`,
   `appendFsync=everysec`, dir `/var/lib/redis-litellm` persisted under `sys/state`.
 - A narrow socat relay exposes it on the litellm bridge (`10.233.100.1:6379`); the
   guest sets `general_settings.coordination_redis = { host = 10.233.100.1; port =
-  6379; }`, and the router's `DualCache` then uses it (`router._update_redis_cache`).
+6379; }`, and the router's `DualCache` then uses it (`router._update_redis_cache`).
 - **Verified**: litellm writes `deployment:<id>:allowed_fails`,
   `global_router:*:rpm:*`/`:tpm:*`, and the health state into Redis; a no-TTL key set
   before `systemctl restart redis-litellm` survived (AOF on disk). Ephemeral
@@ -307,13 +322,15 @@ is moot.)
   latency-based-routing; simple-shuffle builds none.
 
 ### Host-side probe plugin (fixes the blackhole caveat)
+
 Two pieces, because the in-container probe cannot tell "dead" from "slow" through
 the egress relay (the relay accepts, then hangs upstream):
+
 1. **`litellm-host-probe.service` + `.timer`** on the etra host: every 15 s,
    `timeout 3 bash -c "exec 3<>/dev/tcp/<netbird-ip>/39704"` for brys and oams —
    a real connect timeout over NetBird. Writes `/var/lib/litellm/host-health.json`
    atomically (`{"brys": true, "oams": false}`). The dir is already bind-mounted
-   into the container, so the file is read there (a *file* bind-mount would break
+   into the container, so the file is read there (a _file_ bind-mount would break
    on the atomic rename — hence the dir mount + tmpfiles placeholder).
 2. **`probe.py`** (mounted at `/etc/litellm/probe.py`, loaded by litellm via
    `callbacks: ["probe.host_probe"]` from beside config.yaml) implements

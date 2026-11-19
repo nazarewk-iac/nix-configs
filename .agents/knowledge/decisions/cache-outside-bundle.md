@@ -5,7 +5,6 @@ description: "kdn-okf caches in the XDG cache, never inside the bundle."
 generated: { by: agent/cli, at: "2026-11-16T14:12:34Z" }
 status: stable
 id: cache-outside-bundle
-
 ---
 
 # Cache outside the bundle

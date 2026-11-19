@@ -21,8 +21,8 @@ idea below is tagged with the measurement it needs.
 
 `nix-eval-jobs` evaluates an attribute set with **N worker processes**, each restarted when its RSS
 exceeds `--max-memory-size`; `workers * max-memory-size` is one memory budget. Each JSON line
-carries `stats.wallMs` and `stats.allocBytes` for that attribute, so it also reports *which host is
-slow* rather than only an aggregate. Relevant flags: `--flake`, `--workers`, `--max-memory-size`,
+carries `stats.wallMs` and `stats.allocBytes` for that attribute, so it also reports _which host is
+slow_ rather than only an aggregate. Relevant flags: `--flake`, `--workers`, `--max-memory-size`,
 `--no-instantiate` (evaluate without writing `.drv`, faster), `--eval-store`, `--check-cache-status`,
 `--reference-lock-file`.
 
@@ -34,7 +34,7 @@ nix-eval-jobs --flake .#nixosConfigurations --workers "$(nproc)" --max-memory-si
 ```
 
 **Trade-off to verify (important):** `nix-eval-jobs` uses **separate processes**, so it does **not**
-share a memoised nixpkgs across hosts. That is the *opposite* of the lever in the pkgs-pinning task
+share a memoised nixpkgs across hosts. That is the _opposite_ of the lever in the pkgs-pinning task
 (one `pkgs` value shared in **one** process). So:
 
 - Big many-core machine, independent hosts → **parallel workers** win on wall time.
@@ -43,8 +43,8 @@ share a memoised nixpkgs across hosts. That is the *opposite* of the lever in th
 
 Measure both: (a) `nix-eval-jobs --workers 1` vs `--workers N` on all six hosts; (b) the
 single-process multi-host `nix eval` (the ~90 s observation) with and without pinned pkgs. The right
-answer may be *per-host isolation for CI* (parallel) and *pinned single-process for local fleet
-checks* — different tools for different goals.
+answer may be _per-host isolation for CI_ (parallel) and _pinned single-process for local fleet
+checks_ — different tools for different goals.
 
 ## Idea 2 — stop defeating the flake evaluation cache
 
@@ -72,7 +72,7 @@ exists on the client we actually ship before relying on it.
 
 ## Idea 5 — smaller knobs worth one measurement each
 
-- `max-jobs` / `cores`: eval is single-threaded per process; these affect the *build*, not eval.
+- `max-jobs` / `cores`: eval is single-threaded per process; these affect the _build_, not eval.
   Not a lever for eval wall time (confirm and stop attributing eval time to them).
 - `--no-instantiate`: for pure eval timing, drop `.drv` writing (compare to the drvPath timing).
 - `filetransfer-retry-*`, `connect-timeout`: reduce flaky-network stalls in cold evals (the
@@ -83,7 +83,7 @@ exists on the client we actually ship before relying on it.
 ## Ranked recommendation (after research, before measurement)
 
 1. **L1 — reduce specialisations** (from machine-differences.md): each `specialisation.*` re-evaluates
-   the whole module graph and is *inside* `config.system.build.toplevel`. brys has four. This is the
+   the whole module graph and is _inside_ `config.system.build.toplevel`. brys has four. This is the
    biggest single host-eval cost and none of the above touches it.
 2. **Idea 1** for CI/fleet wall time on many cores; **Idea 2** to make our own measurements honest.
 3. **Pinning (L2)** only for the single-process shared case; it complements, not replaces, parallelism.
@@ -104,13 +104,15 @@ Claimed win: **1.5–1.8× faster NixOS-config eval than Nix 2.34.8 on one core,
 `eval-jobs`; hash auto-fixing; JSON output for every command.
 
 Considerations for this repo:
+
 - Flakes must be **local and locked** — a local worktree flake with `flake.lock` is fine; remote
-  inputs *in the lock* are fine; no registry/`github:` roots, no `nix flake lock`.
+  inputs _in the lock_ are fine; no registry/`github:` roots, no `nix flake lock`.
 - **No import-from-derivation** — we already removed our one eval-time IFD
   (`kdn-authorized-keys` → `builtins.toFile`), so this holds.
 - Integrity must be checked with `nix flake check` / a build, since eval semantics can diverge.
 
 **Test run on host `moss`** (`nix run github:numtide/iets -- build .#nixosConfigurations.moss.config.system.build.toplevel`):
+
 - `--dry-run` (evaluate + print the build plan): **15 s**.
 - real build: **47 derivations, ~29 s** (packages cached), output `…-nixos-system-moss`. It evaluated
   the pinned config and drove the whole NixOS closure.
@@ -126,15 +128,15 @@ committing to it.
 Same input: `moss.config.system.build.toplevel`. iets binary built locally (0.2.0), invoked
 directly (no `nix run` overhead). nix = Lix 2.95.3, `--option builders ""`.
 
-| metric | nix | iets | note |
-| --- | --- | --- | --- |
-| cold eval/plan | ~69 s | 169 s (incl. flake resolve) | iets cold is slower here |
-| **warm single eval** | **65.6 s** | **0.81 s** | **~80× faster warm** — iets' eval cache |
-| drvPath | `iv5lwn9…` | `23pfdz3…` | **different** |
+| metric               | nix        | iets                        | note                                    |
+| -------------------- | ---------- | --------------------------- | --------------------------------------- |
+| cold eval/plan       | ~69 s      | 169 s (incl. flake resolve) | iets cold is slower here                |
+| **warm single eval** | **65.6 s** | **0.81 s**                  | **~80× faster warm** — iets' eval cache |
+| drvPath              | `iv5lwn9…` | `23pfdz3…`                  | **different**                           |
 
 **Why the drv differs (benign):** the two toplevel drvs differ only in the `etc`/`system-path`/
 `activate`/`check-sshd-config` input paths; env keys differing are just `out`/`__json`. So the
-*evaluation result is the same system*; the leaf paths differ because iets instantiates with a
+_evaluation result is the same system_; the leaf paths differ because iets instantiates with a
 different but equivalent build of `etc` (a path-only divergence, not a config difference). Per the
 owner: "paths don't HAVE to be equal as long as they evaluate significantly faster and still work."
 

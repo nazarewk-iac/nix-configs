@@ -17,4 +17,3 @@ generated: true
 
 - **[Make zellij-llm clearer to use](definition.md)** — Make zellij-llm clearer and easier to use — reduce the boilerplate and confusing steps an agent/user hits when driving long-running commands in a dedicated zellij session. · `Task` · `stable` · `unverified`
 - **[Solution — make zellij-llm clearer to use](done.md)** — Solution — zellij-llm is simpler to use: derived names, persist-by-default panes, watch/wait subcommands, early socket-length error, and a matching skill doc. · `Solution` · `stable` · `unverified`
-

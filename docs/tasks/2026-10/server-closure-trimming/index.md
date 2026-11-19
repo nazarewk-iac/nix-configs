@@ -17,4 +17,3 @@ generated: true
 
 - **[Shrink the system closure and repair the collector](definition.md)** — Shrink the system closure of the headless hosts and repair kdn-nix-collect-garbage, so a small cloud server keeps its store near the closure size. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — Add kdn.minimalServer, gate each heavy closure item on it or on kdn.desktop.enable, repair kdn-nix-collect-garbage, and record the booted-system GC rule. · `Solution` · `stable` · `unverified`
-

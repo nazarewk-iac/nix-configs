@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[012 — clone the darwin workstation as a den host](definition.md)** — A reference map that sizes a den reimplementation of the darwin workstation, plus three NixOS follow-on hosts and the parity method. · `Task` · `stable` · `unverified`
-

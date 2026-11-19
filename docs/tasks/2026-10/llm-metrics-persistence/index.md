@@ -18,4 +18,3 @@ generated: true
 - **[llama-swap data surface — verified on `brys` (v249) + stats-collector design](api-surface.research.md)** — The verified llama-swap data surface on brys: activity ring size, event payloads, alias-vs-base-id, captures, and the collector schema built on them. · `Research` · `stable` · `unverified`
 - **[Persisting the LLM performance data](definition.md)** — Persist llama-swap's per-model performance safely on brys: decide between a Prometheus scrape path, a log parser, and an event-driven JSONL collector, and put the data on the impermanent disk layout without losing it at boot. · `Task` · `stable` · `unverified`
 - **[Research: cost of persisting the LLM stats](research.md)** — Cost and correctness of persisting llama-swap statistics — the measured event stream, what Prometheus can and cannot see, the series and disk arithmetic, and the impermanence rules that decide whether a sample survives a reboot. · `Research` · `stable` · `unverified`
-

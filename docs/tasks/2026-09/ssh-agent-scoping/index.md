@@ -18,4 +18,3 @@ generated: true
 - **[Design: a verifiable signing setup with two routes](design.md)** — Design and parked state of the signing slot, the narrowed 1Password IdentityAgent block, and the plain-key route switch. · `Design` · `stable` · `unverified`
 - **[How authentication, signing and the route switch work](research.md)** — Measured mechanism of SSH authentication, SSH commit signing, and the switch between two signing keys on the Darwin workstation. · `Research` · `stable` · `unverified`
 - **[Scope the SSH agent and the git signing key](definition.md)** — Narrow the 1Password IdentityAgent blanket from `Host *` to the github hosts, and decide whether git signing needs a per-host scope. · `Task` · `stable` · `unverified`
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Run nixpkgs OpenSSH as the sshd on anji](definition.md)** — Replace Apple's sshd on anji with the pinned nixpkgs OpenSSH, so the Mac presents the post-quantum host identity and runs the same sshd as the fleet. · `Task` · `stable` · `unverified`
-

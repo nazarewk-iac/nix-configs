@@ -60,4 +60,3 @@ generated: true
 
 - **[guides](guides/index.md)** — 1 concept: How-To 1
 - **[tasks](tasks/index.md)** — 347 concepts: Task 143, Research 103, Solution 54, Design 20, Status 10, Reference 6, unknown 6, Decision 3, Plan 1, Review 1
-

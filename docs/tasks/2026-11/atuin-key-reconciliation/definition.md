@@ -34,17 +34,17 @@ Two separate things are behind that message, and only one of them is a machine h
 ## Finding
 
 **The key itself is consistent.** `oams` (`kdn` and root), `brys` root and
-`default.unattended.sops.yaml` all hold the *same* 24-word mnemonic. Compare them as word lists,
+`default.unattended.sops.yaml` all hold the _same_ 24-word mnemonic. Compare them as word lists,
 never as byte strings or hashes: `atuin key` ends with a newline, the SOPS value does not, so every
 hash of the raw text differs even when the keys are identical.
 
-| Where | Same as SOPS |
-| --- | --- |
-| `oams` `kdn`, `oams` root | yes |
-| `brys` root | yes |
-| `anji` `kdn` | **no** — a different 24-word key |
+| Where                     | Same as SOPS                     |
+| ------------------------- | -------------------------------- |
+| `oams` `kdn`, `oams` root | yes                              |
+| `brys` root               | yes                              |
+| `anji` `kdn`              | **no** — a different 24-word key |
 
-**The account's data belongs to the shared key.** A read-only pull against a *copy* of the local
+**The account's data belongs to the shared key.** A read-only pull against a _copy_ of the local
 state decrypted **106,731** records with it. Only **89** records failed, spread over **7 foreign
 key ids**, and every one is old: `2025-01-09` to `2026-05-11`, none newer than six months.
 

@@ -12,11 +12,11 @@ timestamp: 2026-11-16T19:13:13+01:00
 
 The Secret Service exposed **46 items**, not the whole KDBX:
 
-| Fact | Value |
-| --- | --- |
-| Live items | 46, all in the group `drag0nius/secret-service`, 46/46 matched by UUID |
-| KDBX | 1031 current entries; the other 985 are the personal vault and were never exposed |
-| Secrets | 45 equal the entry `Password`; 1 is an attachment (`FDO_SECRETS_DATA`) that `keepassxc-cli export` drops |
+| Fact       | Value                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
+| Live items | 46, all in the group `drag0nius/secret-service`, 46/46 matched by UUID                                   |
+| KDBX       | 1031 current entries; the other 985 are the personal vault and were never exposed                        |
+| Secrets    | 45 equal the entry `Password`; 1 is an attachment (`FDO_SECRETS_DATA`) that `keepassxc-cli export` drops |
 
 The bus, not the export, was therefore the source. The vault stays in KeePassXC; deleting the
 `secret-service` group later is a manual, one-folder step.
@@ -40,16 +40,16 @@ the export, and libsecret over the private `busd` broker (`secret-tool lookup` r
 
 ## Result
 
-| Check | Result |
-| --- | --- |
-| Imported | 46 items, 0 errors |
-| Destination check | 46 matched, 0 missing, 0 mismatch, 0 extra |
-| Store | 47 files: 46 `item-*.sops.yaml` + `_meta.sops.yaml`, all `ENC[AES256_GCM,…]` |
-| Live bus after cutover | `busctl --user status org.freedesktop.secrets` names the `rosecd` |
-| Client reads | 46/46 `secret-tool lookup Uuid=<uuid>`; `secret-tool search --all application chrome` returns the item with `schema = chrome_libsecret_os_crypt_password_v2` |
-| `nextcloud-client` | active (its `Requires` on the name holder is unchanged) |
-| KDBX | unchanged (`ac3cfdd7…3196`), entries still present |
-| Conflicts | none |
+| Check                  | Result                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Imported               | 46 items, 0 errors                                                                                                                                           |
+| Destination check      | 46 matched, 0 missing, 0 mismatch, 0 extra                                                                                                                   |
+| Store                  | 47 files: 46 `item-*.sops.yaml` + `_meta.sops.yaml`, all `ENC[AES256_GCM,…]`                                                                                 |
+| Live bus after cutover | `busctl --user status org.freedesktop.secrets` names the `rosecd`                                                                                            |
+| Client reads           | 46/46 `secret-tool lookup Uuid=<uuid>`; `secret-tool search --all application chrome` returns the item with `schema = chrome_libsecret_os_crypt_password_v2` |
+| `nextcloud-client`     | active (its `Requires` on the name holder is unchanged)                                                                                                      |
+| KDBX                   | unchanged (`ac3cfdd7…3196`), entries still present                                                                                                           |
+| Conflicts              | none                                                                                                                                                         |
 
 ## Cutover
 
@@ -82,7 +82,7 @@ re-run of the tool deletes by `Uuid` and re-imports.
 
 Three problems appeared after the first cutover, and each has a lasting fix:
 
-- **A second bus owner.** The rosec *package* ships `rosecd.service`/`rosecd.socket` and a
+- **A second bus owner.** The rosec _package_ ships `rosecd.service`/`rosecd.socket` and a
   session-bus activation file in the user profile, so systemd finds them through `XDG_DATA_DIRS`
   independently of Home Manager. Masking the unit left the activation file pointing at a dead unit.
   `rosecd.service` is now an **alias** of the name holder, so activation starts the shim and exactly

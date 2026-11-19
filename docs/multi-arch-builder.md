@@ -169,10 +169,10 @@ drop the attribute entirely.
 
 `nix-rosetta-builder.mode` selects how the guest's NixOS system is delivered:
 
-| Mode | Image path in `lima.yaml` | Guest system update | Guest disk and `/nix/store` |
-| --- | --- | --- | --- |
-| `ephemeral` (upstream default) | the image's store path | a new image changes the yaml, so the daemon runs `limactl delete --force` + `create` | discarded on every guest change |
-| `standalone` (`anji`) | `workingDir/image.qcow2`, a stable path | `guest.system` + `guest.switch`, applied in place | kept; a config change never recreates the VM |
+| Mode                           | Image path in `lima.yaml`               | Guest system update                                                                  | Guest disk and `/nix/store`                  |
+| ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `ephemeral` (upstream default) | the image's store path                  | a new image changes the yaml, so the daemon runs `limactl delete --force` + `create` | discarded on every guest change              |
+| `standalone` (`anji`)          | `workingDir/image.qcow2`, a stable path | `guest.system` + `guest.switch`, applied in place                                    | kept; a config change never recreates the VM |
 
 In `standalone` mode the image is only the bootstrap for a **new** guest, so a normal
 `darwin-rebuild switch` builds the host alone — the image is not in its closure, and the running

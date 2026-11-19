@@ -39,11 +39,11 @@ Find the cause first. The action differs per cause, so never default to deletion
 2. Check whether the fix is in nixos-unstable:
    `gh api "repos/NixOS/nixpkgs/compare/nixos-unstable...<commit>" --jq '.status'`
 
-| Result | Meaning | Action |
-|---|---|---|
-| `ahead` | the fix has not landed yet | register or keep the patch |
-| `behind` / `identical` | the fix already landed | remove the entry and delete the `.patch` file |
-| the patch URL 404s | the PR was closed or rewritten | decide whether the change is still wanted; re-derive or drop it |
+| Result                 | Meaning                        | Action                                                          |
+| ---------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `ahead`                | the fix has not landed yet     | register or keep the patch                                      |
+| `behind` / `identical` | the fix already landed         | remove the entry and delete the `.patch` file                   |
+| the patch URL 404s     | the PR was closed or rewritten | decide whether the change is still wanted; re-derive or drop it |
 
 3. Add to `.flake.patches/config.toml`:
    ```toml

@@ -18,4 +18,3 @@ generated: true
 - **[Design: journal session identity](design.md)** — Local session sidecar plus optional jj trailers and Atuin Threads JSON, with harness env detection and graceful fallbacks. · `Design` · `stable` · `unverified`
 - **[Journal session identity: jj changes, harnesses and Atuin Threads](definition.md)** — Tie harness sessions to jujutsu change IDs and Atuin Threads, and broaden kdn-journal's harness detection beyond OpenCode. · `Task` · `stable` · `unverified`
 - **[Research: session identity, jj changes and Atuin Threads](research.md)** — Harness session environment variables, jj change-ID semantics, and the Atuin Threads capture/search/resume surface that a journal session identity can use. · `Research` · `stable` · `unverified`
-

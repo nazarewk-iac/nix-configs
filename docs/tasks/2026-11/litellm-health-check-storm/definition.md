@@ -24,13 +24,13 @@ The serving hosts bind llama-swap to `127.0.0.1:39700`. Two relays expose it:
 
 Measured 2026-11-12 13:20-13:45. Full evidence in [research.md](research.md).
 
-| Source | Destination | Volume | Cost |
-| --- | --- | --- | --- |
-| LiteLLM background health checks on etra | `brys:39704` and `oams:39704` | 592 completions / 10 min on brys, 80 / 10 min on oams | **High**: each probe is a real chat completion for a different model, so llama-swap (`--models-max 1`) evicts the resident model to answer it. A probe round queues every model at once. |
-| `llm-stats.service` on each host | `127.0.0.1:39700` | 2 GETs every 2 s (86 400 requests/day) | Low: `/api/metrics/activity` and `/v1/models` only; no model load. |
-| Prometheus container on brys | `10.233.90.1:39700` (relay) | `/metrics` every 15 s | Low. |
-| LiteLLM model discovery | both hosts | `/v1/models` about every 60 s | Low. |
-| Real clients on oams (opencode 2.2.5, pi 1.4/1.5, curl) | `litellm.etra...:443` (Caddy) -> gateway -> hosts | 52 chat completions, 1290 `/v1/models` polls in the Caddy log | The intended traffic. |
+| Source                                                  | Destination                                       | Volume                                                        | Cost                                                                                                                                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LiteLLM background health checks on etra                | `brys:39704` and `oams:39704`                     | 592 completions / 10 min on brys, 80 / 10 min on oams         | **High**: each probe is a real chat completion for a different model, so llama-swap (`--models-max 1`) evicts the resident model to answer it. A probe round queues every model at once. |
+| `llm-stats.service` on each host                        | `127.0.0.1:39700`                                 | 2 GETs every 2 s (86 400 requests/day)                        | Low: `/api/metrics/activity` and `/v1/models` only; no model load.                                                                                                                       |
+| Prometheus container on brys                            | `10.233.90.1:39700` (relay)                       | `/metrics` every 15 s                                         | Low.                                                                                                                                                                                     |
+| LiteLLM model discovery                                 | both hosts                                        | `/v1/models` about every 60 s                                 | Low.                                                                                                                                                                                     |
+| Real clients on oams (opencode 2.2.5, pi 1.4/1.5, curl) | `litellm.etra...:443` (Caddy) -> gateway -> hosts | 52 chat completions, 1290 `/v1/models` polls in the Caddy log | The intended traffic.                                                                                                                                                                    |
 
 Every established connection to `:39704` on both hosts comes from `100.79.187.16`, the etra
 NetBird address. Nothing else reaches the relays.

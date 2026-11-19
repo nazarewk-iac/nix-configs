@@ -17,4 +17,3 @@ generated: true
 
 - **[llama.cpp: latest release and the Unsloth MTP fork](definition.md)** — Add the latest llama.cpp release and the Unsloth MTP fork as in-repo packages, so brys can benchmark qwen4exp speculative decode against the pinned 0.4.0. · `Task` · `stable` · `unverified`
 - **[Status: llama.cpp latest package](status.md)** — The two llama.cpp builds, the benchmark and the brys deployment are done; the upstreaming-versus-override decision stays open. · `Status` · `stable` · `unverified`
-

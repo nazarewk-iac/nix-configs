@@ -17,4 +17,3 @@ generated: true
 
 - **[003 — CA manager](definition.md)** — Add the kdn.ca-manager aspect, which puts the kdn-certs CLI and the CA DAG into a devenv shell and owns the smallstep server lifecycle. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The kdn.ca-manager aspect includes kdn.ca-dag and adds the kdn-certs CLI to a devenv shell, with an offline enterTest. · `Solution` · `stable` · `unverified`
-

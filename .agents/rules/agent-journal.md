@@ -123,9 +123,10 @@ entries.
 Overwrite the board freely. It is a snapshot of the current state, not a history. The worklog is
 the history.
 
-Keep the tables readable in a terminal: run `hack/fmt-agent-docs.sh` after an edit. It formats every
-file under `.cache/agents/` (a tree-wide `nix fmt` skips that git-ignored directory) and pads the
-table cells so the pipes line up.
+Keep the tables readable in a terminal: run `hack/fmt-agent-docs.sh` after an edit. It pipes every
+file under `.cache/agents/` through the repository's treefmt wrapper, so a journal gets the same
+prettier and the same options as `nix fmt`; a tree-wide `nix fmt` skips that git-ignored directory.
+There is no second Markdown formatter, and none may be added.
 
 ## Board shape
 

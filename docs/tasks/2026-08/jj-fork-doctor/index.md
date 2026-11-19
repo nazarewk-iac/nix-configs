@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[jj-fork-doctor](definition.md)** — Package a do-nothing `jj-fork-doctor` Python script (wrapped as `jj fork-doctor`) that analyzes fork topology through revset aliases and offers exact remedy commands for the user to confirm and run. · `Task` · `stable` · `unverified`
-

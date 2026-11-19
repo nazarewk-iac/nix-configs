@@ -23,4 +23,3 @@ generated: true
 - **[Proof: the model catalog renders and carries capability + cost hints](proof-catalog.md)** — Proof that the model catalog renders from data/llm.nix, parses, and carries the capability and cost hints the orchestrator needs — with the exact command and real output. · `Research` · `stable` · `unverified`
 - **[Research: letting the orchestrator choose the model](research.md)** — What live signals the brys fleet exposes to a client, what the Pi orchestrator can see, and the constraints that decide how a delegating agent should pick a model. · `Research` · `stable` · `unverified`
 - **[The orchestrator picks the model, from live data](definition.md)** — Give the Pi orchestrator the knowledge and live signals to pick the best local model for each delegated task — capability, context, thinking levels, operation mode, what is loaded (switch cost), and brys' resource headroom — with the pieces proved separately. · `Task` · `stable` · `unverified`
-

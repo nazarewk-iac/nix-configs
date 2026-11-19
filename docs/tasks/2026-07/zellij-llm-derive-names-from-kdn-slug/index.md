@@ -17,4 +17,3 @@ generated: true
 
 - **[Solution — derive names from kdn-slug](done.md)** — Solution — zellij-llm derives its session name from kdn-slug by default, capped to the zellij socket-path limit, with a verbatim --session override. · `Solution` · `stable` · `unverified`
 - **[zellij-llm should derive names from kdn-slug by default](definition.md)** — Make zellij-llm derive its session (and tab/pane) names from kdn-slug internally by default, with a CLI override, instead of requiring the caller to pass --session. · `Task` · `stable` · `unverified`
-

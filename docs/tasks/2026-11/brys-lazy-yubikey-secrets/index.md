@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[brys: secrets must degrade gracefully without the YubiKey, decrypt on demand](definition.md)** — brys must boot and run without its YubiKey plugged in, and decrypt YubiKey-gated sops secrets lazily on first use (once the key is present), instead of failing at activation. sops-nix decrypts eagerly at boot and does not meet this. · `Task` · `stable` · `unverified`
-

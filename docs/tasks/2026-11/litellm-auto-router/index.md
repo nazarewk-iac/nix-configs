@@ -17,4 +17,3 @@ generated: true
 
 - **[LiteLLM auto-router vs the pi-orchestrator model picker](definition.md)** — Evaluate LiteLLM's auto/complexity router and semantic/tag routing against the pi-orchestrator's hand-maintained intent-alias picker, and decide whether to adopt, complement, or skip it. · `Task` · `stable` · `unverified`
 - **[status](status.md)** — The research/decision (COMPLEMENT) and the chat-fast + fastest_fit prototype are done and deployed; the "default cheap sub-tasks to chat-fast" policy is the remaining piece. · `Status` · `stable` · `unverified`
-

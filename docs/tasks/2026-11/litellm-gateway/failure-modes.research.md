@@ -12,10 +12,12 @@ The serving deployment is visible per response in `x-litellm-model-id` and
 `x-litellm-model-api-base` — the way to see which host answered.
 
 ## Normal (both serving)
+
 10 calls → **brys 4 / oams 6** (load-balanced). First call that landed on oams
 took **2.4 s** (cold model load), the rest ~50-70 ms. Both hosts are live.
 
 ## A. oams reachable but not serving (llama-swap stopped)
+
 Setup: `oams-llm off` (llama-swap stopped; the NetBird relay + socat stay up, so
 the TCP connect succeeds then the backend is **refused**).
 
@@ -25,6 +27,7 @@ the TCP connect succeeds then the backend is **refused**).
 - **Client-invisible.** Refused = failover in tens of milliseconds.
 
 ## B. oams unreachable (blackholed — SYN dropped, no RST)
+
 Setup: temporary nftables DROP on oams for `nb-priv` → tcp 39704 (SYN blackholed,
 exactly like NetBird being off / a dead route). This is the dangerous case.
 
@@ -38,6 +41,7 @@ exactly like NetBird being off / a dead route). This is the dangerous case.
 - A blackholed backend is ~1000× worse than a stopped one (240 s vs ~30 ms).
 
 ## C. A model whose ONLY backend is down (brys-only alias, brys refused)
+
 Setup: stop the etra→brys egress relay; request `chat-dumb-fast` (brys-only).
 
 - Attempts 1-3 → **HTTP 500** (1.9-3.4 s then 0.06 s; refused + retry).
@@ -56,7 +60,7 @@ Setup: stop the etra→brys egress relay; request `chat-dumb-fast` (brys-only).
   connect hangs instead of failing fast.
 - **Recommendation for blackhole safety:** enable background health checks +
   `enable_health_check_routing` so a dead-but-blackholed oams is detected and
-  skipped *before* a client request pays the 120 s connect timeout. Until then,
+  skipped _before_ a client request pays the 120 s connect timeout. Until then,
   the 120 s `timeout` bounds the damage but a client can still wait it out once
   per cooldown window.
 - **Cold start**: a freshly started oams model pays its load time on the first

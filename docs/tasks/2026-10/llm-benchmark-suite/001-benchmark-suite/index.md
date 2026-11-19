@@ -19,4 +19,3 @@ generated: true
 - **[Benchmark suite measurements (2026-10-19)](measurements.research.md)** — Full harness pass over every enabled brys model (2026-10-19): cold start, TTFT, decode, prefill, cache reuse, resident memory, and idle faults, one unified table. · `Research` · `stable` · `unverified`
 - **[opencode client start timings on oams (2026-10-19)](opencode-client.research.md)** — Client-side opencode start timings on host oams (2026-10-19): cold and warm start, in /tmp and in the nix-configs repository, with the readiness signal, the cache controls, and the brys discovery-plugin status. · `Research` · `stable` · `unverified`
 - **[Solution — benchmark suite](done.md)** — Closed the benchmark suite. Every enabled brys model measured with one harness; opencode client start measured on oams; the harness is committed and repeatable. · `Solution` · `stable` · `unverified`
-

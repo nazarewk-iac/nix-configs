@@ -49,7 +49,7 @@ the pool has a real `aarch64-linux` endpoint and no darwin host is in the path.
      No other host.
    - Public key → the VM's authorized keys for `kdn-nix-remote-build` (the `hosts/anji/linux-builder.nix`
      remote-builder account), i.e. the VM trusts this dedicated key.
-   - **Auth model note (decide here):** HAProxy is TCP-passthrough, so the *client* authenticates to
+   - **Auth model note (decide here):** HAProxy is TCP-passthrough, so the _client_ authenticates to
      the VM. Either (a) keep the existing per-client `kdn-nix-remote-build` keys trusted by the VM
      (the VM already trusts them) and treat the dedicated key as an additional gateway/recovery
      credential, or (b) make the dedicated key the only key the VM trusts and have the gateway hold

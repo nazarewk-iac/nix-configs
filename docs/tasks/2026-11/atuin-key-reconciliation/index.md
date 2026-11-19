@@ -17,4 +17,3 @@ generated: true
 
 - **[atuin key reconciliation — measurements](research.md)** — Measurements behind the atuin key reconciliation — the fleet key is uniform, anji carries a second one, 89 server records are unreadable and old, and how to verify any of it without touching real state. · `Research` · `stable` · `unverified`
 - **[Converge the fleet on one atuin encryption key](definition.md)** — Every machine but anji runs the same atuin encryption key, and 89 old records on the server belong to other keys; decide how to converge anji and what to do with the strays. · `Task` · `stable` · `unverified`
-

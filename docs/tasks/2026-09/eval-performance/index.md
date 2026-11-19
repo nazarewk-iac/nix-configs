@@ -24,4 +24,3 @@ generated: true
 - **[Parent and Home Manager as separate evaluations](hm-split.md)** — The idea of evaluating a host's parent system and its Home Manager users as separate outputs, the two-way dependency inventory that blocks it today, and the deploy tooling such a split needs. · `Research` · `stable` · `unverified`
 - **[Persistence without reading Home Manager](design-persistence.md)** — How to break the persistence read-back — the NixOS side stops reading Home Manager and persists bucket-level base directories plus a short exception list. · `Design` · `stable` · `unverified`
 - **[Web research — speeding up host evaluation (2026-11-09)](research-web-2026-11.md)** — Web research (2026-11-09) on speeding up Nix host evaluation, from primary sources (nix-eval-jobs README, Nix 2.35 nix.conf manual). Ideas, the pinning-vs-parallelism trade-off, and what to measure next. · `Reference` · `stable` · `unverified`
-

@@ -17,4 +17,3 @@ generated: true
 
 - **[013 — opt-in boundaries](definition.md)** — An evidence-based inventory of everything an external adopter wants to turn off and today cannot, with a verdict per item. · `Task` · `stable` · `unverified`
 - **[013 — the open decisions, one brief each](decisions.research.md)** — Turns every open item of task 013 into a one-line decision brief, ranked by what each answer unblocks, with each state measured from the code. · `Research` · `stable` · `unverified`
-

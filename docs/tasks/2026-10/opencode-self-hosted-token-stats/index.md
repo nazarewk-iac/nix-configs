@@ -17,4 +17,3 @@ generated: true
 
 - **[Self-hosted token stats: the compat-proxy drops the streaming usage chunk](definition.md)** — OpenCode shows zero token usage for every self-hosted brys model because the compat-proxy drops the streaming usage chunk. · `Task` · `stable` · `unverified`
 - **[Solution — preserve the streaming usage chunk in the compat-proxy](done.md)** — Preserve the empty-choices streaming usage chunk in the compat-proxy (now the nazarewk-iac fork) on both streaming paths. · `Solution` · `stable` · `unverified`
-

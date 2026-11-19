@@ -17,4 +17,3 @@ generated: true
 
 - **[The denied-pattern list and fork-only lock nodes — solution](done.md)** — The owner added the private org pattern; the measurement shows a line-level check cannot see a value-only lock node update, so the structural assertion stays the gate. · `Solution` · `stable` · `unverified`
 - **[The denied-pattern list misses fork-only lock nodes](definition.md)** — The fork denied-pattern list does not match fork-only lock node keys, so the content check passes a commit that mixes private and public lock content. · `Task` · `stable` · `unverified`
-

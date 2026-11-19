@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[002 — `rosetta-builder` for an external adopter](definition.md)** — Make the rosetta-builder slot usable in an external adopter's nix-darwin through a minimal mkSlots call, and add phased enablement of the two builders. · `Task` · `stable` · `unverified`
-

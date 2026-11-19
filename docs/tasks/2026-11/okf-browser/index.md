@@ -18,4 +18,3 @@ generated: true
 - **[Design: `okf` browser](design.md)** — Architecture for a general-purpose OKF v0.2 indexer and TUI, with a JSON cache, goldmark link graph, trust/freshness facets, and the charmbracelet component split proven by kdn-journal. · `Design` · `stable` · `unverified`
 - **[OKF browser: a general-purpose index and TUI for OKF bundles](definition.md)** — Build a general-purpose CLI and TUI that indexes, searches, validates and browses any Open Knowledge Format v0.2 bundle, with trust, freshness and link graph as first-class views. · `Task` · `stable` · `unverified`
 - **[Research: OKF v0.2 and document-browser shapes](research.md)** — OKF v0.2 essentials and the CLI/TUI shapes worth borrowing from zk, nb, glow, Obsidian-style vault tools and the OKF reference visualizer. · `Research` · `stable` · `unverified`
-

@@ -18,4 +18,3 @@ generated: true
 - **[pryll phase 0b + 1: recon and the safety net](001-recon-and-safety-net.md)** — Phase 0b and phase 1 findings for pryll. Read-only recon over SSH, the hardware profile, the same-machine verdict, and the boot-decryption safety net that the migration must not break. · `Research` · `stable` · `unverified`
 - **[pryll run book: phases 2 to 7](002-den-port-runbook.md)** — The run book for the pryll migration after the den carryover landed. Phases 2-7, the two install routes (in-place update vs fresh den reinstall), the unlock investigation (the TPM is 1.2), and the owner hand-offs. · `Design` · `stable` · `unverified`
 - **[The mother's mini-PC (`pryll`): a desktop that must not need care](definition.md)** — Set up the mini-PC for the owner's mother as a simple, self-maintaining KDE desktop for user `bn`, installed from this repo's ISO over LAN with a NanoKVM, and using the same supervised-fleet harness. · `Task` · `stable` · `unverified`
-

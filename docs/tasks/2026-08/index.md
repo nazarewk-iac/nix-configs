@@ -21,4 +21,3 @@ _No concepts directly in this directory; see the child directories._
 - **[jj-fork-revset-pytest-suite](jj-fork-revset-pytest-suite/index.md)** — 2 concepts: Solution 1, Task 1
 - **[rosetta-builder-i686-linux](rosetta-builder-i686-linux/index.md)** — 1 concept: Task 1
 - **[slots-modules-architecture](slots-modules-architecture/index.md)** — 1 concept: Task 1
-

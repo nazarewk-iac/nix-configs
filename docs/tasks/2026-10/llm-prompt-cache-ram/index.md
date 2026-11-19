@@ -17,4 +17,3 @@ generated: true
 
 - **[Raise the Qwen prompt cache to 37 GiB](done.md)** — Add a `perf.cacheRam` slot option and set the Qwen specialisations to `--cache-ram 36864`, so the prompt cache stops evicting; activated on brys. · `Solution` · `stable` · `unverified`
 - **[Size the Qwen prompt cache (`--cache-ram`) to stop evictions](definition.md)** — Let the Qwen specialisation grow llama-server's prompt cache past the 8 GiB default, so the frequent "making room for prompt cache entry" evictions stop, while keeping ~8 GiB MemAvailable. · `Task` · `stable` · `unverified`
-

@@ -42,7 +42,7 @@ Source: `/nix/store/i2wyv73sq1897a1lxkj0wfp3g2faa5rj-litellm-1.85.0`.
   `x-litellm-response-cost`, `x-litellm-key-spend`, `x-litellm-key-max-budget`,
   `x-litellm-key-rpm-limit`, `x-litellm-key-tpm-limit`, `x-litellm-call-id`, plus timing headers.
 - Those headers are **not** gated by `litellm_settings.return_response_headers`; that flag only
-  exposes *provider* headers such as `x-remaining-requests`.
+  exposes _provider_ headers such as `x-remaining-requests`.
 - `get_custom_headers` reads `user_api_key_dict.spend` and `.max_budget`. `custom_auth` can
   populate both, so `x-litellm-key-spend` and `x-litellm-key-max-budget` become truthful
   **with no database**.

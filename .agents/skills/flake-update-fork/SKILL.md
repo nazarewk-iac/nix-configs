@@ -36,12 +36,12 @@ jj log -r 'upstream-incoming'   # must print nothing
 jj log -r 'fork-incoming'       # must print nothing
 ```
 
-| Both empty | Action |
-|---|---|
-| yes | go on to step 1 |
+| Both empty                      | Action                                                  |
+| ------------------------------- | ------------------------------------------------------- |
+| yes                             | go on to step 1                                         |
 | `upstream-incoming` has commits | rebase the local upstream chain onto the new public tip |
-| `fork-incoming` has commits | rebase the fork chain onto the new fork tip |
-| both have commits | rebase the upstream chain first, then the fork chain |
+| `fork-incoming` has commits     | rebase the fork chain onto the new fork tip             |
+| both have commits               | rebase the upstream chain first, then the fork chain    |
 
 A rebase is needed in this one case only. Do not rebase for any other reason.
 
@@ -53,13 +53,13 @@ jj log -r 'to-rebase'                        # not empty → route or publish th
 jj log -r 'fork-leaked & ::upstream-safe'    # not empty → reorder first
 ```
 
-| Start state | May start an update |
-|---|---|
-| `empty 2` — empty `@` above a mutable tree merge | yes |
-| `empty 1` — empty `@` above a frozen (pushed) merge | yes; step 3b manufactures a new merge |
-| `content …` — `@` holds work | no; carve or park the work first |
-| unrouted stack in `to-rebase` | no; route each commit to its chain first |
-| a public commit above a fork-only commit (`fork-leaked`) | no; reorder first |
+| Start state                                              | May start an update                      |
+| -------------------------------------------------------- | ---------------------------------------- |
+| `empty 2` — empty `@` above a mutable tree merge         | yes                                      |
+| `empty 1` — empty `@` above a frozen (pushed) merge      | yes; step 3b manufactures a new merge    |
+| `content …` — `@` holds work                             | no; carve or park the work first         |
+| unrouted stack in `to-rebase`                            | no; route each commit to its chain first |
+| a public commit above a fork-only commit (`fork-leaked`) | no; reorder first                        |
 
 Reorder a public commit down onto the upstream chain:
 
@@ -137,9 +137,9 @@ mv /tmp/public.devenv.lock devenv.lock
 ```
 
 > **Never redirect into the file a `jj` read is reading.** `jj file show -r @ devenv.lock >
-> devenv.lock` truncates the file before the read starts. `jj file show` then snapshots the empty
+devenv.lock` truncates the file before the read starts. `jj file show` then snapshots the empty
 > file into `@`, and jj rebases that empty file into every descendant. Recover with `jj op restore
-> <op-before-the-snapshot>`. Always read into a temporary file, then `mv`.
+<op-before-the-snapshot>`. Always read into a temporary file, then `mv`.
 
 Compare the **root node's inputs**, not a name prefix. A prefix filter misses any fork input whose
 name does not carry the prefix. Assert the result:

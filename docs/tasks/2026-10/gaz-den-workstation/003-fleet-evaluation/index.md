@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Evaluate the fleet while it does the job](definition.md)** — Measure how to drive real work with the local brys fleet: which alias per task class, which models co-run, the practical concurrency, and the points where a slow orchestrator plus cheap workers wins or loses. · `Task` · `stable` · `unverified`
-

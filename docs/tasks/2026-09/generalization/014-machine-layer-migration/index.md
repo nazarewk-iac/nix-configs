@@ -17,4 +17,3 @@ generated: true
 
 - **[014 step 1 — the per-area audit](research.md)** — Per-area audit of modules/universal — declared option prefixes, real cross-area coupling, third-party imports, guard sites and remaining personal values — with a corrected batch order. · `Research` · `stable` · `unverified`
 - **[014 — machine layer migration](definition.md)** — Migrate the machine layer — modules/universal and modules/meta — onto the chosen target framework, in measured batches. · `Task` · `stable` · `unverified`
-

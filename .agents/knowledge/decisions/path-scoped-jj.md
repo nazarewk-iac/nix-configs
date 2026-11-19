@@ -8,7 +8,6 @@ id: path-scoped-jj
 links:
   - rel: relates-to
     to: trailer-profiles
-
 ---
 
 # Path-scoped jj commands
@@ -16,4 +15,5 @@ links:
 Parallel sessions share `@`. A path-less `jj split`, `squash`, `absorb`, `commit`, `restore`, `status` or `diff` can sweep another session's work into a commit. Pass every file the session owns.
 
 ## Related Concepts
+
 - [Agent trailer profiles](trailer-profiles.md): A scoped commit is also the commit that carries the trailers.

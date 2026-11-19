@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Store GC that keeps the last build per class](definition.md)** — Make the store GC keep the newest build of each CLASS of thing (per-NixOS/darwin host, per-repo devenv shell, per-package one-off) and drop the rest by a short configurable age, using angrr root classes plus an explicit category gcroot for builds that have none. · `Task` · `stable` · `unverified`
-

@@ -18,4 +18,3 @@ generated: true
 - **[`kdn-jj-meta`: attribute jj changes to agent sessions](definition.md)** — A separate kdn-jj-metadata tool that attributes mutable changes to an agent session by adding missing commit trailers, never deleting existing metadata, with Assisted-by as the default disclosure. · `Task` · `stable` · `unverified`
 - **[Design: `kdn-jj-meta`](design.md)** — Go CLI that appends missing Assisted-by/Session-Id trailers to mutable jj changes, autodetects the harness session, deduplicates, and never deletes metadata. · `Design` · `stable` · `unverified`
 - **[Research: AI commit attribution and jj metadata](research.md)** — What projects actually put in Co-authored-by and Assisted-by trailers for AI agents, why several major projects reject Co-authored-by for AI, and how jj constrains per-change metadata. · `Research` · `stable` · `unverified`
-

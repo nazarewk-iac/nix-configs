@@ -57,4 +57,3 @@ _No concepts directly in this directory; see the child directories._
 - **[secret-service-backend](secret-service-backend/index.md)** — 7 concepts: Research 5, Decision 1, Task 1
 - **[zellij-llm-pane-layout](zellij-llm-pane-layout/index.md)** — 1 concept: Task 1
 - **[zfs-arc-cap](zfs-arc-cap/index.md)** — 1 concept: Task 1
-

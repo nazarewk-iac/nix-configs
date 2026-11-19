@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[001 — readiness to share slots](definition.md)** — Make modules/slots consumable by an external adopter today; the pre-push remote guard is already repaired, so a fork audit stays the real content gate. · `Task` · `stable` · `unverified`
-

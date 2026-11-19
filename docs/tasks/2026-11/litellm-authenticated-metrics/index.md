@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Authenticated metrics for the LiteLLM gateway](definition.md)** — Put the LiteLLM gateway's Prometheus /metrics behind authentication (it is currently an unauthenticated public route on the litellm.etra subdomain), and have the scrape authenticate, so model names / latency are not readable by any nb-priv client. · `Task` · `stable` · `unverified`
-

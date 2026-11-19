@@ -17,4 +17,3 @@ generated: true
 
 - **[Serve `aarch64-linux` from `anji` to every host](definition.md)** — Let a host dispatch an aarch64-linux build to `anji` directly, so `anji` serves that system to every host and forwards the build to its own Rosetta builder. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — Register `anji` with `aarch64-linux`, move the builder identity to the system SSH config, and make the remote-build account allowed but not trusted. · `Solution` · `stable` · `unverified`
-

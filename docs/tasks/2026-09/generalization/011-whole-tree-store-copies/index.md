@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[011 — whole-tree store copies cause unnecessary rebuilds](definition.md)** — Replace whole-repository store copies with single-file references, so an unrelated edit stops triggering a rebuild. · `Task` · `stable` · `unverified`
-

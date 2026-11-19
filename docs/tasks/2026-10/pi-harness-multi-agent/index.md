@@ -22,4 +22,3 @@ generated: true
 - **[Pi panes: research and design for a session-file delegation tool](sessions-and-panes.research.md)** — Pi session file format and lifecycle, why the session file beats RPC as the result channel over a zellij pty, the pane invocation, and a zellij-llm pi command group. · `Research` · `stable` · `unverified`
 - **[Pi token usage, cost reporting, and the multi-agent accounting model](costs.research.md)** — Where Pi reports token usage and cost, why a local model costs zero money but real wall time, per-agent aggregation, and the accounting table a fleet evaluation needs. · `Research` · `stable` · `unverified`
 - **[Research: Pi, read from its own documentation](research.md)** — What Pi actually provides for multi-agent work, from its own shipped docs — the absence of built-in sub-agents, the two documented delegation routes, per-run model and tool control, file sessions, and the RPC/SDK surfaces. · `Research` · `stable` · `unverified`
-

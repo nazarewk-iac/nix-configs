@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Consolidate the Pi harness on the orchestrator fork](definition.md)** — Settle the Pi harness on one delegation extension and port the missing orchestrator tools (measure, fleet-status, slice) into the pi-orchestrator fork. · `Task` · `stable` · `unverified`
-

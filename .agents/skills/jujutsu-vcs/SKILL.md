@@ -55,21 +55,21 @@ Never run them on a pushed/immutable commit. Detail and proofs are in
 [docs/jujutsu-vcs.md](../../../docs/jujutsu-vcs.md#day-to-day-golden-paths); the `test_*.md` files
 below are under `checks/jj-experiments/`.
 
-| Task | Golden path | Proof |
-|---|---|---|
-| Carve `@` into a commit | `jj split -m 'msg' -- <files>` | test_branch.md |
-| Fold `@` into a commit | `jj squash --into <id> -- <files>` | test_squash_absorb.md |
-| Auto-fold fixups | `jj absorb` | test_squash_absorb.md |
-| Amend in place | `jj edit <id>` … edit … `jj new <tip>` | test_amend.md |
-| Reword | `jj describe -r <id> -m 'msg'` | test_amend.md |
-| Reorder / move | `jj rebase -r <id> --insert-after/-before <x>` | test_restructure.md |
-| Abandon | `jj abandon <id>` (descendants reparent) | test_restructure.md |
-| Revert forward | `jj revert -r <id> -A <tip>` | test_restructure.md |
-| Discard / recover | `jj restore [--from <rev>] [<paths>]`; `jj undo`; `jj op restore <op>` | test_recover.md |
-| Bookmarks | `jj bookmark create/set/delete`; `jj git push --remote <r> -b <name>` | test_bookmarks.md |
-| Untrack (gitignore first) | `jj file untrack <path>` | test_bookmarks.md |
-| Inspect | `jj diff -r <id>` / `--from`/`--to`; `jj show <id>`; `jj file show -r <id> <path>` | test_inspect.md |
-| Conflicts | detect `jj log -r 'conflicts()'`; edit to merged content; snapshot | test_conflicts.md |
+| Task                      | Golden path                                                                        | Proof                 |
+| ------------------------- | ---------------------------------------------------------------------------------- | --------------------- |
+| Carve `@` into a commit   | `jj split -m 'msg' -- <files>`                                                     | test_branch.md        |
+| Fold `@` into a commit    | `jj squash --into <id> -- <files>`                                                 | test_squash_absorb.md |
+| Auto-fold fixups          | `jj absorb`                                                                        | test_squash_absorb.md |
+| Amend in place            | `jj edit <id>` … edit … `jj new <tip>`                                             | test_amend.md         |
+| Reword                    | `jj describe -r <id> -m 'msg'`                                                     | test_amend.md         |
+| Reorder / move            | `jj rebase -r <id> --insert-after/-before <x>`                                     | test_restructure.md   |
+| Abandon                   | `jj abandon <id>` (descendants reparent)                                           | test_restructure.md   |
+| Revert forward            | `jj revert -r <id> -A <tip>`                                                       | test_restructure.md   |
+| Discard / recover         | `jj restore [--from <rev>] [<paths>]`; `jj undo`; `jj op restore <op>`             | test_recover.md       |
+| Bookmarks                 | `jj bookmark create/set/delete`; `jj git push --remote <r> -b <name>`              | test_bookmarks.md     |
+| Untrack (gitignore first) | `jj file untrack <path>`                                                           | test_bookmarks.md     |
+| Inspect                   | `jj diff -r <id>` / `--from`/`--to`; `jj show <id>`; `jj file show -r <id> <path>` | test_inspect.md       |
+| Conflicts                 | detect `jj log -r 'conflicts()'`; edit to merged content; snapshot                 | test_conflicts.md     |
 
 ## Fork topology (only when this repo is a fork)
 

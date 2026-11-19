@@ -8,7 +8,6 @@ id: no-push
 links:
   - rel: relates-to
     to: path-scoped-jj
-
 ---
 
 # Never push
@@ -16,4 +15,5 @@ links:
 Agents commit with jj and never run `git push`, `jj git push`, `jj sync-remotes` or `jj sync-upstream`. The user reviews from the tip and pushes.
 
 ## Related Concepts
+
 - [Path-scoped jj commands](path-scoped-jj.md): Both govern how an agent commits with jj.

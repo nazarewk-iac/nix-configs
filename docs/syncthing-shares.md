@@ -9,12 +9,12 @@ timestamp: 2026-11-18T20:57:12+01:00
 A **share** is one Syncthing folder under `~/.local/share/kdn/synced/<share>` on every host that
 holds it. Four shares exist:
 
-| Share           | Contents (candidates)                                       | oams | brys | etra |
-| --------------- | ----------------------------------------------------------- | ---- | ---- | ---- |
-| `secret-stores` | `pass`, `rosec-storage`, the KeePass DB — the pre-Nextcloud state | yes  | yes  | yes  |
-| `small`         | dotfiles, SSH keys, `~/.config/sops/age`                    | yes  | yes  | yes  |
-| `medium`        | documents, photos, phone exports                            | yes  | yes  | yes  |
-| `large`         | bulk data (the current `~/dev` replacement)                 | yes  | yes  | **no** |
+| Share           | Contents (candidates)                                             | oams | brys | etra   |
+| --------------- | ----------------------------------------------------------------- | ---- | ---- | ------ |
+| `secret-stores` | `pass`, `rosec-storage`, the KeePass DB — the pre-Nextcloud state | yes  | yes  | yes    |
+| `small`         | dotfiles, SSH keys, `~/.config/sops/age`                          | yes  | yes  | yes    |
+| `medium`        | documents, photos, phone exports                                  | yes  | yes  | yes    |
+| `large`         | bulk data (the current `~/dev` replacement)                       | yes  | yes  | **no** |
 
 `large` is omitted from etra on purpose: the router keeps the small state, not the bulk. The
 pre-existing `~/dev` folder is **not** part of this set and is not touched — the declarative
@@ -100,6 +100,7 @@ device IDs.
   user), not the system-level `kdn.disks.persist`: the latter names system paths and does not
   merge across definitions. The aspect also publishes the same lists as
   `kdn.services.syncthing.persist.usrData`/`usrConfig` for a consumer that prefers the outputs.
+
 - **oams** (ZFS): the home is on the pool; create the directories (or dedicated datasets if the
   share should have its own quota/snapshot policy). The empty share roots are created by the
   `home.file` `.keep` entries, so Syncthing never starts against a missing path.
@@ -114,6 +115,7 @@ device IDs.
 
    oams and etra switch through the repository's remote helper:
    `./nixos-rebuild.sh switch remote=oams` and `remote=etra`.
+
 3. Verify with `stc folders`, `stc devices` and `stc folder_errors` on each host.
 
 ## Ignore patterns
@@ -155,6 +157,7 @@ Two properties matter:
 
   That keeps `.cache/agents/**` (the session worklogs and boards, the handover artifact) while
   skipping every other `.cache` child.
+
 - **The VCS is never ignored** (`.git`, `.jj`): the work is carried between machines. The list
   does skip `.devenv`, `.direnv`, `result*`, `node_modules`, `target`, `dist`, `build`, the
   JS/Java/Zig caches and Python caches. jj rewrites `op_heads`/`extra/heads` while a command runs,

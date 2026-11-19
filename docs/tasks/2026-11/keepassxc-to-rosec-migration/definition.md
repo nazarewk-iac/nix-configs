@@ -34,7 +34,7 @@ TOTP, notes, logins); the Secret Service never exposes them, so they stay in Kee
 - Keep the `Uuid` attribute as the idempotency key: a re-run deletes the previous copy by `Uuid` and
   imports again.
 - Verify every migrated item through the same client interface (`secret-tool lookup`, `Item
-  .Attributes`) and write a machine-readable report (counts, mismatches — never a secret value).
+.Attributes`) and write a machine-readable report (counts, mismatches — never a secret value).
 - Keep KeePassXC running until the rosec provider has served the same clients for an agreed period;
   then hand `org.freedesktop.secrets` to rosec and keep the KDBX as a backup for the vault.
 

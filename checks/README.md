@@ -8,14 +8,14 @@ timestamp: 2026-09-11T20:45:00+02:00
 
 # Checks
 
-**Do not run a bare `nix flake check`.** It builds all **75** attributes of `checks.<system>` on
-`aarch64-darwin` and **83** on `x86_64-linux` (counted 2026-11-16), counted with:
+**Do not run a bare `nix flake check`.** It builds all **85** attributes of `checks.<system>` on
+`aarch64-darwin` and **93** on `x86_64-linux` (counted 2026-11-19), counted with:
 
 ```bash
 nix eval --raw '.#checks.aarch64-darwin' --apply 'x: toString (builtins.length (builtins.attrNames x))'
 ```
 
-Seven of the 76 are the bundles, so 69 are real checks. The bare run measured **660.6 s** before the 30
+Seven of the 85 are the bundles, so 78 are real checks. The bare run measured **660.6 s** before the 30
 `dev-*` aspects landed. `den-eval-instantiate` then grew by 300 s, and 12 more checks landed after
 that run. So **960 s is a lower bound, not a measurement**. Nobody re-measures it: the measurement
 costs the same 15 minutes the rule exists to save. `bundle-slow` alone runs 710.6 s on a warm store.
@@ -96,6 +96,7 @@ joins.
 | `zellij-llm-pytest`              | the `zellij-llm` package's own pytest suite                                                                 | pkgs     | 17.1  | `nix build --no-eval-cache -L ".#checks.$SYS.zellij-llm-pytest"`                     |
 | `den-eval-toolset-small`         | 14 assertions: the toolset, packaging, emulation, outputs and monitoring aspects                            | den      | 14.7  | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-toolset-small"`                |
 | `den-eval-networking`            | 27 assertions over 4 bare consumers: the seven `net-*` aspects                                              | den      | 13.3  | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-networking"`                   |
+| `markdown-format`                | every Markdown file that `nix fmt` formats is already formatted: same prettier, same options, same excludes | core     | 13.0  | `nix build --no-eval-cache -L ".#checks.$SYS.markdown-format"`                       |
 | `den-eval-k8s`                   | 24 assertions over 9 bare consumers: the five `service-k8s*` aspects                                        | den      | 12.0  | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-k8s"`                          |
 | `den-eval-machine-profiles`      | 19 assertions over 6 bare consumers: the 12 machine-profile bundles, plus the `includes` graph of every one | den      | 12.0  | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-machine-profiles"`             |
 | `den-eval-development`           | 26 assertions over 22 bare consumers: the 30 `dev-*` aspects                                                | den      | 11.2  | `nix build --no-eval-cache -L ".#checks.$SYS.den-eval-development"`                  |
@@ -161,7 +162,8 @@ joins.
 
 A `—` means the check needs a Linux builder, so this machine measured no time. A `‡` means the check
 landed after the timing run, so it carries no measured time yet; it is an eval-only assertion set, so
-it costs a few seconds. The four times over 40 s are plain builds against a warm store, so they are
+it costs a few seconds. `markdown-format` carries a `x86_64-linux` time instead: it runs on both
+systems, and the formatting pass measured it there. The four times over 40 s are plain builds against a warm store, so they are
 lower bounds. The last five names do not exist on `aarch64-darwin`, and `aarch64-linux` carries none
 of the ten per-system names. Four more entry points exist:
 

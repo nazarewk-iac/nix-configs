@@ -17,4 +17,3 @@ generated: true
 
 - **[`flake-update-complete.sh` assertion 7 uses the wrong baseline](definition.md)** — Assertion 7 of the fork update completion check called every new public lock node private, so it failed on any public input addition. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — Assertion 7 now defines a fork-only node by reachability over public-named edges, so a new public input passes and a private input still fails. · `Solution` · `stable` · `unverified`
-

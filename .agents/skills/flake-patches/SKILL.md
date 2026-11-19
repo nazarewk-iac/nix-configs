@@ -42,6 +42,7 @@ url = "https://github.com/NixOS/nixpkgs/commit/<sha>.patch?full_index=1"
 ```
 
 Then apply without re-fetching inputs:
+
 ```bash
 nix run '.#update' -- g:patches
 ```
@@ -49,6 +50,7 @@ nix run '.#update' -- g:patches
 ## Remove a landed patch
 
 When a patch has landed in the tracked channel:
+
 1. Comment out or delete the `[patch.<input>.<name>]` entry in `.flake.patches/config.toml`
 2. Delete the `.patch` file under `.flake.patches/<input>/`
 3. Verify: `nix run '.#update' -- g:patches`

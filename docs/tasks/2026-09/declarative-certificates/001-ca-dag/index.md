@@ -17,4 +17,3 @@ generated: true
 
 - **[001 — CA DAG](definition.md)** — Add the kdn.ca-dag aspect, a data-only declaration of the CA graph in kdn.ca-dag.cas.<name>, with no generation and no system trust. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The kdn.ca-dag aspect declares the CA graph as data in four classes, with no generation, no system trust and no enable option. · `Solution` · `stable` · `unverified`
-

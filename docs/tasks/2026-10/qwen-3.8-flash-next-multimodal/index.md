@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Qwen3.8-Flash-Next multimodal (vision) serving on brys](definition.md)** — Serve Qwen3.8-Flash-Next with its multimodal projector on the main brys profile behind a toggle, so llama-server accepts image and video input, not text alone. · `Task` · `stable` · `unverified`
-

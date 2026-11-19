@@ -405,6 +405,152 @@ denTests.checks
         touch "$out"
       '';
 
+  # The Markdown format gate: every file that `nix fmt` formats as Markdown must already be
+  # formatted. It is not a second formatter and it has no settings of its own. `treefmt.nix` is the
+  # only registration point, and this check evaluates that module through treefmt-nix and reads:
+  #
+  #   * `settings.formatter.prettier.command` - the same prettier binary `nix fmt` runs;
+  #   * `settings.formatter.prettier.options` - the same `--config <prettierrc>` `nix fmt` passes,
+  #     with `--check` in place of `--write`, so print width and prose wrap arrive from one place;
+  #   * `settings.formatter.prettier.includes` - the Markdown half of the include globs;
+  #   * `settings.excludes` - the same exclude globs, so a generated file, a fixture or an in-flight
+  #     track is out of the gate exactly when it is out of `nix fmt`.
+  #
+  # Nothing below names a directory, a print width or an ignore file. Change `treefmt.nix` and this
+  # check follows.
+  markdown-format =
+    let
+      treefmt = (inputs.treefmt-nix.lib.evalModule pkgs (import ../treefmt.nix { })).config.settings;
+      prettier = treefmt.formatter.prettier;
+
+      # `includes` also holds the JSON globs. Take the Markdown half from that same list, so the two
+      # halves of prettier's file set cannot drift apart.
+      markdownIncludes = lib.filter (
+        glob:
+        builtins.elem (lib.last (lib.splitString "." glob)) [
+          "md"
+          "mdx"
+        ]
+      ) prettier.includes;
+
+      # Translate one treefmt glob into a POSIX extended regex for `builtins.match`. treefmt follows
+      # gitignore rules: `**/` matches one or more directories (doublestar, so the root file needs
+      # its own entry in `excludes`), `**` matches anything, `*` matches a run that cannot cross `/`,
+      # `?` matches one character that is not `/`, and everything else is literal. `builtins.match`
+      # anchors both ends, so the result needs no `^` or `$`.
+      globToRegex =
+        glob:
+        let
+          chars = lib.stringToCharacters glob;
+          count = builtins.length chars;
+          regexSpecial = [
+            "\\"
+            "."
+            "^"
+            "$"
+            "|"
+            "+"
+            "("
+            ")"
+            "["
+            "]"
+            "{"
+            "}"
+          ];
+          # One step at index `i`: the text it emits and how many characters it consumes.
+          step =
+            i:
+            let
+              c = builtins.elemAt chars i;
+            in
+            if c == "*" then
+              if i + 1 < count && builtins.elemAt chars (i + 1) == "*" then
+                if i + 2 < count && builtins.elemAt chars (i + 2) == "/" then
+                  {
+                    take = 3;
+                    text = "(.+/)?";
+                  }
+                else
+                  {
+                    take = 2;
+                    text = ".*";
+                  }
+              else
+                {
+                  take = 1;
+                  text = "[^/]*";
+                }
+            else if c == "?" then
+              {
+                take = 1;
+                text = "[^/]";
+              }
+            else
+              {
+                take = 1;
+                text = if builtins.elem c regexSpecial then "\\${c}" else c;
+              };
+          go =
+            i: acc:
+            if i >= count then
+              acc
+            else
+              let
+                this = step i;
+              in
+              go (i + this.take) (acc + this.text);
+        in
+        go 0 "";
+
+      # A glob with no `/` matches a basename at any depth; one with a `/` matches the whole path.
+      matchesGlob =
+        glob: path:
+        builtins.match (globToRegex glob) (if lib.hasInfix "/" glob then path else baseNameOf path) != null;
+
+      relative = path: lib.removePrefix (toString ../. + "/") (toString path);
+      candidates = lib.fileset.toList (
+        lib.fileset.fileFilter (file: builtins.any (glob: matchesGlob glob file.name) markdownIncludes) ../.
+      );
+      kept = builtins.filter (
+        path: !builtins.any (glob: matchesGlob glob (relative path)) treefmt.excludes
+      ) candidates;
+      src = lib.fileset.toSource {
+        root = ../.;
+        fileset = lib.fileset.unions kept;
+      };
+
+      # The invocation treefmt builds for prettier, minus the write.
+      prettierArgs = [
+        "--check"
+        "--log-level"
+        "warn"
+        # Prettier reads `.gitignore` and `.prettierignore` by default, and this repository's
+        # `.gitignore` is an allowlist: it hides `.agents/skills/`, the dot-named task journals and
+        # every JSON file that is not named there. The store copy holds only the files that passed
+        # the include and exclude globs, so the ignore files must not filter again.
+        "--ignore-path"
+        "/dev/null"
+      ]
+      ++ lib.remove "--write" prettier.options;
+    in
+    pkgs.runCommand "check-markdown-format"
+      {
+        # `find` and `xargs` come from the stdenv; prettier is the absolute store path that
+        # `treefmt.nix` names, so this check cannot run a different build of it.
+        nativeBuildInputs = [ pkgs.findutils ];
+      }
+      ''
+        cd ${src}
+        find . -type f -print0 \
+          | xargs -0 ${lib.escapeShellArg prettier.command} ${lib.escapeShellArgs prettierArgs} \
+          || {
+            echo "Markdown is unformatted. Fix it from the repository root with:" >&2
+            echo "  nix fmt" >&2
+            exit 1
+          }
+        touch "$out"
+      '';
+
   # The parser gate over the real task tree. It copies docs/tasks into a temporary root and runs
   # `kdn-journal doctor --parse-only`, so a broken definition or board fails a check even though
   # .cache/agents is not in the flake source.

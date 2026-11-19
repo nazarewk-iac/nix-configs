@@ -17,4 +17,3 @@ generated: true
 
 - **[000 — universal augmentation](definition.md)** — Explore partial augmentation of a universal (old-tree) host with one den aspect through denLib.imports, so a host adopts one aspect at a time and migrates gradually. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The denLib.imports augmentation line works on a universal host; recorded the nested-list trap, the source-tree drvPath delta, and the absent den.default. · `Solution` · `stable` · `unverified`
-

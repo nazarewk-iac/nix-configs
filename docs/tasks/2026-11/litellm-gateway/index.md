@@ -21,4 +21,3 @@ generated: true
 - **[LiteLLM hooks for waking a powered-off backend (`brys`)](wake-on-request.research.md)** — `` · `stable` · `unverified`
 - **[LiteLLM routing, timeouts and health — design notes (2026-11-07)](routing-and-timeouts.design.md)** — `` · `stable` · `unverified`
 - **[LiteLLM: declarative config and unreachable-backend behaviour](research.md)** — `` · `stable` · `unverified`
-

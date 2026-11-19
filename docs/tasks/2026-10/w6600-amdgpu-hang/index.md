@@ -18,4 +18,3 @@ generated: true
 - **[Status — W6600 amdgpu hang](status.md)** — Research done; the hang matches open llama.cpp · `Status` · `stable` · `unverified`
 - **[W6600 amdgpu ring timeout under the Qwen MTP draft head](definition.md)** — Investigate why the Radeon Pro W6600 (Vulkan/radv) hard-hangs under the Qwen3.8-Flash-Next MTP workload on brys, and decide whether the GPU draft head can be safely re-enabled. · `Task` · `stable` · `unverified`
 - **[W6600 amdgpu ring timeout — research](research.md)** — Why the W6600 hangs under the Qwen MTP draft head, the upstream reports that match, and the mitigations that could allow re-enabling it. · `Research` · `stable` · `unverified`
-

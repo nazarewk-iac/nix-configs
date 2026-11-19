@@ -17,4 +17,3 @@ generated: true
 
 - **[Keep zellij-llm sessions alive; use file markers](definition.md)** — Keep a zellij-llm background session alive after its command exits, and detect completion with a deterministic file marker. · `Task` · `stable` · `unverified`
 - **[Solution — keep sessions alive; detect completion with file markers](done.md)** — Solution — a zellij-llm pane drops to an interactive shell after its command exits, so the session stays alive, and wait/watch detect completion with a per-run file marker under the cache root. · `Solution` · `stable` · `unverified`
-

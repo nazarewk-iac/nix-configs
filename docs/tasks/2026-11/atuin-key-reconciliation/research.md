@@ -35,13 +35,13 @@ about `cmp` records this same class of mistake from the shell side.
 
 `atuin 18.24.5`, sync address `https://api.atuin.sh/`, account `kdn`.
 
-| Where | Same 24 words as SOPS | Local data |
-| --- | --- | --- |
-| `oams` `kdn` | yes | `history.db` empty, `records.db` empty |
-| `oams` root | yes | — |
-| `brys` root | yes | **16,893 records**, 63,290 history rows |
-| `anji` `kdn` | **no** — different key | — |
-| `default.unattended.sops.yaml` | — (this is the reference) | — |
+| Where                          | Same 24 words as SOPS     | Local data                              |
+| ------------------------------ | ------------------------- | --------------------------------------- |
+| `oams` `kdn`                   | yes                       | `history.db` empty, `records.db` empty  |
+| `oams` root                    | yes                       | —                                       |
+| `brys` root                    | yes                       | **16,893 records**, 63,290 history rows |
+| `anji` `kdn`                   | **no** — different key    | —                                       |
+| `default.unattended.sops.yaml` | — (this is the reference) | —                                       |
 
 `brys` is the witness that matters: it holds a large synced store under the shared key, so that key
 matched the account when those records were pulled.
@@ -53,11 +53,11 @@ key change — which is also why the purge in the login unit has been harmless s
 
 A pull in an isolated data directory (section 4) with the shared key:
 
-| Result | Count |
-| --- | --- |
-| records decrypted and stored | **106,731** |
-| records skipped, `unexpected error decrypting CEK: bad key` | **89** |
-| distinct foreign key ids among the 89 | **7** |
+| Result                                                      | Count       |
+| ----------------------------------------------------------- | ----------- |
+| records decrypted and stored                                | **106,731** |
+| records skipped, `unexpected error decrypting CEK: bad key` | **89**      |
+| distinct foreign key ids among the 89                       | **7**       |
 
 Foreign key ids seen in the warnings (atuin exposes them per record):
 
@@ -102,7 +102,7 @@ atuin store pull --page=5000 || :
 
 Consequences:
 
-- **A mismatched SOPS key is destructive first.** `store purge` empties the local store *before* the
+- **A mismatched SOPS key is destructive first.** `store purge` empties the local store _before_ the
   login is attempted. On `oams` there was nothing to lose; on a machine with history this throws
   away records the server cannot return without the right key.
 - **The `elif` is noisy.** `atuin status` fails with `You are not logged in to a sync server` when
@@ -110,7 +110,7 @@ Consequences:
   successfully. The unit still exits 0.
 - **The message the owner saw comes from the records, not the login.** A pull decrypts what it can
   and skips the rest, which is what produces `The encryption key on this machine does not match the
-  data on the server`.
+data on the server`.
 
 `oams` today: `atuin doctor` reports `auth_state: Hub (authenticated)`, a recent sync, and the
 shared key — so the session and the key are fine and only the strays prompt the warning.
@@ -133,7 +133,7 @@ Notes:
 - The copy includes `session`, so no credentials are used and nothing is created on the server.
 - `--force` is safe **only** inside such a copy; it wipes that copy's store.
 - The exit status can be 1 with `Threads need the daemon: enable it … to rebuild the threads
-  index` — an artefact of the isolated directory (no daemon there), not a sync failure. Judge the
+index` — an artefact of the isolated directory (no daemon there), not a sync failure. Judge the
   result by the warnings and the row count instead:
 
   ```sh
@@ -147,14 +147,14 @@ Notes:
 
 Recorded because the task may need one of them later, and each is irreversible in a different way.
 
-| Command | Effect |
-| --- | --- |
-| `atuin store purge` | deletes **local** records (`records.db`), not history, not the server |
-| `atuin store push` | re-encrypts local records with the **current** key and uploads them; this is how new foreign-key records are created |
-| `atuin store pull --force` | wipes the local store, then downloads |
-| `atuin account login -k <key>` | pins that key locally and creates a session on the server |
-| `atuin logout` | drops the local session; the server session row stays until it expires |
-| server-side record delete | the only way to remove the 89 strays; irreversible, needs the account's own tooling |
+| Command                        | Effect                                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `atuin store purge`            | deletes **local** records (`records.db`), not history, not the server                                                |
+| `atuin store push`             | re-encrypts local records with the **current** key and uploads them; this is how new foreign-key records are created |
+| `atuin store pull --force`     | wipes the local store, then downloads                                                                                |
+| `atuin account login -k <key>` | pins that key locally and creates a session on the server                                                            |
+| `atuin logout`                 | drops the local session; the server session row stays until it expires                                               |
+| server-side record delete      | the only way to remove the 89 strays; irreversible, needs the account's own tooling                                  |
 
 There is no `atuin` subcommand that deletes a single server record by id. Removing the strays
 therefore means either the server's HTTP API directly, or recreating the account. That is why the

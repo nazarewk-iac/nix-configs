@@ -18,4 +18,3 @@ generated: true
 - **[Migrate the `anji` Nix store to the external volume](definition.md)** — Migrate the Nix store backing volume of `anji` onto the external USB SSD, gated on a stable bootstrap binary that holds the Full Disk Access grant every launchd daemon needs. · `Task` · `stable` · `unverified`
 - **[Rosetta builderd under the bootstrap — measured launchd/TCC behaviour](rosetta-launchd-socket.research.md)** — Measured facts about launchd socket activation, TCC cdhash binding, and the rosetta-builderd interaction with the bootstrap wrapper on macOS 27.0.1. · `Research` · `stable` · `unverified`
 - **[Status checkpoint — 2026-10-15](status.md)** — The store is cut over to the external volume on `anji` (2026-10-15); soak, the drive-absent acceptance test, and internal-volume removal remain. · `Status` · `stable` · `unverified`
-

@@ -17,4 +17,3 @@ generated: true
 
 - **[Caddy must never request a public certificate](definition.md)** — Make every Caddy vhost use the internal KDN CA only, and stop Caddy's automatic HTTPS from requesting public ACME certificates on brys, oams and etra. · `Task` · `stable` · `unverified`
 - **[Self-signed CA only: the fix](done.md)** — Remove the dead Grafana vhost and set `auto_https off` in every Caddy-owning module, so no vhost can start a public ACME order; verified by evaluation on brys, oams and etra. · `Solution` · `stable` · `unverified`
-

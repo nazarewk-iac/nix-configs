@@ -33,4 +33,3 @@ generated: true
 
 - **[opinion-research](opinion-research/index.md)** — 2 concepts: Research 2
 - **[popularity-sweep](popularity-sweep/index.md)** — 3 concepts: Research 2, Task 1
-

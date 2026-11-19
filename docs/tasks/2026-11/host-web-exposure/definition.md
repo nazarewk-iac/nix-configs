@@ -47,7 +47,7 @@ etra wiring (`hosts/etra/`):
 - `domain = "etra.priv.nb.net.int.kdn.im"`, `certName = "zellij-web"` (reuse the
   existing etra leaf).
 - routes: `/litellm → 127.0.0.1:4000` (gateway ingress), `/prometheus →
-  10.233.101.2:9090` (prometheus-container guest).
+10.233.101.2:9090` (prometheus-container guest).
 
 ### 3. Fold the `llm` aspect vhost into the same shape (brys + oams)
 

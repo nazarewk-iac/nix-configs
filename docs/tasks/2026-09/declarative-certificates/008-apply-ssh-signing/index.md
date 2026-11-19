@@ -17,4 +17,3 @@ generated: true
 
 - **[008 — apply signs SSH leaves](definition.md)** — Wire the SSH sign branch into kdn-certs apply, so apply generates and signs ssh-user and ssh-host leaves as well as TLS leaves. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — kdn-certs apply now signs ssh-user and ssh-host leaves: certinfo parses OpenSSH certificates, the loop branches on the leaf type, and the generated certificate verifies under the declared CA. · `Solution` · `stable` · `unverified`
-

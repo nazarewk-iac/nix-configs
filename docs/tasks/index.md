@@ -24,4 +24,3 @@ generated: true
 - **[2026-09](2026-09/index.md)** — 93 concepts: Task 41, Research 21, Solution 20, Design 8, Reference 2, Status 1
 - **[2026-10](2026-10/index.md)** — 151 concepts: Research 66, Task 52, Solution 22, Design 5, Status 5, Reference 1
 - **[2026-11](2026-11/index.md)** — 86 concepts: Task 41, Research 16, Design 7, Solution 6, unknown 6, Status 4, Decision 3, Reference 2, Review 1
-

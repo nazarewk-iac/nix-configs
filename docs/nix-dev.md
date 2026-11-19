@@ -19,7 +19,8 @@ see the agent rule; this doc covers the hands-on workflows.
 devenv eval '<option.path>'   # evaluate a single option's value (fastest — no derivation build)
 devenv build                  # evaluate + build devenv packages (fast check)
 devenv build shell             # build the full devenv shell (slower; catches package build failures)
-nix run .#kdn-nix-fmt -- <files>   # format Nix files
+nix fmt -- <files>            # format the repository, or only the named files
+nix run .#kdn-nix-fmt -- <files>   # the same nixfmt, through the editor-facing wrapper
 ```
 
 Use `devenv eval` for a quick, targeted check that a specific option wired up correctly (e.g.

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Spend tracking, budget hints, and prefill metrics in the LiteLLM gateway](definition.md)** — Record per-request spend and prefill/decode rates in the LiteLLM gateway, expose truthful cost headers, and give agents a cache-safe budget hint — DB-less first, then on top of the adeci/litellm-nix fork. · `Task` · `stable` · `unverified`
-

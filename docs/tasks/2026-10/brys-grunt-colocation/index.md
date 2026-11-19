@@ -28,4 +28,3 @@ generated: true
 - **[Media moments — key-moment pipeline](media-moments.research.md)** — Free, self-hostable end-to-end pipeline for locating key moments in long recordings, with per-stage model picks. · `Research` · `stable` · `unverified`
 - **[Multimodal small-model survey](multimodal.research.md)** — Multimodal small-model survey for a CPU + 8 GB-VRAM Vulkan host, by modality, from HF API on 2026-10-18. · `Research` · `stable` · `unverified`
 - **[Server-driven context + all-model sweep (2026-10-19)](server-context-2026-10-19.research.md)** — Server-driven context deployment and full brys model sweep (2026-10-19). Proves `/v1/models` carries each model's real context via `context_length`, that the discovery plugin applies it for every id, and that all 34 brys-hosted ids answer through the compat-proxy. · `Research` · `stable` · `unverified`
-

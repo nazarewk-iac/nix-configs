@@ -18,4 +18,3 @@ generated: true
 - **[A health check that never loads a model](done.md)** — Disable the LiteLLM per-model health probes and move the signal to a host-level llama-swap `GET /health` probe, so a health check returns without loading a model. · `Solution` · `stable` · `unverified`
 - **[Traffic into the brys and oams local model servers](research.md)** — Measured evidence for every traffic path into the brys and oams llama-swap servers on 2026-11-12, with the health-check volume and the model-swap storm it causes. · `Research` · `stable` · `unverified`
 - **[What reaches the local model servers on brys and oams](definition.md)** — Identify every client and poller that reaches the llama-swap servers on brys and oams, and replace the LiteLLM per-model health probes with a host-level `/health` probe that never loads a model. · `Task` · `stable` · `unverified`
-

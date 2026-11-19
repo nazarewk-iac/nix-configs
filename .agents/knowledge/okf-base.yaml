@@ -4,7 +4,6 @@
 # `okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge` is the gate.
 # `okf-memory` still owns `index.md` and `log.md`; okflint only reads them.
 okf_version: "0.2"
-
 base:
   name: "nix-configs agent memory"
   roots:
@@ -15,11 +14,9 @@ base:
   link_resolution:
     scope: base
     external_refs: []
-
 profile:
   # ISO dates, when a concept carries them. The seed uses `generated.at` instead.
   date_fields: [created, updated]
-
   types:
     Decision:
       required: [type, title, description, status, generated]

@@ -35,4 +35,3 @@ generated: true
 - **[013-opt-in-boundaries](013-opt-in-boundaries/index.md)** — 2 concepts: Research 1, Task 1
 - **[014-machine-layer-migration](014-machine-layer-migration/index.md)** — 2 concepts: Research 1, Task 1
 - **[015-den-check-harness-platforms](015-den-check-harness-platforms/index.md)** — 1 concept: Task 1
-

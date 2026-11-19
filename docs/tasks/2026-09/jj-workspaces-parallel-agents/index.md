@@ -17,4 +17,3 @@ generated: true
 
 - **[jj workspaces for parallel sub-agent work](definition.md)** — Adopt jj workspaces as the sanctioned isolation mechanism for parallel sub-agent work, with a sibling naming convention, a mandatory bootstrap step, and a ban on system activation from a workspace. · `Task` · `stable` · `unverified`
 - **[Solution — jj workspaces for parallel sub-agent work](done.md)** — Solution for the jj workspaces convention — the shared jj repo config guard, the pinned devenv input, and the documented five-step procedure. · `Solution` · `stable` · `unverified`
-

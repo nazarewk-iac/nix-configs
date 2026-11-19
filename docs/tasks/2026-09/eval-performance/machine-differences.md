@@ -7,7 +7,7 @@ timestamp: 2026-11-09T11:00:00+01:00
 # Machine-to-machine evaluation-time differences
 
 This note estimates **why one host evaluates much slower than another**. It does not replace
-[research.md](research.md) (where the time goes inside one eval). It explains the *spread* across
+[research.md](research.md) (where the time goes inside one eval). It explains the _spread_ across
 hosts, and it names the levers. The [pinned-pkgs task](../../2026-11/pinned-pkgs-single-instantiation/definition.md)
 is lever 2 below.
 
@@ -16,19 +16,19 @@ is lever 2 below.
 `config.system.build.toplevel.drvPath`, one cold `nix eval` process per host, `--option builders ""`
 (no build, no IFD), from the repo working tree:
 
-| host | system       | eval-only | weight class                     |
-| ---- | ------------ | --------- | -------------------------------- |
-| moss | x86_64-linux | 70.5 s    | headless server                  |
-| etra | x86_64-linux | 82.0 s    | server + LLM gateway             |
-| briv | aarch64-linux| 84.2 s    | Pi-class server                  |
-| brys | x86_64-linux | 239.7 s   | x86 + 4 boot specialisations     |
-| oams | x86_64-linux | 147.9 s   | desktop + specialisation.vfio    |
-| anji | aarch64-darwin| 241.7 s  | macOS desktop + devenv + homebrew|
+| host | system         | eval-only | weight class                      |
+| ---- | -------------- | --------- | --------------------------------- |
+| moss | x86_64-linux   | 70.5 s    | headless server                   |
+| etra | x86_64-linux   | 82.0 s    | server + LLM gateway              |
+| briv | aarch64-linux  | 84.2 s    | Pi-class server                   |
+| brys | x86_64-linux   | 239.7 s   | x86 + 4 boot specialisations      |
+| oams | x86_64-linux   | 147.9 s   | desktop + specialisation.vfio     |
+| anji | aarch64-darwin | 241.7 s   | macOS desktop + devenv + homebrew |
 
 **Methodology caveat (important).** These numbers use `builtins.getFlake "path:…"`, which re-copies
 the tree into the store on every run and starts a fresh eval with no warm eval cache. They are
 inflated against the **warm** figure in [definition.md](definition.md) (anji warm = 64 s in
-2026-09). The *relative* spread is the useful signal; absolute values move with warm/cold and with
+2026-09). The _relative_ spread is the useful signal; absolute values move with warm/cold and with
 `path:` copying. Re-measure warm before quoting absolute numbers.
 
 ## Ranked causes of the spread (estimate, to be confirmed per host)
@@ -37,7 +37,7 @@ inflated against the **warm** figure in [definition.md](definition.md) (anji war
    contains every `specialisation.*` sub-config, each fully evaluated. `brys` has four appliance
    specialisations (`hosts/brys/llm-appliance.nix`, `llms-frontier.nix`, …) → brys is the slowest
    x86 host (240 s). `oams` has one (`specialisation.vfio`, `hosts/oams/default.nix:405`). This is
-   the **single biggest** differentiator and it is *independent* of nixpkgs instantiation: the
+   the **single biggest** differentiator and it is _independent_ of nixpkgs instantiation: the
    module graph is evaluated N+1 times.
 2. **Repeated nixpkgs instantiation + overlays per host.** Each `nixosSystem`/`darwinSystem`
    `import inputs.nixpkgs { overlays = [ self.overlays.default ] … }` afresh, and several aspects
@@ -82,6 +82,6 @@ inflated against the **warm** figure in [definition.md](definition.md) (anji war
 ## How this connects to the pkgs-pinning task
 
 The pinned-pkgs work is **L2** here. It is not the top lever (L1 is), but it is the one that makes
-the *fleet-wide* eval (all hosts at once) cheap, because it lets every host of a system reference
+the _fleet-wide_ eval (all hosts at once) cheap, because it lets every host of a system reference
 one already-evaluated `pkgs`. This note's per-host table is the baseline L2 should be measured
 against; the acceptance is a drop in the **combined one-process** eval of the hosts it pins.

@@ -29,7 +29,7 @@ YubiKeys**. One unlock per session; item reads and writes then cost no YubiKey o
 | Module (classic)  | `modules/universal/services/rosec/default.nix`                                                                  |
 | Module (den)      | `modules/den/aspects/service-rosec.nix`                                                                         |
 | Host config       | `hosts/oams/default.nix` and `hosts-den/brys/default.nix` (`kdn.services.rosec`)                                |
-| Provider values   | `data/rosec.nix`, a Home Manager module imported by both hosts: store path, key file, identity, recipient      |
+| Provider values   | `data/rosec.nix`, a Home Manager module imported by both hosts: store path, key file, identity, recipient       |
 | Provider config   | rendered to `~/.config/rosec/config.toml` whenever `enable` or `conflictNotification.enable` is on              |
 | Store             | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage/`                                                 |
 | Store mode        | `<store>/.rosec-store.yaml` (`mode: derived` on oams)                                                           |

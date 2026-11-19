@@ -17,4 +17,3 @@ generated: true
 
 - **[006 — direction decision: slots or den](definition.md)** — Choose slots or den as the single reimplementation target, on the evidence from the den spike and the conditional-imports requirement. · `Task` · `stable` · `unverified`
 - **[006 — research: the evidence for the direction decision](research.md)** — The measured evidence and the scored table for the slots-or-den direction decision, with every input that does not wait on task 004 criterion 3 or on task 005. · `Research` · `stable` · `unverified`
-

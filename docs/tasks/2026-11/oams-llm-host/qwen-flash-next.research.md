@@ -38,18 +38,18 @@ Name `qwen3.8-flash-next` is a local alias. The base repo is
 ([config.json](https://huggingface.co/Qwen/Qwen3.8-Flash-Next/raw/main/config.json),
 [unsloth model card](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)).
 
-| Property | Value | Source |
-| --- | --- | --- |
-| Total params | 125 B main + 51 B n-gram embedding + 4 B MTP head = **~180 B** | Unsloth card (shows "177B params") |
-| Active params / token | **~6 B** (125 B main is sparse; n-gram table is a lookup) | Unsloth card "125B with 6B activated" |
-| Experts | **512**, **10 routed active** + **1 shared** per token | config `num_experts`, `num_experts_per_tok` |
-| Shared expert size | intermediate **640** (1 per layer, always on) | config `shared_expert_intermediate_size: 640` |
-| Layers | 48; layout `12 × (3×(Gated DeltaNet→MoE) → 1×(Qwen Sparse Attention→MoE))` | config `layer_types`, Unsloth card |
-| Hidden size | 2560 | config |
-| Full-attention layers | `full_attention_interval: 4` → **12 of 48** (25%) are full attention; **36 are linear (GDN)** | config |
-| QSA (full) heads | 24 Q, **2 KV**, head_dim **256**, rope dim 64 | config |
-| GDN (linear) heads | 48 V, 16 QK, head_dim 128 | config |
-| Context native / max | **262 144** native, extensible to **1 000 000** (YaRN) | config `max_position_embeddings`, card |
+| Property              | Value                                                                                         | Source                                        |
+| --------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Total params          | 125 B main + 51 B n-gram embedding + 4 B MTP head = **~180 B**                                | Unsloth card (shows "177B params")            |
+| Active params / token | **~6 B** (125 B main is sparse; n-gram table is a lookup)                                     | Unsloth card "125B with 6B activated"         |
+| Experts               | **512**, **10 routed active** + **1 shared** per token                                        | config `num_experts`, `num_experts_per_tok`   |
+| Shared expert size    | intermediate **640** (1 per layer, always on)                                                 | config `shared_expert_intermediate_size: 640` |
+| Layers                | 48; layout `12 × (3×(Gated DeltaNet→MoE) → 1×(Qwen Sparse Attention→MoE))`                    | config `layer_types`, Unsloth card            |
+| Hidden size           | 2560                                                                                          | config                                        |
+| Full-attention layers | `full_attention_interval: 4` → **12 of 48** (25%) are full attention; **36 are linear (GDN)** | config                                        |
+| QSA (full) heads      | 24 Q, **2 KV**, head_dim **256**, rope dim 64                                                 | config                                        |
+| GDN (linear) heads    | 48 V, 16 QK, head_dim 128                                                                     | config                                        |
+| Context native / max  | **262 144** native, extensible to **1 000 000** (YaRN)                                        | config `max_position_embeddings`, card        |
 
 **Is it really hybrid linear + periodic full attention?** Yes — **VERIFIED**. The
 architecture is **Gated DeltaNet (linear attention) in 36 layers + Qwen Sparse
@@ -74,11 +74,11 @@ at F16 … 6/12/24 GiB at 256K/512K/1M"
 ([done.md:115-119](docs/tasks/2026-10/qwen-flash-next-quant/done.md)) — a strong
 cross-check that the formula and the config agree.
 
-| Context | KV @ F16 | KV @ Q8_0 |
-| --- | ---: | ---: |
-| 256K native | 6.0 GiB | 3.0 GiB |
-| 512K | 12.0 GiB | 6.0 GiB |
-| **1M** | **24.0 GiB** | **12.0 GiB** |
+| Context     |     KV @ F16 |    KV @ Q8_0 |
+| ----------- | -----------: | -----------: |
+| 256K native |      6.0 GiB |      3.0 GiB |
+| 512K        |     12.0 GiB |      6.0 GiB |
+| **1M**      | **24.0 GiB** | **12.0 GiB** |
 
 (3.5-35B-A3B for comparison: 40 layers, 10 full-attn → 20 KiB/tok F16, 10 KiB Q8.)
 
@@ -86,18 +86,18 @@ cross-check that the formula and the config agree.
 
 From the Unsloth card's quant table (sizes on disk, whole repo):
 
-| Quant | Size | Note |
-| --- | ---: | --- |
-| UD-IQ1_S | **66.4 GB** | smallest published |
-| UD-IQ1_M | 68 GB | |
-| UD-Q2_0 | 70.5 GB | |
-| UD-IQ2_XS | 75.8 GB | |
-| UD-Q2_K_XL | 79.6 GB | |
+| Quant      |        Size | Note                                 |
+| ---------- | ----------: | ------------------------------------ |
+| UD-IQ1_S   | **66.4 GB** | smallest published                   |
+| UD-IQ1_M   |       68 GB |                                      |
+| UD-Q2_0    |     70.5 GB |                                      |
+| UD-IQ2_XS  |     75.8 GB |                                      |
+| UD-Q2_K_XL |     79.6 GB |                                      |
 | UD-IQ3_XXS | **83.6 GB** | ≈ repo's "comfortable, most KV room" |
-| UD-Q3_K_XL | 89.5 GB | |
-| UD-IQ4_XS | **93.7 GB** | brys's choice |
-| UD-Q4_K_XL | 111 GB | |
-| Q8_0 | 192 GB | |
+| UD-Q3_K_XL |     89.5 GB |                                      |
+| UD-IQ4_XS  | **93.7 GB** | brys's choice                        |
+| UD-Q4_K_XL |      111 GB |                                      |
+| Q8_0       |      192 GB |                                      |
 
 The repo's own measured shard totals agree
 ([qwen-flash-next-quant/definition.md:73-83](docs/tasks/2026-10/qwen-flash-next-quant/definition.md)):
@@ -107,7 +107,7 @@ IQ4_XS 87.2 GB measured, IQ3_XXS 76.3 GB, IQ2_K_XL 73.5 GB, IQ1_S 67.6 GB.
 
 ### 1.4 How much is "always active" vs routed — ESTIMATE (arithmetic)
 
-This decides what *must* be in VRAM for speed. Per decode token you must read:
+This decides what _must_ be in VRAM for speed. Per decode token you must read:
 embeddings (lookup) + all attention/GDN weights + **shared expert** + router +
 **10 of 512 routed experts per layer** + the full KV cache.
 
@@ -126,13 +126,14 @@ per token**; the other ~97% are idle experts. At IQ3_XXS (~3.06 bits/param) that
 is **≈1.54 GiB of weight traffic per token**; at IQ4_XS (≈4.25 bits) **≈2.14 GiB**.
 (This matches the repo's statement that for this model "the dense weights are
 about 80% of the bytes one decode token reads" — the 4.3 B always-active compute
-+ the n-gram lookups + KV dominate, the routed experts are a minority of per-token
-bytes but the majority of *file size*.)
+
+- the n-gram lookups + KV dominate, the routed experts are a minority of per-token
+  bytes but the majority of _file size_.)
 
 **Key insight for the claim:** the "active expert set" that fits in 12 GB is
 exactly this ~4.3 B-param compute graph (≈1.5–2.1 GiB at 3–4 bit) plus the
 always-staged experts. That fits in 12 GB easily. **But the routed experts that
-are *not* active still have to be read from RAM on every token** (any of 512 can
+are _not_ active still have to be read from RAM on every token** (any of 512 can
 be chosen), so VRAM residency of the active set does **not** remove the RAM
 bandwidth cost — see §3.3.
 
@@ -174,7 +175,7 @@ oams @ 256K q8_0: KV 3.2 GB + cache-ram 1 GB (lower from the 37 GB brys uses)
 ```
 
 **Verdict for 256K: feasible.** This is the configuration the user asked about,
-and it is the right one. 1M is *not* comfortable (12.9 GB KV + the 37 GB
+and it is the right one. 1M is _not_ comfortable (12.9 GB KV + the 37 GB
 cache-ram brys uses must drop to ~4 GB, and prefill over 1M tokens at SSD-backed
 weights is very slow), but 256K is fine.
 
@@ -189,7 +190,7 @@ Two theoretical escapes, neither good:
   non-fitting model. **But it "auto-disables mmap" and needs O_DIRECT**, and on
   brys it was measured **−34% decode, −65% prefill** when the model mostly fit
   ([offload.research.md:166-181](docs/tasks/2026-10/llama-benchmark-suite/002-disk-offload/offload.research.md)).
-  On oams the model *badly* does not fit, so this is the intended use — but you
+  On oams the model _badly_ does not fit, so this is the intended use — but you
   pay disk-read latency per token and the disk must sustain it for the whole run.
   **ESTIMATE: not a practical path for interactive use.**
 - **The 51 B n-gram table** (~40% of params) is a pure embedding lookup. Atomic
@@ -212,7 +213,7 @@ GPUs:
 
 - **RX 6900 XT (gfx1030, same RDNA2 as oams), 64 GB RAM, Qwen3.6-35B-A3B Q4_K_XL,
   `--cpu-moe --parallel 1`: 30.8 tok/s generation at 8.5k tokens, 37 tok/s at 1.6k**
-  on ROCm; Vulkan works too but the MoE *cache* path is buggy —
+  on ROCm; Vulkan works too but the MoE _cache_ path is buggy —
   [issue #30697](https://github.com/ggml-org/llama.cpp/issues/30697).
 - **RX 5700 XT (RDNA1), Qwen3.5 family with `-ncmoe 24` runs on Vulkan** —
   [issue #30039](https://github.com/ggml-org/llama.cpp/issues/30039).
@@ -260,13 +261,13 @@ KV cost (12 full-attn layers x 2 KV heads x 256 head_dim = 24 KiB/token F16):
 The weights are **file-backed** (§2.1), so they do not compete with the KV cache
 for RAM. What must fit is KV + prompt cache + compute buffers:
 
-| config | anaonymous RAM | verdict on oams (45-50 GiB usable) |
-| --- | ---: | --- |
-| 256K, q8_0 KV, cache-ram 1 GB | ~7 GB | **comfortable** |
-| 256K, F16 KV, cache-ram 8 GB | ~15 GB | **comfortable** |
-| 512K, q8_0 KV, cache-ram 8 GB | ~16 GB | fits, less headroom |
-| 1M, q8_0 KV, cache-ram 37 GB (brys) | ~51 GB | **too tight** — must cut cache-ram |
-| 1M, q8_0 KV, cache-ram 2 GB | ~17 GB | fits RAM, but SSD-bound prefill is slow |
+| config                              | anaonymous RAM | verdict on oams (45-50 GiB usable)      |
+| ----------------------------------- | -------------: | --------------------------------------- |
+| 256K, q8_0 KV, cache-ram 1 GB       |          ~7 GB | **comfortable**                         |
+| 256K, F16 KV, cache-ram 8 GB        |         ~15 GB | **comfortable**                         |
+| 512K, q8_0 KV, cache-ram 8 GB       |         ~16 GB | fits, less headroom                     |
+| 1M, q8_0 KV, cache-ram 37 GB (brys) |         ~51 GB | **too tight** — must cut cache-ram      |
+| 1M, q8_0 KV, cache-ram 2 GB         |         ~17 GB | fits RAM, but SSD-bound prefill is slow |
 
 **256K is the sensible target**: it fits with wide margin whatever the KV type,
 and it is 4x the 64K working set most agent tasks need. 1M is possible only with a
@@ -276,10 +277,10 @@ cut prompt cache and very slow first token.
 
 The first version of this report tabulated GGUF file sizes against RAM:
 
-| Quant | File | naive verdict |
-| --- | ---: | --- |
-| IQ1_S | 66.4 | "NO" |
-| IQ4_XS | 93.7 | "NO" |
+| Quant  | File | naive verdict |
+| ------ | ---: | ------------- |
+| IQ1_S  | 66.4 | "NO"          |
+| IQ4_XS | 93.7 | "NO"          |
 
 That table is **invalid** and is kept only to record the mistake: it treats the
 file as resident. `brys` disproves it — it serves the **93.7 GB** IQ4_XS file at
@@ -292,13 +293,13 @@ what §2.3 uses.
 
 ### 3.1 Published MoE-partial-offload numbers for this class
 
-| Setup | Model | t/s | Source |
-| --- | --- | ---: | --- |
-| RX 6900 XT (RDNA2), 64 GB, `--cpu-moe --parallel 1` | Qwen3.6-35B-A3B Q4_K_XL | **30.8 gen @8.5k, 37 @1.6k** (ROCm) | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697) |
-| Intel Arc B65 (Vulkan), `--n-cpu-moe 29 -c 49152` | Qwen3.8-Flash-Next Q3_K_XL | **118 pp / 9.1–9.7 tg** @long ctx | [#28247](https://github.com/ggml-org/llama.cpp/issues/28247) |
-| CPU-only 5950X + RTX 3090 Ti (reference) | Qwen3.8-Flash-Next Q4_K_XL | 15 gen / ~340 pp @30K | [definition.md:98-101](docs/tasks/2026-10/qwen-flash-next-quant/definition.md) |
-| **brys, 1M ctx, CPU, competing** | Qwen3.8-Flash-Next IQ4_XS | **2.36 decode** | [local-llms.md, decisions](docs/tasks/2026-11/pi-orchestrator-model-selection/decision-prune-2026-11-04.md) |
-| **brys, 1M ctx, CPU, alone** | Qwen3.8-Flash-Next IQ4_XS | **9.3 decode, 30.8 prefill** | [done.md:113](docs/tasks/2026-10/qwen-flash-next-quant/done.md) |
+| Setup                                               | Model                      |                                 t/s | Source                                                                                                      |
+| --------------------------------------------------- | -------------------------- | ----------------------------------: | ----------------------------------------------------------------------------------------------------------- |
+| RX 6900 XT (RDNA2), 64 GB, `--cpu-moe --parallel 1` | Qwen3.6-35B-A3B Q4_K_XL    | **30.8 gen @8.5k, 37 @1.6k** (ROCm) | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697)                                                |
+| Intel Arc B65 (Vulkan), `--n-cpu-moe 29 -c 49152`   | Qwen3.8-Flash-Next Q3_K_XL |   **118 pp / 9.1–9.7 tg** @long ctx | [#28247](https://github.com/ggml-org/llama.cpp/issues/28247)                                                |
+| CPU-only 5950X + RTX 3090 Ti (reference)            | Qwen3.8-Flash-Next Q4_K_XL |               15 gen / ~340 pp @30K | [definition.md:98-101](docs/tasks/2026-10/qwen-flash-next-quant/definition.md)                              |
+| **brys, 1M ctx, CPU, competing**                    | Qwen3.8-Flash-Next IQ4_XS  |                     **2.36 decode** | [local-llms.md, decisions](docs/tasks/2026-11/pi-orchestrator-model-selection/decision-prune-2026-11-04.md) |
+| **brys, 1M ctx, CPU, alone**                        | Qwen3.8-Flash-Next IQ4_XS  |        **9.3 decode, 30.8 prefill** | [done.md:113](docs/tasks/2026-10/qwen-flash-next-quant/done.md)                                             |
 
 Note the enormous spread between "alone" (9.3) and "competing" (2.36) on the same
 box — co-residency costs ~4×, which is exactly the "CPU-heavy / competing" regime
@@ -338,31 +339,31 @@ router picks **10 of 512 experts per layer**. You cannot know which in advance.
 So either (a) all 512×(48 layers) routed experts sit in RAM and you read the
 chosen ~1.5–2 GiB/token from RAM (the `--cpu-moe` path — bandwidth-bound on RAM),
 or (b) you page the chosen experts from GPU→host every token (PCIe-bound). Putting
-the *currently active* set in VRAM does nothing for the *next* token's different
+the _currently active_ set in VRAM does nothing for the _next_ token's different
 selection, so it does not remove the RAM read. **This is why the "active set fits
 in 12 GB" claim is true-but-useless here:** fitting the compute graph in VRAM
 saves the dense-path time but the routed-expert read from RAM dominates and stays.
 
-The only way VRAM residency *would* help is if the *entire* routed-expert set fit
+The only way VRAM residency _would_ help is if the _entire_ routed-expert set fit
 in VRAM — i.e. the whole model — which needs ~66–94 GB of VRAM. It does not.
 
 ### 3.4 oams vs brys, head-to-head — ESTIMATE
 
-| | brys | oams |
-| --- | --- | --- |
-| CPU | Ryzen 9 5950X (16C desktop) | Ryzen 9 5900HX (8C mobile) |
-| RAM | 128 GB DDR4, **~40 GB/s measured** | 62 GB DDR4-3200, **~32–36 GB/s** |
-| GPU | W6600 8 GB (weak) | RX 6800M 12 GB (2.8–3.4× brys's card, measured) |
-| Can serve the model (SSD-backed weights)? | **Yes** (54 GiB RSS @1M) | **Yes at 256K**, no at 1M (KV + cache too big) |
-| Decode, 1M ctx, alone | 9.3 tok/s | not attempted (1M does not fit RAM headroom) |
-| Decode, 1M ctx, competing | **2.36 tok/s** | n/a |
-| Decode, 256K ctx | (not measured) | ESTIMATE ~ brys-alone or slower (RAM-bound experts) |
+|                                           | brys                               | oams                                                |
+| ----------------------------------------- | ---------------------------------- | --------------------------------------------------- |
+| CPU                                       | Ryzen 9 5950X (16C desktop)        | Ryzen 9 5900HX (8C mobile)                          |
+| RAM                                       | 128 GB DDR4, **~40 GB/s measured** | 62 GB DDR4-3200, **~32–36 GB/s**                    |
+| GPU                                       | W6600 8 GB (weak)                  | RX 6800M 12 GB (2.8–3.4× brys's card, measured)     |
+| Can serve the model (SSD-backed weights)? | **Yes** (54 GiB RSS @1M)           | **Yes at 256K**, no at 1M (KV + cache too big)      |
+| Decode, 1M ctx, alone                     | 9.3 tok/s                          | not attempted (1M does not fit RAM headroom)        |
+| Decode, 1M ctx, competing                 | **2.36 tok/s**                     | n/a                                                 |
+| Decode, 256K ctx                          | (not measured)                     | ESTIMATE ~ brys-alone or slower (RAM-bound experts) |
 
 **Would oams be faster at 256K?** No — **about the same or slightly slower than
 brys-alone**, because the expert read is RAM-bandwidth bound and the bandwidth is
 comparable (oams mobile DDR4 ~32–36 vs brys ~40 GB/s) and the routed-expert read
 is the bottleneck on both. The stronger 6800M only helps prefill/dense, not the
-RAM-bound expert read. Measured evidence: oams's **CPU-only** decode is *worse*
+RAM-bound expert read. Measured evidence: oams's **CPU-only** decode is _worse_
 than brys's (gemma-4-e4b 4.3 vs 13.9 t/s, thermal throttle;
 [local-llms.md:653-657](docs/local-llms.md)) — when the work falls on CPU/RAM the
 laptop loses. Since the experts live in RAM, oams would be **slower, not faster**,
@@ -388,21 +389,21 @@ a 177B model never will here.
 4. **Speed will be roughly brys-like, not faster.** Decode reads 10 of 512 routed
    experts per token from RAM; the 12 GB card helps the attention and shared
    path, not the expert traffic. oams is a laptop whose CPU-side decode is
-   already measured *worse* than brys's (gemma-4-e4b: 4.3 vs 13.9 t/s CPU).
+   already measured _worse_ than brys's (gemma-4-e4b: 4.3 vs 13.9 t/s CPU).
 5. **GDN-hybrid on RDNA2 Vulkan has a known ~45% prefill regression**, so
    first-token latency suffers, and 256K prefill over SSD-backed weights is slow
    even before that.
 
-So the honest answer: it *runs* at 256K, but it is not obviously better than
+So the honest answer: it _runs_ at 256K, but it is not obviously better than
 running it on brys, and the smaller 35B-A3B is far more sensible on this box.
 
 ### 4.2 What would be the point? (vs the 35B / 30B-A3B)
 
-| Model | Quant | File | Fits oams (45-50 GiB)? | Notes |
-| --- | --- | ---: | --- | --- |
-| `qwen3.8-flash-next` | UD-IQ4_XS | 93.7 GB | SSD-backed, 256K yes / 1M no | the 1M quality tier; slow, big |
-| `qwen3.5-35b-a3b` | UD-IQ4_XS | **17.5 GB** | **Yes**, + full 256K KV | 256K native, near-frontier, ~30 tok/s class on RDNA2 `--cpu-moe` |
-| `qwen3.5-35b-a3b` | UD-Q4_K_XL | 22.2 GB | Yes | better quality, still fits |
+| Model                | Quant      |        File | Fits oams (45-50 GiB)?       | Notes                                                            |
+| -------------------- | ---------- | ----------: | ---------------------------- | ---------------------------------------------------------------- |
+| `qwen3.8-flash-next` | UD-IQ4_XS  |     93.7 GB | SSD-backed, 256K yes / 1M no | the 1M quality tier; slow, big                                   |
+| `qwen3.5-35b-a3b`    | UD-IQ4_XS  | **17.5 GB** | **Yes**, + full 256K KV      | 256K native, near-frontier, ~30 tok/s class on RDNA2 `--cpu-moe` |
+| `qwen3.5-35b-a3b`    | UD-Q4_K_XL |     22.2 GB | Yes                          | better quality, still fits                                       |
 
 `qwen3.5-35b-a3b` at IQ4_XS is the obvious everyday pick: 17.5 GB, 256K, and the
 RDNA2 `--cpu-moe` path already shows ~30 tok/s gen on a near-identical RX 6900 XT
@@ -416,7 +417,7 @@ already lives on brys (106 GiB).
 ### 4.3 Disk cost — the real reason not to make it the default
 
 The GGUF is **82–94 GB** (brys ships 93.7 GB IQ4_XS in three shards). oams has
-530 GB free, so it is *affordable* here — unlike on a small volume — but it is
+530 GB free, so it is _affordable_ here — unlike on a small volume — but it is
 1.6x the size of the entire remainder of the surveyed model set and far from
 "keep disk low". By contrast `qwen3.5-35b-a3b` IQ4_XS is **17.5 GB** in a single
 file. On disk grounds alone, the 35B is the right default for a laptop.
@@ -425,23 +426,23 @@ file. On disk grounds alone, the 35B is the right default for a laptop.
 
 ## Appendix: fact → source map
 
-| Claim | Class | Source |
-| --- | --- | --- |
-| 512 experts, 10 routed, 1 shared, 48 layers, 8000-interval full attn 12/48 | VERIFIED | [config.json](https://huggingface.co/Qwen/Qwen3.8-Flash-Next/raw/main/config.json) |
-| 125B + 6B active + 51B n-gram + 4B MTP | VERIFIED | [unsloth card](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF) |
-| 24 KiB/token F16 KV, 6/12/24 GiB | VERIFIED | repo [done.md:115-119](docs/tasks/2026-10/qwen-flash-next-quant/done.md) + my formula |
-| Quant file sizes (66.4 … 192 GB) | VERIFIED | unsloth card quant table |
-| brys measured 54.1 GiB @1M, 106 GiB total | VERIFIED | [local-llms.md:504-506,684-694](docs/local-llms.md) |
-| brys 9.3 tok/s alone / 2.36 competing | VERIFIED | [done.md:113](docs/tasks/2026-10/qwen-flash-next-quant/done.md), decision doc |
-| `--cpu-moe` works on Vulkan, RDNA2 | VERIFIED | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697), [#30039](https://github.com/ggml-org/llama.cpp/issues/30039) |
-| RDNA2 ~45% GDN-hybrid prefill regression | VERIFIED | [#30039](https://github.com/ggml-org/llama.cpp/issues/30039) |
-| `qwen4exp` `--n-cpu-moe` Vulkan numbers (118 pp/9.7 tg) | VERIFIED | [#28247](https://github.com/ggml-org/llama.cpp/issues/28247) |
-| RX 6900 XT 35B-A3B `--cpu-moe` 30.8 t/s | VERIFIED | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697) |
-| oams = 5900HX mobile, 62 GiB, 6800M 12 GB | VERIFIED | [hosts/oams/default.nix](hosts/oams/default.nix), hardware.research.md |
-| oams CPU-only decode worse than brys | VERIFIED | [local-llms.md:653-657](docs/local-llms.md) |
-| Active-param bytes/token (4.3 B), 1.5–2.1 GiB/token | ESTIMATE | arithmetic §1.4 |
-| oams decode 12–18 t/s if it fit | ESTIMATE | bandwidth §3.2 |
-| oams bandwidth ~32–36 GB/s | ESTIMATE | DDR4-3200 dual-channel, −30% |
+| Claim                                                                      | Class    | Source                                                                                                                     |
+| -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 512 experts, 10 routed, 1 shared, 48 layers, 8000-interval full attn 12/48 | VERIFIED | [config.json](https://huggingface.co/Qwen/Qwen3.8-Flash-Next/raw/main/config.json)                                         |
+| 125B + 6B active + 51B n-gram + 4B MTP                                     | VERIFIED | [unsloth card](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)                                                     |
+| 24 KiB/token F16 KV, 6/12/24 GiB                                           | VERIFIED | repo [done.md:115-119](docs/tasks/2026-10/qwen-flash-next-quant/done.md) + my formula                                      |
+| Quant file sizes (66.4 … 192 GB)                                           | VERIFIED | unsloth card quant table                                                                                                   |
+| brys measured 54.1 GiB @1M, 106 GiB total                                  | VERIFIED | [local-llms.md:504-506,684-694](docs/local-llms.md)                                                                        |
+| brys 9.3 tok/s alone / 2.36 competing                                      | VERIFIED | [done.md:113](docs/tasks/2026-10/qwen-flash-next-quant/done.md), decision doc                                              |
+| `--cpu-moe` works on Vulkan, RDNA2                                         | VERIFIED | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697), [#30039](https://github.com/ggml-org/llama.cpp/issues/30039) |
+| RDNA2 ~45% GDN-hybrid prefill regression                                   | VERIFIED | [#30039](https://github.com/ggml-org/llama.cpp/issues/30039)                                                               |
+| `qwen4exp` `--n-cpu-moe` Vulkan numbers (118 pp/9.7 tg)                    | VERIFIED | [#28247](https://github.com/ggml-org/llama.cpp/issues/28247)                                                               |
+| RX 6900 XT 35B-A3B `--cpu-moe` 30.8 t/s                                    | VERIFIED | [#30697](https://github.com/ggml-org/llama.cpp/issues/30697)                                                               |
+| oams = 5900HX mobile, 62 GiB, 6800M 12 GB                                  | VERIFIED | [hosts/oams/default.nix](hosts/oams/default.nix), hardware.research.md                                                     |
+| oams CPU-only decode worse than brys                                       | VERIFIED | [local-llms.md:653-657](docs/local-llms.md)                                                                                |
+| Active-param bytes/token (4.3 B), 1.5–2.1 GiB/token                        | ESTIMATE | arithmetic §1.4                                                                                                            |
+| oams decode 12–18 t/s if it fit                                            | ESTIMATE | bandwidth §3.2                                                                                                             |
+| oams bandwidth ~32–36 GB/s                                                 | ESTIMATE | DDR4-3200 dual-channel, −30%                                                                                               |
 
 ---
 
@@ -497,16 +498,16 @@ Downloaded `UD-IQ3_XXS` (~84 GB, quality 85.4% vs 89.6% for IQ4_XS per the repo'
 quant table) and ran it on oams with the **safe** config: plain `mmap` (default),
 **no `--n-cpu-moe`**, **CPU-only** (`--n-gpu-layers 0`), 16K context, under a
 system `MemoryMax=24G` scope with `OOMPolicy=stop` and a 1200 s wall-clock cap.
-This is the configuration that does *not* reproduce the OOM.
+This is the configuration that does _not_ reproduce the OOM.
 
-| metric | IQ3_XXS / oams (CPU, mmap) | IQ4_XS / brys (CPU, mmap, reference) |
-| --- | --- | --- |
-| load to healthy | 141 s | 83 s |
-| process RSS | 17.6 GB (file-backed) | 45 GB (file-backed) |
-| system RAM used | ~35–40 GB, 25 GB reclaimable | 15.7 GB |
-| **decode** | **3.17 t/s** | 3.23 t/s |
-| prefill (1080-tok, cold) | ~6.5 t/s | 44 t/s (warm/cached) |
-| OOM / GPU fault | **none** | none |
+| metric                   | IQ3_XXS / oams (CPU, mmap)   | IQ4_XS / brys (CPU, mmap, reference) |
+| ------------------------ | ---------------------------- | ------------------------------------ |
+| load to healthy          | 141 s                        | 83 s                                 |
+| process RSS              | 17.6 GB (file-backed)        | 45 GB (file-backed)                  |
+| system RAM used          | ~35–40 GB, 25 GB reclaimable | 15.7 GB                              |
+| **decode**               | **3.17 t/s**                 | 3.23 t/s                             |
+| prefill (1080-tok, cold) | ~6.5 t/s                     | 44 t/s (warm/cached)                 |
+| OOM / GPU fault          | **none**                     | none                                 |
 
 **Findings:**
 
@@ -525,7 +526,7 @@ This is the configuration that does *not* reproduce the OOM.
    and the `-cmoe` combos are slower). A GPU hang is not bounded by `MemoryMax`, so
    it is not safe to attempt unattended. Test it only with a human present.
 
-**Verdict:** oams *can* serve flash-next at ~3 t/s decode, disk-streamed, for short
+**Verdict:** oams _can_ serve flash-next at ~3 t/s decode, disk-streamed, for short
 contexts — a real but slow capability, roughly brys-alone speed. It is not a good
 default (the 35B-A3B is far better per GB and per second), but the machine no
 longer OOMs when configured correctly. The `UD-IQ3_XXS` set is at

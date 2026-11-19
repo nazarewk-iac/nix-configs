@@ -17,4 +17,3 @@ generated: true
 
 - **[rosec unlock-once derived identity](definition.md)** — Unlock the sops-encrypted rosec store once per session with a derived sops identity wrapped to multiple YubiKeys, with explicit store modes, add/remove keys and rekey. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — A sops-wrapped derived age identity, explicit direct/derived store modes, multi-recipient rewrap and rekey, implemented in the rosec fork and wired on oams. · `Solution` · `stable` · `unverified`
-

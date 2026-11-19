@@ -18,4 +18,3 @@ generated: true
 - **[Diagnosis: x-session-id does not reach llama-server](research.md)** — Diagnosis of why x-session-id never reaches llama-server — the plugin's undefined field and the compat-proxy streaming header allowlist. · `Research` · `stable` · `unverified`
 - **[Forward x-session-id end to end](definition.md)** — OpenCode sends x-session-id but llama-server never sees it, so every turn re-prefills; the compat-proxy drops the header on the streaming path and the plugin read the wrong provider field. · `Task` · `stable` · `unverified`
 - **[Forward x-session-id end to end](done.md)** — Fix the plugin to read input.model.providerID and make the compat-proxy forward client headers on the streaming path, so x-session-id reaches llama-server. · `Solution` · `stable` · `unverified`
-

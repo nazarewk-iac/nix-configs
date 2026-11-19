@@ -15,12 +15,13 @@ fleet. No database, no Web UI: a single master key plus model-scoped client keys
 generated at build time from `data/llm.nix` (one deployment per (host, alias)), so there is no flat
 file to keep in sync.
 
-| Where | What |
-| --- | --- |
-| `hosts/etra/litellm.nix` | the container (private veth, socat ingress `:4000`), the config generated from `data/llm.nix` (local deployments + explicit `requesty/*`), the clamped router timeouts, the brys egress relay, and the Requesty egress path |
-| `modules/den/aspects/prometheus-container.nix` | the etra Prometheus that scrapes the gateway's unauthenticated `/metrics` |
+| Where                                          | What                                                                                                                                                                                                                        |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hosts/etra/litellm.nix`                       | the container (private veth, socat ingress `:4000`), the config generated from `data/llm.nix` (local deployments + explicit `requesty/*`), the clamped router timeouts, the brys egress relay, and the Requesty egress path |
+| `modules/den/aspects/prometheus-container.nix` | the etra Prometheus that scrapes the gateway's unauthenticated `/metrics`                                                                                                                                                   |
 
 Decisions that held:
+
 - **DB-less** over Postgres. `general_settings` reads `os.environ/...` keys; the no-DB premise is
   preserved (no prisma engine).
 - **Health via a host-level `/health` probe, not per-model.** The gateway relies on

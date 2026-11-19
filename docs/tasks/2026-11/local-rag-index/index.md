@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Local retrieval index for documents, notes and jj history](definition.md)** — A minimal, general-purpose local retrieval index (RAG) over documents, notes and jj history, with a small embedding model, a single embedded store, and Pi tools for search and fetch. · `Task` · `stable` · `unverified`
-

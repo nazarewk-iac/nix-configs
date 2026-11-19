@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Hardware inventory](hardware.research.md)** — Verified hardware inventory across all repo hosts plus owned-not-configured boxes, with an inference-candidate ranking. · `Research` · `stable` · `unverified`
-

@@ -19,4 +19,3 @@ generated: true
 - **[llama-swap control surface & admission policy — brys (llama-swap v249, commit f94c94a)](control.research.md)** — The verified llama-swap control surface, the fact that an unload silently truncates an in-flight stream, and the resource limits a watcher can read. · `Research` · `stable` · `unverified`
 - **[llama-swap matrix sets on brys — analysis and proposal](sets.research.md)** — Measured model/alias/device map on brys, the VRAM and RAM budget, and a bounded replacement for the matrix sets plus per-model slot counts. · `Research` · `stable` · `unverified`
 - **[Research: llama-swap concurrency and hooks, as installed](research.md)** — What the installed llama-swap can and cannot do about concurrency: the measured slot layout, the free-form settings channel, the real hook surface, and the control endpoints an external watcher would use. · `Research` · `stable` · `unverified`
-

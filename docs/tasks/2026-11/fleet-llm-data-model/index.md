@@ -19,4 +19,3 @@ generated: true
 - **[Central fleet LLM data model — design v4](design.md)** — The central fleet LLM data model (v4) — one data/llm.nix with a servers root key, per-model host/set data, and three projections (server, client, member). Revised after three review rounds. · `Design` · `stable` · `unverified`
 - **[Central fleet LLM data model — solution](done.md)** — What shipped for the central fleet LLM data model, and the eval-diff that proves the server/client/member outputs are unchanged (except the intended appliance 320K fix). · `Reference` · `stable` · `unverified`
 - **[Design reviews — round 1](review.md)** — Two independent reviews of the fleet LLM data-model design, round 1, with the findings that forced a v2 design. · `Research` · `stable` · `unverified`
-

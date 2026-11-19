@@ -17,4 +17,3 @@ generated: true
 
 - **[Model candidates for oams (12 GB VRAM / ~45 GB usable RAM)](research.md)** — `` · `stable` · `unverified`
 - **[Models for oams](definition.md)** — Choose and benchmark the models oams serves on its 12 GB RX 6800M, prioritising quality-per-GB and bounded disk use, with the measured evidence recorded. · `Task` · `stable` · `unverified`
-

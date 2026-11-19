@@ -17,4 +17,3 @@ generated: true
 
 - **[006 — zellij migration](definition.md)** — Replace hack/kdn-ca-sign.sh and the four manual zellij.{pub,key.sops} files with a kdn.certificates.certs.zellij-web declaration on oams, brys, etra and moss. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The four universal hosts oams, brys, etra and moss adopt kdn.certificates through the denLib.imports augmentation line and read certPath/keyPath in kdn.programs.zellij.web; the key-readability gap is closed by the owner option (D-A) and the missing kdn CA node by a shared managed CA (D-B); the real leaf signing run stays pending on the YubiKey. · `Solution` · `stable` · `unverified`
-

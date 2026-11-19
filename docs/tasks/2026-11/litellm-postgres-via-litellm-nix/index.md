@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Postgres support for LiteLLM via a forked litellm-nix](definition.md)** — Fork and integrate adeci/litellm-nix (Prisma 6, generated client, migrations, proxy extras, UI) to give the etra gateway an optional Postgres database — virtual keys, budgets, spend logs, and the admin UI — which the current DB-less packaged litellm cannot provide. · `Task` · `stable` · `unverified`
-

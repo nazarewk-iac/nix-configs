@@ -17,4 +17,3 @@ generated: true
 
 - **[Multi-arch Rosetta builder slot](definition.md)** — Add a Rosetta-backed dual-arch (aarch64-linux + x86_64-linux) Nix builder darwin slot via nix-rosetta-builder (docs/multi-arch-builder.md Option C), and wire it to an aarch64-darwin host. · `Task` · `stable` · `unverified`
 - **[Solution — multi-arch Rosetta builder slot](done.md)** — Solution — a rosetta-builder darwin slot lets an aarch64-darwin host build both aarch64-linux and x86_64-linux locally through nix-rosetta-builder (Option C); x86_64 runs under Rosetta 2, not QEMU-TCG. · `Solution` · `stable` · `unverified`
-

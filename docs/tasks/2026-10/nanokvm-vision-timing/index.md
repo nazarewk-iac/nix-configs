@@ -17,4 +17,3 @@ generated: true
 
 - **[Research: can a vision model act inside the window](research.md)** — The latency budget of a screenshot-to-action loop over the NanoKVM, the measured speed of the vision tier, and the declarative mechanisms that remove each short boot window instead of racing it. · `Research` · `stable` · `unverified`
 - **[Vision against a 2-second window](definition.md)** — Decide whether a local vision model can act inside a time-sensitive NanoKVM window — firmware setup on a short keypress window, a boot-entry menu, copy-to-RAM — and build the cheaper mechanisms that remove the window instead of racing it. · `Task` · `stable` · `unverified`
-

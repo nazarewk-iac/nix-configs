@@ -17,4 +17,3 @@ generated: true
 
 - **[Push a change to a branch or fork](definition.md)** — Add a golden path for pushing a local change to a specific branch or fork target, and ship it as the canonical worked example of how to use and extend the jj-experiments harness. · `Task` · `stable` · `unverified`
 - **[Push a change to a branch or fork — solution](done.md)** — Solution record for push-to-branch-or-fork — the verified golden path and the canonical harness-extension example. · `Solution` · `stable` · `unverified`
-

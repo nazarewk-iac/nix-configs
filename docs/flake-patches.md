@@ -143,11 +143,10 @@ Two rules that cost time to learn:
 - **`overrideAttrs` on `patches`, not `.override { kernelPatches = …; }`.** A package that the
   module already `overrideAttrs`ed has an inert `.override`: passing `kernelPatches = [ ]` through
   it leaves the derivation byte-identical.
-- **Vendor the patch file.** `fetchpatch` runs on the *remote builder*, so the bytes that get
+- **Vendor the patch file.** `fetchpatch` runs on the _remote builder_, so the bytes that get
   hashed on the client and the bytes the builder downloads can differ, and the build then fails
   with `expected path: … / got path: …`.
 
 Add an upstream issue or PR reference in the comment, and delete the override once the input
 carries the fix. Adding `{name}-upstream` to `flake.nix` is the alternative when the workaround
 would be large.
-

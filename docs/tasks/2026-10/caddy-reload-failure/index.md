@@ -18,4 +18,3 @@ generated: true
 - **[Caddy reload fails: the TLS key is not found](definition.md)** — A nixos-rebuild switch on brys leaves caddy stuck on the old config because `caddy reload` cannot find the TLS key; the reload fails and switch-to-configuration reports status 4. · `Task` · `stable` · `unverified`
 - **[Fix the caddy reload by using the literal credential path](done.md)** — Reference the TLS key by its literal systemd credential path instead of {$CREDENTIALS_DIRECTORY}, so `caddy reload` works without the credential env; verified on brys. · `Solution` · `stable` · `unverified`
 - **[RCA: caddy reload fails to find the TLS key](research.md)** — Root cause of the caddy reload failure — the Caddyfile uses {$CREDENTIALS_DIRECTORY}, which the ExecReload process does not have, so the placeholder expands empty. · `Research` · `stable` · `unverified`
-

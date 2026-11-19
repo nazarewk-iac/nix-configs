@@ -17,4 +17,3 @@ generated: true
 
 - **[Run a subset of jj-experiments through nix build](definition.md)** — Let a developer run a subset of the jj-experiments pytest suite through the nix build runner, instead of the whole suite only. · `Task` · `stable` · `unverified`
 - **[Run a subset of jj-experiments through nix build](research.md)** — Can a subset of the jj-experiments pytest suite run through the nix build runner, and which approach is most ergonomic. · `Research` · `stable` · `unverified`
-

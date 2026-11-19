@@ -34,4 +34,3 @@ _No concepts directly in this directory; see the child directories._
 - **[llm-two-router-split](llm-two-router-split/index.md)** — 3 concepts: Design 1, Solution 1, Task 1
 - **[ssh-agent-scoping](ssh-agent-scoping/index.md)** — 3 concepts: Design 1, Research 1, Task 1
 - **[update-complete-node-baseline](update-complete-node-baseline/index.md)** — 2 concepts: Solution 1, Task 1
-

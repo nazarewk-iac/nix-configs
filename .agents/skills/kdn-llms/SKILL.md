@@ -53,30 +53,29 @@ A subagent with no `model` inherits the caller's model, so always name one.
 Full design:
 [opencode-subagent-model-routing/done.md](../../../docs/tasks/2026-10/opencode-subagent-model-routing/done.md).
 
-
 ## Which alias to use (decide from what is live)
 
 Pick the alias by intent, not by model. Current assignments:
 
-| alias | use it for | live model | speed |
-|---|---|---|---|
-| `chat-dumb-fast` | rewrite/classify/extract, simple Q&A | qwen3.5-4b | 61 |
-| `chat-std-fast` | normal chat/assistant | lfm2.5-24b-a2b | 23 |
-| `chat-std-mid` | normal chat, more quality | qwen3.5-35b-a3b | 23 |
-| `chat-std-mid-long` | long-context chat | nemotron-3-nano-30b-a3b | 12 |
-| `code-quick-fast` | tiny code edits | qwen3.5-4b | 61 |
-| `code-std-fast` | normal coding | qwen3.5-4b | 61 |
-| `vision-std-fast` | images, general | qwen3-vl-30b-a3b | 15.7 |
-| `vision-deep-slow` | hard image tasks / dense text | ornith-1.5-35b-a3b | 8.8 |
-| `audio-std-mid` | speech in (audio+vision+text) | qwen3-omni-30b-a3b | 8.8 |
-| `reason-quick-fast` | cheap step-by-step | mellum-2.1-12b-a2.5b-thinking | 14.8 |
-| `reason-std-fast` | reasoning, long context | nemotron-3-nano-30b-a3b | 12.1 |
-| `tools-dumb-fast` | mechanical tool calls | granite-4.2-3b | 85 |
-| `tools-std-fast` | agent tools, RAG, terminal | lfm2.5-24b-a2b | 23 |
-| `embed-std-fast` | embeddings (RAG) | qwen3-embedding-4b | — |
-| `rank-std-fast` | reranking (RAG) | qwen3-reranker-4b | — |
-| `tiny-dumb-fast` | routing/classification | qwen3.5-0.8b | 208 |
-| `tiny-quick-fast` | fastest general | qwen3.5-4b | 61 |
+| alias               | use it for                           | live model                    | speed |
+| ------------------- | ------------------------------------ | ----------------------------- | ----- |
+| `chat-dumb-fast`    | rewrite/classify/extract, simple Q&A | qwen3.5-4b                    | 61    |
+| `chat-std-fast`     | normal chat/assistant                | lfm2.5-24b-a2b                | 23    |
+| `chat-std-mid`      | normal chat, more quality            | qwen3.5-35b-a3b               | 23    |
+| `chat-std-mid-long` | long-context chat                    | nemotron-3-nano-30b-a3b       | 12    |
+| `code-quick-fast`   | tiny code edits                      | qwen3.5-4b                    | 61    |
+| `code-std-fast`     | normal coding                        | qwen3.5-4b                    | 61    |
+| `vision-std-fast`   | images, general                      | qwen3-vl-30b-a3b              | 15.7  |
+| `vision-deep-slow`  | hard image tasks / dense text        | ornith-1.5-35b-a3b            | 8.8   |
+| `audio-std-mid`     | speech in (audio+vision+text)        | qwen3-omni-30b-a3b            | 8.8   |
+| `reason-quick-fast` | cheap step-by-step                   | mellum-2.1-12b-a2.5b-thinking | 14.8  |
+| `reason-std-fast`   | reasoning, long context              | nemotron-3-nano-30b-a3b       | 12.1  |
+| `tools-dumb-fast`   | mechanical tool calls                | granite-4.2-3b                | 85    |
+| `tools-std-fast`    | agent tools, RAG, terminal           | lfm2.5-24b-a2b                | 23    |
+| `embed-std-fast`    | embeddings (RAG)                     | qwen3-embedding-4b            | —     |
+| `rank-std-fast`     | reranking (RAG)                      | qwen3-reranker-4b             | —     |
+| `tiny-dumb-fast`    | routing/classification               | qwen3.5-0.8b                  | 208   |
+| `tiny-quick-fast`   | fastest general                      | qwen3.5-4b                    | 61    |
 
 Each slot also has an `-alt` id where one exists (`tiny-dumb-fast-alt`,
 `chat-dumb-fast-alt`, `tools-std-fast-alt`, `vision-std-fast-alt`,
@@ -93,7 +92,7 @@ Rules of thumb:
   `/v1/rerank`.
 - **No frontier model runs on brys** (retired 2026-11-13). Every alias maps to
   a grunt/surveyed model, and every model runs `--parallel 1`, so concurrent
-  calls to one alias queue. Fan a fleet out across *different* aliases, not
+  calls to one alias queue. Fan a fleet out across _different_ aliases, not
   many calls to one. Hard plan/review depth runs on the Requesty SaaS models
   (Frontier below), not on the local fleet.
 - **Some aliases share one process.** `chat-dumb-fast`, `code-quick-fast`,
@@ -145,7 +144,7 @@ long-horizon, open, or high-stakes work. Do
 loops and drifts.
 
 **Prompt small models tightly.** Give one clear task, the exact output shape, and
-no open choices. A small model does the wrong thing *confidently* on an open
+no open choices. A small model does the wrong thing _confidently_ on an open
 task. Put standing rules in `AGENTS.md` or the system prompt, and scope the task
 (a vague goal makes a local model read everything and hallucinate).
 
@@ -163,7 +162,7 @@ served Qwen at 1M already uses `q8_0` KV).
 
 **Thinking versus fast.** Use a thinking model for hard, multi-step work, and a
 fast non-thinking model for extraction, classification, and simple transforms.
-Reasoning can *hurt* extraction (extra tokens and noise). Do not set a very low
+Reasoning can _hurt_ extraction (extra tokens and noise). Do not set a very low
 temperature on a thinking model; it loops in its think block.
 
 **Tool calls and agents.** Tool calling needs a capable model; small ones emit a

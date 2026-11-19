@@ -17,4 +17,3 @@ generated: true
 
 - **[004 — cert CLI](definition.md)** — Add the kdn-certs Go CLI, which walks every den and legacy target, deduplicates the cert declarations, and drives the smallstep generation. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The kdn-certs Go CLI walks every den and legacy target, deduplicates the declarations, and drives smallstep. The Go suite is exposed as passthru.tests.go-test and aliased kdn-certs-test. · `Solution` · `stable` · `unverified`
-

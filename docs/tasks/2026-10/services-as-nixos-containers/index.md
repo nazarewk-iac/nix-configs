@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Services as NixOS containers instead of host processes](definition.md)** — Run an auxiliary service as a confined NixOS container instead of on the host — own filesystem, own process table, private network with a narrow socat ingress — with its data bind-mounted from a persistent bucket. · `Task` · `stable` · `unverified`
-

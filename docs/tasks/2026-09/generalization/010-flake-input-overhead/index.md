@@ -18,4 +18,3 @@ generated: true
 - **[010 — flake input overhead](definition.md)** — Research, then maybe spike, ways to smooth out a 106-node flake lock on Lix, for both the creator's own cost and an adopter's cost. · `Task` · `stable` · `unverified`
 - **[010 — flake input overhead, answered](done.md)** — Measured answers to the flake input overhead questions — the adopter cost is near the floor, one root-level follows line is the only real defect, and the subflake spike waits. · `Solution` · `stable` · `unverified`
 - **[010 — flake input overhead: research](research.md)** — Lix-verified answers to Q1-Q4 on flake input overhead, with a ranked list of techniques for this repo's cost and an adopter's cost. · `Research` · `stable` · `unverified`
-

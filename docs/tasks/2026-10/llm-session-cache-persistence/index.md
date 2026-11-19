@@ -18,4 +18,3 @@ generated: true
 - **[Disk-backed, session-keyed llama-server KV caches](done.md)** — Add a fork llama.cpp build with · `Solution` · `stable` · `unverified`
 - **[Persist llama-server session KV caches to disk](definition.md)** — Give llama-server a disk-backed, session-keyed prompt-cache store, so 10-20+ local LLM sessions survive a server restart and resume without a full re-prefill. · `Task` · `stable` · `unverified`
 - **[Research: disk-backed llama-server session caches](research.md)** — Findings on llama-server disk-backed slot save/restore — the pinned-build mechanism and API, file format and size, router-mode caveats, the open session-keyed upstream PR, and how to drive it from OpenCode. · `Research` · `stable` · `unverified`
-

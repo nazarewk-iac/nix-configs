@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Pi harness corrections from the compaction research](definition.md)** — Apply the findings that a cross-check of the Kagi research thread confirmed against Pi and this repo: use a larger summarizer model, harden the summarizer prompt against injection, verify the hybrid-model prefix-cache re-prefill, and record the retrieval-over-summarisation guidance. · `Task` · `stable` · `unverified`
-

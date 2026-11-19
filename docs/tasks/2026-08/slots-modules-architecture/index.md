@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Update modules architecture for slots considerations](definition.md)** — Update the modules architecture docs for slots considerations — call out what applies to modules/universal but not to modules/slots. · `Task` · `stable` · `unverified`
-

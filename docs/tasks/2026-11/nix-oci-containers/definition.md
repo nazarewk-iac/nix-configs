@@ -112,7 +112,7 @@ Source: <https://github.com/bitbloxhub/nix-storage-plugin>.
   needed for local use.
 - **dockerTools.buildImage / streamLayeredImage** (nixpkgs built-in, maintained).
   `buildImage` writes a tarball into the store, then `docker load` / `podman
-  load`. `streamLayeredImage` streams the archive just-in-time, so no tarball
+load`. `streamLayeredImage` streams the archive just-in-time, so no tarball
   sits in the store, but the content still lands in the runtime's storage. Both
   use a popularity heuristic that can duplicate packages between layers.
 - **nixery** (<https://github.com/tazjin/nixery>, canonical source in TVL,
@@ -140,15 +140,15 @@ Source: <https://github.com/bitbloxhub/nix-storage-plugin>.
 
 Cell key: supported / not / partial / needs-copy / unknown, with a short note.
 
-| Tool                                | containerd                          | Kubernetes / k3s                    | Podman                                | Docker                             | systemd-nspawn        |
-| ----------------------------------- | ----------------------------------- | ----------------------------------- | ------------------------------------- | ---------------------------------- | --------------------- |
-| nix-snapshotter                     | supported (native snapshotter)      | supported (CRI image service)       | not                                   | not                                | not                   |
-| nix-storage-plugin                  | not (targets container-libs)        | partial (via CRI-O, not containerd) | partial (experimental, patched libs)  | not                                | not                   |
-| nix2container                       | needs-copy (nerdctl load)           | needs-copy (push to registry)       | needs-copy (`copyToPodman`)           | needs-copy (`copyToDockerDaemon`)  | not                   |
-| dockerTools / streamLayeredImage    | needs-copy (nerdctl load)           | needs-copy (push to registry)       | needs-copy (`podman load`)            | needs-copy (`docker load`)         | not                   |
-| nixery                              | needs-copy (registry pull)          | needs-copy (registry pull)          | needs-copy (registry pull)            | needs-copy (registry pull)         | not                   |
-| NixOS OCI image                     | partial (import image)              | needs-copy (push to registry)       | supported (systemd-in-image)          | partial (nixos-generators: partial) | not                  |
-| systemd-nspawn / nixos-container    | not                                 | not                                 | not                                   | not                                | supported (store-native) |
+| Tool                             | containerd                     | Kubernetes / k3s                    | Podman                               | Docker                              | systemd-nspawn           |
+| -------------------------------- | ------------------------------ | ----------------------------------- | ------------------------------------ | ----------------------------------- | ------------------------ |
+| nix-snapshotter                  | supported (native snapshotter) | supported (CRI image service)       | not                                  | not                                 | not                      |
+| nix-storage-plugin               | not (targets container-libs)   | partial (via CRI-O, not containerd) | partial (experimental, patched libs) | not                                 | not                      |
+| nix2container                    | needs-copy (nerdctl load)      | needs-copy (push to registry)       | needs-copy (`copyToPodman`)          | needs-copy (`copyToDockerDaemon`)   | not                      |
+| dockerTools / streamLayeredImage | needs-copy (nerdctl load)      | needs-copy (push to registry)       | needs-copy (`podman load`)           | needs-copy (`docker load`)          | not                      |
+| nixery                           | needs-copy (registry pull)     | needs-copy (registry pull)          | needs-copy (registry pull)           | needs-copy (registry pull)          | not                      |
+| NixOS OCI image                  | partial (import image)         | needs-copy (push to registry)       | supported (systemd-in-image)         | partial (nixos-generators: partial) | not                      |
+| systemd-nspawn / nixos-container | not                            | not                                 | not                                  | not                                 | supported (store-native) |
 
 Viable today for our hosts:
 

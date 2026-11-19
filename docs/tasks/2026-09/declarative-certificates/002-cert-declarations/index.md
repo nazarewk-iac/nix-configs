@@ -17,4 +17,3 @@ generated: true
 
 - **[002 — cert declarations](definition.md)** — Add the kdn.certificates aspect, the leaf cert-declaration drop-in that declares kdn.certificates.certs.<name> and exposes certPath and keyPath to consumers. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The kdn.certificates aspect declares the leaf option set in four classes, exposes certPath (a store path) and keyPath (the decrypted runtime path), and wires sops-nix with format = "binary". · `Solution` · `stable` · `unverified`
-

@@ -17,4 +17,3 @@ generated: true
 
 - **[Bring the `anji` recovery NanoKVM up to an MCP-capable version](definition.md)** — Update the Sipeed NanoKVM at `kvm-2795` to 2.5.2 and enable its MCP service, so an agent can drive the `anji` Mac mini over KVM when a broken Nix install makes SSH unusable. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The OTA failed because 2.4.3 whitelists download Content-Types and Sipeed's CDN answers the 2.5.2 package as `application/x-compressed`. Fixed by an offline install over SSH; MCP then enabled and proven. · `Solution` · `stable` · `unverified`
-

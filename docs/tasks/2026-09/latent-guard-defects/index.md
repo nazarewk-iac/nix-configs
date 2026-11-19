@@ -17,4 +17,3 @@ generated: true
 
 - **[Two latent guard defects in `modules/universal`](definition.md)** — Two guard defects in modules/universal that laziness hides today. A den port makes both reachable. · `Task` · `stable` · `unverified`
 - **[Two latent guard defects — solution](done.md)** — Both guard defects take a context-correct test, and one check per defect forces the path that laziness hid. · `Solution` · `stable` · `unverified`
-

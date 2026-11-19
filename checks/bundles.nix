@@ -78,6 +78,7 @@ in
   bundle-core = mkBundle "core" (
     [
       "hello"
+      "markdown-format"
       "standalone-slots"
       "standalone-aspects"
       "conditional-imports-mechanism"

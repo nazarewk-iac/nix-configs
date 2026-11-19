@@ -16,13 +16,13 @@ timestamp: 2026-11-16T21:00:00+01:00
 
 Measured on `oams` on 2026-11-16:
 
-| Fact | Value |
-| --- | --- |
-| Live Secret Service items | **46** (`org.freedesktop.secrets/collection/drag0nius`) |
-| KDBX entries | 1031 current (1037 incl. 6 in the recycle bin), 3237 history |
-| Group holding every live item | `drag0nius/secret-service` (46/46 match by UUID) |
-| What the 46 are | Element sessions (15), browser Safe Storage keys (8), IntelliJ DB/Git (5), Bitwarden tokens, Webex, Microsoft Graph, poetry, Remmina, Nextcloud app password, gh, … |
-| Everything else in the KDBX | the personal vault: bank cards, CVVs, TOTP, notes, logins — **never exposed to D-Bus** |
+| Fact                          | Value                                                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live Secret Service items     | **46** (`org.freedesktop.secrets/collection/drag0nius`)                                                                                                             |
+| KDBX entries                  | 1031 current (1037 incl. 6 in the recycle bin), 3237 history                                                                                                        |
+| Group holding every live item | `drag0nius/secret-service` (46/46 match by UUID)                                                                                                                    |
+| What the 46 are               | Element sessions (15), browser Safe Storage keys (8), IntelliJ DB/Git (5), Bitwarden tokens, Webex, Microsoft Graph, poetry, Remmina, Nextcloud app password, gh, … |
+| Everything else in the KDBX   | the personal vault: bank cards, CVVs, TOTP, notes, logins — **never exposed to D-Bus**                                                                              |
 
 The migration therefore moves the **Secret Service contract**, not the password database:
 
@@ -35,24 +35,24 @@ The migration therefore moves the **Secret Service contract**, not the password 
 
 ## 1. Live facts (verified 2026-11-16)
 
-| Fact | Value |
-| --- | --- |
-| KeePassXC | 2.8.0, `keepassxc.service` active, PID 196489, `--pw-stdin`, wrapper `kdn-keepass.sh` |
-| FdoSecrets | `[FdoSecrets] Enabled=true`; the wrapper upserts `Enabled=true` at every start; the GUI runs `keepassxc %f`, **not** the wrapper |
-| `secrets-service` | unit `kdn-secret-service.service`: `Type=dbus`, `BusName=org.freedesktop.secrets`, `script = sleep infinity`, `TimeoutStartSec=120s`, `partOf` the sway target |
-| dependency web | `keepassxc.service` is `WantedBy` the shim; `nextcloud-client` `Requires` the shim |
-| live attributes | `Title`, `UserName`, `URL`, `Notes`, `Path`, `Uuid`, plus client attributes (`xdg:schema` 34, `service` 31, `account` 18, `application`, `username`, `user`, `source`, `version`, `server`, `type`, `FDO_SECRETS_CONTENT_TYPE`, `filename`, `key`, `MsalClientID`, `explanation`, `Microsoft.Developer.IdentityService`) |
-| attribute values | empty `Notes`/`URL`/`UserName` are common; no attribute carries a secret value |
-| secrets | 46 read through `secret-tool lookup Uuid=<uuid>`: all non-empty, all UTF-8, no NULs, 8–10608 bytes (the 10.6 KB one is a Microsoft Graph JSON cache) |
-| item object paths | unstable across cache rebuilds; address items by the `Uuid` **attribute**, never by path |
-| `secret-tool lookup` | returns the raw secret with no trailing newline (byte-identical to the KeePassXC entry `Password` for 45/46; the 46th is an attachment, which is why the bus, not the export, is the source) |
-| rosec store | `derived`; `default/_meta.sops.yaml` only; `age_recipient` + `identity_file`; `rosec-keys.txt` 42 bytes, slot 3 |
-| rosec daemon | `enable = false`; no `rosecd` unit loaded; a fresh `rosecd` starts **locked** |
-| rosec import | TOML `[item]` + **top-level** `[attributes]`/`[secrets]`; empty values dropped; `{ base64 = "…" }` for binary secrets; reserved attribute names are `id`, `label`, `created`, `modified`, `rosec:provider`, `rosec:type`, `rosec:totp` |
-| rosec export | `build_item_toml` hides `rosec:`/`xdg:` attributes, so the export is **not** a fidelity check for `xdg:schema` |
-| `GetSecret` | returns the first of `password`, `number`, `private_key`, `notes` that exists, else the type default; `type = "login"` → `password` |
-| `rosec item import --force` | replaces only when secrets are byte-equal — **not** an upsert |
-| HM | `systemd.user.startServices = "suggest"`: a switch enables units but does not start or restart them |
+| Fact                        | Value                                                                                                                                                                                                                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| KeePassXC                   | 2.8.0, `keepassxc.service` active, PID 196489, `--pw-stdin`, wrapper `kdn-keepass.sh`                                                                                                                                                                                                                                    |
+| FdoSecrets                  | `[FdoSecrets] Enabled=true`; the wrapper upserts `Enabled=true` at every start; the GUI runs `keepassxc %f`, **not** the wrapper                                                                                                                                                                                         |
+| `secrets-service`           | unit `kdn-secret-service.service`: `Type=dbus`, `BusName=org.freedesktop.secrets`, `script = sleep infinity`, `TimeoutStartSec=120s`, `partOf` the sway target                                                                                                                                                           |
+| dependency web              | `keepassxc.service` is `WantedBy` the shim; `nextcloud-client` `Requires` the shim                                                                                                                                                                                                                                       |
+| live attributes             | `Title`, `UserName`, `URL`, `Notes`, `Path`, `Uuid`, plus client attributes (`xdg:schema` 34, `service` 31, `account` 18, `application`, `username`, `user`, `source`, `version`, `server`, `type`, `FDO_SECRETS_CONTENT_TYPE`, `filename`, `key`, `MsalClientID`, `explanation`, `Microsoft.Developer.IdentityService`) |
+| attribute values            | empty `Notes`/`URL`/`UserName` are common; no attribute carries a secret value                                                                                                                                                                                                                                           |
+| secrets                     | 46 read through `secret-tool lookup Uuid=<uuid>`: all non-empty, all UTF-8, no NULs, 8–10608 bytes (the 10.6 KB one is a Microsoft Graph JSON cache)                                                                                                                                                                     |
+| item object paths           | unstable across cache rebuilds; address items by the `Uuid` **attribute**, never by path                                                                                                                                                                                                                                 |
+| `secret-tool lookup`        | returns the raw secret with no trailing newline (byte-identical to the KeePassXC entry `Password` for 45/46; the 46th is an attachment, which is why the bus, not the export, is the source)                                                                                                                             |
+| rosec store                 | `derived`; `default/_meta.sops.yaml` only; `age_recipient` + `identity_file`; `rosec-keys.txt` 42 bytes, slot 3                                                                                                                                                                                                          |
+| rosec daemon                | `enable = false`; no `rosecd` unit loaded; a fresh `rosecd` starts **locked**                                                                                                                                                                                                                                            |
+| rosec import                | TOML `[item]` + **top-level** `[attributes]`/`[secrets]`; empty values dropped; `{ base64 = "…" }` for binary secrets; reserved attribute names are `id`, `label`, `created`, `modified`, `rosec:provider`, `rosec:type`, `rosec:totp`                                                                                   |
+| rosec export                | `build_item_toml` hides `rosec:`/`xdg:` attributes, so the export is **not** a fidelity check for `xdg:schema`                                                                                                                                                                                                           |
+| `GetSecret`                 | returns the first of `password`, `number`, `private_key`, `notes` that exists, else the type default; `type = "login"` → `password`                                                                                                                                                                                      |
+| `rosec item import --force` | replaces only when secrets are byte-equal — **not** an upsert                                                                                                                                                                                                                                                            |
+| HM                          | `systemd.user.startServices = "suggest"`: a switch enables units but does not start or restart them                                                                                                                                                                                                                      |
 
 ## 2. The tool
 
@@ -78,13 +78,13 @@ python3 hack/keepassxc-to-rosec.py --from "$DBUS_SESSION_BUS_ADDRESS" --to "unix
 
 ## 3. Mapping
 
-| Source (live Secret Service) | Destination (rosec) |
-| --- | --- |
-| `Item.Label` / the `Title` attribute | `[item].label` |
-| the item type | `[item].type = "login"` (so `GetSecret` picks `password`) |
-| **every** attribute, verbatim — **empty values are dropped** (rosec's parser drops them: all 46 have an empty `Notes`/`URL`/`UserName`, one an empty `username`) | top-level `[attributes]`, quoted keys |
-| the secret bytes | `[secrets].password`, or `{ base64 = "…" }` when not UTF-8 |
-| key `Uuid` | the idempotency key |
+| Source (live Secret Service)                                                                                                                                     | Destination (rosec)                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `Item.Label` / the `Title` attribute                                                                                                                             | `[item].label`                                             |
+| the item type                                                                                                                                                    | `[item].type = "login"` (so `GetSecret` picks `password`)  |
+| **every** attribute, verbatim — **empty values are dropped** (rosec's parser drops them: all 46 have an empty `Notes`/`URL`/`UserName`, one an empty `username`) | top-level `[attributes]`, quoted keys                      |
+| the secret bytes                                                                                                                                                 | `[secrets].password`, or `{ base64 = "…" }` when not UTF-8 |
+| key `Uuid`                                                                                                                                                       | the idempotency key                                        |
 
 Attributes are copied **verbatim** because they are the clients' search contract
 (`secret-tool lookup xdg:schema … service …`). They are already public on D-Bus today, so the copy
@@ -252,7 +252,7 @@ The report is written atomically, and only a `--dry-run` writes the early summar
    read-only option aborts the
    HM forward.
 3. **Make the shim run the daemon.** The shim is a **NixOS** unit (`modules/universal/desktop/sway/
-   default.nix` is guarded by `ifTypes [ "nixos" ]`, and `systemd.user.services` there is nixpkgs'
+default.nix` is guarded by `ifTypes [ "nixos" ]`, and `systemd.user.services` there is nixpkgs'
    `systemd-unit-options`, which has no `Unit`/`Service` attributes). In `hosts/oams/default.nix`,
    next to the rosec block:
 
@@ -276,6 +276,7 @@ The report is written atomically, and only a `--dry-run` writes the early summar
    only `Type=dbus`/`BusName` owner, so `systemd-analyze --user verify` accepts the transaction.
    Verify with `systemctl --user cat kdn-secret-service.service`: exactly one `ExecStart=`,
    and it names `rosecd`.
+
 4. **Disable the KeePassXC service without an orphan.** The unit lives inside
    `(lib.mkIf cfg.service.enable …)`, but `modules/universal/profile/user/kdn/default.nix:479-493`
    adds `Unit` + `Install.WantedBy` outside it. Wrap those lines in
@@ -359,49 +360,49 @@ unchanged.
 
 ## 6. Attack log
 
-| # | Finding | Fix |
-| --- | --- | --- |
-| scope | the KDBX holds 1031 entries, but only **46** are Secret Service items | migrate the 46; drop the whole-database mapping, the XML export and `keepassxc-cli` |
-| scope | `keepassxc-cli export` drops attachment secrets (`Meta/Binaries` empty) | the live bus is the source; 1 of 46 is an attachment |
-| scope | item object paths change under load | address by the `Uuid` attribute; retry attributes |
-| 1st B1 | shim + module `rosecd` both `Type=dbus`/`BusName` | one owner: the shim runs the `rosecd`; `rosecd.enable = false` |
-| 1st B2 | GUI `keepassxc %f` bypasses the wrapper and re-enables FdoSecrets | ini `Enabled=false` + `FDO_ENABLED`; verify after a GUI start |
-| 1st B5 | "492 sensitive fields would become public" | moot at 46; attributes are copied verbatim and are already public on D-Bus |
-| 1st/2nd B6 | `service.enable=false` leaves an orphan unit | guard the profile `Unit` + `Install.WantedBy` (`:479-493`) |
-| 1st M1 | `--force` is not an upsert | delete by `Uuid`, then import |
-| 2nd B1 | `keepassxc-cli export` has no `--pw-stdin`; `--quiet` sends the prompt to `/dev/null` | no CLI export at all |
-| 2nd B4 | the check needs a live daemon | the private daemon stays up through the check |
-| 2nd B5 | the switch restarts the shim while KeePassXC holds the name | stop KeePassXC first |
-| 3rd B1 | `item import` never unlocks the private daemon | `rosec unlock` before the probe |
-| 3rd B2 | `keepassxc:uuid` is an illegal bare TOML key | quote every key; `--dry-run` re-parses all TOML |
-| 3rd B3 | the switch restarts nothing (`suggest`), the shim is inactive | explicit `systemctl --user restart` |
-| 3rd B4 | the profile `Unit` block stays unguarded | wrap `:479-493` |
-| 4th B1 | `systemctl --user status` on an inactive oneshot aborts under `set -e` | `set -uo pipefail`; `is-active … || true` |
-| 4th B2 | `rosec unlock --gui` under a fake `XDG_RUNTIME_DIR` panics (`NoCompositor`) | keep the real runtime dir; `script -qec` pty, `--gui` fallback |
-| 4th B3 | the probe exported a different attribute than it imported | probe import/export/delete all use `Uuid` |
-| 4th B4 | `/tmp/rosec-mig` is world-readable | `mktemp -d` (0700) |
-| 4th M | O(N²) apply/check | 46 items: 46 imports and 46 lookups |
-| 4th M | `rosec item export` hides `rosec:`/`xdg:` attributes | verify through `Item.Attributes`, not the export |
-| 4th M | `service.enable=false` drops `KEEPASS_PATH` | move `kdn.env.variables` out of the service guard |
-| 4th M | the package's activation file still names `rosecd.service` | with `rosecd.enable=false` it must not install; check `systemctl --user cat rosecd` |
-| 4th M | two unwraps | sharing `XDG_RUNTIME_DIR` reuses one runtime identity; `rosec status` confirms the daemon |
-| 5th B1 | `rosec` resolves `ROSEC_SOCKET` before the session bus; only a `_MIG` variable was exported, so the unlock and the probe hit KeePassXC | capture `LIVE_BUS`, then export `ROSEC_SOCKET` **and** `DBUS_SESSION_BUS_ADDRESS`; the tool pins both from `--to` |
-| 5th B2 | the shim is a NixOS unit; `Unit`/`Service` are HM-only attributes | `serviceConfig.ExecStart = lib.mkForce …` (nixpkgs `script` writes a plain definition) |
-| 5th M1 | a read-only `servicePath` aborts the HM forward | add `"servicePath"` to the module's `removeAttrs` |
-| 5th M2 | no source≠dest guard; an inherited `ROSEC_SOCKET` outranks `--to` | the tool refuses equal buses and pins `ROSEC_SOCKET` |
-| 5th M3 | `org.gnome.keyring.NetworkPassword` occurs 0 times | use `secret-tool search --all application chrome` (rc 0 today) |
-| 5th M4 | rosec drops empty attribute values, so "verbatim" is not exact | stated in the mapping; the check compares non-empty values only |
-| 5th M5 | `rosec provider list` cannot prove the private daemon is unlocked | `rosec status` + the probe import |
-| 6th | the private daemon and its env vars survived into the cutover: two writers, and every bus check answered from the private bus | stop it, `unset ROSEC_SOCKET`, restore `DBUS_SESSION_BUS_ADDRESS`, `rm -rf "$MIG"` |
-| 6th | no `systemctl --user daemon-reload` after the switch | reload before the restart, kept as a belt: 26.11 reloads user managers itself |
-| 6th | an aborted `--migrate` left a summarize-only report that read like a finished run | atomic write; the early summary is written for `--dry-run` only |
-| 6th | a TOML parse error can quote a secret, and the mutate path never validated | `validate()` before the first write; the report carries exit codes only |
-| 6th | the probe `grep '^\[attributes\]'` was vacuous | assert the exported `Uuid` value |
-| 6th | the check was one-directional | report the destination's `extra` items without failing |
-| 7th M1 | `toml_key` leaves `Uuid` bare, so the probe grep could never match | pattern is `^Uuid = "…"` |
-| 7th M2 | the destination check overwrote `error: import failed` with `matched`, so `--migrate` exited 0 | error statuses are never overwritten; the apply error list decides the exit code |
-| 7th M3 | the plan claimed the switch does not reload user units | 26.11's `switch-to-configuration-ng` reexecutes and reloads them; the claim is corrected |
-| 7th M4 | no proof that libsecret works over the private `busd` broker | Phase 3 reads the probe with `secret-tool` on the private bus |
+| #          | Finding                                                                                                                                | Fix                                                                                                               |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| scope      | the KDBX holds 1031 entries, but only **46** are Secret Service items                                                                  | migrate the 46; drop the whole-database mapping, the XML export and `keepassxc-cli`                               |
+| scope      | `keepassxc-cli export` drops attachment secrets (`Meta/Binaries` empty)                                                                | the live bus is the source; 1 of 46 is an attachment                                                              |
+| scope      | item object paths change under load                                                                                                    | address by the `Uuid` attribute; retry attributes                                                                 |
+| 1st B1     | shim + module `rosecd` both `Type=dbus`/`BusName`                                                                                      | one owner: the shim runs the `rosecd`; `rosecd.enable = false`                                                    |
+| 1st B2     | GUI `keepassxc %f` bypasses the wrapper and re-enables FdoSecrets                                                                      | ini `Enabled=false` + `FDO_ENABLED`; verify after a GUI start                                                     |
+| 1st B5     | "492 sensitive fields would become public"                                                                                             | moot at 46; attributes are copied verbatim and are already public on D-Bus                                        |
+| 1st/2nd B6 | `service.enable=false` leaves an orphan unit                                                                                           | guard the profile `Unit` + `Install.WantedBy` (`:479-493`)                                                        |
+| 1st M1     | `--force` is not an upsert                                                                                                             | delete by `Uuid`, then import                                                                                     |
+| 2nd B1     | `keepassxc-cli export` has no `--pw-stdin`; `--quiet` sends the prompt to `/dev/null`                                                  | no CLI export at all                                                                                              |
+| 2nd B4     | the check needs a live daemon                                                                                                          | the private daemon stays up through the check                                                                     |
+| 2nd B5     | the switch restarts the shim while KeePassXC holds the name                                                                            | stop KeePassXC first                                                                                              |
+| 3rd B1     | `item import` never unlocks the private daemon                                                                                         | `rosec unlock` before the probe                                                                                   |
+| 3rd B2     | `keepassxc:uuid` is an illegal bare TOML key                                                                                           | quote every key; `--dry-run` re-parses all TOML                                                                   |
+| 3rd B3     | the switch restarts nothing (`suggest`), the shim is inactive                                                                          | explicit `systemctl --user restart`                                                                               |
+| 3rd B4     | the profile `Unit` block stays unguarded                                                                                               | wrap `:479-493`                                                                                                   |
+| 4th B1     | `systemctl --user status` on an inactive oneshot aborts under `set -e`                                                                 | `set -uo pipefail`; `is-active …                                                                                  |     | true` |
+| 4th B2     | `rosec unlock --gui` under a fake `XDG_RUNTIME_DIR` panics (`NoCompositor`)                                                            | keep the real runtime dir; `script -qec` pty, `--gui` fallback                                                    |
+| 4th B3     | the probe exported a different attribute than it imported                                                                              | probe import/export/delete all use `Uuid`                                                                         |
+| 4th B4     | `/tmp/rosec-mig` is world-readable                                                                                                     | `mktemp -d` (0700)                                                                                                |
+| 4th M      | O(N²) apply/check                                                                                                                      | 46 items: 46 imports and 46 lookups                                                                               |
+| 4th M      | `rosec item export` hides `rosec:`/`xdg:` attributes                                                                                   | verify through `Item.Attributes`, not the export                                                                  |
+| 4th M      | `service.enable=false` drops `KEEPASS_PATH`                                                                                            | move `kdn.env.variables` out of the service guard                                                                 |
+| 4th M      | the package's activation file still names `rosecd.service`                                                                             | with `rosecd.enable=false` it must not install; check `systemctl --user cat rosecd`                               |
+| 4th M      | two unwraps                                                                                                                            | sharing `XDG_RUNTIME_DIR` reuses one runtime identity; `rosec status` confirms the daemon                         |
+| 5th B1     | `rosec` resolves `ROSEC_SOCKET` before the session bus; only a `_MIG` variable was exported, so the unlock and the probe hit KeePassXC | capture `LIVE_BUS`, then export `ROSEC_SOCKET` **and** `DBUS_SESSION_BUS_ADDRESS`; the tool pins both from `--to` |
+| 5th B2     | the shim is a NixOS unit; `Unit`/`Service` are HM-only attributes                                                                      | `serviceConfig.ExecStart = lib.mkForce …` (nixpkgs `script` writes a plain definition)                            |
+| 5th M1     | a read-only `servicePath` aborts the HM forward                                                                                        | add `"servicePath"` to the module's `removeAttrs`                                                                 |
+| 5th M2     | no source≠dest guard; an inherited `ROSEC_SOCKET` outranks `--to`                                                                      | the tool refuses equal buses and pins `ROSEC_SOCKET`                                                              |
+| 5th M3     | `org.gnome.keyring.NetworkPassword` occurs 0 times                                                                                     | use `secret-tool search --all application chrome` (rc 0 today)                                                    |
+| 5th M4     | rosec drops empty attribute values, so "verbatim" is not exact                                                                         | stated in the mapping; the check compares non-empty values only                                                   |
+| 5th M5     | `rosec provider list` cannot prove the private daemon is unlocked                                                                      | `rosec status` + the probe import                                                                                 |
+| 6th        | the private daemon and its env vars survived into the cutover: two writers, and every bus check answered from the private bus          | stop it, `unset ROSEC_SOCKET`, restore `DBUS_SESSION_BUS_ADDRESS`, `rm -rf "$MIG"`                                |
+| 6th        | no `systemctl --user daemon-reload` after the switch                                                                                   | reload before the restart, kept as a belt: 26.11 reloads user managers itself                                     |
+| 6th        | an aborted `--migrate` left a summarize-only report that read like a finished run                                                      | atomic write; the early summary is written for `--dry-run` only                                                   |
+| 6th        | a TOML parse error can quote a secret, and the mutate path never validated                                                             | `validate()` before the first write; the report carries exit codes only                                           |
+| 6th        | the probe `grep '^\[attributes\]'` was vacuous                                                                                         | assert the exported `Uuid` value                                                                                  |
+| 6th        | the check was one-directional                                                                                                          | report the destination's `extra` items without failing                                                            |
+| 7th M1     | `toml_key` leaves `Uuid` bare, so the probe grep could never match                                                                     | pattern is `^Uuid = "…"`                                                                                          |
+| 7th M2     | the destination check overwrote `error: import failed` with `matched`, so `--migrate` exited 0                                         | error statuses are never overwritten; the apply error list decides the exit code                                  |
+| 7th M3     | the plan claimed the switch does not reload user units                                                                                 | 26.11's `switch-to-configuration-ng` reexecutes and reloads them; the claim is corrected                          |
+| 7th M4     | no proof that libsecret works over the private `busd` broker                                                                           | Phase 3 reads the probe with `secret-tool` on the private bus                                                     |
 
 ## 7. Acceptance
 

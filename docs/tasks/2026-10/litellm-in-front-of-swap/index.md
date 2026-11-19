@@ -17,4 +17,3 @@ generated: true
 
 - **[A proxy in front of the swapper: what litellm would and would not buy](definition.md)** — Decide whether a LiteLLM proxy in front of llama-swap earns its place, for request retries on interrupted or stalled queries, per-request logging into a worklog, fallbacks and timeouts, and an importable request/response record. · `Task` · `stable` · `unverified`
 - **[Research: litellm in this stack](research.md)** — What litellm 1.102.1 as packaged in this nixpkgs can do in front of llama-swap, what it cannot do, how the existing compat proxy already overlaps it, and the safety rules a retry must obey. · `Research` · `stable` · `unverified`
-

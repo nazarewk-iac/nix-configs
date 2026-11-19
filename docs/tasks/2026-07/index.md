@@ -22,4 +22,3 @@ _No concepts directly in this directory; see the child directories._
 - **[zellij-llm-derive-names-from-kdn-slug](zellij-llm-derive-names-from-kdn-slug/index.md)** — 2 concepts: Solution 1, Task 1
 - **[zellij-llm-docs-clarity](zellij-llm-docs-clarity/index.md)** — 2 concepts: Solution 1, Task 1
 - **[zellij-llm-keep-alive-and-markers](zellij-llm-keep-alive-and-markers/index.md)** — 2 concepts: Solution 1, Task 1
-

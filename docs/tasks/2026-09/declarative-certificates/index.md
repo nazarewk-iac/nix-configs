@@ -30,4 +30,3 @@ generated: true
 - **[006-zellij-migration](006-zellij-migration/index.md)** — 2 concepts: Solution 1, Task 1
 - **[007-ca-rotation](007-ca-rotation/index.md)** — 1 concept: Task 1
 - **[008-apply-ssh-signing](008-apply-ssh-signing/index.md)** — 2 concepts: Solution 1, Task 1
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Running Nix-built containers from the store on OCI runtimes](definition.md)** — Research running Nix-built containers directly from the Nix store on an OCI runtime (Podman, Docker, containerd, Kubernetes), and decide whether this is a better fit than systemd-nspawn for our auxiliary services. · `Task` · `stable` · `unverified`
-

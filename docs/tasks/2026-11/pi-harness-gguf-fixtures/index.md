@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Self-host the Pi harness GGUF fixtures](definition.md)** — Self-host the tiny GGUF fixtures the Pi harness checks need, so an upstream repo rename or deletion cannot break the build. · `Task` · `stable` · `unverified`
-

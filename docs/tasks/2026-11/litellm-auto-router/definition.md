@@ -20,6 +20,7 @@ other.
 ## Findings (source-verified, 2026-11-07)
 
 **Two features, both in the box:**
+
 - **Complexity router** (`model: auto_router/complexity_router`,
   `complexity_router_config.tiers {SIMPLE,MEDIUM,COMPLEX,REASONING}`) — current
   (v1.94.0+). Default classifier is a **heuristic scorer** (sub-ms, no API call)
@@ -58,10 +59,10 @@ first-class "tier chosen" Prometheus metric does **not** (only `model_id`/
 2. **Adopt tag routing** for the quality/intent axis: replace hand-maintained
    per-intent aliases with **tagged pools** (`tiny`, `mid`, `deep`, `tools`,
    `vision`), and let the orchestrator (or a client) send `tags: ["tools:fast",
-   "!host:oams"]`. Biggest concrete win, DB-free.
+"!host:oams"]`. Biggest concrete win, DB-free.
 3. **Use `routing_groups`** to latency-balance the overlapping small models
    (brys+oams) per group, and pin the deep/slow model.
-4. **Optional single complexity alias** for text-only auto-tiering *if* wanted:
+4. **Optional single complexity alias** for text-only auto-tiering _if_ wanted:
    `classifier_type: heuristic`, `session_affinity: true`,
    `enable_context_window_escalation: true` (with declared `max_input_tokens`).
    Do NOT add an LLM classifier on a local fleet (extra call, nondeterminism).
@@ -86,10 +87,10 @@ notoriously slow. `capabilities.rates` (decode/prefill tps) now exist in
 "Fastest fit" is two decisions: (1) **fit** = which capability class (cheap chat
 vs code vs deep vs vision/tools, plus context size), (2) **speed** = among models
 that fit, which is fastest right now. LiteLLM splits them poorly: the complexity
-router models *fit* crudely (quality tiers, no tps knowledge); `latency-based-routing`
+router models _fit_ crudely (quality tiers, no tps knowledge); `latency-based-routing`
 only choose among deployments of the SAME model name (can't cross model sizes);
-tag routing is the fit lever. The orchestrator is the right home for *fit* (it has
-task context); the gateway is the right home for *speed*.
+tag routing is the fit lever. The orchestrator is the right home for _fit_ (it has
+task context); the gateway is the right home for _speed_.
 
 ## Prototype: `chat-fast` pool + `fastest.fastest_fit` (2026-11-07)
 
@@ -112,6 +113,7 @@ brys-chat-fast-qwen3.5-2b` — the 116.8 t/s model, i.e. the fastest, not a slow
 default.
 
 ### Caveats / next steps
+
 - **Fit is only context+vision today.** Tool/function-calling fit and per-task
   capability are not filtered; add `supports_function_calling` etc. when the data
   carries it.

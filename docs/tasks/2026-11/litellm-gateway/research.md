@@ -16,11 +16,11 @@ difference appears.
 `config.yaml` with five meaningful top-level keys:
 
 ```yaml
-model_list: []          # deployments: public name -> backend
-router_settings: {}     # retries, cooldowns, timeouts, fallbacks
-litellm_settings: {}    # callbacks, cache, request_timeout
-general_settings: {}    # master_key, health checks, (database_url)
-environment_variables: {}  # note: plural
+model_list: [] # deployments: public name -> backend
+router_settings: {} # retries, cooldowns, timeouts, fallbacks
+litellm_settings: {} # callbacks, cache, request_timeout
+general_settings: {} # master_key, health checks, (database_url)
+environment_variables: {} # note: plural
 ```
 
 `proxy_settings` is **not** a config key (it is a filename in some docs).
@@ -42,19 +42,19 @@ model_list:
 
 - `model: openai/<name>` marks it OpenAI-compatible. **(verified)**
 - `api_base` must end in `/v1` or you get Not Found. **(verified)**
-- The `openai/` path requires *a* key (llama-swap accepts any) — pass it via
+- The `openai/` path requires _a_ key (llama-swap accepts any) — pass it via
   `os.environ/`. **(verified)**
 - `model_info.mode` selects the health probe endpoint (chat → `/chat/completions`).
   **(verified)**
 
 ### 1.3 No database
 
-| feature | needs Postgres? |
-| --- | --- |
-| model_list, router/litellm/general settings | no |
-| master_key (single shared bearer) | no |
-| per-client virtual keys `sk-...` | **yes** |
-| teams, users, budgets, spend logs | **yes** |
+| feature                                     | needs Postgres? |
+| ------------------------------------------- | --------------- |
+| model_list, router/litellm/general settings | no              |
+| master_key (single shared bearer)           | no              |
+| per-client virtual keys `sk-...`            | **yes**         |
+| teams, users, budgets, spend logs           | **yes**         |
 
 With `DATABASE_URL` unset, `setup_prisma_client(None)` returns `None` and the
 proxy runs file-only; it **does not refuse to start**. Auth = one shared
@@ -83,18 +83,18 @@ within `cooldown_time` → try `fallbacks` → else return the error. **(verifie
 
 ### 2.2 Router settings that matter
 
-| key | default | meaning |
-| --- | ---: | --- |
-| `num_retries` | 2 | retries per request |
-| `timeout` | **6000 s** (via `request_timeout`) | per request — **must clamp** |
-| `cooldown_time` | 5 s | how long a cooled deployment is skipped |
-| `allowed_fails` | null → rate rule (>50% fails in 1 min, min 5 req) | fails before cooldown |
-| `fallbacks` | [] | cross-model failover on any error |
-| `context_window_fallbacks` | [] | failover on context overflow |
-| `default_fallbacks` | null | fallback when a group has none |
-| `enable_pre_call_checks` | false | pre-send context/vision checks |
-| `enable_health_check_routing` | false | route away from unhealthy deployments |
-| `disable_cooldowns` | false | disable cooldowns entirely |
+| key                           |                                           default | meaning                                 |
+| ----------------------------- | ------------------------------------------------: | --------------------------------------- |
+| `num_retries`                 |                                                 2 | retries per request                     |
+| `timeout`                     |                **6000 s** (via `request_timeout`) | per request — **must clamp**            |
+| `cooldown_time`               |                                               5 s | how long a cooled deployment is skipped |
+| `allowed_fails`               | null → rate rule (>50% fails in 1 min, min 5 req) | fails before cooldown                   |
+| `fallbacks`                   |                                                [] | cross-model failover on any error       |
+| `context_window_fallbacks`    |                                                [] | failover on context overflow            |
+| `default_fallbacks`           |                                              null | fallback when a group has none          |
+| `enable_pre_call_checks`      |                                             false | pre-send context/vision checks          |
+| `enable_health_check_routing` |                                             false | route away from unhealthy deployments   |
+| `disable_cooldowns`           |                                             false | disable cooldowns entirely              |
 
 **(verified)**
 
@@ -104,7 +104,7 @@ within `cooldown_time` → try `fallbacks` → else return the error. **(verifie
   header, on the inference path (`RouterRateLimitError`). **(verified in source)**
 - **503 "no healthy deployment" appears only on `/health?model=...`**, not on
   chat/inference. **(verified)**
-- A single dead backend with a connect-refused fails fast; a *hung* backend blocks
+- A single dead backend with a connect-refused fails fast; a _hung_ backend blocks
   until `timeout` — hence the need to clamp it. **(verified)**
 
 ### 2.4 Health checks
@@ -124,7 +124,7 @@ within `cooldown_time` → try `fallbacks` → else return the error. **(verifie
 ## 3. Prometheus
 
 - Endpoint `GET /metrics`, **enabled by flag**: `litellm_settings.callbacks:
-  [prometheus]`. **(verified)**
+[prometheus]`. **(verified)**
 - **`litellm_deployment_state`** gauge, labels `litellm_model_name`, `model_id`,
   `api_base`: 0 healthy, 1 partial, 2 complete outage → **alert on `> 0`**.
   **(verified)**

@@ -24,4 +24,3 @@ generated: true
 - **[001-nanokvm-operations](001-nanokvm-operations/index.md)** — 1 concept: Task 1
 - **[002-gaz-to-den-hosts](002-gaz-to-den-hosts/index.md)** — 1 concept: Task 1
 - **[003-fleet-evaluation](003-fleet-evaluation/index.md)** — 1 concept: Task 1
-

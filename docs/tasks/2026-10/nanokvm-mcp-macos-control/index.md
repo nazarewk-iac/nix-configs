@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Control the `anji` macOS GUI over the NanoKVM MCP](definition.md)** — Drive the `anji` Mac mini GUI through the NanoKVM MCP endpoint, so an agent can do hardware-path clicks like a Full Disk Access grant when the network or macOS itself fights back. · `Task` · `stable` · `unverified`
-

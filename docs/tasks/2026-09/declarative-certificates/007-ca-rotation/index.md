@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[007 — CA rotation to a touch-required CA](definition.md)** — Rotate the unattended KDN root CA to a touch-required CA, with a migration window for the four zellij leaves. · `Task` · `stable` · `unverified`
-

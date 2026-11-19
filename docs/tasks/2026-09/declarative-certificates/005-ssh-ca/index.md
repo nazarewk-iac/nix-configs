@@ -17,4 +17,3 @@ generated: true
 
 - **[005 — SSH CA](definition.md)** — Add the kdn.ssh-ca aspect for SSH certificate login, with server trust, client trust, host certs, user certs and the kdn-certs ssh login flow. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The kdn.ssh-ca aspect wires server trust on nixos and darwin, client trust on homeManager, and the kdn-certs ssh login flow signs interactive user certificates. · `Solution` · `stable` · `unverified`
-

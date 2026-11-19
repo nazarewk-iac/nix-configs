@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Clean stacked panes for zellij-llm, and a resuming Pi harness](definition.md)** — Make zellij-llm spawn its command into a clean, stacked session instead of resurrecting stale panes, and make the Pi harness resume the previous session instead of starting fresh each time. · `Task` · `stable` · `unverified`
-

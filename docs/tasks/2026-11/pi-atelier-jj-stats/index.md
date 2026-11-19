@@ -17,4 +17,3 @@ generated: true
 
 - **[jj stats and sub-agent performance stats in pi-atelier](definition.md)** — Extend the vendored pi-atelier status rail with Jujutsu (jj) stats and with sub-agent performance stats (live and historical TTFT and tok/s). Records what exists today, what it costs to add, and the caveats. · `Task` · `stable` · `unverified`
 - **[jj stats and sub-agent performance stats — solution](done.md)** — What shipped in the pi-atelier fork, the exact code added, and how to verify it. · `Reference` · `stable` · `unverified`
-

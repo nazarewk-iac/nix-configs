@@ -17,4 +17,3 @@ generated: true
 
 - **[angrr — why it deletes a live `result`, and why Darwin never runs it](research.md)** — Why angrr deletes a live `result` out-link, why the Darwin job never runs, and the measured fix. · `Research` · `stable` · `unverified`
 - **[Keep the newest `result` out-link, and start angrr on Darwin](definition.md)** — Stop angrr from deleting a live `result` out-link, and make the Darwin angrr job run at all. · `Task` · `stable` · `unverified`
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Build farm: reach the Rosetta VM directly (not through anji's darwin proxy)](definition.md)** — Connect the build farm's arm pool directly to anji's Rosetta builder VM (aarch64-linux) over a LAN port, bypassing the anji darwin host, so aarch64-linux builds (e.g. briv) run on the fast VM instead of failing on the darwin host or crawling on the Pi. Includes a dedicated SOPS-stored SSH key for VM access. · `Task` · `stable` · `unverified`
-

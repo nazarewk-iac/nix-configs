@@ -22,4 +22,3 @@ generated: true
 ## Directories
 
 - **[models-for-oams](models-for-oams/index.md)** — 2 concepts: Task 1, unknown 1
-

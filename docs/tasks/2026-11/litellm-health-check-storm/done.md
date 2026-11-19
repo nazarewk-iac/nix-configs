@@ -10,11 +10,11 @@ timestamp: 2026-11-12T14:00:00+01:00
 
 ## Changes
 
-| File | Change |
-| --- | --- |
+| File                     | Change                                                                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `hosts/etra/litellm.nix` | `general_settings.background_health_checks = false` and `enable_health_check_routing = false`. The `health_check_interval` and `health_check_staleness_threshold` settings are gone. |
-| `hosts/etra/litellm.nix` | Remove `health_check_timeout` and `health_check_max_tokens` from every deployment and pool entry. They configured the probes that no longer run. |
-| `hosts/etra/litellm.nix` | `litellm-host-probe` now runs `curl -fsS -m 3 http://<host>:39704/health` and accepts only the body `OK`, instead of a bare TCP connect. `pkgs.curl` is added to the unit `path`. |
+| `hosts/etra/litellm.nix` | Remove `health_check_timeout` and `health_check_max_tokens` from every deployment and pool entry. They configured the probes that no longer run.                                     |
+| `hosts/etra/litellm.nix` | `litellm-host-probe` now runs `curl -fsS -m 3 http://<host>:39704/health` and accepts only the body `OK`, instead of a bare TCP connect. `pkgs.curl` is added to the unit `path`.    |
 
 ## Why `/health` and not `/v1/models`
 

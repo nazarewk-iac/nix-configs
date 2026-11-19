@@ -17,4 +17,3 @@ generated: true
 
 - **[angrr retention — the devenv policy, the 30-day period and the report-only first state](design.md)** — The design for the angrr retention change that landed in both module trees, with a source citation per claim. · `Design` · `stable` · `unverified`
 - **[Start angrr, and give the `.devenv` root class a policy](definition.md)** — Start the angrr retention job, add a policy for the devenv root class, and land it in report-only mode. · `Task` · `stable` · `unverified`
-

@@ -25,18 +25,18 @@ the tree at the time of writing.
 `nix` does not memoise `import inputs.nixpkgs { … }`. Each call builds a new top-level package set.
 The sites that matter for a host evaluation are:
 
-| # | Site | What it does today | How to collapse it |
-| --- | --- | --- | --- |
-| 1 | `flake.nix:466` | `meta.nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; overlays = [ self.overlays.default ]; }` — colmena's own CLI pkgs. | One shared value `self.pkgs."x86_64-linux"."default"`. |
-| 2 | `flake.nix:481-484` | `meta.nodeNixpkgs."<host>"` — **one full import per host** inside one colmena evaluation. | One shared value per system; many nodes then share one thunk. |
-| 3 | `flake.nix:511` | `pkgs = inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default` — easykubenix. | `self.pkgs.${system}.default`. |
-| 4 | `flake.nix:526` | `_module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default` — perSystem (`checks`, `packages`, apps). | `self.pkgs.${system}.default`. |
-| 5 | `flake.nix:429-439` | `lib.nixosSystem` with no `nixpkgs.pkgs`; nixpkgs builds its own set through `defaultPkgs` (`nixpkgs/modules/misc/nixpkgs.nix:76`). | Set `nixpkgs.pkgs` in a module. |
-| 6 | `flake.nix:447-459` | `lib.darwinSystem` plus `{ nixpkgs.system = host.system; }` at `flake.nix:451`; nix-darwin builds its own set through `defaultPkgs` (`nix-darwin/modules/nix/nixpkgs.nix:76`). | Set `nixpkgs.pkgs`; delete the `nixpkgs.system` line. |
-| 7 | `modules/universal/default.nix:96` | `home-manager.useGlobalPkgs = false`; each HM user imports nixpkgs again (via `_hm-bootstrap.nix`). | `useGlobalPkgs = true`; HM then uses the host `pkgs` (`home-manager/nixos/common.nix:45`). |
-| 8 | `modules/den/classes/devenv.nix:48` | `_module.args.pkgs = import inputs.nixpkgs { inherit system; }` inside every devenv evaluation. | `_module.args.pkgs = self.pkgs.${system}.default`. |
-| 9 | `modules/universal/default.nix:136` | `nixpkgs.overlays = [ self.overlays.default ]` for every host; a **second** overlay application on top of the instance. | Guard it off for a pinned host (the overlay is already baked). |
-| 10 | `modules/universal/default.nix:167-190` | A second `nixpkgs.overlays` list (Python metadata and ceph fixes). Static, no host data. | Move these two overlays into the shared variant (see A.4). |
+| #   | Site                                    | What it does today                                                                                                                                                             | How to collapse it                                                                         |
+| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| 1   | `flake.nix:466`                         | `meta.nixpkgs = import inputs.nixpkgs { system = "x86_64-linux"; overlays = [ self.overlays.default ]; }` — colmena's own CLI pkgs.                                            | One shared value `self.pkgs."x86_64-linux"."default"`.                                     |
+| 2   | `flake.nix:481-484`                     | `meta.nodeNixpkgs."<host>"` — **one full import per host** inside one colmena evaluation.                                                                                      | One shared value per system; many nodes then share one thunk.                              |
+| 3   | `flake.nix:511`                         | `pkgs = inputs.nixpkgs.legacyPackages.${system}.extend self.overlays.default` — easykubenix.                                                                                   | `self.pkgs.${system}.default`.                                                             |
+| 4   | `flake.nix:526`                         | `_module.args.pkgs = inputs'.nixpkgs.legacyPackages.extend self.overlays.default` — perSystem (`checks`, `packages`, apps).                                                    | `self.pkgs.${system}.default`.                                                             |
+| 5   | `flake.nix:429-439`                     | `lib.nixosSystem` with no `nixpkgs.pkgs`; nixpkgs builds its own set through `defaultPkgs` (`nixpkgs/modules/misc/nixpkgs.nix:76`).                                            | Set `nixpkgs.pkgs` in a module.                                                            |
+| 6   | `flake.nix:447-459`                     | `lib.darwinSystem` plus `{ nixpkgs.system = host.system; }` at `flake.nix:451`; nix-darwin builds its own set through `defaultPkgs` (`nix-darwin/modules/nix/nixpkgs.nix:76`). | Set `nixpkgs.pkgs`; delete the `nixpkgs.system` line.                                      |
+| 7   | `modules/universal/default.nix:96`      | `home-manager.useGlobalPkgs = false`; each HM user imports nixpkgs again (via `_hm-bootstrap.nix`).                                                                            | `useGlobalPkgs = true`; HM then uses the host `pkgs` (`home-manager/nixos/common.nix:45`). |
+| 8   | `modules/den/classes/devenv.nix:48`     | `_module.args.pkgs = import inputs.nixpkgs { inherit system; }` inside every devenv evaluation.                                                                                | `_module.args.pkgs = self.pkgs.${system}.default`.                                         |
+| 9   | `modules/universal/default.nix:136`     | `nixpkgs.overlays = [ self.overlays.default ]` for every host; a **second** overlay application on top of the instance.                                                        | Guard it off for a pinned host (the overlay is already baked).                             |
+| 10  | `modules/universal/default.nix:167-190` | A second `nixpkgs.overlays` list (Python metadata and ceph fixes). Static, no host data.                                                                                       | Move these two overlays into the shared variant (see A.4).                                 |
 
 Out of scope, and must be recorded as such:
 
@@ -54,13 +54,13 @@ Out of scope, and must be recorded as such:
 
 `inputs.den` exposes (from `<den>/nix/default.nix`):
 
-| Export | Shape | Use for us |
-| --- | --- | --- |
-| `flakeModule` | loads all of den's `modules/` tree (the "batteries"). | Not needed. Heavy. |
-| `nixModule inputs` | imports four files (`lib.nix`, `policies.nix`, `aspects.nix`, `pipes.nix`); exposes `{ aspects, lib, policies }` only. | This is the library route. |
-| `namespace name export` | creates `den.ful.<name>`, a module-argument alias, and (if `export`) `flake.denful.<name>` (`<den>/nix/lib/namespace.nix`). | Use with `export = false`. |
-| `flakeOutputs.<name>` | one option declaration per flake output name (`<den>/nix/flakeOutputs.nix`). | Needed only if we want `config.flake.*` from den entities. |
-| `lib` | the raw den library (`<den>/nix/lib/default.nix`). | `den.lib.aspects.resolve`, `den.lib.policy.*`. |
+| Export                  | Shape                                                                                                                       | Use for us                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `flakeModule`           | loads all of den's `modules/` tree (the "batteries").                                                                       | Not needed. Heavy.                                         |
+| `nixModule inputs`      | imports four files (`lib.nix`, `policies.nix`, `aspects.nix`, `pipes.nix`); exposes `{ aspects, lib, policies }` only.      | This is the library route.                                 |
+| `namespace name export` | creates `den.ful.<name>`, a module-argument alias, and (if `export`) `flake.denful.<name>` (`<den>/nix/lib/namespace.nix`). | Use with `export = false`.                                 |
+| `flakeOutputs.<name>`   | one option declaration per flake output name (`<den>/nix/flakeOutputs.nix`).                                                | Needed only if we want `config.flake.*` from den entities. |
+| `lib`                   | the raw den library (`<den>/nix/lib/default.nix`).                                                                          | `den.lib.aspects.resolve`, `den.lib.policy.*`.             |
 
 How `modules/den/classes/devenv.nix` adds a class:
 
@@ -84,8 +84,8 @@ name to its file, and `pairClasses` reads the class keys off the aspect itself
 **Feasibility of a second, isolated `evalModules` root.** Yes. Two shapes work:
 
 - **Library route (recommended).** `lib.evalModules { specialArgs.inputs = …; modules = [
-  (inputs.den.nixModule denInputs) (inputs.den.namespace "pkgsroot" false) ./classes/pkgs.nix
-  …variant modules… ]; }` — the same shape as `modules/den/lib.nix:291-310`. It loads no batteries,
+(inputs.den.nixModule denInputs) (inputs.den.namespace "pkgsroot" false) ./classes/pkgs.nix
+…variant modules… ]; }` — the same shape as `modules/den/lib.nix:291-310`. It loads no batteries,
   no `den.hosts`, no `den.schema`. Cost is the den library evaluation plus the nixpkgs instantiations
   we ask for.
 - **`flakeModule` route.** Loads every den module and the entity machinery. It brings `den.hosts`,
@@ -103,10 +103,10 @@ aspect). Isolation is the safer shape.
 The task text says `nixpkgs.pkgs` is "mutually exclusive with overlays/config". That is only half
 true on the pinned revisions. Verified from source:
 
-| Target | `nixpkgs.pkgs` supported | `overlays` with `pkgs` | `config` with `pkgs` | `hostPlatform`/`system` with `pkgs` |
-| --- | --- | --- | --- | --- |
-| NixOS 26.11 | Yes (`nixpkgs/modules/misc/nixpkgs.nix:107`). | **Appended** after the baked ones: `cfg.pkgs.appendOverlays cfg.overlays` (`:107`). | **Assertion failure** if not `{ }` (`:409-418`). | Ignored (`:173,213,245,277,303,347`). |
-| nix-darwin `4cff07de` | Yes (`modules/nix/nixpkgs.nix:103`). | **Appended** (`:103`). | **Assertion failure** if not `{ }` (`:319-329`). | Ignored (`:170-199`). |
+| Target                | `nixpkgs.pkgs` supported                      | `overlays` with `pkgs`                                                              | `config` with `pkgs`                             | `hostPlatform`/`system` with `pkgs`   |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------- |
+| NixOS 26.11           | Yes (`nixpkgs/modules/misc/nixpkgs.nix:107`). | **Appended** after the baked ones: `cfg.pkgs.appendOverlays cfg.overlays` (`:107`). | **Assertion failure** if not `{ }` (`:409-418`). | Ignored (`:173,213,245,277,303,347`). |
+| nix-darwin `4cff07de` | Yes (`modules/nix/nixpkgs.nix:103`).          | **Appended** (`:103`).                                                              | **Assertion failure** if not `{ }` (`:319-329`). | Ignored (`:170-199`).                 |
 
 > The nixpkgs internal line numbers come from the 26.11 tree in the local store; the option names
 > are stable, but the lines may move by a few across revisions. The nix-darwin lines are from the
@@ -154,14 +154,14 @@ speed-up as a hypothesis until measured.
 
 The six overlay sites in the task, classified by whether the overlay body reads host `config`:
 
-| Overlay | File:line | Reads host config? | Verdict |
-| --- | --- | --- | --- |
-| sops `jsonTemplate` | old `modules/universal/security/secrets/sops/default.nix:185-217`; den `modules/den/aspects/security-secrets-sops.nix:285-307,329,388` | **No.** Uses `final.formats.json` and `prev.writeText` only. | **Bake into `default`.** |
-| keepass plugin set | old `modules/universal/programs/keepass/default.nix:19-29`; den `modules/den/aspects/program-keepass.nix:8-18` | **No.** Static plugin names. | **Bake into `default`.** |
-| openvpn3 patch | old `modules/universal/networking/openvpn/default.nix:200-209`; den `modules/den/aspects/net-openvpn.nix:324-334` | **No.** Static patch path. | **Bake into `default`.** |
-| net-router `jsonTemplate` | old `modules/universal/networking/router/default.nix` reads `pkgs.jsonTemplate` (e.g. `:533,1052`); den `modules/den/aspects/net-router/json-template.nix` carries its own copy | **No.** | **Bake the helper into `default`** (or let the den aspect keep its local copy). |
-| age `sops` wrapper | old `modules/universal/security/secrets/age/default.nix:221-227`; den `modules/den/aspects/security-secrets-age.nix:319-325` | **Yes.** `mkSopsWrapper` closes over `cfg.plugins`/`cfg.genScripts` (old `:14-46`; den `:270-307`). | **Cannot bake.** Refactor (see below). |
-| hw-gpu `supergfxctl` | old `modules/universal/hw/gpu/default.nix:54-63`; den `modules/den/aspects/hw-gpu.nix:144-146` | **Only when** `multiGPU.package != null`; the value is consumer-supplied. | **Per-host variant or refactor.** |
+| Overlay                   | File:line                                                                                                                                                                       | Reads host config?                                                                                  | Verdict                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| sops `jsonTemplate`       | old `modules/universal/security/secrets/sops/default.nix:185-217`; den `modules/den/aspects/security-secrets-sops.nix:285-307,329,388`                                          | **No.** Uses `final.formats.json` and `prev.writeText` only.                                        | **Bake into `default`.**                                                        |
+| keepass plugin set        | old `modules/universal/programs/keepass/default.nix:19-29`; den `modules/den/aspects/program-keepass.nix:8-18`                                                                  | **No.** Static plugin names.                                                                        | **Bake into `default`.**                                                        |
+| openvpn3 patch            | old `modules/universal/networking/openvpn/default.nix:200-209`; den `modules/den/aspects/net-openvpn.nix:324-334`                                                               | **No.** Static patch path.                                                                          | **Bake into `default`.**                                                        |
+| net-router `jsonTemplate` | old `modules/universal/networking/router/default.nix` reads `pkgs.jsonTemplate` (e.g. `:533,1052`); den `modules/den/aspects/net-router/json-template.nix` carries its own copy | **No.**                                                                                             | **Bake the helper into `default`** (or let the den aspect keep its local copy). |
+| age `sops` wrapper        | old `modules/universal/security/secrets/age/default.nix:221-227`; den `modules/den/aspects/security-secrets-age.nix:319-325`                                                    | **Yes.** `mkSopsWrapper` closes over `cfg.plugins`/`cfg.genScripts` (old `:14-46`; den `:270-307`). | **Cannot bake.** Refactor (see below).                                          |
+| hw-gpu `supergfxctl`      | old `modules/universal/hw/gpu/default.nix:54-63`; den `modules/den/aspects/hw-gpu.nix:144-146`                                                                                  | **Only when** `multiGPU.package != null`; the value is consumer-supplied.                           | **Per-host variant or refactor.**                                               |
 
 The age wrapper is the one genuine blocker. It wraps the `sops` CLI with the host's age plugins and
 key generators. The wrapper is installed through the overlay only so `pkgs.sops` becomes the wrapper.
@@ -231,7 +231,7 @@ It produces `<flake>.pkgs.<arch>.<variant>`.
   The output contract (`flake.pkgs.<arch>.<variant>`) is independent of how it is produced, so the
   producer can be swapped later.
 - **Cons.** A second den library evaluation on the path that computes `flake.pkgs`. den's aspect
-  machinery is built for module *configs*, so producing a package-set *value* needs a small class
+  machinery is built for module _configs_, so producing a package-set _value_ needs a small class
   module that does `import inputs.nixpkgs`. More files than a plain function.
 
 ### Option 2 — Extend the existing den tree with a `pkgs` class/aspect
@@ -585,7 +585,7 @@ A hostile review of **Option 1** (the recommendation).
   turn reads `result`, evaluation loops.
 - **Likelihood.** Medium on the variant side, high if a variant overlay is written carelessly.
 - **Impact.** `error: infinite recursion encountered`, hard failure.
-- **Mitigation.** Read `config` only in the *value* of `kdnPkgs.*`, never in the attribute *keys*
+- **Mitigation.** Read `config` only in the _value_ of `kdnPkgs.*`, never in the attribute _keys_
   (the rule stated at `modules/den/classes/devenv.nix:143-146`). Keep variant overlays pure
   `final`/`prev` functions (the keepass aspect already documents why: `program-keepass.nix:3-5`).
   Add a smoke check that forces `flake.pkgs.<arch>.<variant>.hello`.
@@ -657,13 +657,13 @@ A hostile review of **Option 1** (the recommendation).
   `devenv.overlays` (`<devenv>/src/modules/top-level.nix:102-115`) must stay empty or it re-extends.
 - **Likelihood.** High for the CLI path.
 - **Impact.** The devenv shell stays unpinned; the goal is only partly met.
-- **Mitigation.** Pin the den/devenv *evaluation* (`classes/devenv.nix:48`). For the CLI, document
+- **Mitigation.** Pin the den/devenv _evaluation_ (`classes/devenv.nix:48`). For the CLI, document
   it as unpinned, or find a supported external-pkgs hook. Verify `pkgs.kdn.*` and `pkgs.omp` still
   appear in the shell (they come from `self.overlays.default`, baked into the variant).
 
 ### D.8 Colmena `nodeNixpkgs`
 
-- **Risk.** colmena may expect `meta.nixpkgs` and `meta.nodeNixpkgs` to be *distinct* per node for
+- **Risk.** colmena may expect `meta.nixpkgs` and `meta.nodeNixpkgs` to be _distinct_ per node for
   cross-system fleets. Our fleet is mixed: `x86_64-linux` and `aarch64-linux` nodes.
 - **Likelihood.** Medium.
 - **Impact.** A node evaluates with the wrong arch's packages.
@@ -713,20 +713,20 @@ A hostile review of **Option 1** (the recommendation).
 
 ### D.13 Summary of likelihood × impact
 
-| Risk | Likelihood | Impact | Mitigation status |
-| --- | --- | --- | --- |
-| D.2 overlays appended silently | High | High | Assertion (C.5) |
-| D.6 HM `useGlobalPkgs` bridge | High | High | Guard `_hm-bootstrap.nix` |
-| D.5 nix-darwin base system | Medium | High | Verify on anji; fall back |
-| D.7 devenv CLI | High | Medium | Document as unpinned |
-| D.1 eval recursion | Medium | High | Pure overlays, value-only config reads |
-| D.3 hostPlatform | Low | High | System assertion |
-| D.9 jsonTemplate host data | Low | High | Pure overlay |
-| D.4 cuda cache | Certain (cuda only) | Medium | Restrict to one host |
-| D.8 colmena mixed arch | Medium | Medium | Per-node system selection |
-| D.10 future drift | Medium | Medium | Assertion + check |
-| D.11 gaming predicate | Low | Low | Drop it |
-| D.12 measurement | Certain if careless | High | Two-number protocol |
+| Risk                           | Likelihood          | Impact | Mitigation status                      |
+| ------------------------------ | ------------------- | ------ | -------------------------------------- |
+| D.2 overlays appended silently | High                | High   | Assertion (C.5)                        |
+| D.6 HM `useGlobalPkgs` bridge  | High                | High   | Guard `_hm-bootstrap.nix`              |
+| D.5 nix-darwin base system     | Medium              | High   | Verify on anji; fall back              |
+| D.7 devenv CLI                 | High                | Medium | Document as unpinned                   |
+| D.1 eval recursion             | Medium              | High   | Pure overlays, value-only config reads |
+| D.3 hostPlatform               | Low                 | High   | System assertion                       |
+| D.9 jsonTemplate host data     | Low                 | High   | Pure overlay                           |
+| D.4 cuda cache                 | Certain (cuda only) | Medium | Restrict to one host                   |
+| D.8 colmena mixed arch         | Medium              | Medium | Per-node system selection              |
+| D.10 future drift              | Medium              | Medium | Assertion + check                      |
+| D.11 gaming predicate          | Low                 | Low    | Drop it                                |
+| D.12 measurement               | Certain if careless | High   | Two-number protocol                    |
 
 ---
 

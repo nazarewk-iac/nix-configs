@@ -29,7 +29,7 @@ keeps full access to all models (local + Requesty).
   hook). LiteLLM does NOT enforce a custom-auth token's `models` list unless
   `litellm.enable_post_custom_auth_checks` is True — and that is a getattr-only
   global, not a config key. So the scope is enforced here instead: admin/`models
-  is None` → all; otherwise the requested group must be in the list, else 403.
+is None` → all; otherwise the requested group must be in the list, else 403.
   Fails closed on unexpected errors.
 - **Keys file** `hosts/etra/litellm-keys.sops.yaml` (sops; etra ssh-host key +
   recovery YubiKeys), decrypted to `/run/configs/litellm-keys/keys/clients`,
@@ -112,23 +112,28 @@ surface real Requesty models to any client you must **enumerate them explicitly*
 ## Update 2026-11-07 (later): discovery script, all-models key, egress plan
 
 ### All-models non-master key (staged, not yet deployed)
+
 The keys file now also holds a key with NO `models` field (`{"name":"all-models"}`).
 The auth hook returns `models=None` for it and the enforce hook treats `None` as
 "all models", so this non-master key can call every group incl. `requesty/*`.
 Takes effect on the next `switch` (the sops file is part of the system closure).
 
 ### Discovery script (done, tested)
+
 `hosts/etra/litellm_requesty_discover.py` fetches Requesty's real `/v1/models`
 and builds explicit LiteLLM deployments. Tested live against
 `https://router.requesty.ai` — it returns the 4 real ids (the wildcard's fake
 price-map names are gone by construction). Two modes:
+
 - print: a JSON list of deployment dicts.
 - `--base BASE.json --out OUT.json`: load a base config, replace any `requesty/…`
   deployments, write the merged config. `urllib` honours `HTTPS_PROXY`.
 
 ### Preferred integration: server-side, interaction-less (designed, not wired)
+
 Because LiteLLM's `model_list` is static at start, discovery must run where the
 config is produced. Two options:
+
 1. **Build-time (Nix)**: commit a generated `requesty-models.json` and have
    `litellm.nix` read it. Deterministic, but needs a manual/CI refresh — not
    interaction-less.
@@ -147,14 +152,16 @@ config is produced. Two options:
    can reach the dynamic `requesty/*` names; scoped local keys stay local (fine).
 
 ### Egress requirement (blocker before Requesty works)
+
 The container has no internet route; the `socat OPENSSL` relay keeps the relay's
 Host header, so Requesty 404s. It must reach `https://router.requesty.ai/v1`
 directly with correct Host. Two ways:
+
 - **NAT (preferred, requested)**: `networking.nat = { enable = true;
-  internalInterfaces = [ "ve-litellm" ]; externalInterface = "wan"; };`, add a
+internalInterfaces = [ "ve-litellm" ]; externalInterface = "wan"; };`, add a
   router forwarding `{ from = "ve-litellm"; to = "wan"; }`, and give the guest a
   default route + DNS (`networking.defaultGateway = hostAddress;
-  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];`). Risk: etra is the border
+networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];`). Risk: etra is the border
   router (custom nftables/router); must be verified live (SSH up, relays still
   work, router masquerade intact) with a rollback store ready.
 - **CONNECT proxy**: a host `tinyproxy`/`squid` on `10.233.100.1:PORT`; set
@@ -165,6 +172,7 @@ namespace; they are staged with the snippets above and need a supervised switch
 to verify (the discovery wrapper is safe — it falls back to the base config).
 
 ### Decisions
+
 - Discovery is server-side; the printed/merged JSON is the source of truth for
   requesty groups (no hand-maintained list).
 - Prefer runtime merge + timer over build-time JSON, for interaction-less refresh.

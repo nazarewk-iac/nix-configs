@@ -17,4 +17,3 @@ generated: true
 
 - **[pytest suite for jj fork revset aliases](definition.md)** — Build a pytest suite that spins up a self-contained devenv plus three colocated jj repos (local, upstream, fork) to verify the fork revset aliases behave as documented. · `Task` · `stable` · `unverified`
 - **[Solution — pytest suite for jj fork revset aliases](done.md)** — Solution for the fork revset-alias pytest suite — built inside the jj-experiments harness. · `Solution` · `stable` · `unverified`
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Integrate numtide/llm-agents.nix](definition.md)** — Integrate numtide/llm-agents.nix as the primary source of LLM and agent tooling, and deduplicate the flake inputs it shares with this tree. · `Task` · `stable` · `unverified`
-

@@ -69,11 +69,11 @@ Three devices now exist with the same software:
 
 Three distinct faults, and they must not be confused:
 
-| Symptom                                     | Evidence                                                                                                                                 | Meaning                                                          |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`                                            | no HDMI signal: the source is off, asleep, or the display is off |
-| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host`                                  | the USB HID gadget is wedged, or the host is not enumerating it  |
-| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                                                        | the guest display went to sleep; the link is fine                |
+| Symptom                                     | Evidence                                                                                                | Meaning                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`           | no HDMI signal: the source is off, asleep, or the display is off |
+| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it  |
+| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                       | the guest display went to sleep; the link is fine                |
 
 What was tried, and what it cost:
 
@@ -96,8 +96,6 @@ Verified with the owner on 2026-10-27: scripted power control exists only for
 `brys` and the NAS mini-PCs `pwet`, `turo` and `yost`. For `gaz`, the mini-PCs and
 `pryll` there is **no** power API, no ATX header wired to the KVM, and no relay.
 `press-and-hold the power button` is therefore always a human action.
-
-
 
 The skill must say this plainly, so no agent spends an hour looking for a power
 endpoint that does not exist, and so every boot step is planned as a hand-off.

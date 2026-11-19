@@ -18,4 +18,3 @@ generated: true
 - **[008 — default sops file inventory](definition.md)** — Produce an exact list of what depends on the default sops file, its key schema, and which consumers fail when the file is absent. · `Task` · `stable` · `unverified`
 - **[008 — the default sops file inventory, landed](done.md)** — A four-list inventory of the default sops file — its key schema, its 22 consumers with a verified absent-file behaviour each, an effort rank, and the four hard couplings. · `Solution` · `stable` · `unverified`
 - **[Default sops file inventory](research.md)** — An evaluation-verified inventory of every consumer, key path, and hard coupling of the default sops file. · `Research` · `stable` · `unverified`
-

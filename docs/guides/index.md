@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Fork a Git Repository](git-forking.md)** — Fork a git repository with the GitHub CLI, rename the remotes, keep the patch line on jj bookmarks joined into main, disable unused repository features, and vendor the result by pinned revision. · `How-To` · `stable` · `unverified`
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Measure `brys` power draw over Zigbee](definition.md)** — Measure the power draw of host `brys` with a Zigbee metering plug reported into Home Assistant on `briv`, and record idle and LLM-load wattage. · `Task` · `stable` · `unverified`
-

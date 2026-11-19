@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Container networking lockdown ideas](definition.md)** — Decide how far to lock down the containers and the web edge — whether to containerize llama-swap and Caddy, use unix sockets, and add per-service container networks — with the recommendation for each and the reason. · `Task` · `stable` · `unverified`
-

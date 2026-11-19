@@ -76,16 +76,16 @@ Question: can a single synced store serve several hosts? Answer: **yes for the s
 material, no for the unlock material by default** — the store is host-independent, the
 age keyring is not.
 
-| Piece | Location | Travels with the synced store? |
-| --- | --- | --- |
-| gopass store tree (items, `_aliases.age`, `_meta.age`) | `$XDG_DATA_HOME/gopass/stores/root/secret-service/…` | **yes** — paths and names are store-relative, not host-relative |
-| secret-service item paths (`secret-service/<collection>/i<hex>.age`) | inside the store | **yes** — the same collection/item names exist on every host |
-| `session` (volatile) collection | Linux kernel keyring, per host | **no, by design** — never written to the store (ADR A-11) |
-| gopass **age keyring** (`age/identities`) | `$XDG_CONFIG_HOME/gopass/age/identities` — **outside** the store | **no** — each host needs its own copy of the keyring/identity, unless `age.keyring-identities` points at a shared (synced or hardware) plaintext identity file |
-| daemon metadata cache | daemon memory | n/a — restart the daemon after an out-of-process write (sync) |
-| rosec vault | `<id>.vault` + `<id>.vault.meta` + `<id>.vault.lock` | **yes** (single writer; the `.lock` copy is inert) |
-| KeePassXC | one `.kdbx` | **yes** (last-write-wins; Merge to reconcile) |
-| oo7 | `$XDG_DATA_HOME/keyrings/v1/<name>.keyring` per keyring | yes as a file, but the directory is per-host by default — sync that file explicitly |
+| Piece                                                                | Location                                                         | Travels with the synced store?                                                                                                                                 |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| gopass store tree (items, `_aliases.age`, `_meta.age`)               | `$XDG_DATA_HOME/gopass/stores/root/secret-service/…`             | **yes** — paths and names are store-relative, not host-relative                                                                                                |
+| secret-service item paths (`secret-service/<collection>/i<hex>.age`) | inside the store                                                 | **yes** — the same collection/item names exist on every host                                                                                                   |
+| `session` (volatile) collection                                      | Linux kernel keyring, per host                                   | **no, by design** — never written to the store (ADR A-11)                                                                                                      |
+| gopass **age keyring** (`age/identities`)                            | `$XDG_CONFIG_HOME/gopass/age/identities` — **outside** the store | **no** — each host needs its own copy of the keyring/identity, unless `age.keyring-identities` points at a shared (synced or hardware) plaintext identity file |
+| daemon metadata cache                                                | daemon memory                                                    | n/a — restart the daemon after an out-of-process write (sync)                                                                                                  |
+| rosec vault                                                          | `<id>.vault` + `<id>.vault.meta` + `<id>.vault.lock`             | **yes** (single writer; the `.lock` copy is inert)                                                                                                             |
+| KeePassXC                                                            | one `.kdbx`                                                      | **yes** (last-write-wins; Merge to reconcile)                                                                                                                  |
+| oo7                                                                  | `$XDG_DATA_HOME/keyrings/v1/<name>.keyring` per keyring          | yes as a file, but the directory is per-host by default — sync that file explicitly                                                                            |
 
 Practical rules for a shared store:
 

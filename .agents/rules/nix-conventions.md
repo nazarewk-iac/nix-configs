@@ -12,7 +12,12 @@ Full development notes (building, lockfile recovery, hash updates): [docs/nix-de
 
 ## Formatting
 
-**Format all Nix files with `nixfmt`** before committing. Uses RFC-style `nixfmt` from nixpkgs, not `nixfmt-classic`. Use `nix run .#kdn-nix-fmt --` as a shortcut to format files in the repo.
+**Format all files with `nix fmt`** before committing. `treefmt.nix` is the only place that names a
+formatter: `nixfmt` for Nix (RFC-style, from nixpkgs, not `nixfmt-classic`), prettier for Markdown
+and JSON, and one tool per other language. `nix run .#kdn-nix-fmt --` is a per-file wrapper around
+the same `nixfmt`. Do not run `alejandra`, `black`, `gofmt`, `prettier --write` or any other second
+formatter on this tree: it would rewrite the bytes in another style and the next `nix fmt` would
+flip them back. See [docs/formatter-convergence.md](../../docs/formatter-convergence.md).
 
 ## Devenv-managed files
 

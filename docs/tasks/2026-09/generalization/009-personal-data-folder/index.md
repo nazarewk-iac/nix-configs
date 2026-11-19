@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[009 — the personal data folder](definition.md)** — Move every personal data file into one folder that hosts reference, so the module tree carries no personal data and still evaluates when the folder is absent. · `Task` · `stable` · `unverified`
-

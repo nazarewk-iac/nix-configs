@@ -449,16 +449,16 @@ own hard limit. The test passed with a test-only `LD_PRELOAD` shim that neutrali
 
 The numbers on this host (`oams`, measured 2026-11-14):
 
-| Where | `RLIMIT_MEMLOCK` | How it was measured |
-| --- | --- | --- |
-| `user@31893.service` property, as `systemd` *declares* it | `8388608` = **8 MiB** | `systemctl show user@31893.service -p LimitMEMLOCK` |
+| Where                                                       | `RLIMIT_MEMLOCK`                       | How it was measured                                                        |
+| ----------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------- |
+| `user@31893.service` property, as `systemd` _declares_ it   | `8388608` = **8 MiB**                  | `systemctl show user@31893.service -p LimitMEMLOCK`                        |
 | the live `systemd --user` process, and every unit it starts | `4294967296` = **4 GiB** soft and hard | `/proc/6592/limits`; a `systemd-run --user` probe inherited the same value |
-| a login shell | `4294967296` = **4 GiB** soft and hard | `resource.getrlimit(RLIMIT_MEMLOCK)` in a login shell |
+| a login shell                                               | `4294967296` = **4 GiB** soft and hard | `resource.getrlimit(RLIMIT_MEMLOCK)` in a login shell                      |
 
 The first row is a trap, not the limit in force. `systemctl show` reports the property the unit
-*file* declares, and `user@.service` in systemd 262 carries systemd's own default of 8 MiB. The
+_file_ declares, and `user@.service` in systemd 262 carries systemd's own default of 8 MiB. The
 live process does not run with it: `pam_limits` is `session required` in `/etc/pam.d/systemd-user`
-*after* `pam_systemd`, and it applies `@pipewire - memlock 4194304` (the `kdn` user is in the
+_after_ `pam_systemd`, and it applies `@pipewire - memlock 4194304` (the `kdn` user is in the
 `pipewire` group, uid 31893, gid 323) from
 `/nix/store/…-limits.conf`. That row raises the limit **to** 4 GiB and is expressed in **KiB**, so
 `ulimit -l` prints `4194304` — 4194304 KiB, not 4194304 bytes. Reading that number as 4 MB is the

@@ -17,4 +17,3 @@ generated: true
 
 - **[Research: TPM-derived age keys for sops-nix](research.md)** — Verified facts on age-plugin-tpm, its sops-nix integration, alternatives, and whether a TPM-sealed identity survives a reinstall. · `Research` · `stable` · `unverified`
 - **[TPM-derived age keys for sops decryption](definition.md)** — Derive an unattended age identity from the host TPM, so boot-time sops decryption needs no PCSC smart card, no YubiKey, and no SSH host key yet. · `Task` · `stable` · `unverified`
-

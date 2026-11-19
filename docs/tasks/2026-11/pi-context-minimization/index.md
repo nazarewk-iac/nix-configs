@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Minimize agent context and add progressive discovery](definition.md)** — Cut the context a sub-agent and a small agent load before they see a task, and replace a fixed docs table with on-demand frontmatter discovery. · `Task` · `stable` · `unverified`
-

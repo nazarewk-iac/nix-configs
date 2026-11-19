@@ -17,4 +17,3 @@ generated: true
 
 - **[Dynamic remote builders for a home-lab (Lix): research notes](research.md)** — Source-verified behaviour of Lix and Nix remote builders — connection-time failover but not mid-build, no latency awareness, a per-derivation builder reload, TOML builders with enable flags, and the cache-versus-dispatch landscape. · `Research` · `stable` · `unverified`
 - **[Location-aware remote builders](definition.md)** — Make remote builds location-aware without a rebuild — prefer `brys` at home, build locally when away, and make an unreachable builder degrade to local instead of failing the build. · `Task` · `stable` · `unverified`
-

@@ -48,11 +48,11 @@ IPs. The Caddy vhosts then serve each service on its own subdomain.
 
 Originally, one zone per serving host, distributed to `All`:
 
-| Zone domain (id)                          | A records → IP                                                     |
-| ----------------------------------------- | ----------------------------------------------------------------- |
-| `etra.priv.nb.net.int.kdn.im` (dbnncmqfadhs73chcqfg) | `litellm.etra…` → 100.79.187.16, `prometheus.etra…` → 100.79.187.16 |
+| Zone domain (id)                                     | A records → IP                                                         |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| `etra.priv.nb.net.int.kdn.im` (dbnncmqfadhs73chcqfg) | `litellm.etra…` → 100.79.187.16, `prometheus.etra…` → 100.79.187.16    |
 | `brys.priv.nb.net.int.kdn.im` (dbnnco3l0ubs73863mc0) | `llama-swap.brys…` → 100.79.164.36, `prometheus.brys…` → 100.79.164.36 |
-| `oams.priv.nb.net.int.kdn.im` (dbnnco2fadhs73chcu2g) | `llama-swap.oams…` → 100.79.80.79 |
+| `oams.priv.nb.net.int.kdn.im` (dbnnco2fadhs73chcu2g) | `llama-swap.oams…` → 100.79.80.79                                      |
 
 Verified: every name resolves from a NetBird client via `getent ahosts`.
 

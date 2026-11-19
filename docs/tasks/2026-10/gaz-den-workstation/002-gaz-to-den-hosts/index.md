@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[`gaz` from Crostini container to den workstation](definition.md)** — Move `gaz` from the `hosts/` Crostini VM to `hosts-den/` as a real NixOS workstation with the repository's ZFS impermanence layout, then install it on the hardware. · `Task` · `stable` · `unverified`
-

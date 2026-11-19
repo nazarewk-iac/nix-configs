@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Multi-machine local LLMs](definition.md)** — Research-first plan to distribute self-hosted LLMs across several owned machines (brys, Orion O6, oams, N100 NAS fleet, CWWK 1240P, Pi4s), with a router/scheduler that spans hosts. · `Task` · `stable` · `unverified`
-

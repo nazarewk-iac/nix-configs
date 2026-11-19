@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[rosec sops provider — conflict resolution](definition.md)** — Design and implement conflict resolution better than "latest modified wins" for the sops-encrypted file-tree rosec provider. · `Task` · `stable` · `unverified`
-

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Public ingress through moss behind SSO](definition.md)** — Expose homelab services to the public internet through moss as the single public entrypoint, behind one authentication/SSO layer, with etra as the internal routing hub. · `Task` · `stable` · `unverified`
-

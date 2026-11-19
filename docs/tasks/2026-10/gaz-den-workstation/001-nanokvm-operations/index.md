@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[NanoKVM operations an agent can rely on](definition.md)** — Turn the verified NanoKVM operating knowledge into a skill and a doc, so any agent can screenshot, type, click and power a machine through the KVM without re-deriving the MCP recipe. · `Task` · `stable` · `unverified`
-

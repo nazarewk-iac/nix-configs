@@ -19,4 +19,3 @@ generated: true
 - **[Stable OpenCode system prompt (no date injection)](definition.md)** — Stop OpenCode from injecting the current date into the system prompt, so the prompt prefix is stable and a local llama-server reuses its KV cache across midnight instead of re-prefilling the whole conversation. · `Task` · `stable` · `unverified`
 - **[Where OpenCode injects the date, and how to remove it](research.md)** — OpenCode 1.18.29 injects the date in the system prompt with no config toggle; the only hook is the v1 plugin experimental.chat.system.transform. · `Research` · `stable` · `unverified`
 - **[Which system-prompt parts change, and which stay stable](prompt-volatility.research.md)** — Every part of the OpenCode 1.18.29 system prompt, marked stable or volatile across requests in the same repo, to maximise prefix reuse. · `Research` · `stable` · `unverified`
-

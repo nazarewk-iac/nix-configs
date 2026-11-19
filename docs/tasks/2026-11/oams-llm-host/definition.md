@@ -62,7 +62,7 @@ toggle, and registration in `data/llm.nix`.
      oneshot);
    - integration with the existing **gaming scope** detection so a Steam session
      forces LLM serving off, the same signal the build-farm toggle uses.
-5. Only *small* GPU models go here (the ones that fit 12 GB). Candidate set is in
+5. Only _small_ GPU models go here (the ones that fit 12 GB). Candidate set is in
    [models-for-oams](models-for-oams/definition.md).
 
 ## Open questions

@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Migrate KeePassXC secret-service content to rosec](definition.md)** — Migrate the KeePassXC secret-service entries into the rosec sops file-tree store, verify them, and retire the KDBX provider. · `Task` · `stable` · `unverified`
-

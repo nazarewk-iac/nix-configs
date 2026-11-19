@@ -17,4 +17,3 @@ generated: true
 
 - **[Qwen3.8-Flash-Next as a brys specialisation — pick the quant, then tune](definition.md)** — Stand up Qwen3.8-Flash-Next in its best-fit quant as a new brys boot specialisation, then benchmark and tune it in practice. · `Task` · `stable` · `unverified`
 - **[Solution — Qwen3.8-Flash-Next on brys](done.md)** — Stood up Qwen3.8-Flash-Next as a third brys boot specialisation with UD-IQ4_XS, measured it, and recorded the tuning. · `Solution` · `stable` · `unverified`
-

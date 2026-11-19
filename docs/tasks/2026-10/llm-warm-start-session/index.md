@@ -19,4 +19,3 @@ generated: true
 - **[Warm-start session measurements (2026-10-18)](measurements-2026-10-18.research.md)** — Measured warm-start, session-save, and restore timings for the llama-cpp-sessions build on brys — cold versus warm reuse, switch cost, and disk cost. · `Research` · `stable` · `unverified`
 - **[Warm-start: feasibility and the session-isolation constraint](research.md)** — Warm-start feasibility — the mechanism works (a fresh session on a warm slot reuses the base prefix), but session-keyed requests bypass LCP slot selection, so all slots must be warmed. · `Research` · `stable` · `unverified`
 - **[Why a resumed session re-prefills the whole context](hybrid-reuse.research.md)** — Root cause of the full-context re-prefill of a resumed session — a hybrid GDN model cannot reuse a prefix unless a context checkpoint covers the divergence point, so an early divergence (the OpenCode date) forces a full re-process. · `Research` · `stable` · `unverified`
-

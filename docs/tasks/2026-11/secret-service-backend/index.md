@@ -22,4 +22,3 @@ generated: true
 - **[Research — headless Secret Service with a custom storage backend](research.md)** — One row per headless Secret Service candidate against the 12 research questions, with sources and a fork/wrap/reject verdict. · `Research` · `stable` · `unverified`
 - **[rosec — full evaluation](research.rosec.md)** — Full evaluation of rosec as the headless Secret Service implementation, including its custom-provider (storage backend) seam. · `Research` · `stable` · `unverified`
 - **[Storage and sync of the candidates](research.storage.md)** — On-disk form of each Secret Service candidate — encryption, file tree vs single file, sync behaviour with Nextcloud/Syncthing/litestream, and how a sops/age helper unlocks it. · `Research` · `stable` · `unverified`
-

@@ -12,11 +12,11 @@ timestamp: 2026-11-18T15:50:09+01:00
 
 Three things that a host needs **before** any login currently live inside the Nextcloud tree:
 
-| Item            | Live path                                                          |
-| --------------- | ------------------------------------------------------------------ |
-| `pass` store    | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store`     |
-| rosec store     | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage`      |
-| KeePass DB      | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/keepass/drag0nius.kdbx` |
+| Item         | Live path                                                               |
+| ------------ | ----------------------------------------------------------------------- |
+| `pass` store | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/password-store`         |
+| rosec store  | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/rosec-storage`          |
+| KeePass DB   | `~/Nextcloud/drag0nius@nc.nazarewk.pw/important/keepass/drag0nius.kdbx` |
 
 That tree is not available when the Nextcloud client is logged out, on a fresh host, or while the
 server is unreachable. Worse, the dependency is circular:
@@ -66,17 +66,17 @@ One Syncthing folder (working name `secrets`) that:
 
 ## Candidate items
 
-| Candidate                              | Current location                              | Size    | Sync? | Why                                                                                                                                     |
-| -------------------------------------- | --------------------------------------------- | ------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `pass` store                           | Nextcloud `important/password-store`          | ~1 MB   | **yes** | The KeePass wrapper and many scripts read it at login.                                                                                  |
-| rosec store (`rosec-storage`)          | Nextcloud `important/rosec-storage`           | ~305 KB | **yes** | The Secret Service store; Nextcloud's credentials live here.                                                                            |
-| KeePass database                       | Nextcloud `important/keepass/drag0nius.kdbx`  | ~1 MB   | **yes** | Opened by `keepassxc.service` at login.                                                                                                 |
-| sops-nix age key (`~/.config/sops/age/keys.txt`) | host-local, restored from backup      | small   | maybe   | Needed by `sops-install-secrets`; already handled per host — syncing it would widen the blast radius.                                    |
-| SSH user keys (`~/.ssh/id_*`)          | home, also in sops?                           | small   | maybe   | Needed before a password manager exists; check whether the repo already derives them from sops.                                          |
-| GPG home (`~/.gnupg`)                  | home                                          | ~10 MB  | **no**  | Contains the smartcard stubs and trust DB; host-specific and large enough to mis-sync. Regenerate/import per host.                      |
-| `rosec-keys.txt`                       | `~/.config/sops/age/rosec-keys.txt`           | small   | **no**  | Derived from the YubiKey; requirement 5.                                                                                                |
-| rosec `config.toml`                    | `~/.config/rosec/config.toml`                 | small   | **no**  | Rendered by the module from the host options; syncing it would fight the module.                                                        |
-| WireGuard/NetBird keys                 | sops                                          | —       | **no**  | Already in the secret store, not in the home.                                                                                           |
+| Candidate                                        | Current location                             | Size    | Sync?   | Why                                                                                                                |
+| ------------------------------------------------ | -------------------------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `pass` store                                     | Nextcloud `important/password-store`         | ~1 MB   | **yes** | The KeePass wrapper and many scripts read it at login.                                                             |
+| rosec store (`rosec-storage`)                    | Nextcloud `important/rosec-storage`          | ~305 KB | **yes** | The Secret Service store; Nextcloud's credentials live here.                                                       |
+| KeePass database                                 | Nextcloud `important/keepass/drag0nius.kdbx` | ~1 MB   | **yes** | Opened by `keepassxc.service` at login.                                                                            |
+| sops-nix age key (`~/.config/sops/age/keys.txt`) | host-local, restored from backup             | small   | maybe   | Needed by `sops-install-secrets`; already handled per host — syncing it would widen the blast radius.              |
+| SSH user keys (`~/.ssh/id_*`)                    | home, also in sops?                          | small   | maybe   | Needed before a password manager exists; check whether the repo already derives them from sops.                    |
+| GPG home (`~/.gnupg`)                            | home                                         | ~10 MB  | **no**  | Contains the smartcard stubs and trust DB; host-specific and large enough to mis-sync. Regenerate/import per host. |
+| `rosec-keys.txt`                                 | `~/.config/sops/age/rosec-keys.txt`          | small   | **no**  | Derived from the YubiKey; requirement 5.                                                                           |
+| rosec `config.toml`                              | `~/.config/rosec/config.toml`                | small   | **no**  | Rendered by the module from the host options; syncing it would fight the module.                                   |
+| WireGuard/NetBird keys                           | sops                                         | —       | **no**  | Already in the secret store, not in the home.                                                                      |
 
 ## Design sketch
 

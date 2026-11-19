@@ -18,4 +18,3 @@ generated: true
 - **[Agent journal CLI: structured boards and a one-command status](definition.md)** — Give agent journals a predictable shape and a Go CLI plus TUI that prints where the work stands and browses repository tasks, session journals and task boards. · `Task` · `stable` · `unverified`
 - **[Design: `kdn-journal`](design.md)** — Go CLI and TUI (`kdn-journal`) that reads repository tasks, session journals, boards and worklogs, with a tolerant parser, compact summary and safe status mutation. · `Design` · `stable` · `unverified`
 - **[Solution: `kdn-journal`](done.md)** — A Go CLI and TUI (`kdn-journal`) that reads repository tasks and agent journals, prints a one-screen summary, validates both trees and browses them interactively. · `Solution` · `stable` · `unverified`
-

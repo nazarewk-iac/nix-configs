@@ -40,20 +40,20 @@ set of overridable methods, grouped by when they run
 ([source: `litellm/integrations/custom_logger.py`](https://github.com/BerriAI/litellm/blob/main/litellm/integrations/custom_logger.py),
 [docs: Modify / Reject Incoming Requests](https://docs.litellm.ai/docs/proxy/call_hooks)):
 
-| Method | Fires | Before backend contact? |
-| --- | --- | --- |
-| `async_pre_call_hook(user_api_key_dict, cache, data, call_type)` | Before routing / deployment selection, before the LLM call | **Yes** |
-| `async_pre_routing_hook(model, request_kwargs, messages, input, specific_deployment)` | Before the routing decision (auto-router) | **Yes** |
-| `async_filter_deployments(model, healthy_deployments, messages, request_kwargs, parent_otel_span)` | In the router's healthy-deployment filter, before the call | **Yes** |
-| `async_pre_call_deployment_hook(kwargs, call_type)` | After a deployment is selected, immediately before the HTTP call | **Yes** |
-| `async_moderation_hook(data, user_api_key_dict, call_type)` | **In parallel** with the LLM call | No (concurrent) |
-| `async_post_call_success_hook(data, user_api_key_dict, response)` | After a successful call (non-streaming) | No |
-| `async_post_call_failure_hook(request_data, original_exception, user_api_key_dict, traceback_str)` | After a failed call | No |
-| `async_post_call_streaming_hook`, `async_post_call_streaming_iterator_hook` | Streaming responses | No |
-| `async_post_call_response_headers_hook(data, user_api_key_dict, response, request_headers)` | After call, success **and** failure | No |
-| `async_post_call_success_deployment_hook`, `async_post_call_failure_deployment_hook` | Per-deployment attempt (per retry / fallback hop) | No |
-| `async_filter_listed_models(user_api_key_dict, model_names)` | On `/v1/models`, `/model/info` etc. | N/A (listing) |
-| `log_success_event`, `async_log_success_event`, `log_failure_event`, `async_log_failure_event`, `log_pre_api_call`, `async_log_pre_api_call`, ... | Logging callbacks | Mostly after |
+| Method                                                                                                                                            | Fires                                                            | Before backend contact? |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------- |
+| `async_pre_call_hook(user_api_key_dict, cache, data, call_type)`                                                                                  | Before routing / deployment selection, before the LLM call       | **Yes**                 |
+| `async_pre_routing_hook(model, request_kwargs, messages, input, specific_deployment)`                                                             | Before the routing decision (auto-router)                        | **Yes**                 |
+| `async_filter_deployments(model, healthy_deployments, messages, request_kwargs, parent_otel_span)`                                                | In the router's healthy-deployment filter, before the call       | **Yes**                 |
+| `async_pre_call_deployment_hook(kwargs, call_type)`                                                                                               | After a deployment is selected, immediately before the HTTP call | **Yes**                 |
+| `async_moderation_hook(data, user_api_key_dict, call_type)`                                                                                       | **In parallel** with the LLM call                                | No (concurrent)         |
+| `async_post_call_success_hook(data, user_api_key_dict, response)`                                                                                 | After a successful call (non-streaming)                          | No                      |
+| `async_post_call_failure_hook(request_data, original_exception, user_api_key_dict, traceback_str)`                                                | After a failed call                                              | No                      |
+| `async_post_call_streaming_hook`, `async_post_call_streaming_iterator_hook`                                                                       | Streaming responses                                              | No                      |
+| `async_post_call_response_headers_hook(data, user_api_key_dict, response, request_headers)`                                                       | After call, success **and** failure                              | No                      |
+| `async_post_call_success_deployment_hook`, `async_post_call_failure_deployment_hook`                                                              | Per-deployment attempt (per retry / fallback hop)                | No                      |
+| `async_filter_listed_models(user_api_key_dict, model_names)`                                                                                      | On `/v1/models`, `/model/info` etc.                              | N/A (listing)           |
+| `log_success_event`, `async_log_success_event`, `log_failure_event`, `async_log_failure_event`, `log_pre_api_call`, `async_log_pre_api_call`, ... | Logging callbacks                                                | Mostly after            |
 
 Also confirmed: the general loggers are registered via separate lists
 `litellm.input_callback`, `litellm.success_callback`,
@@ -122,7 +122,7 @@ client-side OpenAI timeout and this hook; test it). See §1.4.
 
 ```yaml
 litellm_settings:
-  callbacks: my_pkg.wake_handler.instance   # dotted path to an INSTANCE
+  callbacks: my_pkg.wake_handler.instance # dotted path to an INSTANCE
 ```
 
 The dotted path is resolved by
@@ -192,7 +192,7 @@ source: `litellm/router_utils/pre_call_checks/`). Built-in checks:
 
 These are **rate-limit and affinity** checks — none of them "wake a server".
 They are wired through the `async_filter_deployments` hook (§1.1), which you
-*can* override in your own `CustomLogger` to drop/allow deployments before the
+_can_ override in your own `CustomLogger` to drop/allow deployments before the
 call. That is the supported extension point, but there is **no built-in
 "ensure backend up" check**.
 
@@ -221,7 +221,7 @@ custom logic inside `async_pre_call_hook` / `async_pre_call_deployment_hook`.
 ### 3.1 Custom action on an unhealthy deployment (PARTIAL / NOT FOUND)
 
 - The **background health check** (`general_settings.background_health_checks:
-  true`, `health_check_interval`, `health_check_details`) is **CONFIRMED**
+true`, `health_check_interval`, `health_check_details`) is **CONFIRMED**
   ([docs: Health Checks](https://docs.litellm.ai/docs/proxy/health)). It
   populates a cache that `/health` reads and that
   [health-check routing](https://docs.litellm.ai/docs/proxy/health_check_routing)
@@ -328,13 +328,13 @@ just outside LiteLLM's worker.
 - `async_pre_routing_hook`, `async_filter_deployments` (pre-call, router-level)
   — §1.1
 - `async_post_call_failure_hook(request_data, original_exception,
-  user_api_key_dict, traceback_str)` — §1.1
+user_api_key_dict, traceback_str)` — §1.1
 - Registration via `litellm_settings.callbacks: module.instance`; instance
   required; module loaded from config dir or `importlib` — §1.3
 - `optional_pre_call_checks` / `enforce_model_rate_limits`, etc. — §2.2
 - Background health checks + `/health` semantics — §3.1
 - `alerting: ["webhook"]`, `alert_types: ["outage_alerts",
-  "cooldown_deployment", "llm_exceptions"]` — §3.2
+"cooldown_deployment", "llm_exceptions"]` — §3.2
 - `callback_type: generic_api` with arbitrary `endpoint` — §3.2
 
 **NOT FOUND / UNVERIFIED**

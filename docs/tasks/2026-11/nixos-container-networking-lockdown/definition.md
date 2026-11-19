@@ -18,12 +18,12 @@ item already done is noted.
 
 ## Options and recommendations
 
-| # | Option | Verdict | Effort | Why |
-|---|--------|---------|--------|-----|
-| 1 | **LiteLLM on a Caddy-only unix socket** | **DONE** | S | Removes the host TCP listener; only Caddy reaches the gateway. See below. |
-| 2 | Containerize **llama-swap** | **Optional → adopt via OCI** | M–H | Upstream is container-native. The cost is GPU/RAM plumbing, not the idea. |
-| 3 | Containerize **Caddy** | **Skip** | M | Edge isolation is real, but it needs host-loopback upstreams; host-net/relays cancel the gain. |
-| 4 | **Multiple networks per container** (one per consumer) | **Skip** | M–H | Consumers are mostly the host; nspawn/NixOS model one veth; more firewall surface. |
+| #   | Option                                                 | Verdict                      | Effort | Why                                                                                            |
+| --- | ------------------------------------------------------ | ---------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| 1   | **LiteLLM on a Caddy-only unix socket**                | **DONE**                     | S      | Removes the host TCP listener; only Caddy reaches the gateway. See below.                      |
+| 2   | Containerize **llama-swap**                            | **Optional → adopt via OCI** | M–H    | Upstream is container-native. The cost is GPU/RAM plumbing, not the idea.                      |
+| 3   | Containerize **Caddy**                                 | **Skip**                     | M      | Edge isolation is real, but it needs host-loopback upstreams; host-net/relays cancel the gain. |
+| 4   | **Multiple networks per container** (one per consumer) | **Skip**                     | M–H    | Consumers are mostly the host; nspawn/NixOS model one veth; more firewall surface.             |
 
 ## 1 — LiteLLM unix socket (done)
 

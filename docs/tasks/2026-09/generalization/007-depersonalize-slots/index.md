@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[007 — de-personalize slots](definition.md)** — Lift the creator's personal defaults, provider choices, and opinions out of shared slot options so an adopter gets a neutral baseline. · `Task` · `stable` · `unverified`
-

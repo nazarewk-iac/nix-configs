@@ -17,4 +17,3 @@ generated: true
 
 - **[LiteLLM client API keys and Requesty backend](definition.md)** — Add DB-less, model-scoped client API keys to the LiteLLM gateway (custom auth) and a Requesty backend, and establish whether Pi can discover Requesty models through LiteLLM. · `Task` · `stable` · `unverified`
 - **[LiteLLM client API keys and Requesty — done](done.md)** — Add DB-less model-scoped client API keys to the LiteLLM gateway and a working Requesty backend, and answer that Pi cannot auto-discover Requesty models through the gateway. · `Solution` · `stable` · `unverified`
-

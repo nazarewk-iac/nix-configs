@@ -17,4 +17,3 @@ generated: true
 
 - **[004 — den spike](definition.md)** — Evaluate the denful/den framework as the reimplementation target before any module rewrite starts, with a drop-in import test as the decisive criterion. · `Task` · `stable` · `unverified`
 - **[den spike — decisive phase](research.md)** — Measured outcome of the decisive phase of the denful/den evaluation spike, per criterion, with commands and outputs. · `Research` · `stable` · `unverified`
-

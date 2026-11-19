@@ -90,11 +90,11 @@ curl -ksS -X POST https://kvm-26e2.lan.etra.net.int.kdn.im/api/mcp \
 
 Four distinct faults, and they must not be confused:
 
-| Symptom                                     | Evidence                                                                                                | Meaning                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`           | no HDMI signal: the source is off, asleep, or the display is off |
-| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host` | the USB HID gadget is wedged, or the host is not enumerating it  |
-| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                       | the guest display went to sleep; the link is fine                |
+| Symptom                                     | Evidence                                                                                                                                 | Meaning                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `cube_screenshot` fails at any timeout      | `retCode: -4`, `screenshot capture is temporarily unavailable`, `dmesg` `LT6911--:-- INT!!##`                                            | no HDMI signal: the source is off, asleep, or the display is off |
+| `cube_press_keys` and `cube_type_text` fail | `write /dev/hidg0: i/o timeout`, `dwc2 4340000.usb: wakeup: signalling skipped: is not allowed by host`                                  | the USB HID gadget is wedged, or the host is not enumerating it  |
+| a screenshot works, then stops              | one good frame, then `retCode -4`                                                                                                        | the guest display went to sleep; the link is fine                |
 | both fail together                          | `retCode: -1`, `failed to capture screenshot`, `hidg0` timeout, `/sys/class/udc/*/state` `not attached`, `/proc/cvitek/vi` `VIDevFPS: 0` | the host is off or asleep, not the KVM; check host power first   |
 
 ### A powered-off host looks like a dead KVM

@@ -17,4 +17,3 @@ generated: true
 
 - **[Skip the `atuin` checks on darwin](definition.md)** — `atuin` 18.23.0 fails its darwin e2e tests, so every darwin switch fails; skip the checks on darwin until the package passes them again. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — Add a darwin-only overlay that sets `doCheck = false` for `atuin`, with a comment that names nixpkgs issue · `Solution` · `stable` · `unverified`
-

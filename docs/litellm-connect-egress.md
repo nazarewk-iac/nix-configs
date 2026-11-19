@@ -43,6 +43,7 @@ direct request is `000` (no own egress) — the proxy is the only way out.
   the proxy is chosen by env, not by the URL).
 
 Config:
+
 ```
 Port 8888
 Listen 10.233.100.1
@@ -59,7 +60,7 @@ LogLevel Info
    the method/port. tinyproxy cannot hostname-filter CONNECT; the layer-3
    firewall + the fact that the proxy is the only egress is the real bound.
 2. **Changing the proxy config does not restart the unit** on `nixos-rebuild
-   switch` (no `restartTriggers`). `systemctl restart litellm-requesty-proxy`
+switch` (no `restartTriggers`). `systemctl restart litellm-requesty-proxy`
    after editing, or add `restartTriggers` / `wantedBy`.
 3. **The keys/config the container reads are the closure's files.** Adding a
    client key to the sops file needs a **container restart** (it bind-mounts the
@@ -69,7 +70,7 @@ LogLevel Info
 
 ## Reusing the pattern
 
-For any confined container that needs *authenticated* internet egress:
+For any confined container that needs _authenticated_ internet egress:
 
 1. Run a CONNECT proxy on the bridge host address (tinyproxy/squid).
    `Allow <guest-ip>`, `ConnectPort <port>`; no auth needed (bridge-only).

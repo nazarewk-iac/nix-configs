@@ -237,8 +237,8 @@ short kebab-case slug for each `--pane` (for example, `darwin-build`), not a ful
   many tabs. Every tab must start with that sub-agent's own `<agent-slug>`. Then it can add more
   slugs for the specific work. This keeps each tab attributable to the sub-agent that made it,
   even when several sub-agents share one session. `kdn-slug names --type tab --tag <agent-slug>
-  --tag <slug> ...` makes this name. `zellij-llm` manages panes, not tabs. Use a raw `zellij
-  action new-tab --name "$TAB"` call in your own session to make a tab.
+--tag <slug> ...` makes this name. `zellij-llm` manages panes, not tabs. Use a raw `zellij
+action new-tab --name "$TAB"` call in your own session to make a tab.
 - Pane: use a short slug for the purpose of the pane. For example, use `darwin-build`. Pass it as
   the `--pane` value of `zellij-llm`. You do not need `kdn-slug` for a pane name.
 
@@ -281,24 +281,24 @@ same gets this behavior. The "Pre-allowed" rows below have a Claude Code `Bash` 
 allowlist entry. No prompt appears for them. Every other command has no allowlist entry. Claude
 Code always prompts for those, as the rule above requires.
 
-| Command | Purpose | On the user's session |
-|---|---|---|
-| `zellij list-sessions*` | List session names | Pre-allowed (no prompt) |
-| `action list-panes *` (optional `--session *`) | Pane ids, titles, tab, exited state | Pre-allowed (no prompt) |
-| `action list-tabs *` (optional `--session *`) | Tab ids, names, active/focus state | Pre-allowed (no prompt) |
-| `action list-clients*` (optional `--session *`) | Attached clients | Pre-allowed (no prompt) |
-| `action current-tab-info*` (optional `--session *`) | Info about the active tab | Pre-allowed (no prompt) |
-| `attach --create-background *` | Create or reuse a detached session of your own | Pre-allowed — creates only your session |
-| `action dump-screen -p <id> [-f] [-a]` | Snapshot pane viewport or scrollback | Not allowlisted — always prompts. Ask the user which pane first, every time |
-| `subscribe -p <id> --format json` | Stream pane updates (NDJSON) | Not allowlisted — always prompts. Ask first |
-| `action write-chars -p <id>` / `send-keys -p <id>` / `paste -p <id>` | Type into a **named** pane without changing focus | Not allowlisted — always prompts. Ask first; it still types into the pane |
-| `edit-scrollback` | Open scrollback in `$EDITOR` | Not allowlisted — always prompts. Ask first |
-| `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state | Not allowlisted — always prompts. Never do this on the user's session. Do it in your own session |
-| `action new-pane --stacked --name <n> -- <cmd>` (your own session) | Run a command in a new stacked pane | Still prompts (not allowlisted). This is correct: it changes state, even in your own session |
-| `kdn-slug names --type <session\|tab\|pane> ...` | Make the naming-convention strings above | Read-only, no allowlist needed |
-| `zellij-llm run -i` / `run -b` / `watch` / `wait` / `list` (your own session) | Preferred wrapper for the state-change calls above (`-i` = interactive/pty, `-b` = stdin script) | Prompts the same as the raw calls. Not yet in the Bash allowlist |
-| `zellij-llm peek` (your own session) | Preferred wrapper for `action dump-screen` | Like `dump-screen` above, but works only on your own session |
-| `zellij-llm opencode spawn/send/watch/list/attach` (your own session) | Start, drive, and watch an OpenCode session in a pane | Prompts the same as the raw calls. `send` focuses the pane and types, so it changes state; never point it at the user's session |
+| Command                                                                                     | Purpose                                                                                          | On the user's session                                                                                                           |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `zellij list-sessions*`                                                                     | List session names                                                                               | Pre-allowed (no prompt)                                                                                                         |
+| `action list-panes *` (optional `--session *`)                                              | Pane ids, titles, tab, exited state                                                              | Pre-allowed (no prompt)                                                                                                         |
+| `action list-tabs *` (optional `--session *`)                                               | Tab ids, names, active/focus state                                                               | Pre-allowed (no prompt)                                                                                                         |
+| `action list-clients*` (optional `--session *`)                                             | Attached clients                                                                                 | Pre-allowed (no prompt)                                                                                                         |
+| `action current-tab-info*` (optional `--session *`)                                         | Info about the active tab                                                                        | Pre-allowed (no prompt)                                                                                                         |
+| `attach --create-background *`                                                              | Create or reuse a detached session of your own                                                   | Pre-allowed — creates only your session                                                                                         |
+| `action dump-screen -p <id> [-f] [-a]`                                                      | Snapshot pane viewport or scrollback                                                             | Not allowlisted — always prompts. Ask the user which pane first, every time                                                     |
+| `subscribe -p <id> --format json`                                                           | Stream pane updates (NDJSON)                                                                     | Not allowlisted — always prompts. Ask first                                                                                     |
+| `action write-chars -p <id>` / `send-keys -p <id>` / `paste -p <id>`                        | Type into a **named** pane without changing focus                                                | Not allowlisted — always prompts. Ask first; it still types into the pane                                                       |
+| `edit-scrollback`                                                                           | Open scrollback in `$EDITOR`                                                                     | Not allowlisted — always prompts. Ask first                                                                                     |
+| `action new-pane` / `new-tab` / `go-to-tab*` / `focus-pane-id` / `close-*` / `kill-session` | Create, focus, or destroy state                                                                  | Not allowlisted — always prompts. Never do this on the user's session. Do it in your own session                                |
+| `action new-pane --stacked --name <n> -- <cmd>` (your own session)                          | Run a command in a new stacked pane                                                              | Still prompts (not allowlisted). This is correct: it changes state, even in your own session                                    |
+| `kdn-slug names --type <session\|tab\|pane> ...`                                            | Make the naming-convention strings above                                                         | Read-only, no allowlist needed                                                                                                  |
+| `zellij-llm run -i` / `run -b` / `watch` / `wait` / `list` (your own session)               | Preferred wrapper for the state-change calls above (`-i` = interactive/pty, `-b` = stdin script) | Prompts the same as the raw calls. Not yet in the Bash allowlist                                                                |
+| `zellij-llm peek` (your own session)                                                        | Preferred wrapper for `action dump-screen`                                                       | Like `dump-screen` above, but works only on your own session                                                                    |
+| `zellij-llm opencode spawn/send/watch/list/attach` (your own session)                       | Start, drive, and watch an OpenCode session in a pane                                            | Prompts the same as the raw calls. `send` focuses the pane and types, so it changes state; never point it at the user's session |
 
 ## Gotchas
 

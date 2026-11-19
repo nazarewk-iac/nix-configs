@@ -18,4 +18,3 @@ generated: true
 - **[Fork mechanism and anji observations](research.md)** — How the nix-rosetta-builder daemon decides to delete and recreate the Lima guest, which config values land in lima.yaml, and the drift measured read-only on anji on 2026-10-16. · `Research` · `stable` · `unverified`
 - **[Parked: guest sshd fixes written, activation blocked on briv disk](status.md)** — Both guest-sshd fixes are in hosts/anji/default.nix but unactivated; the switch is blocked because the briv.lan builder ran out of disk while rebuilding the guest image. · `Status` · `stable` · `unverified`
 - **[rosetta-builder guest recreation drift](definition.md)** — The nix-rosetta-builder daemon deletes and recreates the Lima guest whenever the generated lima.yaml differs from the stored one, and a nixpkgs bump changes that file every time. · `Task` · `stable` · `unverified`
-

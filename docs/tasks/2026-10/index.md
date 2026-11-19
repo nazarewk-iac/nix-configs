@@ -62,4 +62,3 @@ _No concepts directly in this directory; see the child directories._
 - **[tpm-age-sops-keys](tpm-age-sops-keys/index.md)** — 2 concepts: Research 1, Task 1
 - **[w6600-amdgpu-hang](w6600-amdgpu-hang/index.md)** — 3 concepts: Research 1, Status 1, Task 1
 - **[zellij-llm-opencode](zellij-llm-opencode/index.md)** — 2 concepts: Solution 1, Task 1
-

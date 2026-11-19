@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Rosetta builder — build i686-linux derivations](definition.md)** — Let the Rosetta darwin builder build i686-linux derivations (e.g. the brgenml1lpr Brother printer driver) so a cross-arch NixOS sanity check from the aarch64-darwin host is complete. · `Task` · `stable` · `unverified`
-

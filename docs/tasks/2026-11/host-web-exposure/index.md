@@ -17,4 +17,3 @@ generated: true
 
 - **[Per-host HTTPS exposure and gateway-only clients](definition.md)** — Put a per-host Caddy reverse proxy on the default HTTPS port, fronting each host's HTTP services (litellm, llama-swap, prometheus) under path prefixes with an index page, and route all LLM client traffic through the HTTPS gateway except on the host that serves it. · `Task` · `stable` · `unverified`
 - **[status](status.md)** — The shared route renderer, the etra web-exposure aspect, and clients-over-HTTPS are live; the brys/oams llm-aspect fold and the /prometheus external-url are not. · `Status` · `stable` · `unverified`
-

@@ -17,4 +17,3 @@ generated: true
 
 - **[Finish the Rosetta builder bootstrap on `anji`](definition.md)** — Finish the Rosetta builder bootstrap on `anji` — run phases 2 and 3, then confirm both Linux architectures build. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — Phases 2 and 3 ran on 2026-10-11 with the guest created directly on the external volume. Both Linux architectures build on `rosetta-builder`; the stock builder is detached. · `Solution` · `stable` · `unverified`
-

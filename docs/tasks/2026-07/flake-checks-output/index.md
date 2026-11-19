@@ -17,4 +17,3 @@ generated: true
 
 - **[`flake.nix`'s `checks =` output is broken — `self.kdnMetaModule` called directly instead of via `.config.output.mkSubmodule`](definition.md)** — flake.nix's `checks =` output evaluated to a call-error because `self.kdnMetaModule` was invoked directly instead of via `.config.output.mkSubmodule`. · `Task` · `stable` · `unverified`
 - **[Solution — `flake.nix`'s `checks =` output](done.md)** — Fixed the flake `checks =` wiring via `.config.output.mkSubmodule` and proved the plumbing with a minimal `hello` "hello world" check. · `Solution` · `stable` · `unverified`
-

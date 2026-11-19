@@ -14,15 +14,16 @@ Non-master clients get their own API keys, each scoped to an allow-list of model
 "local-only" key can never reach paid providers. The master key keeps full access. Requesty is a
 second backend behind the gateway.
 
-| Where | What |
-| --- | --- |
-| `hosts/etra/litellm_auth.py` | `custom_auth` (`user_api_key_auth`). Reads the sops-mounted `token -> {name, models}` map; handles the master key explicitly (PROXY_ADMIN, all models). |
-| `hosts/etra/litellm_enforce.py` | `enforce.scope` — a `pre_call` hook that enforces the token's model-group list, which LiteLLM would otherwise skip (`litellm.enable_post_custom_auth_checks` is not a config key). Fails closed. |
-| `hosts/etra/litellm-keys.sops.yaml` | the keys, sops-encrypted (etra ssh-host key + recovery YubiKeys), wrapped as `keys: { clients: <json> }` for the `keyPrefix`. |
-| `hosts/etra/litellm_requesty_discover.py` | fetches Requesty's real `/v1/models` and emits explicit LiteLLM deployments (tested live: returns the 4 real ids, not the wildcard's fake price-map names). |
-| `hosts/etra/litellm.nix` | Requesty egress: a `tinyproxy` CONNECT on `:8888`, the container's `HTTPS_PROXY`, and explicit `api_base = https://router.requesty.ai/v1`. |
+| Where                                     | What                                                                                                                                                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `hosts/etra/litellm_auth.py`              | `custom_auth` (`user_api_key_auth`). Reads the sops-mounted `token -> {name, models}` map; handles the master key explicitly (PROXY_ADMIN, all models).                                          |
+| `hosts/etra/litellm_enforce.py`           | `enforce.scope` — a `pre_call` hook that enforces the token's model-group list, which LiteLLM would otherwise skip (`litellm.enable_post_custom_auth_checks` is not a config key). Fails closed. |
+| `hosts/etra/litellm-keys.sops.yaml`       | the keys, sops-encrypted (etra ssh-host key + recovery YubiKeys), wrapped as `keys: { clients: <json> }` for the `keyPrefix`.                                                                    |
+| `hosts/etra/litellm_requesty_discover.py` | fetches Requesty's real `/v1/models` and emits explicit LiteLLM deployments (tested live: returns the 4 real ids, not the wildcard's fake price-map names).                                      |
+| `hosts/etra/litellm.nix`                  | Requesty egress: a `tinyproxy` CONNECT on `:8888`, the container's `HTTPS_PROXY`, and explicit `api_base = https://router.requesty.ai/v1`.                                                       |
 
 Decisions that held:
+
 - **DB-less** custom auth + `pre_call` enforcement (no DB, no prisma engine).
 - **Explicit `requesty/*` deployments, not the wildcard** — the wildcard lists LiteLLM's OpenAI
   price-map names, not Requesty's real catalog, and it 404s on call.

@@ -18,4 +18,3 @@ generated: true
 - **[Design — jj fork change-placement: harness, matrix, docs](design.md)** — Build an isolated pytest harness in checks/jj-experiments, verify golden-path jj recipes on facts for both fork/branch topology and day-to-day operations, finish the revset-alias suite, and rewrite the jj docs and skill to be short and teachable. · `Design` · `stable` · `unverified`
 - **[jj fork change-placement — case matrix, least-command recipes, test harness, skill rewrite](definition.md)** — Define and verify the full matrix of jj change-placement cases in the fork topology, build a 3-repo pytest harness, and rewrite the skill examples. · `Task` · `stable` · `unverified`
 - **[Solution — jj fork change-placement: harness, matrix, docs](done.md)** — Solution for jj-fork-use-cases-refactor — the isolated pytest harness, the verified golden-path matrix, and the docs/skill rewrite. · `Solution` · `stable` · `unverified`
-

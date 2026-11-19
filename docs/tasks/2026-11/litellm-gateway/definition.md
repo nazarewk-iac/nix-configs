@@ -59,7 +59,7 @@ Full detail in [research.md](research.md). The decision-relevant points:
 3. **Config as code**: `hosts/etra/litellm.config.yaml` (or a data file) with
    `model_list` (brys first, oams when ready), `router_settings` with a sane
    timeout / retries / cooldowns / fallbacks, `litellm_settings.callbacks:
-   [prometheus]`, and `general_settings.master_key: os.environ/LITELLM_MASTER_KEY`.
+[prometheus]`, and `general_settings.master_key: os.environ/LITELLM_MASTER_KEY`.
 4. **Secrets** via `kdn.security.secrets.sops.files."litellm"` and a read-only
    bind mount into the guest.
 5. **Prometheus**: either a small scrape config added to the existing brys-side
@@ -101,11 +101,13 @@ Full detail in [research.md](research.md). The decision-relevant points:
 etra reaches brys (ping OK) but brys **drops etra** on both `39701` (compat proxy)
 and `443` (Caddy). Opening that needs a firewall change on brys, which was not
 done unattended. Steps to activate are in `hosts/etra/litellm.nix`:
+
 1. On brys, allow etra -> brys:39701.
 2. Set `autoStart = true`, rebuild etra.
 3. Clients use `http://<etra>:4000/v1` with the master key.
 
 ### Not done
+
 - Prometheus scrape of the gateway (brys has a Prometheus; etra does not yet).
 - Registering oams as a second backend (blocked on the same firewall question
   plus oams being a laptop with the serving toggle).
@@ -118,6 +120,7 @@ container -> host egress relay (10.233.100.1:8443) -> brys over NetBird
 (100.79.164.36:39704) -> llama-swap. Verified with a real chat completion.
 
 What it took beyond the initial code:
+
 - brys' llama-swap needs an API key: etra joined the `llms` sops recipients (its
   SSH host key) and mounts `/run/configs/llms`, passing the real key to LiteLLM.
 - the host firewall had to allow the egress port on `ve-litellm`, or the guest's
@@ -126,6 +129,7 @@ What it took beyond the initial code:
   on `nb-priv`.
 
 ### Still open
+
 - oams is not a backend (add once its serving toggle is proven).
 - Reachability from non-NetBird LAN peers: the ingress binds 0.0.0.0 but etra's
   firewall trusts only `nb-priv`; open 4000 on the LAN interface for plain clients.

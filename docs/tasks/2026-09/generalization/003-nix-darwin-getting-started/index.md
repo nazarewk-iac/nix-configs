@@ -17,4 +17,3 @@ generated: true
 
 - **[003 — nix-darwin getting-started runbook](definition.md)** — Write a nix-darwin getting-started runbook that takes an adopter from zero to a multi-arch build, with a caveats table built from this repo's own verified history. · `Task` · `stable` · `unverified`
 - **[003 — the nix-darwin getting-started runbook, landed](done.md)** — An adopter runbook that goes from a stock Apple Silicon Mac to one built x86_64-linux derivation, with a caveats table built only from this repository's own history. · `Solution` · `stable` · `unverified`
-

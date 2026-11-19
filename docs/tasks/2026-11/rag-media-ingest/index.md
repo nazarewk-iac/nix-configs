@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Media ingestion for the retrieval index](definition.md)** — Index images and the images inside documents by describing them with a vision model, then embedding the derived text next to a stable source reference (Ente asset, PDF page). Video is a stated future extension. · `Task` · `stable` · `unverified`
-

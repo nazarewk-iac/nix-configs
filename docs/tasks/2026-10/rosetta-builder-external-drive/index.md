@@ -17,4 +17,3 @@ generated: true
 
 - **[Move the Rosetta builder guest disk to an external drive on `anji`](definition.md)** — Move the Rosetta builder guest disk from the internal disk of host `anji` to an external drive by patching the upstream module in a fork. · `Task` · `stable` · `unverified`
 - **[Solution](done.md)** — The fork option `nix-rosetta-builder.workingDir` plus the slot pass-through put the guest on /anji-ext-01 before the first boot, so no guest was destroyed. TCC asked for no new grant. · `Solution` · `stable` · `unverified`
-

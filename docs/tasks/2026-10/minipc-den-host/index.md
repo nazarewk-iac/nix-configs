@@ -17,4 +17,3 @@ generated: true
 
 - **[A new x86 mini-PC, built by the supervised fleet](definition.md)** — Bring up a new x86 mini-PC as a den NixOS host in the manner of etra, installed from this repo's own ISO over USB-SFP networking, driven and evaluated by the supervised local-LLM fleet. · `Task` · `stable` · `unverified`
 - **[Research: the pieces this bring-up reuses](research.md)** — Verified facts for the mini-PC bring-up: how to build the repo's ISO, how etra registers a host and a KVM, what the switch fabric looks like, and what the NanoKVM aspect does on a NixOS host. · `Research` · `stable` · `unverified`
-

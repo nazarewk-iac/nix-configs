@@ -17,4 +17,3 @@ generated: true
 
 - **[`zellij-llm opencode` command group](done.md)** — Add a `zellij-llm opencode` command group (spawn/send/watch/list/attach) with devenv activation, tests, and agent-skill docs. · `Solution` · `stable` · `unverified`
 - **[`zellij-llm opencode`: drive OpenCode sessions in dedicated panes](definition.md)** — Add a `zellij-llm opencode` subcommand set to spawn, drive, and watch OpenCode sessions in dedicated zellij panes, activating devenv when a devenv.nix is present. · `Task` · `stable` · `unverified`
-

@@ -18,4 +18,3 @@ generated: true
 - **[005 — the conditional-imports requirement](definition.md)** — Write down what modules/meta actually solves — data-driven conditional imports of third-party modules — as a testable requirement any target framework must satisfy. · `Task` · `stable` · `unverified`
 - **[005 — the conditional-imports requirement, solved](done.md)** — The conditional-imports requirement, as a testable statement, plus the three-part conformance test that scores a candidate framework. · `Solution` · `stable` · `unverified`
 - **[005 — the measurements](research.md)** — The measurements behind the conditional-imports requirement — the four routes into imports, every imports site in the tree, the rest of modules/meta, and den's verdict. · `Research` · `stable` · `unverified`
-

@@ -19,14 +19,15 @@ kdn-llm-leaf-key.service: Main process exited, code=exited, status=128
 ```
 
 The YubiKey is not currently plugged into brys, so the sops recipient that lives on the YubiKey
-cannot decrypt. It is fine that the *secret* is unavailable — but the host and the rest of the fleet
+cannot decrypt. It is fine that the _secret_ is unavailable — but the host and the rest of the fleet
 work must not fail because of it. The current model is **sops-nix decrypts every secret at
 activation** (`sops-install-secrets.service`, ordered before the services), so a missing YubiKey
 turns into a failed unit (and `degraded` state) at boot/switch.
 
 **Requirement:**
+
 1. **Degrade gracefully** — brys boots and reaches `running` even with no YubiKey. A service that
-   needs a YubiKey-gated secret should fail (or wait) *only that service*, not the whole activation,
+   needs a YubiKey-gated secret should fail (or wait) _only that service_, not the whole activation,
    and never leave the system `degraded` merely because the key is unplugged.
 2. **Decrypt on usage** — when a consumer actually needs the secret and the YubiKey is now present,
    decryption happens on demand (and is retried), rather than all-or-nothing at boot.
@@ -46,7 +47,7 @@ decryptor with no per-secret lazy/on-demand path and no "wait for key" semantics
   - A small FUSE or tmpfiles+oneshot that populates `/run/secrets/<name>` lazily and re-runs on
     YubiKey insertion (udev/netlink or a timer).
 - How to express "this secret is YubiKey-gated" in `data/` so a consumer's dependency is a
-  *runtime* wait, not a build/activation requirement.
+  _runtime_ wait, not a build/activation requirement.
 - Keeping the non-YubiKey secrets eager (they should not regress) while making the YubiKey-gated ones
   lazy.
 - Whether to replace `sops-install-secrets` for these secrets, or wrap it per-service.

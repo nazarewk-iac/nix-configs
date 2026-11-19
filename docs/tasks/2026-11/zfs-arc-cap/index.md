@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Cap the ZFS ARC on every ZFS host](definition.md)** — Give every ZFS host a declarative, memory-relative ZFS ARC cap (default 8 GiB or 25% of RAM, whichever is lower), replacing the ad-hoc per-host kernelParam that only brys and now oams carry. · `Task` · `stable` · `unverified`
-

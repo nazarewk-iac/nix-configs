@@ -17,4 +17,3 @@ generated: true
 
 - **[Qwen3.8-Flash-Next on the W6600: a Vulkan GPU-offload specialisation](definition.md)** — Prepare a GPU-offload boot specialisation that puts the Qwen3.8-Flash-Next dense layers on the Radeon Pro W6600 with the Vulkan backend, and prove that the GPU helps at all. · `Task` · `stable` · `unverified`
 - **[Solution — Qwen3.8-Flash-Next on the W6600](done.md)** — Added the llm-qwen-gpu boot specialisation; the intended dense-layer offload is slower than CPU, so the final config offloads only the MTP draft head to the W6600 for +18.5% decode. · `Solution` · `stable` · `unverified`
-

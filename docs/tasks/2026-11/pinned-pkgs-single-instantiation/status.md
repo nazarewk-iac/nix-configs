@@ -16,8 +16,8 @@ timestamp: 2026-11-09T12:00:00+01:00
   - `jsonTemplate` (was inline in the sops module),
   - the `pythonMetadataCheck` fix (`cython_0`) and the `ceph` python-metadata override (were inline
     in `modules/universal/default.nix`).
-  Verified for `x86_64-linux`, `aarch64-linux`, `aarch64-darwin` (`hello` resolves on each; `cuda`
-  variant present).
+    Verified for `x86_64-linux`, `aarch64-linux`, `aarch64-darwin` (`hello` resolves on each; `cuda`
+    variant present).
 - `modules/den-pkgs/pin-module.nix` — opt-in `kdn.pkgs.{pin,variant}`. When pinned:
   `nixpkgs.pkgs = self.pkgs.<system>.<variant>`, `nixpkgs.overlays`/`nixpkgs.config` `mkForce`d
   empty (mutually exclusive with `pkgs`), and `home-manager.{useGlobalPkgs,useUserPackages}` forced
@@ -148,6 +148,7 @@ false changes HM's generated files (`home-manager-files`) and, downstream, `sshd
 pinned ≠ unpinned by construction until both modes agree.
 
 Next (needs a closure decision + measurement): either
+
 1. set `home-manager.useGlobalPkgs = true` fleet-wide as policy (then pinned == unpinned), verifying
    no closure change against the current tree; or
 2. keep HM independent and give a pinned host's HM the base overlays explicitly
@@ -163,7 +164,7 @@ checks before relying on them.
 `hosts/moss/default.nix` between the two evals. `builtins.getFlake "path:$PWD"` re-copies the tree
 to a store path keyed by the tree hash, so editing the host file changed `self`, and every
 `${self}/…` reference (e.g. the SSH CA at `data/ca`, the `git-credential-keyring` helper) moved —
-making *any* two evals of a changed tree differ regardless of pinning. Proof: with an **unchanged**
+making _any_ two evals of a changed tree differ regardless of pinning. Proof: with an **unchanged**
 tree and pin driven by an env var (`builtins.getEnv`), pinned and unpinned give the **same**
 `toplevel` drvPath.
 
@@ -177,7 +178,8 @@ tree and pin driven by an env var (`builtins.getEnv`), pinned and unpinned give 
 ~19.5 % faster, drvPaths **identical**.
 
 **Prerequisites applied:**
-- `fix(sops): use sops.package …` (commit `c8219974`) — the one *real* pkgs delta (age wrapper).
+
+- `fix(sops): use sops.package …` (commit `c8219974`) — the one _real_ pkgs delta (age wrapper).
 - `home-manager.useGlobalPkgs = true` fleet-wide (`modules/universal/default.nix:97`). Required:
   a pinned system has empty `nixpkgs.overlays`, so HM must use the system pkgs. oams (unpinned,
   multiGPU+HM) re-evaluated clean, so the flip is safe fleet-wide for eval.
@@ -194,13 +196,13 @@ variant for host-specific overlays: multiGPU on oams/brys). Build-verify moss/et
 
 Per-host pinned-vs-unpinned check (unchanged tree, env toggle) and eval times:
 
-| host | pinned vs unpinned | eval (unpinned→pinned) |
-| ---- | ------------------ | ---------------------- |
-| moss+etra | IDENTICAL | 77 s → 62 s (combined) |
-| briv | IDENTICAL | 67 s → 65 s |
-| anji | IDENTICAL | 102 s → 88 s |
-| brys | DIFF | 129 s → 76 s (unpinned baseline) |
-| oams | DIFF | 91 s → 67 s |
+| host      | pinned vs unpinned | eval (unpinned→pinned)           |
+| --------- | ------------------ | -------------------------------- |
+| moss+etra | IDENTICAL          | 77 s → 62 s (combined)           |
+| briv      | IDENTICAL          | 67 s → 65 s                      |
+| anji      | IDENTICAL          | 102 s → 88 s                     |
+| brys      | DIFF               | 129 s → 76 s (unpinned baseline) |
+| oams      | DIFF               | 91 s → 67 s                      |
 
 Combined one-process eval of the four pinned hosts (moss, etra, briv, anji): **145 s**, all drvs.
 
@@ -231,6 +233,7 @@ Goal: embed every host-specific overlay into the default pinned set where possib
 rest.
 
 **Embedded (possible):**
+
 - `supergfxctl` 5.2.1 (multi-GPU) → `modules/den-pkgs/overlays.nix`. The universal hw-gpu overlay
   applies it host-conditionally; the pinned base now carries the same static `callPackage`. Servers
   don't reference it, so their closure is unchanged.
@@ -266,6 +269,7 @@ pin in its `config` block (not inherited under `inheritParentConfig = false`); t
 then builds its own pkgs, matching the unpinned host.
 
 ### Per-device themes (by design, notified)
+
 The base ships the **darcula-kdn** recolored icon. A device that sets a **different**
 `stylix.base16Scheme`/palette produces a different `nixos-icons` and therefore must **not** pin
 against this base — give it its own pkgs variant (recomputed for that palette) or leave it unpinned.

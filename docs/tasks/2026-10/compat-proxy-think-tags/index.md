@@ -18,4 +18,3 @@ generated: true
 - **[brys streams show literal think tags](definition.md)** — brys model streams show literal &lt;think&gt; tags in OpenCode because the compat-proxy merges reasoning_content into content. · `Task` · `stable` · `unverified`
 - **[Research — why brys streams carry literal think tags](research.md)** — Evidence that the compat-proxy merges llama-server reasoning_content into content with literal think tags, so OpenCode cannot parse it. · `Research` · `stable` · `unverified`
 - **[Solution — keep reasoning_content separate in the compat-proxy](done.md)** — Emit llama-server reasoning in its own reasoning_content delta instead of merging it into content with literal think tags. · `Solution` · `stable` · `unverified`
-

@@ -18,4 +18,3 @@ generated: true
 - **[Design — two-router LLM split (DS4 frontier + small-set)](design.md)** — Split the brys LLM slot into two llama-server routers (DS4 frontier + freely-swapping small set) behind one front-facing endpoint, routed on the JSON model field in the compat-proxy. · `Design` · `stable` · `unverified`
 - **[The two-router LLM split, landed](done.md)** — Two llama-server routers behind one proxy endpoint — the frontier model stays resident while the small set swaps, and brys runs the split with a measured co-residency cost. · `Solution` · `stable` · `unverified`
 - **[Two-router LLM split](definition.md)** — Split the local LLM slot into two llama-server routers, so one frontier model stays hot while the small models swap freely behind one endpoint. · `Task` · `stable` · `unverified`
-

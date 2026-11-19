@@ -19,6 +19,7 @@ prisma-engines 6.x, and the package has **no generated Prisma client and no
 `litellm_proxy_extras`**.
 
 Consequences of DB-less (all confirmed from source earlier):
+
 - No virtual keys/budgets/spend logs/teams, no admin UI — only the master key and
   our custom static keys.
 - `/model/new` (runtime model add) needs a DB; discovered models need a restart.

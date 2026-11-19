@@ -18,4 +18,3 @@ generated: true
 - **[Flake update procedure — gaps and the corrected procedure](research.md)** — Findings and the corrected fork flake update procedure, with a fetch step, a reconcile branch per start state, and a completion check. · `Research` · `stable` · `unverified`
 - **[Repair the flake update procedure](definition.md)** — Repair the flake update procedure — add a fetch and a reconcile step, a start-state branch, a lock-structure check, and a completion check. · `Task` · `stable` · `unverified`
 - **[Repair the flake update procedure — solution](done.md)** — How the flake update procedure gaps were repaired — a fetch step, a start-state table, a structural lock gate, and a repaired push hook. · `Solution` · `stable` · `unverified`
-

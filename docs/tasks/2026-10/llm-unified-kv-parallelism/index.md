@@ -18,4 +18,3 @@ generated: true
 - **[Exploration: 320K ctx, `--parallel 4`, unified KV, and small-context sub-agents](research.md)** — Theoretical exploration of 320K ctx with --parallel 4 under unified KV, and how to allow smaller-context sub-agents (client vs server, on-demand vs preconfigured). · `Research` · `stable` · `unverified`
 - **[Status — deployed and measured on brys; client tiers fixed with server aliases](status.md)** — Unified KV + parallel 4 and the llm-small spin-out are deployed and measured on brys; the client tiers needed a server-alias fix. Remaining: llm-small boot test and a few throughput rows. · `Status` · `stable` · `unverified`
 - **[Unified KV cache + parallelism for brys, and evict the small-model router](definition.md)** — Give brys' DeepSeek router unified KV plus a parallel-slot mode, and stop the small-model router from competing with DS4 for the box. · `Task` · `stable` · `unverified`
-

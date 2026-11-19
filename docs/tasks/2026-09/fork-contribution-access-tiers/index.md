@@ -17,4 +17,3 @@ generated: true
 
 - **[Contribution by access tier — findings and designed procedures](research.md)** — Evidence on what each fork procedure assumes about push access, plus one designed contribution procedure per access tier. · `Research` · `stable` · `unverified`
 - **[Contribution procedures by access tier](definition.md)** — Define one contribution procedure per access tier, so a fork collaborator or an outside contributor sends a change with no loss and no leak. · `Task` · `stable` · `unverified`
-

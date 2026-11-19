@@ -20,4 +20,3 @@ generated: true
 ## Directories
 
 - **[migration](migration/index.md)** — 3 concepts: Research 1, Status 1, Task 1
-

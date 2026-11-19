@@ -16,4 +16,3 @@ generated: true
 ## Concepts
 
 - **[Split the Qwen CPU-only and GPU configs on `brys`](definition.md)** — Split the tangled Qwen llama-server knobs in hosts/brys/llm.nix into an explicit CPU-only config and an explicit GPU-offload config, so the W6600 choice is one named switch. · `Task` · `stable` · `unverified`
-
