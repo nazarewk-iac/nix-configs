@@ -110,4 +110,10 @@ in
   # `meta.platforms = [ "x86_64-linux" ]`, so an `aarch64-linux` evaluation refuses it.
   # Consumer: hosts/oams/default.nix:280, an x86_64-linux host.
   kdn-gamingctl = pkgs.callPackage ./kdn-gamingctl { };
+
+  # `strata` builds an FHS sandbox, and Strata publishes engine packages for
+  # linux-x86_64 only, so the package has no other target. `buildFHSEnvBubblewrap`
+  # does not exist on Darwin at all, hence the guard, not just `meta.platforms`.
+  # Consumer: none yet. `packages/strata/README.md` holds the measurements.
+  strata = pkgs.callPackage ./strata { };
 }
