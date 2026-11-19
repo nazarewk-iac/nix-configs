@@ -220,6 +220,8 @@ let
     in
     {
       aliases = m.aliases or [ ];
+      # A model that is not llama.cpp names a complete llama-swap command; the rest leave it null.
+      command = m.command or null;
       enable = c.enable or true;
       mainRouter = h.set;
       inherit (c) hfRepo hfFile;

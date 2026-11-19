@@ -473,23 +473,27 @@
           capabilities = lib.optionalAttrs (m.perf.contextSize != null) {
             context = m.perf.contextSize;
           };
-          cmd = lib.concatStringsSep " " (
-            [
-              (lib.getExe' (modelPackage name) "llama-server")
-              "--port"
-              "\${PORT}"
-              "--host"
-              cfg.server.host
-            ]
-            ++ swapFlags name
-            # Under swap the router's own `llama-cpp.preStart` no longer runs, so llama-swap
-            # assembles the same key file into its own cache directory (see `llama-swap.preStart`).
-            # Every child validates that bearer key with the same flag the router path uses.
-            ++ lib.optionals (cfg.apiKeyDir != null) [
-              "--api-key-file"
-              swapKeyFile
-            ]
-          );
+          cmd =
+            if m.command != null then
+              lib.concatStringsSep " " m.command
+            else
+              lib.concatStringsSep " " (
+                [
+                  (lib.getExe' (modelPackage name) "llama-server")
+                  "--port"
+                  "\${PORT}"
+                  "--host"
+                  cfg.server.host
+                ]
+                ++ swapFlags name
+                # Under swap the router's own `llama-cpp.preStart` no longer runs, so llama-swap
+                # assembles the same key file into its own cache directory (see `llama-swap.preStart`).
+                # Every child validates that bearer key with the same flag the router path uses.
+                ++ lib.optionals (cfg.apiKeyDir != null) [
+                  "--api-key-file"
+                  swapKeyFile
+                ]
+              );
         }
         // lib.optionalAttrs (m.aliases != [ ]) {
           inherit (m) aliases;
@@ -886,6 +890,19 @@
             Which router owns this model. `"main"` names the primary `services.llama-cpp` server on
             `server.port`. Any other value names the equal entry of `routers`. A model appears in
             exactly one router's preset INI.
+          '';
+        };
+
+        options.command = lib.mkOption {
+          type = lib.types.nullOr (lib.types.listOf lib.types.str);
+          default = null;
+          description = ''
+            A complete `cmd:` for llama-swap, replacing the generated `llama-server` invocation.
+
+            It exists for a model that is not llama.cpp at all: the command must serve an
+            OpenAI-compatible API on the port llama-swap passes through its PORT placeholder.
+            `perf.contextSize` still feeds `capabilities.context`, so a client reads
+            the window from `/v1/models` without starting the model.
           '';
         };
 

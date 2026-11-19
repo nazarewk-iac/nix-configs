@@ -300,6 +300,124 @@ in
       };
       contextSize = 1048576;
     };
+    # ------------------------------------------------------------------ Strata profiles
+    # Strata is not llama-server: each entry names a complete command instead of a generated
+    # llama-server invocation. `strata-serve` (hosts-den/brys/strata-serve.nix + .sh) materialises
+    # one profile config and runs `strata serve` in the foreground on the port llama-swap passes.
+    # The three profiles are mutually exclusive because they all sit in the `main` group; a switch
+    # costs one model load (about 30-60 s). Measured numbers:
+    # docs/tasks/2026-11/brys-r9700-model-fit/measurements.md
+    "qfn-max" = {
+      aliases = [
+        "chat-deep-slow"
+        "code-deep-slow"
+        "tools-deep-slow"
+        "reason-deep-slow"
+      ];
+      capabilities = {
+        rates = {
+          decode = 73.1;
+          prefill = 1900.0;
+          mode = "GPU";
+        };
+        loadSeconds = 60;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      command = [
+        "/run/current-system/sw/bin/strata-serve"
+        "max"
+        "--port"
+        "\${PORT}"
+      ];
+      hosts.brys = {
+        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
+        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
+        set = "retired";
+        servedContext = 1048576;
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+          perf.contextSize = 1048576;
+        };
+      };
+    };
+    "qfn-omni-max" = {
+      aliases = [ "chat-deep-slow-omni" ];
+      capabilities = {
+        rates = {
+          decode = 42.3;
+          prefill = 1000.0;
+          mode = "GPU";
+        };
+        loadSeconds = 60;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      command = [
+        "/run/current-system/sw/bin/strata-serve"
+        "omni-max"
+        "--port"
+        "\${PORT}"
+      ];
+      hosts.brys = {
+        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
+        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
+        set = "retired";
+        servedContext = 1048576;
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+          perf.contextSize = 1048576;
+        };
+      };
+    };
+    "qfn-omni-fast" = {
+      aliases = [ "chat-deep-slow-fast" ];
+      capabilities = {
+        rates = {
+          decode = 71.6;
+          prefill = 1300.0;
+          mode = "GPU";
+        };
+        loadSeconds = 60;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      command = [
+        "/run/current-system/sw/bin/strata-serve"
+        "omni-fast"
+        "--port"
+        "\${PORT}"
+      ];
+      hosts.brys = {
+        # Retired: llama-swap's sandbox blocks Strata's own file checks. Use
+        # `hack/brys-frontier.sh --profile` until the unit is relaxed.
+        set = "retired";
+        servedContext = 1048576;
+        common = {
+          enable = true;
+          hfFile = "IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf";
+          hfRepo = "surveyed";
+          download.enable = false;
+          perf.contextSize = 1048576;
+        };
+      };
+    };
+
     "qwen3.8-flash-next" = {
       # RE-ENABLED 2026-11-18 on the R9700, measured. The 2026-11-13 retirement was correct for
       # the 8 GB W6600 (2.36 t/s decode, CPU-only). The 32 GB R9700 runs the same model at
@@ -355,7 +473,9 @@ in
       # CPU prefill. Use the VL models for images.
       contextSize = 262144;
       hosts.brys = {
-        set = "main";
+        # Retired in favour of the `qfn-*` Strata profiles above; the llama.cpp path stays
+        # registered as the fallback and is one word from serving again.
+        set = "retired";
         # 64k, not 32k: at `nCpuMoe 26` the 64k KV cache costs the same VRAM as the 32k tune at
         # `nCpuMoe 24` (19.8 GiB) and decodes slightly faster (20.9 vs 20.4 t/s). Measured
         # 2026-11-18, docs/tasks/2026-11/brys-r9700-model-fit/measurements.md.

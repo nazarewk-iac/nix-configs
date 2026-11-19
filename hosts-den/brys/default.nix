@@ -642,6 +642,9 @@ in
         # Inbound-HTTPS rate limit, so a 100 GB model download cannot fill the 1 Gbit/s WAN.
         ./wan-shaping.nix
 
+        # The Strata engine and the `strata-serve` adaptor that llama-swap calls per profile.
+        ./strata-profiles.nix
+
         # The motherboard sensors: the Nuvoton NCT6798D behind the `nct6775` driver, plus the
         # libsensors labels. node_exporter picks them up through its `hwmon` collector.
         ./sensors.nix
