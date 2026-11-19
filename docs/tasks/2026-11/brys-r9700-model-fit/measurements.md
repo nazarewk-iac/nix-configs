@@ -695,22 +695,40 @@ Session _count_ is a different number from live slots:
 RAM is what bounds the middle tier, not the card: the card holds one expert cache shared by every
 slot.
 
-## Registering the profiles in llama-swap: built, blocked by the sandbox
+## Registering the profiles in llama-swap: works
 
-The three profiles can be expressed as llama-swap entries: the data model gained a `command` field
-that replaces the generated `llama-server` cmd, and `hosts-den/brys/strata-serve.sh` materialises a
-profile config and runs `strata serve --profile ... --port ${PORT}` in the foreground. The rendered
-config is exactly `cmd: /run/current-system/sw/bin/strata-serve omni-fast --port ${PORT}`.
+The three profiles are llama-swap models. A request for the alias starts the engine, and a request
+for another profile evicts it and starts that one, exactly like every other model in the fleet:
 
-It does not start inside llama-swap's unit. Three blockers were found and removed (read-only dataset,
-missing `HOME`, DynamicUser ownership), and the fourth remains: Strata refuses its own files under the
-unit's sandbox (`Strata is not allowed to open one of its own files`), even with `User = kdn` and
-`ReadWritePaths` on the dataset. `strata repair-access` reports nothing to fix, so the check is
-failing on a sandbox rule, not on ownership.
+| model           | alias                                                                     | profile                     | resident need |
+| --------------- | ------------------------------------------------------------------------- | --------------------------- | ------------- |
+| `qfn-max`       | `chat-deep-slow`, `code-deep-slow`, `tools-deep-slow`, `reason-deep-slow` | UD-IQ4_XS, whole card       | 55 GiB + KV   |
+| `qfn-omni-max`  | `chat-deep-slow-omni`                                                     | UD-IQ4_XS + 21.5 GB reserve | 55 GiB + KV   |
+| `qfn-omni-fast` | `chat-deep-slow-fast`                                                     | IQ2_XS + 21.5 GB reserve    | 35 GiB + KV   |
 
-The entries therefore sit `set = "retired"` in `data/llm.nix`; the working path is the CLI:
-`hack/brys-frontier.sh up --profile max|omni-max|omni-fast`. Finishing the integration needs one of:
-run llama-swap outside the sandbox for that unit, or find the exact rule Strata trips.
+Measured: first request of a **cold** pack took 837 s (55 GiB read from ZFS with an empty page
+cache); a switch to a **warm** pack took **47 s**. That is the cost of the swap: llama.cpp and
+Strata both reload the model, and only the file cache makes it quick.
+
+Three walls had to come down, found by an independent bisection with `systemd-run` (one property
+flipped per probe):
+
+1. **`ProtectHome=true`.** Strata keeps its per-user state in `$HOME/.local/state/strata` and
+   refuses a folder it does not own (`posix_owner.owner_only_wrong`, `runtime.py:79`). Under
+   `ProtectHome` the home is a root-owned read-only tmpfs, so the first `mkdir` fails and the CLI
+   prints "Strata is not allowed to open one of its own files" (exit 5). `strata repair-access` is a
+   Windows-ACL tool and correctly reports 0 entries on POSIX.
+2. **A real bug in the shared aspect.** `modules/den/aspects/llm.nix` listed `modelsDir` in **both**
+   `ReadOnlyPaths` and `ReadWritePaths`; systemd resolves that as read-only, so on every swap host
+   the model dataset was silently mounted RO. The duplicate line is removed.
+3. **`/var` is read-only under `ProtectSystem=strict`.** The account's home needs its own
+   `ReadWritePaths` entry, and the wrapper must point `ROCM_SHIM` at the dataset copy of the shim
+   because `/home` is hidden.
+
+The unit now runs as `llm-server` (owner of the data tree), with `ReadWritePaths` for `models`,
+`home` and `sessions`, and `ROCM_SHIM` pointing at `.bench/rocm-skip.so`. The standalone
+`strata-frontier` service stays as a manual fallback and no longer starts at boot, so nothing fights
+llama-swap for the card.
 
 ## The service account and the layout
 
