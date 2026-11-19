@@ -642,6 +642,10 @@ in
         # Inbound-HTTPS rate limit, so a 100 GB model download cannot fill the 1 Gbit/s WAN.
         ./wan-shaping.nix
 
+        # The motherboard sensors: the Nuvoton NCT6798D behind the `nct6775` driver, plus the
+        # libsensors labels. node_exporter picks them up through its `hwmon` collector.
+        ./sensors.nix
+
         # The LLM slot data, the host-side secrets/persistence, and the GPU runtime config. These are
         # plain modules, so they merge into this target exactly as they merged into the old host.
         llmHost.slot
