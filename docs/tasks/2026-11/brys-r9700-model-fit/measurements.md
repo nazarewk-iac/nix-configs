@@ -399,3 +399,44 @@ offloaded at 126 t/s — no CPU fallback.
   measured 188.4 → 203.2 t/s on Polish).
 - `--kv k8v4` is better than `q4_0` for agent work (prefill 1904 vs 1132 at 1M).
 
+### The full ladder, all at 1M with DFlash2 + k8v4
+
+| pack | size | quality | decode | prefill 10.5k | verdict |
+| --- | ---: | --- | ---: | ---: | --- |
+| IQ2_XS | 39.2 GB | below IQ3_S | **94.2** | 2103 | fastest, lowest quality |
+| IQ3_S | 54.8 GB | 87.7 % top-token | **81.0** | 1132 | Strata's "matches the full model on published tests" |
+| **Coder IQ1_M** | ~32 GB | 91 % SWE-bench, 99 % LiveCodeBench | **86.2** | 2250 | the coding pick; weaker outside code |
+| Swift IQ3_XXS | ~47 GB | ≈ IQ3_XXS | 63.0 | 947 | fewer thinking tokens, not more t/s |
+| UD-IQ4_XS | 93.7 GB | 88.9 % top-token | **73.1** | 1885 | no download needed, already on disk |
+| **UD-Q4_K_XL** | 111.3 GB | **93.1 % top-token** | **56.6** | 1626 | the highest quality that still clears 40 t/s |
+
+Every one of them clears 40 t/s at the model's 1M window, so quality is the only real choice. The
+two picks: **Coder IQ1_M** for code and agent loops, **UD-Q4_K_XL** for general work where the
+answer quality matters most.
+
+### Colocation with the top tier
+
+`UD-Q4_K_XL` at 1M with a 6 GB reserve, plus `qwen3.5-9b` fully offloaded on the same card:
+
+| round | Strata decode | 9B decode | VRAM |
+| ---: | ---: | ---: | ---: |
+| 1 | 53.1 | 87.3 | 31.0 of 31.8 GiB |
+| 2 | 60.4 | 87.9 | 31.0 of 31.8 GiB |
+
+So the **93.1 %-quality primary at 53-60 t/s runs beside a 9B at 88 t/s**. A 4B needs 6 GB of
+reserve; a 9B wants 7 GB to keep the same headroom (6 GB was tight at 31.0 of 31.8 GiB).
+
+### What the engine's own tuner said
+
+`--tune quick` on the winning config returned **"already fastest"**: the shipped defaults are the
+optimum on this host. No configuration was changed. That is a useful negative result — there is no
+hidden tuning gain left in the engine settings.
+
+### Variants that exist but are not a drop-in
+
+- **Abliterated / uncensored**: Strata can serve OrcaRouter's `Flash-Next Uncensored IQ3_XXS`, but
+  only through a manual pack conversion (`docs/ORCA.md`), not the installer menu. The llama.cpp
+  GGUFs of the abliterated variants cannot reach these speeds on this card.
+- **Swift 1.5** is the only fine-tune in the feed (shorter thinking). Its own 5.2 GB draft head is
+  required for DFlash2 and is downloaded once.
+
