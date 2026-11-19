@@ -307,18 +307,16 @@ in
     # The profiles are mutually exclusive (they share the `main` group) and a switch costs one
     # engine reload, 50-70 s. Measured: docs/tasks/2026-11/brys-r9700-model-fit/measurements.md
     #
-    # `qfn` is deliberately **profile-neutral**: it asks the manager for `auto`, which keeps
-    # whatever profile is current. So choosing a model in the harness never reloads the engine —
-    # the profile is chosen out of band (`POST /select` on :8181, or `hack/brys-frontier.sh up`).
-    # The two `qfn-omni-*` entries below are the explicit "force this profile" path for a caller
-    # that knows it needs the reserve, and they do pay the reload.
+    # Three names describe the frontier and that is the whole surface:
+    #
+    #   `qfn`        profile-neutral. It asks the manager for `auto`, which keeps whatever profile is
+    #                current, so a harness never reloads the engine by asking for it. A request that
+    #                is already in flight when somebody switches the profile is completed, not cut:
+    #                the manager drains the engine on a lease count (see strata-manager.py).
+    #   `qfn-max`    forces the `max` profile (UD-IQ4_XS on the whole card). Picking it reloads.
+    #   `qfn-colo`   forces the `omni-fast` profile (IQ2_XS + 21.5 GB reserve, the companion fits).
+    #                Picking it reloads. `omni-max` stays reachable through the manager API only.
     "qfn" = {
-      aliases = [
-        "chat-deep-slow"
-        "code-deep-slow"
-        "tools-deep-slow"
-        "reason-deep-slow"
-      ];
       capabilities = {
         rates = {
           decode = 73.1;
@@ -350,8 +348,8 @@ in
         };
       };
     };
-    "qfn-omni-max" = {
-      aliases = [ "chat-deep-slow-omni" ];
+    "qfn-max" = {
+      aliases = [ ];
       capabilities = {
         rates = {
           decode = 42.3;
@@ -364,10 +362,10 @@ in
       gpu = true;
       contextSize = 1048576;
 
-      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      # Forces the whole-card profile; a caller that asks for this name pays the reload.
       command = [
         "/run/current-system/sw/bin/strata-select"
-        "omni-max"
+        "max"
         "--port"
         "\${PORT}"
       ];
@@ -383,8 +381,8 @@ in
         };
       };
     };
-    "qfn-omni-fast" = {
-      aliases = [ "chat-deep-slow-fast" ];
+    "qfn-colo" = {
+      aliases = [ ];
       capabilities = {
         rates = {
           decode = 71.6;
@@ -397,7 +395,7 @@ in
       gpu = true;
       contextSize = 1048576;
 
-      # The complete llama-swap command for this profile (hosts-den/brys/strata-serve.sh).
+      # Forces the colocation profile: the pack plus the 21.5 GB reserve the companion needs.
       command = [
         "/run/current-system/sw/bin/strata-select"
         "omni-fast"
@@ -428,12 +426,11 @@ in
       # The quant moved to `UD-IQ1_S` (62 GB, 3 shards). `UD-IQ4_XS` (the old 88 GB 3-shard set)
       # leaves too little RAM for the KV cache plus a co-resident model, and it is a stale
       # upstream revision. The measured 32k tune does not transfer to another quant.
-      aliases = [
-        "chat-deep-slow"
-        "code-deep-slow"
-        "tools-deep-slow"
-        "reason-deep-slow"
-      ];
+      # No aliases: this llama.cpp path is the fallback behind the Strata `qfn` entries, which own
+      # the frontier names now. Once those four names were collapsed to `qfn` / `qfn-max` /
+      # `qfn-colo` / `qwen3-omni`, keeping a second model on the same alias would make the gateway
+      # expose a name that resolves to whichever model folded last.
+      aliases = [ ];
       capabilities = {
         # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 26`,
         # 64k context, mmap load. Not an estimate.
@@ -1235,8 +1232,8 @@ in
         };
       };
     };
-    "qwen3-omni-30b-a3b" = {
-      aliases = [ "audio-std-mid" ];
+    "qwen3-omni" = {
+      aliases = [ ];
       capabilities = {
         loadSeconds = 20;
         operation = "gpu";

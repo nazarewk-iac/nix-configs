@@ -67,7 +67,34 @@ in
     baseURL = "https://litellm.etra.priv.nb.net.int.kdn.im/v1";
     # Non-admin client key (all models), not the master key.
     apiKeyFile = "/run/configs/llms/litellm/client-key";
-    discovery.enable = true;
+    # Static, not discovered. Measured 2026-11-20: a discovery-only provider is listed by
+    # `opencode models` but `opencode run --model litellm/<id>` answers "Model unavailable" —
+    # opencode validates the id against the static catalog before the discovery plugin's
+    # `models.set` runs. The four names are the fleet's whole local surface at the gateway, so
+    # declaring them is both smaller and deterministic.
+    discovery.enable = false;
+    models = {
+      qfn = {
+        name = "qfn";
+        context = 1048576;
+        output = 32768;
+      };
+      qfn-max = {
+        name = "qfn-max";
+        context = 1048576;
+        output = 32768;
+      };
+      qfn-colo = {
+        name = "qfn-colo";
+        context = 1048576;
+        output = 32768;
+      };
+      qwen3-omni = {
+        name = "qwen3-omni";
+        context = 16384;
+        output = 8192;
+      };
+    };
   };
 
   # On oams itself, keep a direct loopback path to the local llama-swap so this
