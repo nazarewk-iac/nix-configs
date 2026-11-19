@@ -1120,14 +1120,14 @@ in
       aliases = [ "audio-std-mid" ];
       capabilities = {
         loadSeconds = 20;
-        operation = "cpu";
+        operation = "gpu";
       };
       vision = true;
-      gpu = false;
+      gpu = true;
       contextSize = 32768;
       hosts.brys = {
         set = "surveyed";
-        servedContext = 32768;
+        servedContext = 16384;
         common = {
           download = {
             enable = false;
