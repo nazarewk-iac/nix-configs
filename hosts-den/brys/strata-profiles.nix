@@ -1,16 +1,71 @@
-# The Strata profiles llama-swap can switch between.
+# The account that runs the local LLM stack on brys.
 #
-# Strata is not llama-server, so it cannot use the generated `cmd`. The llm aspect accepts a
-# complete `command` for exactly this case, and `strata-serve` is the foreground adaptor: it
-# materialises one profile config and execs `strata serve` on the port llama-swap passes.
+# Why a dedicated account: Strata refuses files that another user owns ("not allowed to open one of
+# its own files"), so it must run as the owner of its data tree. It also must not run as a human
+# account: the engine pins tens of GB and holds the GPU.
 #
-# The three profiles and their measured numbers are in
-# docs/tasks/2026-11/brys-r9700-model-fit/measurements.md.
+# `max` is the default profile: the frontier alone on the whole card, which is the fastest single
+# model this host has. `omni-max` and `omni-fast` reserve 21.5 GB for qwen3-omni-30b (video/audio)
+# and trade about a third of the frontier's decode for it.
 { lib, pkgs, ... }:
+let
+  # The KFD shim: ROCm 7.2 aborts `hsa_init` because the RX 550 (gfx803) reports a deprecated
+  # doorbell type. The shim hides that node from the topology reads the runtime makes. Built from
+  # the repo source so it never drifts from hack/rocm-skip-legacy-gpu.c.
+  rocmShim = pkgs.stdenv.mkDerivation {
+    pname = "rocm-skip-legacy-gpu";
+    version = "1";
+    src = ../../hack/rocm-skip-legacy-gpu.c;
+    dontUnpack = true;
+    buildPhase = ''
+      $CC -shared -fPIC -O2 -o rocm-skip.so "$src" -ldl
+    '';
+    installPhase = ''
+      mkdir -p $out/lib
+      cp rocm-skip.so $out/lib/
+    '';
+  };
+
+  # The profile the service starts with. Change this one value, or run
+  # `hack/brys-frontier.sh up --profile <name>` for a one-off.
+  defaultProfile = "max";
+
+  # One parent for everything the LLM stack owns, so a second machine can share it by mounting the
+  # same datasets. `models` and `engines` live on usr/data, `sessions` on usr/cache, `home` on
+  # usr/data. The engine tree keeps its path: the Terminal's venv hardcodes it.
+  llmsRoot = "/var/lib/kdn/llms";
+  engines = "${llmsRoot}/models/.bench";
+  dataHome = "${engines}/xdg";
+
+  # The llm-swap entry point: materialises a profile and serves it in the foreground.
+  strataServe = pkgs.writeShellScriptBin "strata-serve" ''
+    export PATH=${
+      pkgs.lib.makeBinPath [
+        pkgs.python3
+        pkgs.coreutils
+      ]
+    }:$PATH
+    exec ${pkgs.bash}/bin/bash ${./strata-serve.sh} "$@"
+  '';
+in
 {
-  # llama-swap starts its models inside its own systemd sandbox, where bubblewrap cannot create a
-  # user namespace, so the FHS wrapper is unusable for a model command. nix-ld runs the Terminal's
-  # bundled CPython in place instead, which needs no namespace at all.
+  # ---------------------------------------------------------------- the service account
+  # A high, fixed pair out of every dynamic-assignment pool, so the UID/GID mean the same thing on
+  # every machine that shares the LLM tree. `isSystemUser` cannot be used: it asserts uid < 1000.
+  users.groups.llm-server = {
+    gid = 67890;
+  };
+  users.users.llm-server = {
+    isSystemUser = true;
+    group = "llm-server";
+    uid = 968;
+    home = "${llmsRoot}/home";
+    createHome = true;
+    description = "Generic LLMs runner account";
+  };
+
+  # nix-ld runs the Terminal's bundled CPython in place; the FHS wrapper cannot be used because a
+  # systemd sandbox forbids the user namespace bubblewrap needs.
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
@@ -20,26 +75,50 @@
     ];
   };
 
-  # The Strata profiles must write settings, logs and their runtime state into the model dataset,
-  # and llama-swap's unit sandboxes that path read-only. This grants exactly that one directory.
-  # Strata refuses files that another user owns ("not allowed to open one of its own files"), and
-  # a DynamicUser has a random UID. A fixed service user is the smallest change that lets llama-swap
-  # spawn the Strata profiles at all; the dataset below is already kdn-owned.
-  systemd.services.llama-swap.serviceConfig = {
-    DynamicUser = lib.mkForce false;
-    User = "kdn";
-    Group = "users";
-    ReadWritePaths = [ "/var/lib/kdn/llms/models/.bench" ];
+  environment.systemPackages = [
+    pkgs.kdn.strata
+    strataServe
+  ];
+
+  # ---------------------------------------------------------------- Strata as a service
+  systemd.services.strata-frontier = {
+    description = "Strata frontier (Qwen3.8-Flash-Next) on :8080";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    # The engine holds a pinned arena of tens of GB and the GPU.
+    serviceConfig = {
+      Type = "simple";
+      User = "llm-server";
+      Group = "llm-server";
+      LimitMEMLOCK = "infinity";
+      Restart = "on-failure";
+      RestartSec = "10s";
+      # 55 GiB of experts plus the conversation cache; leave the desktop a margin.
+      MemoryMax = "112G";
+      Environment = [
+        "HOME=${llmsRoot}/home"
+        "XDG_DATA_HOME=${dataHome}"
+        "LD_PRELOAD=${rocmShim}/lib/rocm-skip.so"
+        "STRATA_DATA_HOME=${dataHome}"
+      ];
+      ExecStart = "${strataServe}/bin/strata-serve ${defaultProfile} --port 8080";
+    };
   };
 
-  environment.systemPackages = [
-    # The FHS wrapper from `nix build .#strata`, so `strata serve` starts on NixOS.
-    pkgs.kdn.strata
-    # llama-swap runs its `cmd` with a fixed PATH that holds neither `python3` nor the system
-    # profile, so the wrapper pins both instead of trusting the caller's environment.
-    (pkgs.writeShellScriptBin "strata-serve" ''
-      export PATH=${pkgs.lib.makeBinPath [ pkgs.python3 pkgs.coreutils ]}:$PATH
-      exec ${pkgs.bash}/bin/bash ${./strata-serve.sh} "$@"
-    '')
+  # ---------------------------------------------------------------- llama-swap shares the account
+  systemd.services.llama-swap.serviceConfig = {
+    DynamicUser = lib.mkForce false;
+    User = lib.mkForce "llm-server";
+    Group = lib.mkForce "llm-server";
+    ReadWritePaths = [ "/var/lib/kdn/llms/models" ];
+  };
+
+  # The data tree belongs to the engine user, and everyone may read the models.
+  systemd.tmpfiles.rules = [
+    "d ${engines} 0755 llm-server llm-server -"
+    "d ${dataHome} 0755 llm-server llm-server -"
+    "d ${llmsRoot}/home 0755 llm-server llm-server -"
+    # A stable copy of the shim for hand-run servers; the service uses the store path directly.
+    "C+ ${engines}/rocm-skip.so 0644 llm-server llm-server - ${rocmShim}/lib/rocm-skip.so"
   ];
 }

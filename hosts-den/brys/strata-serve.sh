@@ -19,7 +19,7 @@ set -uo pipefail
 DATA=${STRATA_DATA_HOME:-/var/lib/kdn/llms/models/.bench/xdg}
 INSTALL="$DATA/strata/install"
 PROFILES="$DATA/strata/profiles"
-SHIM=${ROCM_SHIM:-/home/kdn/.local/lib/rocm-skip.so}
+SHIM=${ROCM_SHIM:-/var/lib/kdn/llms/models/.bench/rocm-skip.so}
 [ -r "$SHIM" ] && export LD_PRELOAD="$SHIM"
 # llama-swap runs this as a DynamicUser with no home; Strata derives a data path from HOME.
 export HOME="${HOME:-${RUNTIME_DIRECTORY:-/tmp}}"

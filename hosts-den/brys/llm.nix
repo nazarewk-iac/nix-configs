@@ -84,6 +84,14 @@ in
         # the models; the download script keeps files 644 / dirs 755.
         mode = "0755";
       }
+      {
+        # HOME for the `llm-server` account that runs Strata and llama-swap. Same dataset as the
+        # models, so a second machine can share the whole LLM tree by mounting it.
+        directory = "/var/lib/kdn/llms/home";
+        mode = "0750";
+        user = "llm-server";
+        group = "llm-server";
+      }
     ];
 
     # Keep the llama-server session cache on the persistent usr/cache dataset.
@@ -146,6 +154,7 @@ in
     ];
 
     users.groups.llm-stats = { };
+
     users.users.llm-stats = {
       isSystemUser = true;
       group = "llm-stats";
