@@ -38,18 +38,18 @@ fit curves: [measurements.md](measurements.md).
 **Status 2026-11-18: measured, not estimated.** The R9700 ran every downloaded model, the frontier
 fits, and the numbers are in `measurements.md`.
 
-| # | Model | Harness | Resident need | Fits? | Measured decode |
-|---|---|---|---|---:|---|
-| 1 | Qwen3.8-Flash-Next GSQ-RCO `IQ2_XS` | **Strata (HIP)** | 63 GiB | yes | **66.7 t/s** at 256k, prefill 2779 t/s |
-| 1b | Qwen3.8-Flash-Next `UD-IQ1_S` | llama.cpp Vulkan, `n-cpu-moe 26` @ 64k | 62 GB | yes | **30.9 t/s** empty context, **21.9 t/s** served at 64k |
-| 2 | Qwen3.8-Flash-Next + `qwen3.5-4b` | llama.cpp Vulkan, both resident | 23.0 GiB VRAM | yes | **21.9 t/s** frontier + **125.4 t/s** small |
-| 3 | GLM-5.3-Flash 321B `UD-IQ2_XXS` | llama.cpp Vulkan, `n-cpu-moe 36`, 16 threads | 102 GB | yes | **8.9 t/s** (CPU-bound) |
-| 4 | Qwen3.5-35B-A3B | llama.cpp Vulkan, all layers on GPU | 20.5 GB VRAM | yes | **120.7 t/s** |
-| 5 | Gemma-4-26B-A4B | llama.cpp Vulkan, all layers on GPU | 13.4 GB VRAM | yes | **134.0 t/s** |
-| 6 | Dense 27–31B (qwen3.8-27b, gemma-4-31b) | llama.cpp Vulkan, all layers on GPU | 15–17 GB VRAM | yes | **30–32 t/s** |
-| 7 | Qwen3.8-Flash-Next `UD-IQ1_S` | BigMoeOnEdge `--auto` | 62 GB | yes | 8.2 t/s (worse than llama.cpp) |
-| 8 | DeepSeek V4.1-Flash `UD-IQ1_S` 233 GB | any | 233 GB+ | **no** | exceeds 157 GB combined |
-| 9 | Qwen3.8-Flash-Next `Q8_0` 188 GB | any | 188 GB | **no** | exceeds RAM |
+| #   | Model                                   | Harness                                      | Resident need |  Fits? | Measured decode                                        |
+| --- | --------------------------------------- | -------------------------------------------- | ------------- | -----: | ------------------------------------------------------ |
+| 1   | Qwen3.8-Flash-Next GSQ-RCO `IQ2_XS`     | **Strata (HIP)**                             | 63 GiB        |    yes | **66.7 t/s** at 256k, prefill 2779 t/s                 |
+| 1b  | Qwen3.8-Flash-Next `UD-IQ1_S`           | llama.cpp Vulkan, `n-cpu-moe 26` @ 64k       | 62 GB         |    yes | **30.9 t/s** empty context, **21.9 t/s** served at 64k |
+| 2   | Qwen3.8-Flash-Next + `qwen3.5-4b`       | llama.cpp Vulkan, both resident              | 23.0 GiB VRAM |    yes | **21.9 t/s** frontier + **125.4 t/s** small            |
+| 3   | GLM-5.3-Flash 321B `UD-IQ2_XXS`         | llama.cpp Vulkan, `n-cpu-moe 36`, 16 threads | 102 GB        |    yes | **8.9 t/s** (CPU-bound)                                |
+| 4   | Qwen3.5-35B-A3B                         | llama.cpp Vulkan, all layers on GPU          | 20.5 GB VRAM  |    yes | **120.7 t/s**                                          |
+| 5   | Gemma-4-26B-A4B                         | llama.cpp Vulkan, all layers on GPU          | 13.4 GB VRAM  |    yes | **134.0 t/s**                                          |
+| 6   | Dense 27–31B (qwen3.8-27b, gemma-4-31b) | llama.cpp Vulkan, all layers on GPU          | 15–17 GB VRAM |    yes | **30–32 t/s**                                          |
+| 7   | Qwen3.8-Flash-Next `UD-IQ1_S`           | BigMoeOnEdge `--auto`                        | 62 GB         |    yes | 8.2 t/s (worse than llama.cpp)                         |
+| 8   | DeepSeek V4.1-Flash `UD-IQ1_S` 233 GB   | any                                          | 233 GB+       | **no** | exceeds 157 GB combined                                |
+| 9   | Qwen3.8-Flash-Next `Q8_0` 188 GB        | any                                          | 188 GB        | **no** | exceeds RAM                                            |
 
 **Strata wins outright** on this card: 66.7 t/s decode and 2779 t/s prefill at the native 256k,
 against 21.9 / 255 for llama.cpp at 64k. The price is that Strata reads only its own GSQ-RCO packs,
@@ -70,13 +70,13 @@ Strix-Halo-only.
 
 Add a hardware tag to every row, and an engine tag to every new row:
 
-| Tag | Meaning |
-| --- | --- |
-| `gpu-w6600` | Radeon Pro W6600, 8 GB, RDNA2, gfx1032 — all rows before 2026-11-17 |
-| `gpu-r9700` | Radeon AI PRO R9700, 32 GB, RDNA4, gfx1201 — new rows |
-| `gpu-rx6800m` | RX 6800M, 12 GB, RDNA2, gfx1031 — oams |
-| `cpu` | no GPU used |
-| `engine=llamacpp` / `strata` / `maya` / `ik-llamacpp` / `tandem` | engine used for the row |
+| Tag                                                              | Meaning                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `gpu-w6600`                                                      | Radeon Pro W6600, 8 GB, RDNA2, gfx1032 — all rows before 2026-11-17 |
+| `gpu-r9700`                                                      | Radeon AI PRO R9700, 32 GB, RDNA4, gfx1201 — new rows               |
+| `gpu-rx6800m`                                                    | RX 6800M, 12 GB, RDNA2, gfx1031 — oams                              |
+| `cpu`                                                            | no GPU used                                                         |
+| `engine=llamacpp` / `strata` / `maya` / `ik-llamacpp` / `tandem` | engine used for the row                                             |
 
 Proposed column change for the measured-model table in `docs/local-llms.md`:
 
@@ -114,3 +114,21 @@ change after that session finishes.
 - `docs/tasks/2026-10/llm-benchmark-suite/003-runner-eval/` — the earlier runner survey for the
   8 GB card.
 - `docs/tasks/2026-11/oams-llm-host/` — the measured Strata numbers on 12 GB.
+
+## Answer to "highest quality at 40+ t/s, colocated"
+
+Measured 2026-11-19, all with Strata at the 1M window, DFlash2 drafting and `k8v4` KV:
+
+| role                         | pack                     |       decode | why                                                                              |
+| ---------------------------- | ------------------------ | -----------: | -------------------------------------------------------------------------------- |
+| **general, highest quality** | **UD-Q4_K_XL** (111 GB)  | **56.6 t/s** | 93.1 % top-token agreement with Q8_0 — the closest to lossless that fits 125 GiB |
+| **coding / agent loops**     | **Coder IQ1_M** (~32 GB) | **86.2 t/s** | 91 % SWE-bench, 99 % LiveCodeBench, and the fastest of the high-quality packs    |
+| balanced                     | IQ3_S (54.8 GB)          |     81.0 t/s | 87.7 % top-token, Strata's own "matches the full model" size                     |
+| cheapest to try              | UD-IQ4_XS (93.7 GB)      |     73.1 t/s | already on disk; 88.9 % top-token                                                |
+
+**Colocation works with `--set vram-reserve-mib=6000`**: the top-tier model keeps 53-60 t/s while a
+9B runs fully offloaded at 88 t/s on the same card (31.0 of 31.8 GiB). Use 6 GB of reserve for a
+4B, 7 GB for a 9B.
+
+The served recommendation: **Coder IQ1_M at 1M for coding, UD-Q4_K_XL at 1M for general work**, both
+with DFlash2 + k8v4, and a 6-7 GB reserve when a small helper model should stay resident.
