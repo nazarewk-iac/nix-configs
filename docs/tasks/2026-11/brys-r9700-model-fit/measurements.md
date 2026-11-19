@@ -490,3 +490,82 @@ reserve already buys. The only case where it wins is a workload that must keep a
 R9700 untouched _and_ needs a second model at the same time; nothing measured here does. It would
 also take the second x16 slot, and although the R9700 currently holds x16 on its own root port, a
 second card can only add failure modes to a host with a known power-on fault.
+
+## Mode audit: everything QFN can do is reachable in Strata
+
+Qwen3.8-Flash-Next is text + images, 1M context, thinking, and an MTP head. Strata exposes all of it;
+each row below was exercised on brys.
+
+| QFN mode           | Strata switch                                                                        | proved                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| text               | default                                                                              | every measurement here                                                        |
+| **images**         | `--vision gpu` (the 0.9 GB `strata-vision-hip` reader)                               | a 256x256 red PNG answered **"red"**, 89 prompt tokens, 220 t/s prefill       |
+| 1M context         | `--context 1m` (rope scaling above 256k)                                             | 94.2 / 81.0 / 73.1 / 56.6 t/s by pack                                         |
+| thinking           | `reasoning_effort`, `chat_template_kwargs.enable_thinking`                           | a 16-token cap is consumed by thinking and returns empty content, as expected |
+| MTP / speculation  | `--mtp on --drafting dflash2`                                                        | +27 % decode                                                                  |
+| concurrency        | `--parallel N`                                                                       | 4 slots at 256k, +5 GiB RAM, 79.4 t/s single request                          |
+| KV formats         | `--kv int8 / q4_0 / k8v4`                                                            | measured above                                                                |
+| prompt reuse       | `--prompt-cache N`, `--prompt-cache-every`, `--prompt-cache-spread`, `strata_prefix` | documented; one pinned prefix per engine                                      |
+| conversation reuse | `--conversation-cache-mib`, `--conversation-cache-slots`                             | parks the K/V of alternating conversations in host RAM                        |
+| disk persistence   | `slot_save_path` + `POST /slots/0?action=save\|restore`                              | session files                                                                 |
+| API surface        | OpenAI **and** Anthropic, `/metrics` in vLLM names, MCP servers                      | documented                                                                    |
+
+Audio and video are **not** QFN modes; they need the companion model below.
+
+## KV, context reuse and what can be parked
+
+Measured: **about 10 KB per token** with `k8v4` (13.7 KB for `int8`), held in **host RAM**, with a
+32k attention window in VRAM. That makes context a RAM question, not a card question.
+
+| budget                            | tokens of context it buys |
+| --------------------------------- | ------------------------: |
+| 2.6 GiB                           |                      256k |
+| 5.2 GiB                           |                      512k |
+| 10.4 GiB                          |                        1M |
+| 25 GiB (the headroom at 1M today) |                     ~2.5M |
+
+Reuse, three levels:
+
+1. **Checkpoints inside one conversation** — `--prompt-cache N` keeps N marks, `--prompt-cache-every`
+   sets the interval, `--prompt-cache-spread` thins them geometrically so an agent that rewrites a
+   few thousand tokens back resumes near the edit. `strata_prefix` pins one document boundary, so
+   20 questions about one document cost one read.
+2. **Parked conversations** — `--conversation-cache-mib` keeps whole K/V images of idle conversations
+   in host RAM. The default is 40 % of the RAM left above the floor, **capped at 8 GiB**, which is
+   about **800k tokens** of parked context; raising the cap to 25-40 GiB parks 2.5-4M tokens.
+3. **Disk** — session files (`slot_save_path`, `POST /slots/0?action=save|restore`) move a conversation
+   out of RAM entirely and bring it back later. That is the way to keep many long threads without
+   paying RAM for all of them.
+
+## Fine-tuning QFN locally: not a lever
+
+The model is 125B (180B with the n-gram table and MTP head). A LoRA still needs the frozen weights in
+compute precision plus activations: bf16 is ~360 GB, and even a 4-bit QLoRA needs the full forward pass
+through every expert it touches. On 32 GB of VRAM + 125 GiB of RAM there is no configuration that
+trains it in useful time; a single epoch over a modest dataset would run for weeks at the throughput
+measured here.
+
+What does work, and costs nothing:
+
+- **Retrieval over the transcripts** instead of weight updates — an index beside the model gives the
+  same "knows my sessions" effect without touching 125B parameters.
+- The engine-side levers already measured: DFlash2 (+27 %), `k8v4`, `--draft-vocab latin`,
+  `--tune` (already optimal), and `STRATA_KVA=1` for long prompts (+28 % prompt on this card,
+  measured by Strata on an R9700 with IQ3_S, at -11 % decode).
+- `STRATA_CACHE_MESSAGE_BOUNDARY=1` for agent loops that edit the last user message.
+
+## Companion for audio and video
+
+|                     | qwen3-omni-30b-a3b                                                                               | gemma-4-e4b                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| size                | 17.3 GB                                                                                          | 4.8 GB                                       |
+| modalities          | **audio + video + text**                                                                         | audio + images + text                        |
+| speed alone         | 171 t/s                                                                                          | 128 t/s                                      |
+| speed beside Strata | **84 t/s** at a 17 GB reserve                                                                    | 128 t/s at a 6 GB reserve                    |
+| accuracy            | SOTA among open audio models (32 benchmarks, ~Gemini-2.5-Pro; 19 ASR languages, 40-min sessions) | best in its size class, but a 4B-class model |
+| video               | **yes**                                                                                          | no                                           |
+
+**For video, the answer is `qwen3-omni-30b-a3b`**: it is the only one of the two that reads video with
+its audio track. It costs the frontier ~30 % (81 → 56 t/s at a 17 GB reserve) and returns 84 t/s on
+the companion. `qwen3-vl-30b-a3b` (170 t/s) is the alternative when only frames matter and the audio
+track does not.
