@@ -569,3 +569,35 @@ What does work, and costs nothing:
 its audio track. It costs the frontier ~30 % (81 → 56 t/s at a 17 GB reserve) and returns 84 t/s on
 the companion. `qwen3-vl-30b-a3b` (170 t/s) is the alternative when only frames matter and the audio
 track does not.
+
+## The chosen stack: QFN + omni, and why UD-IQ4_XS is the pack
+
+`qwen3-omni-30b-a3b` is the only local model that reads **video with its audio track**. Its real
+footprint with the projector at an 8k context is **20 GiB of VRAM** (17.3 GB of weights plus the
+mmproj, KV and buffers), not 17. That reserve is the number the frontier has to live with.
+
+| QFN pack      | top-token vs Q8_0 |          frontier at a 20 GB reserve |           RAM after both load | verdict                                                        |
+| ------------- | ----------------: | -----------------------------------: | ----------------------------: | -------------------------------------------------------------- |
+| UD-Q4_K_XL    |            93.1 % |                        40.4-41.4 t/s |  118 GiB used, **7 GiB free** | fits, but leaves nothing for a cache or the desktop            |
+| **UD-IQ4_XS** |        **88.9 %** |                    **49.8-54.8 t/s** | 104 GiB used, **21 GiB free** | **the pick**: quality, speed and 1.5M tokens of parked context |
+| IQ3_S         |            87.7 % | ~56 t/s (est. from 81 at no reserve) |                  ~90 GiB used | more headroom, a lower quality tier                            |
+
+Settings that produced those numbers, all measured on this card:
+
+| knob                                 | value     | effect                                       |
+| ------------------------------------ | --------- | -------------------------------------------- |
+| `--drafting dflash2` + `--mtp on`    | on        | +27 % decode                                 |
+| `--kv k8v4`                          | on        | 23 % less KV, better prefill than `q4_0`     |
+| `--set kv-resident=4096`             | 4k tokens | +10-15 % decode (older K/V is read from RAM) |
+| `--set vram-reserve-mib=20000`       | 20 GB     | room for omni at full offload                |
+| `--set conversation-cache-mib=15000` | 15 GB     | ~1.5M tokens of parked conversations         |
+| `--set memory-limit-mib=112000`      | 112 GB    | keeps a margin for the desktop               |
+| `--set pcie-frac=0.6`                | —         | **worse** (39 → 31 t/s); do not use          |
+| `--draft-vocab latin`                | on        | free for English, +8 % on Polish per Strata  |
+
+`hack/brys-frontier.sh up` starts exactly that configuration.
+
+**oams cannot run omni usefully.** The same file on the 12 GB RX 6800M: 13.6 t/s at `ncmoe 40`,
+14.7 at 32, **17.5 t/s at 24** (12 GiB of VRAM, the rest of the experts on the laptop CPU). brys
+gives 157-160 t/s for the same model. The 9x gap is the card plus DDR4 on a full desktop CPU; the
+companion belongs on brys.
