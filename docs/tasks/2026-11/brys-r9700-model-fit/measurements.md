@@ -711,3 +711,38 @@ failing on a sandbox rule, not on ownership.
 The entries therefore sit `set = "retired"` in `data/llm.nix`; the working path is the CLI:
 `hack/brys-frontier.sh up --profile max|omni-max|omni-fast`. Finishing the integration needs one of:
 run llama-swap outside the sandbox for that unit, or find the exact rule Strata trips.
+
+## The service account and the layout
+
+The LLM stack on brys runs as a dedicated account, not as a human login:
+
+| item        | value                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| account     | `llm-server`, uid/gid **67890** (out of every dynamic pool, so it means the same on a second machine) |
+| description | "Generic LLMs runner account"                                                                         |
+| shell       | `nologin`, no password, `home-manager.users` never instantiates it (only `kdn` and `root` do)         |
+| HOME        | `/var/lib/kdn/llms/home`                                                                              |
+
+One parent for everything, so a second machine shares it by mounting the same datasets:
+
+| path                              | dataset   | holds                                                  |
+| --------------------------------- | --------- | ------------------------------------------------------ |
+| `/var/lib/kdn/llms/models`        | usr/data  | GGUFs and the Strata packs                             |
+| `/var/lib/kdn/llms/models/.bench` | usr/data  | the Terminal, engine components, configs, the KMS shim |
+| `/var/lib/kdn/llms/home`          | usr/data  | the account's HOME                                     |
+| `/var/lib/kdn/llms/sessions`      | usr/cache | llama-server session files                             |
+
+`.` is deliberate: the engine tree keeps its path because the Terminal's venv hardcodes it, and it
+lives inside `models` so it inherits that dataset's persistence.
+
+Services:
+
+- `strata-frontier` — a **system** service, `User = llm-server`, `LimitMEMLOCK = infinity`,
+  `MemoryMax = 112G`, restart on failure, `ExecStart = strata-serve max --port 8080`. Ready in
+  ~85 s, serving `qwen3.8-flash-next-unsloth-ud-iq4_xs` at 1M.
+- `llama-swap` — the same account, so a model process and the engine share one identity and no
+  file-ownership mismatch can exist.
+
+The ROCm shim is built from `hack/rocm-skip-legacy-gpu.c` as a Nix derivation (so it cannot drift
+from the source) and copied to `.bench/rocm-skip.so` for hand-run servers; the service uses the
+store path.
