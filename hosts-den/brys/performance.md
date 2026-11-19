@@ -1,34 +1,58 @@
 ---
 type: Reference
-description: brys hardware and performance reference — CPU/RAM, motherboard and PCIe/M.2 topology, GPUs, the ZFS mirror and LUKS layout, measured NVMe read throughput, the ZFS ARC cap, measured memory bandwidth, and per-model resident footprints.
-timestamp: 2026-10-08T02:22:28+02:00
+description: brys hardware and performance reference — CPU/RAM, motherboard and PCIe/M.2 topology, GPUs, the ZFS mirror and LUKS layout, measured NVMe read throughput, the ZFS ARC cap, measured memory bandwidth, the model-load memory burst, and which older measurements are superseded.
+timestamp: 2026-11-19T21:00:00+01:00
 ---
 
 # brys performance
 
-Hardware inventory and measured performance of **brys** (Ryzen 9 5950X
-workstation, 128 GB DDR4). The model-serving configuration, the boot
-specialisations and the deployment state are in
-[docs/local-llms.md](../../docs/local-llms.md); this file holds only the
-hardware and the measurements.
+Hardware inventory and measured performance of **brys** (Ryzen 9 5950X workstation, 128 GB DDR4,
+Radeon AI PRO R9700). The model-serving configuration, the boot specialisations and the deployment
+state are in [docs/local-llms.md](../../docs/local-llms.md); the full engine and quant sweep is in
+[docs/tasks/2026-11/brys-r9700-model-fit/measurements.md](../../docs/tasks/2026-11/brys-r9700-model-fit/measurements.md);
+this file holds the hardware and the measurements taken on it.
+
+## What is current and what is superseded
+
+The card changed on 2026-11-17: a W6600 (8 GB) left and an R9700 (32 GB) arrived. Anything measured
+on the old card is a lower bound at best and often simply wrong for sizing. Read this table first.
+
+| section                          | status         | why                                                                       |
+| -------------------------------- | -------------- | ------------------------------------------------------------------------- |
+| CPU and RAM                      | current        | hardware                                                                  |
+| Motherboard and PCIe/M.2         | current        | corrected 2026-11-19: the R9700 runs **x16**, not x8                      |
+| GPUs                             | current        | hardware; the W6600 note is history                                       |
+| Storage: ZFS mirror and LUKS     | current        | numbers refreshed 2026-11-19                                               |
+| NVMe / ZFS read throughput       | current        | re-confirmed 2026-11-19 with `dd iflag=direct`                             |
+| ZFS ARC cap                      | current        | file reference corrected 2026-11-19                                        |
+| Memory bandwidth                 | current        | CPU hardware ceiling, independent of the card                              |
+| The model-load memory burst      | current        | measured 2026-11-19, and it is what makes profile switching survive         |
+| Per-model resident footprints    | **superseded** | W6600 era, llama.cpp, a model set that is no longer served                 |
+| Warm long-task decode (Qwen/DS4) | **superseded** | 9.9 t/s on the W6600 against 66.7 t/s on the R9700 for the same family slot |
 
 ## CPU and RAM
 
 AMD Ryzen 9 5950X, 16 cores / 32 threads, one NUMA node, 64 MiB L3
-(2 x 32 MiB), 8 MiB L2, boost to 5086 MHz. 128 GB DDR4, 125 GiB usable, no
-swap.
+(2 x 32 MiB), 8 MiB L2, boost to 5086 MHz. 128 GB DDR4, 125 GiB usable, **no swap** (zram is off on
+purpose, see `default.nix` "Reliability of the served models wins"). The absence of swap is not
+cosmetic: with a served model holding about 95 GiB, a load that overshoots has nothing to fall back
+on, so the kernel kills the engine instead of paging (see "The model-load memory burst").
 
 ## Motherboard and PCIe / M.2 topology
 
-ASUS ROG Strix X570-E Gaming WiFi II (X570S, passive chipset). `lspci -tv`
-confirms:
+ASUS ROG Strix X570-E Gaming WiFi II (X570S, passive chipset). `lspci -tv` confirms:
 
-| device                         | slot      | link            | root port             |
-| ------------------------------ | --------- | --------------- | --------------------- |
-| `nvme0n1` (Goodram PX700 2 TB) | M.2_1     | CPU Gen4 x4     | `00:01.1`             |
-| `nvme1n1` (Viper VP4300L 2 TB) | M.2_2     | chipset Gen4 x4 | `00:01.2` → `02:00.0` |
-| R9700 `0d:00.0`                | PCIEX16_1 | CPU Gen4 x8     |                       |
-| Radeon 550 "Lexa" `0e:00.0`    | PCIEX16_2 | CPU Gen4 x8     |                       |
+| device                         | slot      | link                | root port             |
+| ------------------------------ | --------- | ------------------- | --------------------- |
+| `nvme0n1` (Goodram PX700 2 TB) | M.2_1     | CPU Gen4 x4         | `00:01.1`             |
+| `nvme1n1` (Viper VP4300L 2 TB) | M.2_2     | chipset Gen4 x4     | `00:01.2` → `02:00.0` |
+| R9700 `0d:00.0`                | PCIEX16_1 | CPU **Gen4 x16**    |                       |
+| Radeon 550 "Lexa" `0e:00.0`    | PCIEX16_2 | CPU Gen3 x8         |                       |
+
+The R9700 link was reported as "Gen4 x8" in earlier revisions of this file. That was wrong.
+Measured 2026-11-19 from `/sys/bus/pci/devices/0000:0d:00.0/`:
+`current_link_speed = 32.0 GT/s`, `current_link_width = 16`, and the maxima match, so the card is
+not downlinked. The Lexa beside it runs `8.0 GT/s` at width 8 (Gen3 x8).
 
 `nvme1n1` sits behind the X570 uplink (`00:01.2` → `02:00.0`). That PCIe 4.0 x4
 link is shared with the MT7921K Wi-Fi, the RTL8125 2.5GbE, the I211 GbE, the
@@ -50,10 +74,15 @@ MT7921K) driver issues are mostly on Windows. brys shows no PCIe AER errors.
 `MESA_VK_DEVICE_SELECT=1002:7551!` pins the R9700 as `Vulkan0`; the Lexa is
 never selected.
 
-The W6600 (8 GB) that this host ran until 2026-11-17 was a draft-head GPU and
-most of the model measurements below were taken on it. The R9700 replaced it
-with 32 GB, so the dated numbers are a lower bound for the current card; remeasure
-before sizing a resident model set from them.
+The Lexa is the reason `hack/rocm-skip-legacy-gpu.c` exists: ROCm 7.2 aborts `hsa_init` on the
+gfx803 card (deprecated doorbell type), and the shim lets every HIP tool in the fleet initialise.
+The R9700 itself does not need it.
+
+**History.** The W6600 (8 GB) that this host ran until 2026-11-17 was a draft-head GPU. Every number
+in the superseded tables below was taken on it. On the R9700 the same slot now measures **66.7 t/s
+decode / 2779 t/s prefill** with Strata at 256k (IQ2_XS) and **22.3 t/s / 255 t/s** with
+llama.cpp Vulkan at 64k — about 3× and 11× the old card, so old figures cannot be scaled, they must
+be replaced.
 
 ## Storage: ZFS mirror and LUKS
 
@@ -69,17 +98,19 @@ Both are LUKS2-encrypted (`px700-brys-crypted`, `vp4300-brys-crypted`) and form
 a **2-device mirror**:
 
 ```
-brys-main (ONLINE, 1.81 T, 1006 G alloc, 850 G free, 51% frag)
+brys-main (ONLINE, 1.81 T, 1.61 T used, 152 G avail)
   mirror-0
     dm-...-px700-brys-crypted   ONLINE
     dm-...-vp4300-brys-crypted  ONLINE
 ```
 
-The model dataset is `brys-main/brys/impermanence/usr/data` (735 G used,
-793 G avail), mounted at `/nix/persist/usr/data` and persisted to
-`/var/lib/kdn/llms/models`. Properties: `recordsize 128K`, `compression lz4`,
-`primarycache all`, `atime on`, `sync standard`, `logbias latency`,
-`direct standard`, `special_small_blocks 0`.
+The model dataset is `brys-main/brys/impermanence/usr/data` (1.25 TiB used, 152 GiB avail on
+2026-11-19), mounted at `/nix/persist/usr/data` and persisted to `/var/lib/kdn/llms/models`.
+Properties: `recordsize 128K`, `compression lz4`, `primarycache all`, `atime on`, `sync standard`,
+`logbias latency`, `direct standard`.
+
+The 152 GiB free is the ceiling on a new pack: UD-Q4_K_XL (about 65 GiB) fits, a second full pack
+beside the current one may not.
 
 ## Measured NVMe / ZFS read throughput
 
@@ -94,6 +125,10 @@ incompressible scratch file after `drop_caches`:
 | cold sustained, per drive               | **~2.0–2.2 GB/s** |
 | warm band, per drive, at ~800–900 G LBA | **~5.4–6.0 GB/s** |
 | mirror dataset, warm                    | **~10 GB/s**      |
+
+Re-confirmed 2026-11-19 on a model shard: `dd iflag=direct bs=1M count=4096` on the 46 GiB
+`UD-IQ4_XS` shard read **7.7 GB/s**. That number is why the profile manager drops the page cache
+before a load instead of protecting it — a full 55 GiB re-read costs seconds, not minutes.
 
 The advertised rate is 7,400 MB/s. 1M blocks are worse than 128k. **dm-crypt is
 not the cap:** `cryptsetup benchmark` gives aes-xts ~4.8 GB/s, above the cold
@@ -112,7 +147,7 @@ depth (a QD1/psync test measures latency, not the drive).
 
 ## ZFS ARC cap
 
-`hosts-den/brys/llm.nix` caps the ZFS ARC at 8 GiB with the kernel parameter
+`hosts-den/brys/llm-tuning-shared.nix` caps the ZFS ARC at 8 GiB with the kernel parameter
 `zfs.zfs_arc_max=8589934592`. The ARC is a _second_ cache beside the Linux page
 cache that backs the `mmap`'d model weights. At its default `c_max` (about half
 of RAM) it grew to ~65 GB and the kernel evicted the weights to make room. The
@@ -125,11 +160,6 @@ echo 8589934592 | sudo tee /sys/module/zfs/parameters/zfs_arc_max
 
 The serving-side effect and the measured context ladder are in
 [docs/local-llms.md](../../docs/local-llms.md), "ZFS ARC quirk".
-
-When a model runs on the main `brys` profile and shares the box with the
-desktop, the tested RAM levers are in
-[docs/local-llms.md](../../docs/local-llms.md), "Freeing RAM when colocating a
-model with a workstation".
 
 ## Measured memory bandwidth
 
@@ -146,16 +176,43 @@ the earlier _assumed_ DDR4 figure of ~50 GB/s.
 | COPY  | 320             | 38.81 |
 
 Implication for the tok/s ceiling: CPU decode reads activated weights
-sequentially, so **COPY (~40 GB/s)** is the right figure. DeepSeek V4 Flash
-IQ3_XXS reads ~5 GB of activated params per token, so the realistic ceiling is
-**~8 tok/s** (was ~9–10 from the assumed 50 GB/s). The 6.25 tok/s best reaches
-~78% of the real hardware ceiling.
+sequentially, so **COPY (~40 GB/s)** is the right figure. A model that streams
+~5 GB of activated params per token has a realistic ceiling of **~8 tok/s** on
+this CPU. Numbers above that are GPU work, not CPU work.
 
-## Measured per-model resident footprints
+## The model-load memory burst
 
-Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads 12) one at a time on the 128 GB box (DeepSeek router also resident for the small
-models). Resident working set = `VmRSS` = `RssAnon` (compute/KV buffers) +
-`RssFile` (mmap'd weights). `warm t/s` = 128-token generation.
+Measured 2026-11-19. A Strata load is one allocation burst, not a steady state, and it decides
+whether a profile switch works:
+
+| quantity                    | value                                                                 |
+| --------------------------- | --------------------------------------------------------------------- |
+| peak RSS during a load      | **88–98 GiB** (anon 58 GB + file-backed pack 28 GB + shmem KV 12 GB)   |
+| settled RSS while serving   | **30 GiB** (`max`, 30 GiB VRAM)                                       |
+| unevictable while serving   | `Mlocked` about 27 GiB, `Unevictable` about 28 GiB                     |
+| swap                        | none                                                                  |
+
+On a 125 GiB host with 40–48 GiB of the pack in page cache, the burst outruns reclaim: every failing
+load ended at 88–98 GiB RSS with `free` at 0, the kernel OOM-killed the engine, `OOMPolicy=stop`
+restarted the manager, and the cycle repeated. Raising `vm.min_free_kbytes` to 2 GiB and
+`vm.watermark_scale_factor` to 200 did not prevent it.
+
+The fix is to give the burst the cache: the manager drops the page cache (a root oneshot plus one
+sudoers line for `llm-server`) between stopping the old engine and starting the new one. At 7.7 GB/s
+a full re-read costs seconds, and the switch survives — measured 64 s for `max` → `omni-max` and
+67 s back, with zero OOM kills. Details and the full table:
+[docs/tasks/2026-11/brys-r9700-model-fit/measurements.md](../../docs/tasks/2026-11/brys-r9700-model-fit/measurements.md),
+"The switch is memory-bound" and "The fix: drop the page cache before every load".
+
+## Superseded: per-model resident footprints (W6600 era)
+
+Kept only as history. The models below are no longer served on brys and the rates belong to the
+8 GB W6600 with llama.cpp; the current pack is a 55 GiB Strata profile whose settled RSS is 30 GiB
+with a 95 GiB load peak (see the section above).
+
+Each model loaded via a manual `llama-server` (llama.cpp 10408, `mmap`, threads 12) one at a time on
+the 128 GB box (DeepSeek router also resident for the small models). Resident working set = `VmRSS`
+= `RssAnon` (compute/KV buffers) + `RssFile` (mmap'd weights). `warm t/s` = 128-token generation.
 
 | model                   | file   | VmRSS             | RssAnon | RssFile | VmPeak | load             | warm t/s | coexist w/ DS4?                               |
 | ----------------------- | ------ | ----------------- | ------- | ------- | ------ | ---------------- | -------- | --------------------------------------------- |
@@ -166,15 +223,13 @@ models). Resident working set = `VmRSS` = `RssAnon` (compute/KV buffers) +
 | `qwen3-235b`            | 72 G   | (fail) ~100 G est | —       | —       | —      | fail @65 G avail | —        | no (needs box alone)                          |
 | `gpt-oss-120b` (Q4_K_M) | 58.5 G | 72.2 G            | 60.2 G  | 11.8 G  | 128 G  | ~129 s           | **12.7** | yes (fits; DS4 file-cache evicted, re-faults) |
 
-Multi-model implication: `models-max=1` (one resident at a time) is the right
-policy on 128 GB. Only `phi-4` (17.7 G) fits comfortably alongside DeepSeek;
-`qwen3-30b` (44.4 G) fits but evicts ~45 G of DS4's weight cache (DS4 re-reads
-from disk on next use). Every 45 G+ MoE fully evicts DS4 and needs the box to
-itself. This is why the topology splits into two routers — see
-[docs/local-llms.md](../../docs/local-llms.md), "N-router topology and
-routing".
+The RAM column is still a fair indication of what a llama.cpp model of that size costs on this host;
+the t/s column is not transferable.
 
-## Warm long-task decode (Qwen vs DS4)
+## Superseded: warm long-task decode, Qwen vs DS4 (W6600 era)
+
+Kept only as history: the same family slot now runs 66.7 t/s through Strata on the R9700, so these
+figures document the old card, not a current operating point.
 
 Measured on brys, warm and contention-free, through the `llms-frontier` router,
 on 1500–2000-token generations at temp 0. These are **post-no-BLAS** numbers
@@ -189,20 +244,9 @@ in two.
 | DeepSeek V4 Flash  | ~0.2K     | 3.2–3.4 t/s      | 0.65–0.69 / 4.2–4.4        | 2.7 → 3.9           |
 | DeepSeek V4 Flash  | ~16K      | 3.2 t/s          | 0.63 / 4.2                 | 2.7 → 3.9           |
 
-**Qwen is ~2.5–3× faster than DS4** for warm long coding tasks (2.53× at 16K).
-
-**Decode holds up over a long generation.** The second half is consistently
-faster than the first (rising acceptance); there is no decay.
-
-**Context depth barely matters here.** The per-token forward cost moves ≤9%
-(Qwen) or ~0% (DS4) from 0.2K to 16K. The t/s difference between the 0.2K and
-16K rows is driven by speculative acceptance (content-dependent), not attention
-length.
-
-Warm prefill at 16K: ~20 t/s (DS4), ~32 t/s (Qwen).
-
-The earlier ~120–150 s first-request stall was the **BLAS backend**, not shader
-compilation. The no-BLAS build removes it.
+Two observations still hold as behaviour, whatever the card: decode does not decay over a long
+generation (the second half is faster, from rising acceptance), and context depth barely moves the
+per-token cost — the t/s gaps come from speculative acceptance, not attention length.
 
 ## To test later (no changes yet)
 
