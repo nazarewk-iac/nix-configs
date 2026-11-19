@@ -16,7 +16,7 @@ The GPU sits in a PCIe 4.0 **x8** slot.
 
 - **Sweep of the downloaded models**: `llama-bench` from the served build
   (`llama-cpp-sessions-vulkan-noblas-0.6.0-unstable-2026-10-09`), `-ngl 99 -fa on -p 512
-  -n 128 -r 2`, `MESA_VK_DEVICE_SELECT=1002:7551!`. So *prefill* is 512 tokens and *decode* is
+-n 128 -r 2`, `MESA_VK_DEVICE_SELECT=1002:7551!`. So _prefill_ is 512 tokens and _decode_ is
   128 tokens, at an empty context. Every model fit fully in VRAM.
 - **Fit curves**: the same `llama-bench` with `--n-cpu-moe N`, then `llama-server` for the
   end-to-end check (`/v1/chat/completions` `timings`).
@@ -33,18 +33,18 @@ The GPU sits in a PCIe 4.0 **x8** slot.
 Each table row names its **harness**, and a **config** short name. The short name is expanded here;
 edit the expansion, not the row.
 
-| harness | config | what it means |
-| --- | --- | --- |
-| `llamacpp` | `vk-full` | `llama-bench -ngl 99 -fa on -p 512 -n 128 -r 2`. Every tensor in VRAM. Prefill is 512 tokens, decode 128, empty context. |
-| `llamacpp` | `vk-moe6` … `vk-moe40` | the same bench with `--n-cpu-moe N`: the expert tensors of the first N of 48 layers stay in RAM. |
-| `llamacpp` | `vk-srv32k/N` | `llama-server --fit off -fa on -c 32768 --n-cpu-moe N`, `-t 8`, mmap load. Measured from `/v1/chat/completions` `timings`. |
-| `llamacpp` | `vk-srv32k/N+small` | the same, with a second `llama-server` holding `qwen3.5-4b` (`-ngl 99`, `-c 16384`) at the same time. |
-| `llamacpp` | `vk-srv8k/N-t16` | `llama-server --fit off -fa on -c 8192 --n-cpu-moe N -t 16 --threads-batch 16`. |
-| `llamacpp` | `cpu` | no GPU offload. Kept only as a reference point; not a served configuration. |
-| `bmoe` | `bmoe-auto` | `bmoe-cli --auto --no-probe-io -c 2048`. The planner measures the machine, then places tensors. |
-| `bmoe` | `bmoe-stream` | the same with `--moe-stream --auto`: experts stay in RAM and VRAM acts as an expert cache. |
-| `llamacpp` | `vk-srv2k/6` | `llama-server --fit off -fa on -c 2048 --n-cpu-moe 6 -t 16`. The same-context twin of `bmoe-stream`. |
-| `llamacpp` | `vk-srv64k/26` | `llama-server --fit off -fa on -c 65536 --n-cpu-moe 26 --cache-type-k/v q8_0 -t 16`. The served preset. |
+| harness    | config                 | what it means                                                                                                              |
+| ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `llamacpp` | `vk-full`              | `llama-bench -ngl 99 -fa on -p 512 -n 128 -r 2`. Every tensor in VRAM. Prefill is 512 tokens, decode 128, empty context.   |
+| `llamacpp` | `vk-moe6` … `vk-moe40` | the same bench with `--n-cpu-moe N`: the expert tensors of the first N of 48 layers stay in RAM.                           |
+| `llamacpp` | `vk-srv32k/N`          | `llama-server --fit off -fa on -c 32768 --n-cpu-moe N`, `-t 8`, mmap load. Measured from `/v1/chat/completions` `timings`. |
+| `llamacpp` | `vk-srv32k/N+small`    | the same, with a second `llama-server` holding `qwen3.5-4b` (`-ngl 99`, `-c 16384`) at the same time.                      |
+| `llamacpp` | `vk-srv8k/N-t16`       | `llama-server --fit off -fa on -c 8192 --n-cpu-moe N -t 16 --threads-batch 16`.                                            |
+| `llamacpp` | `cpu`                  | no GPU offload. Kept only as a reference point; not a served configuration.                                                |
+| `bmoe`     | `bmoe-auto`            | `bmoe-cli --auto --no-probe-io -c 2048`. The planner measures the machine, then places tensors.                            |
+| `bmoe`     | `bmoe-stream`          | the same with `--moe-stream --auto`: experts stay in RAM and VRAM acts as an expert cache.                                 |
+| `llamacpp` | `vk-srv2k/6`           | `llama-server --fit off -fa on -c 2048 --n-cpu-moe 6 -t 16`. The same-context twin of `bmoe-stream`.                       |
+| `llamacpp` | `vk-srv64k/26`         | `llama-server --fit off -fa on -c 65536 --n-cpu-moe 26 --cache-type-k/v q8_0 -t 16`. The served preset.                    |
 
 Both harnesses read the **same GGUF files**. A model is downloaded once; `llamacpp` and `bmoe` are
 two ways to run it.
@@ -53,43 +53,43 @@ two ways to run it.
 
 `file GB` is what `llama-bench` reports as the loaded model size.
 
-| model | harness | config | file GB | decode t/s | prefill t/s |
-| --- | --- | --- | ---: | ---: | ---: |
-| qwen3.5-0.8b | llamacpp | vk-full | 0.5 | **324.1** | 15266.6 |
-| qwen3.5-2b | llamacpp | vk-full | 1.2 | **236.7** | 9915.6 |
-| tmax-2b | llamacpp | vk-full | 1.2 | 236.1 | 9936.0 |
-| mellum-2.1-12b-a2.5b-thinking | llamacpp | vk-full | 7.5 | **233.6** | 5691.6 |
-| gemma-4-e2b | llamacpp | vk-full | 2.9 | 211.2 | 8018.9 |
-| lfm2.5-24b-a2b | llamacpp | vk-full | 13.5 | **211.1** | 5279.6 |
-| granite-4.2-3b | llamacpp | vk-full | 2.1 | 174.4 | 6188.6 |
-| qwen3-omni-30b-a3b | llamacpp | vk-full | 17.3 | 171.4 | 4207.3 |
-| qwen3-vl-30b-a3b | llamacpp | vk-full | 17.3 | 169.7 | 4173.1 |
-| ministral-3-3b-instruct | llamacpp | vk-full | 2.0 | 164.2 | 6650.2 |
-| ministral-3-3b-reasoning | llamacpp | vk-full | 2.0 | 164.0 | 6755.1 |
-| nemotron-3-nano-30b-a3b | llamacpp | vk-full | 22.9 | 144.7 | 4171.1 |
-| qwen3.5-4b | llamacpp | vk-full | 2.5 | 137.6 | 5069.5 |
-| gemma-4-26b-a4b | llamacpp | vk-full | 13.4 | 134.0 | 3501.6 |
-| nemotron-3.5-lightning-30b | llamacpp | vk-full | 23.5 | 133.9 | 4279.0 |
-| ornith-1.5-35b-a3b | llamacpp | vk-full | 20.2 | 131.9 | 4048.2 |
-| gemma-4-e4b | llamacpp | vk-full | 4.8 | 127.8 | 4847.1 |
-| glm-4.7-flash | llamacpp | vk-full | 17.0 | 126.7 | 3768.7 |
-| qwen3.6-35b-a3b | llamacpp | vk-full | 20.6 | 121.9 | 3938.1 |
-| qwen3.5-35b-a3b | llamacpp | vk-full | 20.5 | 120.7 | 3936.5 |
-| olmo-3-7b-instruct | llamacpp | vk-full | 4.2 | 115.6 | 4336.3 |
-| qwen3-vl-8b-instruct | llamacpp | vk-full | 4.7 | 105.2 | 3616.2 |
-| granite-4.2-8b | llamacpp | vk-full | 5.0 | 94.9 | 3617.7 |
-| ministral-3-8b-reasoning | llamacpp | vk-full | 4.8 | 91.5 | 3813.9 |
-| ministral-3-8b-instruct | llamacpp | vk-full | 4.8 | 90.8 | 3842.2 |
-| tmax-9b | llamacpp | vk-full | 5.2 | 90.4 | 3734.4 |
-| qwen3.5-9b | llamacpp | vk-full | 5.3 | 90.0 | 3755.2 |
-| mimo-v2.6-qwen-9b | llamacpp | vk-full | 5.4 | 87.6 | 3580.9 |
-| gemma-4-12b | llamacpp | vk-full | 6.6 | 67.0 | 2161.7 |
-| qwen3.8-27b | llamacpp | vk-full | 15.3 | 32.4 | 1194.1 |
-| qwen3.6-27b | llamacpp | vk-full | 15.7 | 31.4 | 1160.1 |
-| granite-4.2-30b | llamacpp | vk-full | 16.5 | 31.3 | 1081.6 |
-| gemma-4-31b | llamacpp | vk-full | 17.1 | 29.9 | 1030.5 |
-| olmo-3.1-32b | llamacpp | vk-full | 18.1 | 29.4 | 984.1 |
-| seed-oss-36b | llamacpp | vk-full | 20.3 | 26.9 | 871.9 |
+| model                         | harness  | config  | file GB | decode t/s | prefill t/s |
+| ----------------------------- | -------- | ------- | ------: | ---------: | ----------: |
+| qwen3.5-0.8b                  | llamacpp | vk-full |     0.5 |  **324.1** |     15266.6 |
+| qwen3.5-2b                    | llamacpp | vk-full |     1.2 |  **236.7** |      9915.6 |
+| tmax-2b                       | llamacpp | vk-full |     1.2 |      236.1 |      9936.0 |
+| mellum-2.1-12b-a2.5b-thinking | llamacpp | vk-full |     7.5 |  **233.6** |      5691.6 |
+| gemma-4-e2b                   | llamacpp | vk-full |     2.9 |      211.2 |      8018.9 |
+| lfm2.5-24b-a2b                | llamacpp | vk-full |    13.5 |  **211.1** |      5279.6 |
+| granite-4.2-3b                | llamacpp | vk-full |     2.1 |      174.4 |      6188.6 |
+| qwen3-omni-30b-a3b            | llamacpp | vk-full |    17.3 |      171.4 |      4207.3 |
+| qwen3-vl-30b-a3b              | llamacpp | vk-full |    17.3 |      169.7 |      4173.1 |
+| ministral-3-3b-instruct       | llamacpp | vk-full |     2.0 |      164.2 |      6650.2 |
+| ministral-3-3b-reasoning      | llamacpp | vk-full |     2.0 |      164.0 |      6755.1 |
+| nemotron-3-nano-30b-a3b       | llamacpp | vk-full |    22.9 |      144.7 |      4171.1 |
+| qwen3.5-4b                    | llamacpp | vk-full |     2.5 |      137.6 |      5069.5 |
+| gemma-4-26b-a4b               | llamacpp | vk-full |    13.4 |      134.0 |      3501.6 |
+| nemotron-3.5-lightning-30b    | llamacpp | vk-full |    23.5 |      133.9 |      4279.0 |
+| ornith-1.5-35b-a3b            | llamacpp | vk-full |    20.2 |      131.9 |      4048.2 |
+| gemma-4-e4b                   | llamacpp | vk-full |     4.8 |      127.8 |      4847.1 |
+| glm-4.7-flash                 | llamacpp | vk-full |    17.0 |      126.7 |      3768.7 |
+| qwen3.6-35b-a3b               | llamacpp | vk-full |    20.6 |      121.9 |      3938.1 |
+| qwen3.5-35b-a3b               | llamacpp | vk-full |    20.5 |      120.7 |      3936.5 |
+| olmo-3-7b-instruct            | llamacpp | vk-full |     4.2 |      115.6 |      4336.3 |
+| qwen3-vl-8b-instruct          | llamacpp | vk-full |     4.7 |      105.2 |      3616.2 |
+| granite-4.2-8b                | llamacpp | vk-full |     5.0 |       94.9 |      3617.7 |
+| ministral-3-8b-reasoning      | llamacpp | vk-full |     4.8 |       91.5 |      3813.9 |
+| ministral-3-8b-instruct       | llamacpp | vk-full |     4.8 |       90.8 |      3842.2 |
+| tmax-9b                       | llamacpp | vk-full |     5.2 |       90.4 |      3734.4 |
+| qwen3.5-9b                    | llamacpp | vk-full |     5.3 |       90.0 |      3755.2 |
+| mimo-v2.6-qwen-9b             | llamacpp | vk-full |     5.4 |       87.6 |      3580.9 |
+| gemma-4-12b                   | llamacpp | vk-full |     6.6 |       67.0 |      2161.7 |
+| qwen3.8-27b                   | llamacpp | vk-full |    15.3 |       32.4 |      1194.1 |
+| qwen3.6-27b                   | llamacpp | vk-full |    15.7 |       31.4 |      1160.1 |
+| granite-4.2-30b               | llamacpp | vk-full |    16.5 |       31.3 |      1081.6 |
+| gemma-4-31b                   | llamacpp | vk-full |    17.1 |       29.9 |      1030.5 |
+| olmo-3.1-32b                  | llamacpp | vk-full |    18.1 |       29.4 |       984.1 |
+| seed-oss-36b                  | llamacpp | vk-full |    20.3 |       26.9 |       871.9 |
 
 Also present, not generative: `qwen3-embedding-4b`, `qwen3-reranker-4b`.
 
@@ -98,33 +98,33 @@ Also present, not generative: `qwen3-embedding-4b`, `qwen3-reranker-4b`.
 at **27-32 t/s** and dense 8-12B at 67-95 t/s. The card is not the limit for any of them; the 5950X
 never ran.
 
-## Qwen3.8-Flash-Next: 180B in 32 GB
+## Qwen3.8-Flash-Next: 125B + a 51B n-gram table in 32 GB
 
-The model is **180B total, 48 layers, 512 experts, top-10**, 262k native context
+The model is **125B with 6B active**, plus a **51B n-gram embedding** and a **4B MTP head** (180B total by safetensors), 48 layers, 512 experts, top-10, 262k native context
 (`Qwen4ExpForConditionalGeneration`). `UD-IQ1_S` is 62 GB in 3 shards.
 
-| harness | config | ctx | VRAM | decode t/s | prefill t/s |
-| --- | --- | ---: | ---: | ---: | ---: |
-| llamacpp | vk-moe6 | 0 | — | **30.9** | **481.1** |
-| llamacpp | vk-moe8 | 0 | — | 29.8 | 454.7 |
-| llamacpp | vk-moe10 | 0 | — | 28.0 | 373.9 |
-| llamacpp | vk-moe12 | 0 | — | 27.2 | 393.0 |
-| llamacpp | vk-moe14 | 0 | — | 26.5 | 377.9 |
-| llamacpp | vk-moe16 | 0 | — | 24.3 | 349.8 |
-| llamacpp | vk-moe22 | 0 | — | 22.0 | 280.5 |
-| llamacpp | vk-moe28 | 0 | — | 19.6 | 219.2 |
-| llamacpp | vk-moe34 | 0 | — | 18.1 | 208.4 |
-| llamacpp | vk-moe40 | 0 | — | 16.2 | 162.9 |
-| llamacpp | vk-moe2 / 3 / 4 | 0 | — | 12.8 / 31.0 / 12.3 | 131 / 129 / 125 |
-| llamacpp | `-ngl 99` untuned | 0 | — | 3.9 | 89.4 |
-| llamacpp | vk-srv32k/6 | 32k | 31.7 GiB | 14.6 | 38.1 |
-| llamacpp | vk-srv32k/24 | 32k | 21.0 GiB | **20.4** | 52.5 |
-| llamacpp | vk-srv32k/24+small | 32k | 24.2 GiB | 20.1 | 19.1 |
-| llamacpp | **vk-srv64k/26 + small** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
-| llamacpp | `qwen3.5-4b` beside it | 16k | — | 119.1 | 185.9 |
-| llamacpp | vk-srv64k/26 | 64k | 19.8 GiB | **20.9** | 32.3 |
-| llamacpp | **llama-swap `chat-deep-slow`** | 64k | 19.8 GiB | **21.9** | 255-289 (sustained) |
-| llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 64k | 23.0 GiB | **21.9** + **125.4** | — |
+| harness  | config                                    | ctx |     VRAM |           decode t/s |         prefill t/s |
+| -------- | ----------------------------------------- | --: | -------: | -------------------: | ------------------: |
+| llamacpp | vk-moe6                                   |   0 |        — |             **30.9** |           **481.1** |
+| llamacpp | vk-moe8                                   |   0 |        — |                 29.8 |               454.7 |
+| llamacpp | vk-moe10                                  |   0 |        — |                 28.0 |               373.9 |
+| llamacpp | vk-moe12                                  |   0 |        — |                 27.2 |               393.0 |
+| llamacpp | vk-moe14                                  |   0 |        — |                 26.5 |               377.9 |
+| llamacpp | vk-moe16                                  |   0 |        — |                 24.3 |               349.8 |
+| llamacpp | vk-moe22                                  |   0 |        — |                 22.0 |               280.5 |
+| llamacpp | vk-moe28                                  |   0 |        — |                 19.6 |               219.2 |
+| llamacpp | vk-moe34                                  |   0 |        — |                 18.1 |               208.4 |
+| llamacpp | vk-moe40                                  |   0 |        — |                 16.2 |               162.9 |
+| llamacpp | vk-moe2 / 3 / 4                           |   0 |        — |   12.8 / 31.0 / 12.3 |     131 / 129 / 125 |
+| llamacpp | `-ngl 99` untuned                         |   0 |        — |                  3.9 |                89.4 |
+| llamacpp | vk-srv32k/6                               | 32k | 31.7 GiB |                 14.6 |                38.1 |
+| llamacpp | vk-srv32k/24                              | 32k | 21.0 GiB |             **20.4** |                52.5 |
+| llamacpp | vk-srv32k/24+small                        | 32k | 24.2 GiB |                 20.1 |                19.1 |
+| llamacpp | **vk-srv64k/26 + small**                  | 64k | 23.0 GiB | **21.9** + **125.4** |                   — |
+| llamacpp | `qwen3.5-4b` beside it                    | 16k |        — |                119.1 |               185.9 |
+| llamacpp | vk-srv64k/26                              | 64k | 19.8 GiB |             **20.9** |                32.3 |
+| llamacpp | **llama-swap `chat-deep-slow`**           | 64k | 19.8 GiB |             **21.9** | 255-289 (sustained) |
+| llamacpp | **llama-swap `chat-deep-slow` + `grunt`** | 64k | 23.0 GiB | **21.9** + **125.4** |                   — |
 
 The last two rows are the **served** path, not a hand-run server: the preset in `data/llm.nix`
 (`nGpuLayers 99`, `nCpuMoe 26`, `loadMode mmap`, `extraFlags ["--fit" "off"]`, `parallel 1`,
@@ -134,12 +134,12 @@ together with 23.0 GiB of VRAM in total, and neither loses throughput when the o
 **Prefill, measured properly.** A 16-token prompt reports ~50 t/s because the fixed per-request
 cost dominates. Four real prompt lengths at the served preset:
 
-| prompt tokens | prefill t/s | wall |
-| ---: | ---: | ---: |
-| 2572 | 257.3 | 10.0 s |
-| 8496 | 288.9 | 29.4 s |
-| 11016 | 272.4 | 40.5 s |
-| 21516 | 255.1 | 84.4 s |
+| prompt tokens | prefill t/s |   wall |
+| ------------: | ----------: | -----: |
+|          2572 |       257.3 | 10.0 s |
+|          8496 |       288.9 | 29.4 s |
+|         11016 |       272.4 | 40.5 s |
+|         21516 |       255.1 | 84.4 s |
 
 So the sustained rate is **255-289 t/s**, roughly flat to 21.5k tokens. A 64k prompt would take
 about 4-5 minutes. This is the number the fleet must use for `rates.prefill`: it derives the first
@@ -160,11 +160,11 @@ frontier model must be tuned at the context it serves, not at an empty one.**
 
 ## Co-residency: the frontier plus a small model
 
-| harness | config | VRAM | decode t/s | prefill t/s |
-| --- | --- | ---: | ---: | ---: |
-| llamacpp | vk-srv32k/24 (flash-next alone) | 21.0 GiB | 20.4 | 52.5 |
-| llamacpp | vk-srv32k/24+small (flash-next) | 24.2 GiB | 20.1 | 19.1 |
-| llamacpp | vk-srv32k/24+small (`qwen3.5-4b`) | — | **119.1** | 185.9 |
+| harness  | config                            |     VRAM | decode t/s | prefill t/s |
+| -------- | --------------------------------- | -------: | ---------: | ----------: |
+| llamacpp | vk-srv32k/24 (flash-next alone)   | 21.0 GiB |       20.4 |        52.5 |
+| llamacpp | vk-srv32k/24+small (flash-next)   | 24.2 GiB |       20.1 |        19.1 |
+| llamacpp | vk-srv32k/24+small (`qwen3.5-4b`) |        — |  **119.1** |       185.9 |
 
 **62 GB of frontier model coexists with a 2.5 GB model in 24.2 GiB of VRAM and ~95 GiB of free
 RAM**, and the frontier loses nothing (20.4 → 20.1 t/s). A 9B model (5.3 GB) fits the same
@@ -176,12 +176,12 @@ both resident.
 321B, 45 layers, 288 experts, top-8, 1M context. `UD-IQ2_XXS` is 102 GB in 4 shards, and it fits in
 125 GiB of RAM with room for the KV cache.
 
-| harness | config | ctx | VRAM | decode t/s | prefill t/s |
-| --- | --- | ---: | ---: | ---: | ---: |
-| llamacpp | vk-srv8k/40 | 8k | 18.7 GiB | 8.1 | 9.3 |
-| llamacpp | vk-srv8k/38 | 8k | 22.9 GiB | 8.3 | 11.0 |
-| llamacpp | vk-srv8k/36 | 8k | 27.0 GiB | 8.5 | 12.2 |
-| llamacpp | vk-srv8k/36-t16 | 8k | 28.9 GiB | **8.9** | **14.3** |
+| harness  | config          | ctx |     VRAM | decode t/s | prefill t/s |
+| -------- | --------------- | --: | -------: | ---------: | ----------: |
+| llamacpp | vk-srv8k/40     |  8k | 18.7 GiB |        8.1 |         9.3 |
+| llamacpp | vk-srv8k/38     |  8k | 22.9 GiB |        8.3 |        11.0 |
+| llamacpp | vk-srv8k/36     |  8k | 27.0 GiB |        8.5 |        12.2 |
+| llamacpp | vk-srv8k/36-t16 |  8k | 28.9 GiB |    **8.9** |    **14.3** |
 
 **GLM-5.3-Flash is CPU-bound here.** Pushing 5 → 9 layers of experts into VRAM (18.7 → 27 GiB) buys
 0.4 t/s. The 5950X computes the RAM-resident experts, and it is the wall. 16 threads add a little
@@ -196,13 +196,13 @@ required a host reset; the mmap path has not repeated it.
 
 Qwen3.8-Flash-Next `UD-IQ1_S`, same GGUF, same card, 2k context for the apples-to-apples pair:
 
-| harness | config | ctx | decode t/s | prefill t/s | note |
-| --- | --- | ---: | ---: | ---: | --- |
-| llamacpp | vk-moe6 | 0 | **30.9** | **481.1** | llama-bench |
-| llamacpp | `vk-srv2k/6` | 2k | **30.7** | 38.3 | llama-server, `-t 16`, whole card (31.4 GiB) |
-| bmoe | `bmoe-stream` | 2k | **29.5** | **60.6** | `--moe-stream --auto`, 26.6 GB expert cache, load 13 s |
-| llamacpp | vk-srv32k/24 | 32k | **20.4** | 52.5 | llama-server |
-| bmoe | bmoe-auto | 2k | 8.2 | 2.4 | `--auto` chose a host-expert placement |
+| harness  | config        | ctx | decode t/s | prefill t/s | note                                                   |
+| -------- | ------------- | --: | ---------: | ----------: | ------------------------------------------------------ |
+| llamacpp | vk-moe6       |   0 |   **30.9** |   **481.1** | llama-bench                                            |
+| llamacpp | `vk-srv2k/6`  |  2k |   **30.7** |        38.3 | llama-server, `-t 16`, whole card (31.4 GiB)           |
+| bmoe     | `bmoe-stream` |  2k |   **29.5** |    **60.6** | `--moe-stream --auto`, 26.6 GB expert cache, load 13 s |
+| llamacpp | vk-srv32k/24  | 32k |   **20.4** |        52.5 | llama-server                                           |
+| bmoe     | bmoe-auto     |  2k |        8.2 |         2.4 | `--auto` chose a host-expert placement                 |
 
 **Decode is a tie; BigMoeOnEdge is 58 % faster on prefill** (60.6 vs 38.3) and leaves VRAM headroom
 because its cache is a budget it controls rather than "fill the card". Its failure mode is the
@@ -242,19 +242,19 @@ Strata Terminal 0.2.16 with the signed **HIP `rx9070` engine 0.1.62**, serving t
 runtime hits the Lexa doorbell bug; the shim in `hack/rocm-skip-legacy-gpu.c` hides the gfx803
 node from the KFD topology, and then it starts unmodified.
 
-| ctx | VRAM | decode t/s | prefill t/s (10.5k prompt) |
-| ---: | ---: | ---: | ---: |
-| 32k | 31.0 GiB | **66.9** | 2822 |
-| 64k | 31.0 GiB | **67.0** | 2817 |
-| 128k | 31.0 GiB | **68.6** | 2799 |
-| 256k | 31.0 GiB | **66.7** | 2779 |
+|  ctx |     VRAM | decode t/s | prefill t/s (10.5k prompt) |
+| ---: | -------: | ---------: | -------------------------: |
+|  32k | 31.0 GiB |   **66.9** |                       2822 |
+|  64k | 31.0 GiB |   **67.0** |                       2817 |
+| 128k | 31.0 GiB |   **68.6** |                       2799 |
+| 256k | 31.0 GiB |   **66.7** |                       2779 |
 
 Two quants, both at 256k:
 
-| pack | size | decode t/s | prefill t/s (10.5k) | VRAM |
-| --- | ---: | ---: | ---: | ---: |
-| GSQ-RCO **IQ2_XS** | 63 GiB | **66.7** | 2779 | 31.0 GiB |
-| GSQ-RCO **IQ3_XXS** | 70 GiB | **63.0** | 2844 | 31.1 GiB |
+| pack                |   size | decode t/s | prefill t/s (10.5k) |     VRAM |
+| ------------------- | -----: | ---------: | ------------------: | -------: |
+| GSQ-RCO **IQ2_XS**  | 63 GiB |   **66.7** |                2779 | 31.0 GiB |
+| GSQ-RCO **IQ3_XXS** | 70 GiB |   **63.0** |                2844 | 31.1 GiB |
 
 The better quant costs 5 % decode and buys a quality tier; both fill the card.
 
@@ -267,11 +267,11 @@ GSQ-RCO pack at all (it rejects `UD-IQ1_S` as "a GGUF Strata cannot run" in the 
 two engines use different quant families). It is a harness comparison: best Strata config against
 best llama.cpp config.
 
-| harness | model | ctx | decode | prefill |
-| --- | --- | ---: | ---: | ---: |
-| Strata + HIP | GSQ-RCO IQ2_XS, 63 GiB | 256k | **66.7** | **2779** |
-| llama.cpp Vulkan | UD-IQ1_S, 62 GB, `n-cpu-moe 26` | 64k | 22.3 | 255 |
-| BigMoeOnEdge Vulkan | UD-IQ1_S, `--moe-stream` | 2k | 29.5 | 60.6 |
+| harness             | model                           |  ctx |   decode |  prefill |
+| ------------------- | ------------------------------- | ---: | -------: | -------: |
+| Strata + HIP        | GSQ-RCO IQ2_XS, 63 GiB          | 256k | **66.7** | **2779** |
+| llama.cpp Vulkan    | UD-IQ1_S, 62 GB, `n-cpu-moe 26` |  64k |     22.3 |      255 |
+| BigMoeOnEdge Vulkan | UD-IQ1_S, `--moe-stream`        |   2k |     29.5 |     60.6 |
 
 Strata is the engine to serve on this host. The cost is that its packs are its own format: a
 llama.cpp GGUF cannot be reused, and the reverse.
@@ -295,23 +295,23 @@ fighting the CMake prefix. The model (96.5 GB) was never downloaded.
 
 ## What was tried and did not pay off
 
-| idea | result |
-| --- | --- |
+| idea                                            | result                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | llama.cpp **0.9.0** instead of the served 0.6.0 | the nixpkgs build has **no Vulkan backend** (`libggml-vulkan.so` absent) and falls back to BLAS/CPU: 11.8 t/s against 137.7 on the same 4B model. Not a fair comparison until someone packages a Vulkan 0.9.0; the repo's own package is the only Vulkan build on the host. |
-| **Speculative decoding** with a small draft | `qwen3.5-9b` + `qwen3.5-0.8b` draft: 87.0 t/s plain vs 86.7 with the draft, and `draft_n` stayed `None`, so no drafting happened. There is no matched drafter on disk for any dense model we serve. |
-| **Maya** for GLM-5.3-Flash | blocked on packaging (see above), not on the card. |
-| **ik_llama.cpp** | not in nixpkgs; a source build with its own Vulkan flags. Left as a task. |
-| deeper power caps (175/150 W) | the driver floor is 210 W on this card; anything lower is refused. |
+| **Speculative decoding** with a small draft     | `qwen3.5-9b` + `qwen3.5-0.8b` draft: 87.0 t/s plain vs 86.7 with the draft, and `draft_n` stayed `None`, so no drafting happened. There is no matched drafter on disk for any dense model we serve.                                                                         |
+| **Maya** for GLM-5.3-Flash                      | blocked on packaging (see above), not on the card.                                                                                                                                                                                                                          |
+| **ik_llama.cpp**                                | not in nixpkgs; a source build with its own Vulkan flags. Left as a task.                                                                                                                                                                                                   |
+| deeper power caps (175/150 W)                   | the driver floor is 210 W on this card; anything lower is refused.                                                                                                                                                                                                          |
 
 ## PCIe: the card is at x16, and the link is not the limit
 
 Measured 2026-11-19 from sysfs and `lspci -vv`:
 
-| device | current | max |
-| --- | --- | --- |
-| R9700 `0000:0d:00.0` | **x16**, LnkSta reports 32 GT/s | x16 |
-| Lexa `0000:0e:00.0` | x8, 2.5 GT/s (downgraded) | x8 Gen3 |
-| root ports `0b:00.0` / `0c:00.0` | x16 | x16 |
+| device                           | current                         | max     |
+| -------------------------------- | ------------------------------- | ------- |
+| R9700 `0000:0d:00.0`             | **x16**, LnkSta reports 32 GT/s | x16     |
+| Lexa `0000:0e:00.0`              | x8, 2.5 GT/s (downgraded)       | x8 Gen3 |
+| root ports `0b:00.0` / `0c:00.0` | x16                             | x16     |
 
 So the "Gen4 x8" line in the older host notes is stale, and **moving the RX 550 to another slot
 cannot help**: the R9700 already has all 16 lanes and the Lexa sits on its own CPU root port
@@ -329,35 +329,35 @@ All on the R9700, one card, 125 GiB RAM. `--tune skip` unless stated, IQ3_S unle
 
 ### DFlash2 drafting is the single biggest lever
 
-| config | ctx | decode t/s | prefill t/s |
-| --- | ---: | ---: | ---: |
-| IQ2_XS, `--mtp off` | 256k | 66.7 | 2779 |
-| IQ2_XS, `--mtp on --drafting dflash2` | 256k | **84.9** | 2834 |
-| IQ2_XS, dflash2 + `--kv q4_0` | 256k | **89.2** | 2150 |
+| config                                |  ctx | decode t/s | prefill t/s |
+| ------------------------------------- | ---: | ---------: | ----------: |
+| IQ2_XS, `--mtp off`                   | 256k |       66.7 |        2779 |
+| IQ2_XS, `--mtp on --drafting dflash2` | 256k |   **84.9** |        2834 |
+| IQ2_XS, dflash2 + `--kv q4_0`         | 256k |   **89.2** |        2150 |
 
 DFlash2 adds **+27 %** decode. My earlier "MTP does nothing" reading was wrong because `--mtp off`
 disabled the drafter entirely. The draft acceptance is 120-125 of 175-260 guesses.
 
 ### KV format trades decode against prefill
 
-| KV | ctx | decode | prefill | note |
-| --- | ---: | ---: | ---: | --- |
-| `int8` (default) | 256k | 84.9 | 2834 | the safe default |
-| `q4_0` | 256k | 89.2 | 2150 | +5 % decode, **-24 % prefill**; perplexity +8-12 % per Strata's docs |
-| `k8v4` | 1M | 81.0 | 1904 | between the two, more precise than q4_0 |
+| KV               |  ctx | decode | prefill | note                                                                 |
+| ---------------- | ---: | -----: | ------: | -------------------------------------------------------------------- |
+| `int8` (default) | 256k |   84.9 |    2834 | the safe default                                                     |
+| `q4_0`           | 256k |   89.2 |    2150 | +5 % decode, **-24 % prefill**; perplexity +8-12 % per Strata's docs |
+| `k8v4`           |   1M |   81.0 |    1904 | between the two, more precise than q4_0                              |
 
 `k8v4` is the better choice for agent work: it keeps most of the prefill.
 
 ### Context: 1M works, with rope scaling
 
-`--context 512k` and `--context 1m` are accepted. Strata warns: *"more than the model was trained on
-(256K). Setup adds rope scaling for it (experimental); answers may get less reliable."*
+`--context 512k` and `--context 1m` are accepted. Strata warns: _"more than the model was trained on
+(256K). Setup adds rope scaling for it (experimental); answers may get less reliable."_
 
-| model | ctx | decode | prefill 10.5k |
-| --- | ---: | ---: | ---: |
-| IQ2_XS | 1M | **94.2** | 2103 |
-| IQ3_S | 1M | **81.0** | 1132 |
-| UD-IQ4_XS | 1M | **73.1** | 1885 |
+| model     | ctx |   decode | prefill 10.5k |
+| --------- | --: | -------: | ------------: |
+| IQ2_XS    |  1M | **94.2** |          2103 |
+| IQ3_S     |  1M | **81.0** |          1132 |
+| UD-IQ4_XS |  1M | **73.1** |          1885 |
 
 Context length costs nothing in decode here: IQ2_XS is as fast at 1M as at 256k.
 
@@ -365,13 +365,13 @@ Context length costs nothing in decode here: IQ2_XS is as fast at 1M as at 256k.
 
 Top-token agreement with Q8_0 is Strata's own yardstick (`docs/QUANTS.md`); speed is ours at 1M.
 
-| pack | size | top-token vs Q8_0 | decode | prefill |
-| --- | ---: | ---: | ---: | ---: |
-| IQ2_XS | 39.2 GB | lower than IQ3_S | **94.2** | 2103 |
-| IQ3_XXS | 47.0 GB | — | 63.0 (256k, no dflash) | 2844 |
-| **IQ3_S** | 54.8 GB | **87.7 %** | **81.0** | 1132 |
-| UD-IQ4_XS | 93.7 GB | **88.9 %** | **73.1** | 1885 |
-| UD-Q4_K_XL | 111.3 GB | **93.1 %** | see below | |
+| pack       |     size | top-token vs Q8_0 |                 decode | prefill |
+| ---------- | -------: | ----------------: | ---------------------: | ------: |
+| IQ2_XS     |  39.2 GB |  lower than IQ3_S |               **94.2** |    2103 |
+| IQ3_XXS    |  47.0 GB |                 — | 63.0 (256k, no dflash) |    2844 |
+| **IQ3_S**  |  54.8 GB |        **87.7 %** |               **81.0** |    1132 |
+| UD-IQ4_XS  |  93.7 GB |        **88.9 %** |               **73.1** |    1885 |
+| UD-Q4_K_XL | 111.3 GB |        **93.1 %** |              see below |         |
 
 Strata calls IQ3_S the size that "matches the full model on the published tests"; the per-token
 yardstick is stricter and puts UD-Q4_K_XL 5 points higher. Everything down to UD-Q4_K_XL clears
@@ -382,11 +382,11 @@ yardstick is stricter and puts UD-Q4_K_XL 5 points higher. Everything down to UD
 The lever is `--set vram-reserve-mib=N`: the engine deducts it before sizing the expert cache.
 (The elastic `POST /v1/vram` is NVIDIA-only; the static reserve is not.)
 
-| Strata reserve | Strata alone | + qwen3.5-4b on llama.cpp | total VRAM |
-| --- | ---: | ---: | ---: |
-| 0 (whole card) | 81.0 | not possible | 31 GiB |
-| 6000 MiB | 68.4 | **77.6 + 126.4** | 29 GiB |
-| 4000 MiB | 73-76 | 76.5 + 130.7 | 31 GiB (tight) |
+| Strata reserve | Strata alone | + qwen3.5-4b on llama.cpp |     total VRAM |
+| -------------- | -----------: | ------------------------: | -------------: |
+| 0 (whole card) |         81.0 |              not possible |         31 GiB |
+| 6000 MiB       |         68.4 |          **77.6 + 126.4** |         29 GiB |
+| 4000 MiB       |        73-76 |              76.5 + 130.7 | 31 GiB (tight) |
 
 **6 GB is the recommended reserve**: it fits a 4B (2.5 GB) or a 9B (5.3 GB) with headroom, and costs
 Strata about 15 % (81 → 68-78 t/s, run-to-run variance is real). The co-resident model runs fully
@@ -401,14 +401,14 @@ offloaded at 126 t/s — no CPU fallback.
 
 ### The full ladder, all at 1M with DFlash2 + k8v4
 
-| pack | size | quality | decode | prefill 10.5k | verdict |
-| --- | ---: | --- | ---: | ---: | --- |
-| IQ2_XS | 39.2 GB | below IQ3_S | **94.2** | 2103 | fastest, lowest quality |
-| IQ3_S | 54.8 GB | 87.7 % top-token | **81.0** | 1132 | Strata's "matches the full model on published tests" |
-| **Coder IQ1_M** | ~32 GB | 91 % SWE-bench, 99 % LiveCodeBench | **86.2** | 2250 | the coding pick; weaker outside code |
-| Swift IQ3_XXS | ~47 GB | ≈ IQ3_XXS | 63.0 | 947 | fewer thinking tokens, not more t/s |
-| UD-IQ4_XS | 93.7 GB | 88.9 % top-token | **73.1** | 1885 | no download needed, already on disk |
-| **UD-Q4_K_XL** | 111.3 GB | **93.1 % top-token** | **56.6** | 1626 | the highest quality that still clears 40 t/s |
+| pack            |     size | quality                            |   decode | prefill 10.5k | verdict                                              |
+| --------------- | -------: | ---------------------------------- | -------: | ------------: | ---------------------------------------------------- |
+| IQ2_XS          |  39.2 GB | below IQ3_S                        | **94.2** |          2103 | fastest, lowest quality                              |
+| IQ3_S           |  54.8 GB | 87.7 % top-token                   | **81.0** |          1132 | Strata's "matches the full model on published tests" |
+| **Coder IQ1_M** |   ~32 GB | 91 % SWE-bench, 99 % LiveCodeBench | **86.2** |          2250 | the coding pick; weaker outside code                 |
+| Swift IQ3_XXS   |   ~47 GB | ≈ IQ3_XXS                          |     63.0 |           947 | fewer thinking tokens, not more t/s                  |
+| UD-IQ4_XS       |  93.7 GB | 88.9 % top-token                   | **73.1** |          1885 | no download needed, already on disk                  |
+| **UD-Q4_K_XL**  | 111.3 GB | **93.1 % top-token**               | **56.6** |          1626 | the highest quality that still clears 40 t/s         |
 
 Every one of them clears 40 t/s at the model's 1M window, so quality is the only real choice. The
 two picks: **Coder IQ1_M** for code and agent loops, **UD-Q4_K_XL** for general work where the
@@ -418,10 +418,10 @@ answer quality matters most.
 
 `UD-Q4_K_XL` at 1M with a 6 GB reserve, plus `qwen3.5-9b` fully offloaded on the same card:
 
-| round | Strata decode | 9B decode | VRAM |
-| ---: | ---: | ---: | ---: |
-| 1 | 53.1 | 87.3 | 31.0 of 31.8 GiB |
-| 2 | 60.4 | 87.9 | 31.0 of 31.8 GiB |
+| round | Strata decode | 9B decode |             VRAM |
+| ----: | ------------: | --------: | ---------------: |
+|     1 |          53.1 |      87.3 | 31.0 of 31.8 GiB |
+|     2 |          60.4 |      87.9 | 31.0 of 31.8 GiB |
 
 So the **93.1 %-quality primary at 53-60 t/s runs beside a 9B at 88 t/s**. A 4B needs 6 GB of
 reserve; a 9B wants 7 GB to keep the same headroom (6 GB was tight at 31.0 of 31.8 GiB).
@@ -440,3 +440,53 @@ hidden tuning gain left in the engine settings.
 - **Swift 1.5** is the only fine-tune in the feed (shorter thinking). Its own 5.2 GB draft head is
   required for DFlash2 and is downloaded once.
 
+## Companions for the frontier: what fits in the reserve, and how fast
+
+Every one of these beats the frontier's own 56-86 t/s for its own modality, because they are smaller
+and run fully offloaded.
+
+| companion                                    |    size | standalone (sweep) | beside Strata at a 17 GB reserve |
+| -------------------------------------------- | ------: | -----------------: | -------------------------------: |
+| `qwen3-omni-30b-a3b` (audio, video, text)    | 17.3 GB |          171.4 t/s |                     **84.1 t/s** |
+| `qwen3-vl-30b-a3b` (images, video frames)    | 17.3 GB |          169.7 t/s |                   — (same class) |
+| `ornith-1.5-35b-a3b` (vision + reasoning)    | 20.2 GB |          131.9 t/s |                     needs ~20 GB |
+| `qwen3-vl-8b-instruct` (images)              |  4.7 GB |          105.2 t/s |            fits the 6 GB reserve |
+| `gemma-4-e4b` (images, audio-capable family) |  4.8 GB |          127.8 t/s |            fits the 6 GB reserve |
+
+Cost to the frontier, measured: a 6-7 GB reserve leaves Strata at 68-78 t/s; a **17 GB** reserve (a
+30B multimodal) drops IQ3_S at 1M to **56.1 t/s**. So the useful tiers are:
+_small multimodal in 6 GB_ (8B class, 105-128 t/s), or _one big multimodal in 17-20 GB_
+(30-35B class, 84-132 t/s) at a ~30 % frontier cost.
+
+## KV cache: size, placement, and multi-agent
+
+Measured on IQ3_S with `--kv k8v4` at 1M, `free -g` after a clean load:
+
+| context | RAM used |   VRAM |
+| ------- | -------: | -----: |
+| 32k     |   86 GiB | 31 GiB |
+| 256k    |   88 GiB | 31 GiB |
+| 1M      |   95 GiB | 31 GiB |
+
+So the KV costs **about 10 KB per token** and lives in **RAM**, not VRAM: 9 GiB for the 992k tokens
+between 32k and 1M. Strata streams the KV from 64k upward and keeps only the attention window in
+VRAM (`--kv-resident`, default 32k tokens). The numbers match Strata's own 13.7 KB/token for
+`int8`; `k8v4` is 23 % smaller, hence ~10 KB.
+
+Multi-agent: `--parallel 4` at 256k costs **+5 GiB of RAM** and leaves single-request speed unchanged
+(79.4 t/s against 81.0 at `--parallel 1`). Slots are cheap in RAM and free in VRAM, so the practical
+budget for concurrent agents is RAM, not the card: four 256k slots still fit in 125 GiB beside a
+55 GB pack.
+
+## A second card: the W6600 would not pay for itself
+
+The W6600 (8 GB, ~224 GB/s, ~100 W) would run a 4-8B at roughly the speeds the W6600 era recorded
+here: 4B at ~61 t/s, 9B at ~6-30 t/s. The R9700 today runs a 4B at **126 t/s** inside a 6 GB
+reserve, a 9B at **88 t/s** inside 7 GB, and a 30B multimodal at **84 t/s** inside 17 GB — while
+also serving the frontier.
+
+So a second card adds ~100 W, a slot and a driver target for strictly less throughput than the
+reserve already buys. The only case where it wins is a workload that must keep all 32 GB of the
+R9700 untouched _and_ needs a second model at the same time; nothing measured here does. It would
+also take the second x16 slot, and although the R9700 currently holds x16 on its own root port, a
+second card can only add failure modes to a host with a known power-on fault.

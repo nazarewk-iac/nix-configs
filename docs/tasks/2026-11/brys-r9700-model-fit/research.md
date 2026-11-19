@@ -26,7 +26,7 @@ not a target.
 
 ## Memory arithmetic
 
-> **Corrected 2026-11-18 by measurement.** The model is **180B parameters** (48 layers, 512
+> **Corrected 2026-11-18 by measurement.** The model is **125B parameters plus a 51B n-gram table** (48 layers, 512
 > experts, top-10, 262k native context), not the ~125B the first draft assumed. The real Unsloth
 > sizes are UD-IQ1_S 66.4 GB, UD-IQ2_XS 75.8, UD-IQ3_XXS 83.6, UD-IQ4_XS 104.6, UD-Q4_K_XL 111.3,
 > Q8_0 188.2 GB. The earlier "IQ2_XS 39.2 GB / IQ3_XXS 47 GB" numbers came from a different quant
@@ -37,7 +37,7 @@ not a target.
 - Strata sizes the resident arena from available RAM and needs `experts + ~10 GB`. With 125 GiB
   usable, the Unsloth sizes up to `UD-Q4_K_XL` (111 GB) fit in RAM and `Q8_0` (188 GB) does not.
 - With 32 GB of VRAM, llama.cpp holds about **4-5 GB of dense weights plus ~28 GB of expert cache**.
-  On a 180B model with 512 experts per layer, that is roughly 40 of 48 layers' experts. On oams
+  On a 125B model with 512 experts per layer, that is roughly 40 of 48 layers' experts. On oams
   (12 GB) the same model ran 40.6 t/s with a much smaller cache; the larger cache is the main reason
   the R9700 is faster.
 - Maya tiers experts across VRAM, RAM and NVMe. With 157 GB combined it can hold the whole
@@ -74,7 +74,7 @@ is built for a single consumer card with tiered experts, and it is the only real
 
 > **Superseded by measurement on 2026-11-18.** The table below is the desk estimate, kept for the
 > reasoning. [measurements.md](measurements.md) has the measured numbers; several entries here are
-> wrong for this model: Flash-Next is **180B**, its real `UD-IQ1_S` is 66 GB, and llama.cpp (not
+> wrong for this model: Flash-Next is **125B + 51B n-gram**, its real `UD-IQ1_S` is 66 GB, and llama.cpp (not
 > Strata) is the harness that was actually measured. The measured shortlist is
 > **`UD-IQ1_S` at `--n-cpu-moe 26`, 64k context, 22 t/s, plus `qwen3.5-4b` co-resident**.
 
