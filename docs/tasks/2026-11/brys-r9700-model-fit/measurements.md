@@ -862,3 +862,55 @@ Properties that follow from that placement:
 
 Verified: `--ttl 0.3m` selected `omni-fast`, `strata-revert.service` fired 18 s later and posted
 `max`, and `/status` answered `{"profile": "max"}` throughout.
+
+## What a live omni request does to a loaded QFN (2026-11-19, measured)
+
+The manager settles the profile question, and llama-swap settles the model question, and they
+disagree about what "activate omni" means. `hack/probe-omni-swap.sh` reproduces the whole sequence.
+Measured on a healthy host with `max` loaded:
+
+| step                                                    | result                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------- |
+| QFN served `chat-deep-slow` with no proxy running yet    | 0.9 s, engine already up from the boot restore                |
+| `audio-std-mid` requested while `max` holds the card     | **200 in 48.9 s**, omni answered; VRAM 30 → 31 GiB            |
+| `chat-deep-slow` requested again, omni still resident    | **0.84 s** — QFN never moved                                  |
+
+So **no reconfiguration happens at all**. `audio-std-mid` sits in its own matrix set
+(`with_surveyed = <surveyed> & (<frontier>)`), so llama-swap co-loads it beside the frontier
+instead of evicting it. QFN keeps its engine, its conversation cache and its 73 t/s.
+
+The companion is the loser: `max` reserves no VRAM, so omni got about 1 GiB of the card and
+llama.cpp pushed nearly every layer back to the CPU. It answers, and it is nowhere near the 101
+t/s it reaches inside a 17 GB reserve. Co-residence without a reserve is a working answer, not a
+fast one.
+
+A real reconfiguration is only the profile switch, and that is the part that does not survive:
+
+| step                                     | result                                                                     |
+| ---------------------------------------- | -------------------------------------------------------------------------- |
+| `POST /select omni-max` under load       | 74 s, engine reloaded with the reserve, llama-swap's models dropped        |
+| `audio-std-mid` again, now with a reserve | 52 s, full offload                                                         |
+| `POST /select max`                       | 83 s, then a frontier request returned **500**                              |
+| after it                                 | the kernel OOM-killed the new engine: `anon 58 GB + file 28 GB + shmem 12 GB = 98 GB` |
+
+### The switch is memory-bound, not engine-bound
+
+Every failing switch ended the same way: the incoming engine reached 88-98 GiB RSS with `free` at
+zero, the kernel killed it, `OOMPolicy=stop` stopped the manager, the manager restored the previous
+profile, and the cycle repeated (restart counter 3). Raising `vm.min_free_kbytes` to 2 GiB and
+`vm.watermark_scale_factor` to 200 changed nothing: the burst still reached 93 GiB and still died.
+
+What *did* work was a reboot. With a fresh page cache and a cold ZFS ARC the same `max` profile
+loaded and served (30 GiB VRAM, 30 GiB RSS, ready in about 90 s). The load is a ~95 GiB transient on
+a 125 GiB host with **no swap**, and the warm state (40-48 GiB of page cache, 7 GiB of ARC, mlocked
+KV) leaves no room for it.
+
+Consequences to design around:
+
+- A profile switch on brys is only reliable while the host memory state is fresh. Treat `max` as the
+  operating point you boot into, not one you flip to and from during a session.
+- Freeing page cache before a load should be the first thing tried (`sync; echo 3 >
+  /proc/sys/vm/drop_caches`); it needs root, so the manager cannot do it as `llm-server`.
+- The alternative levers are a smaller resident footprint (a lower `--kv-resident` or an explicit
+  `--expert-cache` cap, at a decode cost) or a small zram cushion, which is the opposite of the
+  current "no swap" default.
