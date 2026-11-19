@@ -718,9 +718,12 @@ in
         "igb" # Intel Corporation I211 Gigabit Network Connection [8086:1539] (rev 03)
       ];
 
-      zramSwap.enable = lib.mkDefault true;
-      zramSwap.memoryPercent = 50;
-      zramSwap.priority = 100;
+      # ZRAM stays OFF on this host, on purpose. It is the only swap brys would have, and the LLM
+      # services keep 90-115 GiB of a 125 GiB machine resident (expert arenas, the streamed KV
+      # cache). Swapping any of that costs a zstd decompress on every touch, which shows up as
+      # latency spikes in long-context answers and re-prefill. Without swap a spike kills one
+      # process; with zram it degrades every answer. Reliability of the served models wins.
+      zramSwap.enable = lib.mkDefault false;
 
       # 12G was not enough for a large rebuild.
       boot.tmp.tmpfsSize = "32G";
