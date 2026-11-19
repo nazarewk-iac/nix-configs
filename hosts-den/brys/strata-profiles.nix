@@ -68,14 +68,16 @@ in
 {
   # ---------------------------------------------------------------- the service account
   # A high, fixed pair out of every dynamic-assignment pool, so the UID/GID mean the same thing on
-  # every machine that shares the LLM tree. `isSystemUser` cannot be used: it asserts uid < 1000.
+  # every machine that shares the LLM tree. `isSystemUser` stays on so the account gets no login
+  # shell and no aging; it does **not** cap the uid — only `isNormalUser` would assert uid >= 1000,
+  # and that is the flag this account must not carry.
   users.groups.llm-server = {
     gid = 67890;
   };
   users.users.llm-server = {
     isSystemUser = true;
     group = "llm-server";
-    uid = 968;
+    uid = 67890;
     home = "${llmsRoot}/home";
     createHome = true;
     description = "Generic LLMs runner account";
