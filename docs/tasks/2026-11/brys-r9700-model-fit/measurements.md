@@ -292,3 +292,13 @@ Until then, GLM-5.3-Flash stays on llama.cpp at 8.9 t/s and the 321B tier is unt
 
 What was spent: the repo clone, the Python venv, the llama.cpp source fetch, and about 30 minutes of
 fighting the CMake prefix. The model (96.5 GB) was never downloaded.
+
+## What was tried and did not pay off
+
+| idea | result |
+| --- | --- |
+| llama.cpp **0.9.0** instead of the served 0.6.0 | the nixpkgs build has **no Vulkan backend** (`libggml-vulkan.so` absent) and falls back to BLAS/CPU: 11.8 t/s against 137.7 on the same 4B model. Not a fair comparison until someone packages a Vulkan 0.9.0; the repo's own package is the only Vulkan build on the host. |
+| **Speculative decoding** with a small draft | `qwen3.5-9b` + `qwen3.5-0.8b` draft: 87.0 t/s plain vs 86.7 with the draft, and `draft_n` stayed `None`, so no drafting happened. There is no matched drafter on disk for any dense model we serve. |
+| **Maya** for GLM-5.3-Flash | blocked on packaging (see above), not on the card. |
+| **ik_llama.cpp** | not in nixpkgs; a source build with its own Vulkan flags. Left as a task. |
+| deeper power caps (175/150 W) | the driver floor is 210 W on this card; anything lower is refused. |
