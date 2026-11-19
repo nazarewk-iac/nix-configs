@@ -815,3 +815,50 @@ Two details that cost an hour:
   dead; the proxy is one IPv6 socket with `IPV6_V6ONLY=0` so it accepts both families.
 - **`strata runtime start` takes a saved _preset_ name, not a config path**, so the manager
   supervises `strata serve --profile <config>` as its own child instead.
+
+### A live reserve change is not possible on this card
+
+The obvious way out of the `max` ↔ `omni-max` reload would be to move the reserve on a running
+engine, so `max` and `omni` become one engine with an elastic split. Two measurements close it:
+
+- `POST /v1/vram {"reserve_mib": 12000}` answers
+  `VRAM needs an engine started with --vram-elastic (one NVIDIA GPU, --serve)`.
+- Restarting with `--vram-elastic` adds the flag but the engine still refuses: the check is on the
+  backend, not the flag, and `strata generate` reports `--vram-elastic is off: %s` for HIP.
+
+So a reserve change costs a real reload (47–50 s warm, 601–837 s cold). Keep the reserve a start-up
+argument.
+
+### A timed loan, reverted outside the manager
+
+A profile selection is easy to forget: a mixed-mode session can hold the smaller reserve for the
+rest of the day. The first implementation put the revert in the manager itself — an `expires_at`
+field and a thread that called `select(default)` when the deadline passed. It worked once and then
+wedged the manager: the revert runs through the same lock and the same drain as a client request, so
+a slow or failing revert blocked `/status` and every later `/select`. Test run: `expires_at` stuck
+in the state file, `/status` silent, no revert, engine gone.
+
+The revert therefore lives **outside** the process that it can block:
+
+```bash
+hack/brys-frontier.sh up --profile omni-fast --ttl 30m
+```
+
+`up` posts `/select`, then arms a transient unit:
+
+```
+systemd-run --unit=strata-revert --on-active=30m --collect \
+  -- curl -sS -m 900 -X POST http://127.0.0.1:8181/select -d '{"profile":"max"}'
+```
+
+Properties that follow from that placement:
+
+| property            | why                                                                             |
+| ------------------- | ------------------------------------------------------------------------------- |
+| crash-safe          | the timer is systemd state, not a thread, so a manager restart keeps the deadline |
+| non-blocking        | a failing revert cannot hold the manager lock, because it is a separate process   |
+| idempotent          | the default profile is `changed: false` when it is already current (0.0009 s)     |
+| visible             | `journalctl -u strata-revert` holds the request and the reply                    |
+
+Verified: `--ttl 0.3m` selected `omni-fast`, `strata-revert.service` fired 18 s later and posted
+`max`, and `/status` answered `{"profile": "max"}` throughout.
