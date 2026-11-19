@@ -258,12 +258,20 @@ let
   #   router options live under the same `kdn.llm.local` tree, so it stays one aspect.
   # - `security-secrets-age`: `tpm` selects the TPM-backed age identity instead of the file
   #   identity. The rest of the age configuration is shared, so it stays one aspect.
+  # - `service-rosec`: `rosecd.enable` selects the daemon unit (a desktop that already holds
+  #   `org.freedesktop.secrets` points `rosecd.unitName` at its own holder), `rosecd.unlock.enable`
+  #   selects the unlock oneshot, and `providers.sops.keyGeneration.enable` selects TPM-backed key
+  #   generation for the same provider. All three are modes of `kdn.services.rosec`; a separate
+  #   aspect would have to reach back into that tree.
   allowedEnables = [
     "llm/nixos: kdn.llm.local.compatProxy.enable"
     "llm/nixos: kdn.llm.local.swap.enable"
     "security-secrets-age/darwin: kdn.security.secrets.age.tpm.enable"
     "security-secrets-age/homeManager: kdn.security.secrets.age.tpm.enable"
     "security-secrets-age/nixos: kdn.security.secrets.age.tpm.enable"
+    "service-rosec/homeManager: kdn.services.rosec.providers.sops.keyGeneration.enable"
+    "service-rosec/homeManager: kdn.services.rosec.rosecd.enable"
+    "service-rosec/homeManager: kdn.services.rosec.rosecd.unlock.enable"
   ];
 
   enableHits = lib.subtractLists allowedEnables (
