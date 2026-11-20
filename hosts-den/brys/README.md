@@ -54,7 +54,7 @@ The fleet's llama-swap runs on `127.0.0.1:39700` as `llm-server`. The frontier
 (`Qwen3.8-Flash-Next` QFN at 1M) is not a llama.cpp model any more: it is a **Strata** engine on
 `:8080`, owned by `strata-manager` (`:8181`). Four llama-swap entries call `strata-select`, which
 asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`), **`qfn-max`** (forces
-`max`), **`qfn-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion, no profile at all).
+`max`), **`qfn-fast-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion, no profile at all).
 
 ### Operating points and the resting profile
 
@@ -103,7 +103,7 @@ asks for `auto`, which keeps whatever profile is current.
 
 A coding session is running and a screenshot of a BIOS/boot error arrives:
 
-1. `POST /select {"profile": "qfn-colo"}` — only if `/status` says the engine is not already
+1. `POST /select {"profile": "qfn-fast-colo"}` — only if `/status` says the engine is not already
    there; `dry_run` answers that without a reload.
 2. Ask `qwen3-omni` for the reading. It loads beside the engine; the frontier keeps its KV and its
    conversation cache.

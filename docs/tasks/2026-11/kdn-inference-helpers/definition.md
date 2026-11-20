@@ -1,6 +1,6 @@
 ---
 type: Task
-description: Replace the four hand-written Strata runtime pieces (manager, proxy, select, serve) with one stdlib-only Go binary at packages/strata-helpers/, keeping the HTTP API, the event journal and llama-swap's process contract unchanged.
+description: Replace the four hand-written Strata runtime pieces (manager, proxy, select, serve) with one stdlib-only Go binary at packages/kdn-inference-helpers/, keeping the HTTP API, the event journal and llama-swap's process contract unchanged.
 status: open
 authored_by: agent
 timestamp: 2026-11-20T08:30:00+01:00
@@ -39,7 +39,7 @@ typed, tested implementation prevents structurally.
 
 ## Goal
 
-One repository package, `packages/strata-helpers/`, producing **one static binary** with
+One repository package, `packages/kdn-inference-helpers/`, producing **one static binary** with
 subcommands, using only the Go standard library, that replaces the four pieces while keeping every
 observable contract: the HTTP API and its JSON, the event journal, the file paths, the environment
 variables, the sudoers line, and llama-swap's expectation that an entry command listens on `${PORT}`.

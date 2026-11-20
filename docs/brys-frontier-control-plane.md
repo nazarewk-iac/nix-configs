@@ -20,7 +20,7 @@ the agent-facing rules in [.agents/skills/kdn-llms/SKILL.md](../.agents/skills/k
 ```
  harness (OpenCode, Pi, curl)
         |
-        |  OpenAI /v1, model = qfn | qfn-max | qfn-colo | qwen3-omni
+        |  OpenAI /v1, model = qfn | qfn-max | qfn-fast-colo | qwen3-omni
         v
  LiteLLM gateway (etra)  .............  optional; the four names are static there
         |
@@ -49,14 +49,14 @@ harness is.
 
 ## The four names
 
-| name         | entry command             | what happens                                               |
-| ------------ | ------------------------- | ---------------------------------------------------------- |
-| `qfn`        | `strata-select auto`      | keeps the current profile; **no reload**                   |
-| `qfn-max`    | `strata-select max`       | selects `max` (UD-IQ4_XS, whole card, 73 t/s @1M)          |
-| `qfn-colo`   | `strata-select omni-fast` | selects `omni-fast` (IQ2_XS + 21.5 GB reserve, 72 t/s @1M) |
-| `qwen3-omni` | plain llama.cpp model     | loads inside the reserve, beside the engine                |
+| name            | entry command             | what happens                                               |
+| --------------- | ------------------------- | ---------------------------------------------------------- |
+| `qfn`           | `strata-select auto`      | keeps the current profile; **no reload**                   |
+| `qfn-max`       | `strata-select max`       | selects `max` (UD-IQ4_XS, whole card, 73 t/s @1M)          |
+| `qfn-fast-colo` | `strata-select omni-fast` | selects `omni-fast` (IQ2_XS + 21.5 GB reserve, 72 t/s @1M) |
+| `qwen3-omni`    | plain llama.cpp model     | loads inside the reserve, beside the engine                |
 
-The manager accepts the same words as profile names (`qfn` → `auto`, `qfn-max` → `max`, `qfn-colo`
+The manager accepts the same words as profile names (`qfn` → `auto`, `qfn-max` → `max`, `qfn-fast-colo`
 → `omni-fast`), so a person and a harness share one vocabulary. `omni-max` (UD-IQ4_XS with the
 reserve, 42 t/s) exists only through the API.
 
@@ -96,7 +96,7 @@ design exists to prevent.
 | Pi harness through the gateway | counted 1…400, exit 0 | 66 s              | complete |
 
 A request that arrives during the switch waits for the new engine and is served by it. `qfn-max`
-and `qfn-colo` get the same treatment, but they are the ones that _ask_ for the reload, so a caller
+and `qfn-fast-colo` get the same treatment, but they are the ones that _ask_ for the reload, so a caller
 of those can still be interrupted by another selection.
 
 ## The event journal

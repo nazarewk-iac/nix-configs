@@ -853,12 +853,12 @@ systemd-run --unit=strata-revert --on-active=30m --collect \
 
 Properties that follow from that placement:
 
-| property            | why                                                                             |
-| ------------------- | ------------------------------------------------------------------------------- |
-| crash-safe          | the timer is systemd state, not a thread, so a manager restart keeps the deadline |
-| non-blocking        | a failing revert cannot hold the manager lock, because it is a separate process   |
-| idempotent          | the default profile is `changed: false` when it is already current (0.0009 s)     |
-| visible             | `journalctl -u strata-revert` holds the request and the reply                    |
+| property     | why                                                                               |
+| ------------ | --------------------------------------------------------------------------------- |
+| crash-safe   | the timer is systemd state, not a thread, so a manager restart keeps the deadline |
+| non-blocking | a failing revert cannot hold the manager lock, because it is a separate process   |
+| idempotent   | the default profile is `changed: false` when it is already current (0.0009 s)     |
+| visible      | `journalctl -u strata-revert` holds the request and the reply                     |
 
 Verified: `--ttl 0.3m` selected `omni-fast`, `strata-revert.service` fired 18 s later and posted
 `max`, and `/status` answered `{"profile": "max"}` throughout.
@@ -869,11 +869,11 @@ The manager settles the profile question, and llama-swap settles the model quest
 disagree about what "activate omni" means. `hack/probe-omni-swap.sh` reproduces the whole sequence.
 Measured on a healthy host with `max` loaded:
 
-| step                                                    | result                                                        |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| QFN served `chat-deep-slow` with no proxy running yet    | 0.9 s, engine already up from the boot restore                |
-| `audio-std-mid` requested while `max` holds the card     | **200 in 48.9 s**, omni answered; VRAM 30 → 31 GiB            |
-| `chat-deep-slow` requested again, omni still resident    | **0.84 s** — QFN never moved                                  |
+| step                                                  | result                                             |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| QFN served `chat-deep-slow` with no proxy running yet | 0.9 s, engine already up from the boot restore     |
+| `audio-std-mid` requested while `max` holds the card  | **200 in 48.9 s**, omni answered; VRAM 30 → 31 GiB |
+| `chat-deep-slow` requested again, omni still resident | **0.84 s** — QFN never moved                       |
 
 So **no reconfiguration happens at all**. `audio-std-mid` sits in its own matrix set
 (`with_surveyed = <surveyed> & (<frontier>)`), so llama-swap co-loads it beside the frontier
@@ -886,12 +886,12 @@ fast one.
 
 A real reconfiguration is only the profile switch, and that is the part that does not survive:
 
-| step                                     | result                                                                     |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| `POST /select omni-max` under load       | 74 s, engine reloaded with the reserve, llama-swap's models dropped        |
-| `audio-std-mid` again, now with a reserve | 52 s, full offload                                                         |
-| `POST /select max`                       | 83 s, then a frontier request returned **500**                              |
-| after it                                 | the kernel OOM-killed the new engine: `anon 58 GB + file 28 GB + shmem 12 GB = 98 GB` |
+| step                                      | result                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| `POST /select omni-max` under load        | 74 s, engine reloaded with the reserve, llama-swap's models dropped                   |
+| `audio-std-mid` again, now with a reserve | 52 s, full offload                                                                    |
+| `POST /select max`                        | 83 s, then a frontier request returned **500**                                        |
+| after it                                  | the kernel OOM-killed the new engine: `anon 58 GB + file 28 GB + shmem 12 GB = 98 GB` |
 
 ### The switch is memory-bound, not engine-bound
 
@@ -920,12 +920,12 @@ older tables (601-837 s) was a first-ever read of a fresh pack, not this.
 
 Measured with the drop in place, back to back on a warm host:
 
-| step                      | result                                  |
-| ------------------------- | --------------------------------------- |
-| `POST /select omni-max`   | 64 s, engine ready, no OOM              |
-| `POST /select max`        | 67 s, engine ready, **30 GiB VRAM**     |
-| kernel OOM kills          | 0                                       |
-| manager failures          | 0 (previously: restart counter 3+ loops) |
+| step                    | result                                   |
+| ----------------------- | ---------------------------------------- |
+| `POST /select omni-max` | 64 s, engine ready, no OOM               |
+| `POST /select max`      | 67 s, engine ready, **30 GiB VRAM**      |
+| kernel OOM kills        | 0                                        |
+| manager failures        | 0 (previously: restart counter 3+ loops) |
 
 The drop ran three times in a row (20:22, 20:26, 20:28) and each switch completed, including the
 `max` switch that had OOMed twice before. A request through llama-swap then answered in 0.75 s, an
@@ -937,19 +937,18 @@ Two things this does not change:
   load, which is exactly when it is needed.
 - `max` ↔ `omni-max` still costs a full reload. The drop makes the reload survive, not free.
 
-
 ## Operating points: which one to rest on (2026-11-19)
 
 Four ways to have QFN and omni on one card, all measured back to back on the same host with the
 same prompt (48-96 tokens, temperature 0). "Warm" is the second request against a loaded model, so
 the load is not in the rate.
 
-| resting profile | pack + reserve                | QFN warm t/s | omni warm t/s        | RAM left        |
-| --------------- | ----------------------------- | -----------: | -------------------- | --------------- |
-| `max`           | UD-IQ4_XS, whole card         |  94.8-100.4  | 6.1 (co-loaded, CPU) | **2-3 GiB**     |
-| `omni-max`      | UD-IQ4_XS + 21.5 GB reserve   |       59.2-62.0 | **96.9**, always ready | 3-5 GiB     |
-| `omni-fast`     | IQ2_XS + 21.5 GB reserve      |         88.3 | **98.8**, always ready | **23-27 GiB** |
-| `max` again     | UD-IQ4_XS, whole card         |         93.3 | a switch away        | 3-4 GiB         |
+| resting profile | pack + reserve              | QFN warm t/s | omni warm t/s          | RAM left      |
+| --------------- | --------------------------- | -----------: | ---------------------- | ------------- |
+| `max`           | UD-IQ4_XS, whole card       |   94.8-100.4 | 6.1 (co-loaded, CPU)   | **2-3 GiB**   |
+| `omni-max`      | UD-IQ4_XS + 21.5 GB reserve |    59.2-62.0 | **96.9**, always ready | 3-5 GiB       |
+| `omni-fast`     | IQ2_XS + 21.5 GB reserve    |         88.3 | **98.8**, always ready | **23-27 GiB** |
+| `max` again     | UD-IQ4_XS, whole card       |         93.3 | a switch away          | 3-4 GiB       |
 
 At the served 1M context the earlier sweep puts the same profiles at 73.1 t/s (`max`), 71.6
 (`omni-fast`) and 42.3 (`omni-max`), so `omni-fast` costs about **2 % at long context** and about
@@ -1022,7 +1021,7 @@ this profile" path for a caller that knows it needs the reserve.
 
 ### Unloading a companion must not unload the frontier
 
-The first version unloaded *every* llama-swap model before a reload. That kills the child whose
+The first version unloaded _every_ llama-swap model before a reload. That kills the child whose
 request asked for the switch: measured once, llama-swap started `strata-select max`, the manager
 unloaded all models ten milliseconds later, and the client got HTTP 500. The fix is to unload only
 the companions (`/api/models/unload/<id>` for every loaded id that is not a frontier entry). The
@@ -1030,15 +1029,15 @@ frontier proxies stay valid across a switch — same port, same protocol — so 
 
 ### The control plane
 
-| call                                           | purpose                                                  |
-| ---------------------------------------------- | -------------------------------------------------------- |
-| `GET /status`                                  | profile, last switch, loaded companions                  |
-| `GET /stats`                                   | n/median/p90/max per event and per transition             |
-| `GET /events?limit=N`                          | the raw timed records                                    |
-| `POST /select {"profile": X}`                  | switch                                                   |
-| `POST /select {"profile": X, "dry_run": true}` | what it would cost, without touching the engine           |
-| `POST /select {"profile": "auto"}`             | keep the current profile                                 |
-| `POST /unload[{"model": id}]`                  | unload companions, engine untouched                     |
+| call                                           | purpose                                         |
+| ---------------------------------------------- | ----------------------------------------------- |
+| `GET /status`                                  | profile, last switch, loaded companions         |
+| `GET /stats`                                   | n/median/p90/max per event and per transition   |
+| `GET /events?limit=N`                          | the raw timed records                           |
+| `POST /select {"profile": X}`                  | switch                                          |
+| `POST /select {"profile": X, "dry_run": true}` | what it would cost, without touching the engine |
+| `POST /select {"profile": "auto"}`             | keep the current profile                        |
+| `POST /unload[{"model": id}]`                  | unload companions, engine untouched             |
 
 ### The event journal, and what it already shows
 
@@ -1049,14 +1048,14 @@ and is recorded as "how long it was loaded", not as a duration.
 
 First day, 21 events:
 
-| event            | n | median | max  |
-| ---------------- | -: | -----: | ---: |
-| `switch`         | 6 |   42 s | 69 s |
-| `engine_load`    | 6 |   42 s | 60 s |
-| `engine_stop`    | 2 |  3.7 s | 3.8 s |
-| `cache_drop`     | 2 |  4.2 s | 4.9 s |
-| `companion_up`   | 2 | 90.1 s | 90.1 s |
-| `companion_down` | 1 |  0.6 s | 0.6 s |
+| event            |   n | median |    max |
+| ---------------- | --: | -----: | -----: |
+| `switch`         |   6 |   42 s |   69 s |
+| `engine_load`    |   6 |   42 s |   60 s |
+| `engine_stop`    |   2 |  3.7 s |  3.8 s |
+| `cache_drop`     |   2 |  4.2 s |  4.9 s |
+| `companion_up`   |   2 | 90.1 s | 90.1 s |
+| `companion_down` |   1 |  0.6 s |  0.6 s |
 
 Per transition: `max → omni-fast` 50 s, `omni-fast → max` 69 s. A restore at manager start is
 42-45 s.
@@ -1090,9 +1089,9 @@ Two timing facts from the same test:
 ## Four names, and a switch that never cuts `qfn` (2026-11-20)
 
 The alias set collapsed to the whole surface: **`qfn`** (profile-neutral), **`qfn-max`** (forces
-`max`), **`qfn-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion). The four
+`max`), **`qfn-fast-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion). The four
 `*-deep-slow` names, the two `chat-deep-slow-*` profile names and `audio-std-mid` are gone. The
-manager accepts the same words as profiles (`qfn` → `auto`, `qfn-max` → `max`, `qfn-colo` →
+manager accepts the same words as profiles (`qfn` → `auto`, `qfn-max` → `max`, `qfn-fast-colo` →
 `omni-fast`), so a person and a harness share one vocabulary.
 
 The llama.cpp QFN entry (`qwen3.8-flash-next`) lost its aliases as well: two served models claiming
@@ -1108,11 +1107,11 @@ requests.
 
 Measured, all three levels:
 
-| level | in-flight request | switch | result |
-| --- | --- | --- | --- |
-| brys proxy, streaming 600 tokens | 602 chunks in 6.7 s | 73 s, `drain` event 6.3 s | complete stream |
-| gateway on etra, streaming 500 tokens | 502 chunks in 6.2 s | 72.5 s | complete stream |
-| **Pi harness** through the gateway | `pi -p` counted 1…400, exit 0 | 66 s | complete answer |
+| level                                 | in-flight request             | switch                    | result          |
+| ------------------------------------- | ----------------------------- | ------------------------- | --------------- |
+| brys proxy, streaming 600 tokens      | 602 chunks in 6.7 s           | 73 s, `drain` event 6.3 s | complete stream |
+| gateway on etra, streaming 500 tokens | 502 chunks in 6.2 s           | 72.5 s                    | complete stream |
+| **Pi harness** through the gateway    | `pi -p` counted 1…400, exit 0 | 66 s                      | complete answer |
 
 So the harness is **delayed, not interrupted**: the switch waits for the generation it would
 otherwise have killed, and a request arriving mid-switch is served by the new engine after the

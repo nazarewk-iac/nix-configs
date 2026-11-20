@@ -220,16 +220,17 @@ spare, both models are reachable without a switch, and the frontier loses about 
 
 There are exactly **four** names for the frontier and its companion:
 
-| name         | what it is                                                         | a request to it             |
-| ------------ | ------------------------------------------------------------------ | --------------------------- |
-| `qfn`        | the frontier, whatever profile is current (`auto`)                 | never switches              |
-| `qfn-max`    | the frontier on the whole card (UD-IQ4_XS)                         | switches to `max`           |
-| `qfn-colo`   | the frontier plus the 21.5 GB reserve the companion needs (IQ2_XS) | switches to `omni-fast`     |
-| `qwen3-omni` | the video/audio companion, loaded on demand                        | no switch, fits the reserve |
+| name            | what it is                                                         | a request to it             |
+| --------------- | ------------------------------------------------------------------ | --------------------------- |
+| `qfn`           | the frontier, whatever profile is current (`auto`)                 | never switches              |
+| `qfn-max`       | the frontier on the whole card (UD-IQ4_XS)                         | switches to `max`           |
+| `qfn-max-colo`  | the frontier plus the 21.5 GB reserve, best pack (UD-IQ4_XS)       | switches to `omni-max`      |
+| `qfn-fast-colo` | the frontier plus the 21.5 GB reserve the companion needs (IQ2_XS) | switches to `omni-fast`     |
+| `qwen3-omni`    | the video/audio companion, loaded on demand                        | no switch, fits the reserve |
 
 **`qfn` is the name to use.** It never switches, and a switch that somebody else starts does not cut
 your request: in-flight work is drained first (the switch waits for it) and a request that arrives
-mid-switch is delayed until the new engine answers. `qfn-max` and `qfn-colo` do force a profile, so
+mid-switch is delayed until the new engine answers. `qfn-max` and `qfn-fast-colo` do force a profile, so
 a caller of those may be interrupted when the other one is selected.
 
 ### Reading and steering it
@@ -269,7 +270,7 @@ Rules that keep a session alive:
 
 A coding session is running. A screenshot of a BIOS/boot error arrives:
 
-1. `POST /select {"profile":"qfn-colo"}` — only if the engine is not already there (check
+1. `POST /select {"profile":"qfn-fast-colo"}` — only if the engine is not already there (check
    `/status` first; `dry_run` says whether it would change anything). The name works as a profile
    here too.
 2. Ask `qwen3-omni` for the reading. It loads beside the engine; the frontier keeps its KV.
