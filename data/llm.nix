@@ -453,11 +453,20 @@ in
     # QFN for them and they for QFN. That is the hardware's verdict: Qwen-Image-Edit at Q8_0 is
     # 21.8 GB plus a 9.4 GB encoder, and VACE 14B at fp8 wants most of the card too.
     #
-    # They are DISABLED until the serving stack is proven (docs/tasks/2026-11/image-video-editing-models):
+    # They are DISABLED until the serving stack is wired (docs/tasks/2026-11/image-video-editing-models):
     # llama.cpp cannot run a diffusion model, so the entry is a `stable-diffusion-cpp` server on the
-    # port llama-swap hands over, not a llama-server. The `command` below is the intended shape and
-    # is deliberately left out until the smoke test passes, so nothing advertises a model that no
-    # process serves.
+    # port llama-swap hands over, not a llama-server. The `command` is deliberately left out until
+    # the manager has an `image` profile to start it, so nothing advertises a model that no process
+    # serves.
+    #
+    # The runtime is proven: sd.cpp on Vulkan, no torch, no ROCm. Measured on brys, 1024x1024, one
+    # photograph, one instruction (docs/tasks/2026-11/image-video-editing-models/measurements.md):
+    #   qwen-image-edit + the 4-step Lightning LoRA   44 s, 26.2 GiB
+    #   longcat-image-edit, official bf16             30 s, 22.9 GiB
+    #   wan-vace-14b, 480p x 33 frames                 see the measurements file
+    # Two traps that cost hours: the RX 550 enumerates as vulkan0 and the R9700 as vulkan1, and the
+    # third-party LongCat GGUF is a broken conversion that renders noise. Pin the device, and prove
+    # a model with its official weights before trusting a quantisation of it.
     "qwen-image-edit" = {
       aliases = [ ];
       capabilities = {
@@ -471,7 +480,9 @@ in
         servedContext = 4096;
         common = {
           enable = false;
-          hfFile = "Qwen-Image-Edit-2511-Q8_0.gguf";
+          # The set: this GGUF, Qwen2.5-VL-7B-Instruct-Q8_0 (text encoder), mmproj-F16 (vision),
+          # qwen_image_vae.safetensors, and the Lightning 4-step LoRA.
+          hfFile = "qwen-image-edit-2511-Q4_K_M.gguf";
           hfRepo = "unsloth/Qwen-Image-Edit-2511-GGUF";
           download.enable = false;
           perf.contextSize = 4096;
@@ -491,8 +502,10 @@ in
         servedContext = 4096;
         common = {
           enable = false;
-          hfFile = "LongCat-Image-Edit-Turbo/LongCat-Image-Edit-Turbo.safetensors";
-          hfRepo = "meituan-longcat/LongCat-Image-Edit-Turbo";
+          # Official ComfyUI single file. It uses the FLUX VAE and the same Qwen2.5-VL encoder as
+          # qwen-image-edit. The vantagewithai GGUF of this model loads and renders noise.
+          hfFile = "split_files/diffusion_models/longcat_image_edit_turbo_bf16.safetensors";
+          hfRepo = "Comfy-Org/LongCat-Image";
           download.enable = false;
           perf.contextSize = 4096;
         };
@@ -511,8 +524,9 @@ in
         servedContext = 4096;
         common = {
           enable = false;
-          hfFile = "wan2.1_vace_14B_fp8.safetensors";
-          hfRepo = "Wan-AI/Wan2.1-VACE-14B";
+          # The set: this GGUF, umt5-xxl-encoder-Q8_0 (text encoder), wan_2.1_vae.safetensors.
+          hfFile = "Wan2.1_14B_VACE-Q4_K_M.gguf";
+          hfRepo = "QuantStack/Wan2.1_14B_VACE-GGUF";
           download.enable = false;
           perf.contextSize = 4096;
         };
