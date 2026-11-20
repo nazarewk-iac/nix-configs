@@ -38,6 +38,9 @@ type Config struct {
 	// list skips the phase entirely, which is the right answer for an engine whose loads do not
 	// need the page cache released.
 	CacheDropCommand []string `json:"cacheDropCommand"`
+	// PolicyPath is the placement tree and the facts it decides over. Empty means the deployment
+	// has not adopted the policy yet.
+	PolicyPath string `json:"policyPath"`
 	// EngineLog receives the engine child's stdout and stderr.
 	EngineLog string `json:"engineLog"`
 	// DrainTimeoutSeconds bounds how long a switch waits for in-flight requests.
@@ -97,6 +100,7 @@ func Defaults() *Config {
 		},
 		FrontierIDs:         []string{"qfn", "qfn-max", "qfn-max-colo", "qfn-fast-colo"},
 		TextProfiles:        []string{"max", "omni-max", "omni-fast"},
+		PolicyPath:          "/etc/kdn-inference-helpers/policy.json",
 		CacheDropCommand:    []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
 		Profiles:            map[string]ProfileOverride{},
 		Gates:               map[string]GateSpec{},

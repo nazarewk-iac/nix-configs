@@ -15,6 +15,7 @@ import (
 
 	"kdn-inference-helpers/internal/config"
 	"kdn-inference-helpers/internal/journal"
+	"kdn-inference-helpers/internal/policy"
 )
 
 // Backend is what the control plane needs from the engine. The supervisor and the llama-swap client
@@ -45,7 +46,10 @@ type Accessory interface {
 
 // Manager is the control plane: the selected profile, the drain, the journal and the HTTP API.
 type Manager struct {
-	Cfg     *config.Config
+	Cfg *config.Config
+	// Policy is the placement tree, loaded from the deployment. Nil means the deployment has not
+	// adopted it yet, and `/decide` answers 501 rather than inventing a decision.
+	Policy  *policy.Policy
 	Journal *journal.Journal
 	Leases  *Leases
 	Backend Backend
@@ -363,6 +367,7 @@ func (m *Manager) Handler() http.Handler {
 	mux.HandleFunc("/lease", m.handleLease)
 	mux.HandleFunc("/release", m.handleRelease)
 	mux.HandleFunc("/unload", m.handleUnload)
+	mux.HandleFunc("/decide", m.handleDecide)
 	return mux
 }
 
@@ -428,6 +433,125 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 	// recorded profile out of step with what is actually resident. Detach the work from the request
 	// context and let the response fail if nobody is listening.
 	writeJSON(w, http.StatusOK, m.SelectKeeping(context.WithoutCancel(r.Context()), body.Profile, body.DryRun, body.KeepCompanions))
+}
+
+// handleDecide runs the placement tree and returns the verdict with its trace. It is advisory: it
+// reads the state, it changes nothing, and it is deliberately not run under the switch lock.
+func (m *Manager) handleDecide(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST only"})
+		return
+	}
+	if m.Policy == nil {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{
+			"error": "this deployment has no placement policy",
+		})
+		return
+	}
+	var req policy.Request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "body must be JSON"})
+		return
+	}
+	if req.Model == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "request.model is required"})
+		return
+	}
+	// `qfn` is an alias the manager owns: resolve it before the policy sees it. `auto` means "the
+	// profile that is current", which is the profile-neutral engine in the policy's own table.
+	req.Model = m.Cfg.Normalise(req.Model)
+	switch req.Model {
+	case "auto":
+		req.Model = m.profileNeutralEngine()
+	case "none":
+		writeJSON(w, http.StatusConflict, map[string]any{
+			"error": "the engine is stopped; select a profile first",
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, m.Policy.Decide(req, m.activeForPolicy(r.Context()), m.policyState()))
+}
+
+// activeForPolicy is the resident set as the policy sees it: the engine that serves the current
+// profile plus every model llama-swap reports running.
+func (m *Manager) activeForPolicy(ctx context.Context) []policy.Active {
+	profile := m.CurrentProfile()
+	var out []policy.Active
+	// One engine is resident, never two: prefer the entry that names this profile exactly, and fall
+	// back to the profile-neutral one (`qfn`) only when nothing does.
+	engine := ""
+	for name, model := range m.Policy.Models {
+		if model.Kind == "engine" && model.Profile == profile {
+			engine = name
+			break
+		}
+	}
+	if engine == "" {
+		engine = m.profileNeutralEngine()
+	}
+	if engine != "" {
+		model := m.Policy.Models[engine]
+		out = append(out, policy.Active{
+			Model: engine, Kind: model.Kind, Tier: model.Tier, Profile: profile,
+			VRAMMiB: model.VRAMMiB, RAMMiB: model.RAMMiB,
+		})
+	}
+	for _, name := range m.safeLoaded(ctx) {
+		model, ok := m.Policy.Models[name]
+		if !ok || model.Kind == "engine" {
+			continue
+		}
+		out = append(out, policy.Active{
+			Model: name, Kind: model.Kind, Tier: model.Tier, Profile: model.Profile,
+			VRAMMiB: model.VRAMMiB, RAMMiB: model.RAMMiB,
+		})
+	}
+	return out
+}
+
+// profileNeutralEngine is the model the policy uses for "whatever text profile is current".
+func (m *Manager) profileNeutralEngine() string {
+	profile := m.CurrentProfile()
+	for name, model := range m.Policy.Models {
+		if model.Kind != "engine" || model.Profile != "" {
+			continue
+		}
+		if containsString(model.RequiresProfile, profile) {
+			return name
+		}
+	}
+	return ""
+}
+
+func (m *Manager) policyState() policy.State {
+	st := policy.State{
+		Profile:  m.CurrentProfile(),
+		Draining: m.Leases.Draining(),
+	}
+	used := 0
+	for _, a := range m.activeForPolicy(context.Background()) {
+		used += a.VRAMMiB
+	}
+	st.VRAMFreeMiB = m.Policy.Budget.VRAMMiB - used
+	if st.VRAMFreeMiB < 0 {
+		st.VRAMFreeMiB = 0
+	}
+	if last, ok := m.Journal.LastSwitch(); ok {
+		if ts, ok := last["ts"].(float64); ok {
+			t := time.Unix(0, int64(ts*1e9))
+			st.LastSwitchAt = &t
+		}
+	}
+	return st
+}
+
+func containsString(list []string, want string) bool {
+	for _, v := range list {
+		if v == want {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Manager) handleLease(w http.ResponseWriter, r *http.Request) {

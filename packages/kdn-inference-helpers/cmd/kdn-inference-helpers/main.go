@@ -34,6 +34,7 @@ import (
 	"kdn-inference-helpers/internal/engine/router"
 	"kdn-inference-helpers/internal/engine/strata"
 	"kdn-inference-helpers/internal/journal"
+	"kdn-inference-helpers/internal/policy"
 	"kdn-inference-helpers/internal/proxy"
 	"kdn-inference-helpers/internal/runtime"
 	"kdn-inference-helpers/internal/swap"
@@ -131,6 +132,15 @@ func runManager(ctx context.Context, args []string) error {
 	leases := control.NewLeases(time.Duration(cfg.LeaseTTLSeconds) * time.Second)
 	j := journal.New(cfg.EventsPath())
 	mgr := control.NewManager(cfg, j, leases, backend, client)
+	// The placement policy is optional: a deployment that has not adopted it answers 501.
+	if path := cfg.PolicyPath; path != "" {
+		if p, err := policy.Load(path); err != nil {
+			log.Printf("placement policy not loaded: %v", err)
+		} else {
+			mgr.Policy = p
+			log.Printf("placement policy loaded from %s (%d models)", path, len(p.Models))
+		}
+	}
 
 	// Restore the profile the last run left selected, and watch the companions llama-swap owns.
 	go mgr.Restore(ctx)
