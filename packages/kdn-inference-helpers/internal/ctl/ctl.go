@@ -129,7 +129,7 @@ func Run(ctx context.Context, baseURL string, args []string, out io.Writer) erro
 		if err := execRevert(ctx, revertCommand(baseURL, ttl)); err != nil {
 			return err
 		}
-		_, err = fmt.Fprintf(out, "scheduled: revert to qfn in %s (unit strata-revert)\n", ttl)
+		_, err = fmt.Fprintf(out, "scheduled: revert to qfn-max in %s (unit strata-revert)\n", ttl)
 		return err
 	case "down":
 		body, err := client.Select(ctx, "none", false)
@@ -170,11 +170,14 @@ func Run(ctx context.Context, baseURL string, args []string, out io.Writer) erro
 // revertCommand is the external timer that returns the engine to the resting profile. It lives
 // outside the manager on purpose: a manager restart cannot drop it and a failing revert cannot hold
 // the manager's lock (the failure mode of an in-process timer).
+//
+// It names `qfn-max`, not `qfn`: `qfn` is profile-neutral and would make the revert a no-op, and the
+// resting default is the whole-card profile.
 func revertCommand(baseURL, ttl string) []string {
 	return []string{
 		"sudo", "-n", "systemd-run", "--unit=strata-revert", "--on-active=" + ttl, "--collect",
 		"--", "curl", "-sS", "-m", "900", "-X", "POST", baseURL + "/select",
-		"-H", "Content-Type: application/json", "-d", `{"profile":"qfn"}`,
+		"-H", "Content-Type: application/json", "-d", `{"profile":"qfn-max"}`,
 	}
 }
 

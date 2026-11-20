@@ -44,6 +44,21 @@ type Config struct {
 	LeaseTTLSeconds int `json:"leaseTTLSeconds"`
 	// Profiles optionally overrides the adapter's profile table.
 	Profiles map[string]ProfileOverride `json:"profiles"`
+	// Gates is the policy for a gated model: which profiles satisfy it, which targets a caller may
+	// ask for, and which request field carries the request. The gate itself is generic; this is the
+	// deployment's data.
+	Gates map[string]GateSpec `json:"gates"`
+}
+
+// GateSpec is one gated model's policy. It lives in the config so a second gated model, or a
+// different colo tier, is a data change.
+type GateSpec struct {
+	// RequireProfiles are the profiles that already satisfy the model (they keep the reserve).
+	RequireProfiles []string `json:"requireProfiles"`
+	// Allow are the profiles a caller may name in the confirmation field.
+	Allow []string `json:"allow"`
+	// ConfirmField is the request-body field; `kdn_switch_to` when empty.
+	ConfirmField string `json:"confirmField"`
 }
 
 // ProfileOverride lets a deployment retune a profile without a rebuild: a different reserve on a
@@ -71,6 +86,7 @@ func Defaults() *Config {
 		FrontierIDs:         []string{"qfn", "qfn-max", "qfn-max-colo", "qfn-fast-colo"},
 		CacheDropCommand:    []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
 		Profiles:            map[string]ProfileOverride{},
+		Gates:               map[string]GateSpec{},
 		DrainTimeoutSeconds: 300,
 		LeaseTTLSeconds:     1800,
 	}

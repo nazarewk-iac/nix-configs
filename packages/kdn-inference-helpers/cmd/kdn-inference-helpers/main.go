@@ -54,8 +54,8 @@ func main() {
 		err = runSelect(ctx, os.Args[2:])
 	case "serve":
 		err = runServe(ctx, os.Args[2:])
-	case "omni":
-		err = runOmni(ctx, os.Args[2:])
+	case "gate":
+		err = runGate(ctx, os.Args[2:])
 	case "ctl":
 		err = runCtl(ctx, os.Args[2:])
 	case "version":
@@ -78,7 +78,7 @@ func usage() {
   proxy    forward one llama-swap entry port to the engine
   select   select a profile, then serve the proxy
   serve    materialise a profile and exec the engine
-  omni     the companion gate: refuse, or switch as the body asks, then serve the model
+  gate     guard a model behind a profile requirement (the collocated companion)
   ctl      up, down, status, stats, unload`)
 	os.Exit(2)
 }
@@ -343,17 +343,32 @@ func parsePositionalThenFlags(args []string, known map[string]bool) (string, map
 	return positional, flags, nil
 }
 
-// runOmni is the companion gate: it owns the model server (started lazily, after the reserve check)
-// and answers the 409 that turns a silently slow companion into an actionable error.
-func runOmni(ctx context.Context, args []string) error {
+// runGate guards one model behind a profile requirement: it owns the model server (started lazily,
+// after the check) and answers the 409 that turns a silently slow companion into an actionable error.
+//
+// The policy is the deployment's: `--name` selects a gate spec from the config, which says which
+// profiles satisfy the model, which targets a caller may ask for, and which body field carries the
+// request. Nothing about a particular model is compiled in.
+func runGate(ctx context.Context, args []string) error {
 	configPath, rest := extractConfigFlag(args)
+	name := ""
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == "--name" && i+1 < len(rest) {
+			name = rest[i+1]
+			i++
+		}
+	}
 	argv := companion.ResolveArgv(rest)
 	if len(argv) == 0 {
-		return fmt.Errorf("omni needs `-- <model server argv>`; llama-swap supplies it")
+		return fmt.Errorf("gate needs `-- <model server argv>`; llama-swap supplies it")
 	}
 	cfg, _, err := loadConfig(configPath)
 	if err != nil {
 		return err
+	}
+	spec, ok := cfg.Gates[name]
+	if !ok {
+		return fmt.Errorf("no gate named %q in the deployment config", name)
 	}
 	port, err := companion.PublicPort(argv)
 	if err != nil {
@@ -366,6 +381,8 @@ func runOmni(ctx context.Context, args []string) error {
 	}
 	gate := &companion.Gate{
 		Cfg:      cfg,
+		Name:     name,
+		Spec:     spec,
 		Manager:  fmt.Sprintf("http://127.0.0.1:%d", cfg.ManagerPort),
 		Upstream: supervisor.Upstream,
 	}
@@ -377,7 +394,7 @@ func runOmni(ctx context.Context, args []string) error {
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
 	}()
-	log.Printf("kdn-inference-helpers companion gate :%d (model starts on first allowed request)", port)
+	log.Printf("kdn-inference-helpers gate %q :%d (model starts on the first allowed request)", name, port)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}

@@ -70,6 +70,9 @@ func (b *Backend) LoadedModels(ctx context.Context) ([]string, error) {
 	return b.Swap.Loaded(ctx)
 }
 
+// Profiles is the adapter's table.
+func (b *Backend) Profiles() []string { return b.Supervisor.Adapter.Profiles() }
+
 // EngineReady reports whether the engine answers right now.
 func (b *Backend) EngineReady() bool {
 	return b.Supervisor.Ready(context.Background())

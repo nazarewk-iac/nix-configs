@@ -29,6 +29,9 @@ type Backend interface {
 	UnloadCompanions(ctx context.Context) ([]string, error)
 	LoadedModels(ctx context.Context) ([]string, error)
 	EngineReady() bool
+	// Profiles is the adapter's table, so a gate can check a requested target against what this
+	// deployment can actually serve.
+	Profiles() []string
 }
 
 // Accessory is the llama-swap side: which models are loaded, and unloading one by name.

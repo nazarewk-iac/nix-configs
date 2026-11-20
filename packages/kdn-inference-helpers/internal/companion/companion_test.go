@@ -36,7 +36,12 @@ func newGate(t *testing.T, profile string, upstream string) (*Gate, *int32) {
 	t.Cleanup(manager.Close)
 
 	gate := &Gate{
-		Cfg: cfg, Manager: manager.URL,
+		Cfg: cfg, Name: "qwen3-omni", Manager: manager.URL,
+		Spec: config.GateSpec{
+			RequireProfiles: []string{"omni-max", "omni-fast"},
+			Allow:           []string{"omni-max", "omni-fast"},
+			ConfirmField:    DefaultConfirmField,
+		},
 		Upstream: func(context.Context) (string, error) { return upstream, nil },
 	}
 	return gate, &selectCalls
@@ -67,7 +72,7 @@ func TestNoReserveRefusesWithAReadableConfirmationRequest(t *testing.T) {
 		}
 	}
 	confirm, _ := payload["confirm"].(map[string]any)
-	if confirm["field"] != ConfirmField {
+	if confirm["field"] != DefaultConfirmField {
 		t.Fatalf("confirm.field = %v", confirm["field"])
 	}
 	if atomic.LoadInt32(selects) != 0 {

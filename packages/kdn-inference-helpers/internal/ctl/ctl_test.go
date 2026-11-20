@@ -90,7 +90,7 @@ func TestRevertCommandArgvIsExact(t *testing.T) {
 	got := revertCommand("http://127.0.0.1:8181", "2h")
 	want := []string{"sudo", "-n", "systemd-run", "--unit=strata-revert", "--on-active=2h", "--collect",
 		"--", "curl", "-sS", "-m", "900", "-X", "POST", "http://127.0.0.1:8181/select",
-		"-H", "Content-Type: application/json", "-d", `{"profile":"qfn"}`}
+		"-H", "Content-Type: application/json", "-d", `{"profile":"qfn-max"}`}
 	if strings.Join(got, " ") != strings.Join(want, " ") {
 		t.Fatalf("argv = %v\nwant   %v", got, want)
 	}

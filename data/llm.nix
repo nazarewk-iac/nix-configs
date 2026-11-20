@@ -1273,7 +1273,9 @@ in
       # starts the server itself: llama-swap starts the gate, the gate starts llama-server.
       wrapper = [
         "/run/current-system/sw/bin/kdn-inference-helpers"
-        "omni"
+        "gate"
+        "--name"
+        "qwen3-omni"
         "--"
       ];
       # Nobody remembers to unload a companion. An hour of idleness evicts it, and the manager's

@@ -1,4 +1,5 @@
-// Package companion is the gate in front of a colocated model (qwen3-omni).
+// Package companion is the gate in front of a model that may only load while the engine has a VRAM
+// reserve for it (the colocated companion on brys).
 //
 // The colocated model only makes sense beside an engine that reserved VRAM for it. Without the
 // reserve it loads anyway and runs at a fraction of its speed, silently. This gate turns that
@@ -30,14 +31,17 @@ import (
 	"kdn-inference-helpers/internal/config"
 )
 
-// ConfirmField is the request-body field that names the colocated profile to switch to. A body field
-// and not a header, because neither harness lets an agent add a header mid-session and both pass
-// the body through untouched.
-const ConfirmField = "kdn_switch_to"
+// DefaultConfirmField is the request-body field that names the profile to switch to. A body field and
+// not a header, because neither harness lets an agent add a header mid-session and both pass the body
+// through untouched. A deployment may rename it in its gate spec.
+const DefaultConfirmField = "kdn_switch_to"
 
-// Gate answers the requests llama-swap sends to a colocated model's port.
+// Gate answers the requests llama-swap sends to a gated model's port.
 type Gate struct {
-	Cfg     *config.Config
+	Cfg *config.Config
+	// Name is the model this gate guards; it selects the spec from the deployment config.
+	Name    string
+	Spec    config.GateSpec
 	Manager string
 	// Upstream returns the base URL of the model server, starting it when needed. Production passes
 	// a supervisor; a test passes a fake URL.
@@ -47,17 +51,69 @@ type Gate struct {
 	proxy *httputil.ReverseProxy
 }
 
-// ColoProfiles are the profiles that keep the reserve. Only these may be named in `kdn_switch_to`;
-// naming a non-colo one would defeat the gate.
-var ColoProfiles = map[string]bool{"omni-max": true, "omni-fast": true}
+// confirmField is the spec's field name, or the default.
+func (g *Gate) confirmField() string {
+	if g.Spec.ConfirmField != "" {
+		return g.Spec.ConfirmField
+	}
+	return DefaultConfirmField
+}
 
-// coloTarget resolves a model name or profile name to a colo profile.
-func coloTarget(cfg *config.Config, name string) (string, bool) {
-	profile := cfg.Normalise(name)
-	if ColoProfiles[profile] {
+// satisfied reports whether the current profile already allows the model.
+func (g *Gate) satisfied(profile string) bool {
+	for _, p := range g.Spec.RequireProfiles {
+		if p == profile {
+			return true
+		}
+	}
+	return false
+}
+
+// allowedTarget reports whether a caller may name this profile in the confirmation field. A target
+// must be both allowed by the deployment spec and a profile the manager actually serves; the second
+// check is what catches a name that survived a config change but no longer exists.
+func (g *Gate) allowedTarget(ctx context.Context, name string) (string, bool) {
+	profile := g.Cfg.Normalise(name)
+	allowed := false
+	for _, p := range g.Spec.Allow {
+		if p == profile {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return "", false
+	}
+	known := g.managerProfiles(ctx)
+	if len(known) == 0 {
 		return profile, true
 	}
+	for _, p := range known {
+		if p == profile {
+			return profile, true
+		}
+	}
 	return "", false
+}
+
+// managerProfiles asks the manager which profiles its adapter serves.
+func (g *Gate) managerProfiles(ctx context.Context) []string {
+	var status struct {
+		Profiles []string `json:"profiles"`
+	}
+	reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, g.Manager+"/status", nil)
+	if err != nil {
+		return nil
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	_ = json.NewDecoder(resp.Body).Decode(&status)
+	return status.Profiles
 }
 
 func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +127,7 @@ func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile := g.currentProfile(r.Context())
-	if ColoProfiles[profile] {
+	if g.satisfied(profile) {
 		g.forward(w, r)
 		return
 	}
@@ -85,7 +141,7 @@ func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var payload map[string]any
 	_ = json.Unmarshal(body, &payload)
 	target := ""
-	if raw, ok := payload[ConfirmField].(string); ok {
+	if raw, ok := payload[g.confirmField()].(string); ok {
 		target = raw
 	}
 	if target == "" {
@@ -93,22 +149,22 @@ func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"error": fmt.Sprintf("this model needs the VRAM reserve; the engine is on the %q profile, "+
 				"which gives the whole card to the frontier", profile),
 			"current_profile": profile,
-			"requires":        "colo",
+			"requires":        g.Spec.RequireProfiles,
 			"confirm": map[string]any{
-				"field": ConfirmField,
-				"value": "a colo profile name, for example qfn-max-colo",
+				"field": g.confirmField(),
+				"value": "a profile name from alternatives",
 			},
-			"alternatives":   []string{"qfn-max-colo", "qfn-fast-colo"},
+			"alternatives":   g.Spec.Allow,
 			"reload_seconds": 70,
 			"note":           "repeat the request with the field above, or select a colo profile first; the engine reloads once",
 		})
 		return
 	}
-	profile, ok := coloTarget(g.Cfg, target)
+	profile, ok := g.allowedTarget(r.Context(), target)
 	if !ok {
 		g.refuse(w, http.StatusBadRequest, map[string]any{
-			"error":        fmt.Sprintf("%q is not a colo profile", target),
-			"alternatives": []string{"qfn-max-colo", "qfn-fast-colo"},
+			"error":        fmt.Sprintf("%q is not a profile this deployment allows for %s", target, g.Name),
+			"alternatives": g.Spec.Allow,
 		})
 		return
 	}

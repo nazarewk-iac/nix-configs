@@ -113,6 +113,19 @@ in
       "qfn-max-colo"
       "qfn-fast-colo"
     ];
+    # The policy the gate applies to qwen3-omni: only a profile that keeps the reserve satisfies it,
+    # and only a colo tier may be named in `kdn_switch_to`.
+    gates.qwen3-omni = {
+      requireProfiles = [
+        "omni-max"
+        "omni-fast"
+      ];
+      allow = [
+        "omni-max"
+        "omni-fast"
+      ];
+      confirmField = "kdn_switch_to";
+    };
     cacheDropCommand = [
       "/run/wrappers/bin/sudo"
       "-n"

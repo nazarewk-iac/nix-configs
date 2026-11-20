@@ -71,6 +71,14 @@ let
   piHarnessTests =
     if pkgs.stdenv.hostPlatform.isLinux then import ./pi-harness { inherit pkgs lib; } else { };
 
+  # The inference runtime end to end (manager + proxy + companion gate + llama-swap) on a 1 MB model,
+  # no GPU. Linux only: it binds loopback ports and starts processes.
+  inferenceHelpersTests =
+    if pkgs.stdenv.hostPlatform.isLinux then
+      { inference-helpers-integration = pkgs.callPackage ./inference-helpers { }; }
+    else
+      { };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -87,6 +95,7 @@ denTests.checks
 // conditionalImportsTests.checks
 // universalGuardTests.checks
 // piHarnessTests
+// inferenceHelpersTests
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent

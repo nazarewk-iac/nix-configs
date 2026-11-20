@@ -52,7 +52,8 @@ func (r *recorder) UnloadCompanions(ctx context.Context) ([]string, error) {
 func (r *recorder) LoadedModels(ctx context.Context) ([]string, error) {
 	return r.loadedIDs, nil
 }
-func (r *recorder) EngineReady() bool { return false }
+func (r *recorder) EngineReady() bool  { return false }
+func (r *recorder) Profiles() []string { return []string{"max", "omni-max", "omni-fast"} }
 
 func (r *recorder) order() []string {
 	r.mu.Lock()
