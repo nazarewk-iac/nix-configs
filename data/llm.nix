@@ -1267,6 +1267,18 @@ in
     };
     "qwen3-omni" = {
       aliases = [ ];
+      # The gate in front of the model. It refuses the request with a readable 409 unless the engine
+      # has a VRAM reserve for it, and a body field (`kdn_switch_to`) lets the caller ask for the
+      # switch in the same request. Only a process on the entry port can read the body, so the gate
+      # starts the server itself: llama-swap starts the gate, the gate starts llama-server.
+      wrapper = [
+        "/run/current-system/sw/bin/kdn-inference-helpers"
+        "omni"
+        "--"
+      ];
+      # Nobody remembers to unload a companion. An hour of idleness evicts it, and the manager's
+      # companion watcher then returns the engine to the whole-card profile by itself.
+      ttl = 3600;
       capabilities = {
         loadSeconds = 20;
         operation = "gpu";

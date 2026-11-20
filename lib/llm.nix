@@ -222,6 +222,10 @@ let
       aliases = m.aliases or [ ];
       # A model that is not llama.cpp names a complete llama-swap command; the rest leave it null.
       command = m.command or null;
+      # A command prefix for the generated invocation (the companion gate), and an idle ttl after
+      # which llama-swap unloads the model by itself.
+      wrapper = m.wrapper or null;
+      ttl = m.ttl or null;
       enable = c.enable or true;
       mainRouter = h.set;
       inherit (c) hfRepo hfFile;

@@ -478,7 +478,8 @@
               lib.concatStringsSep " " m.command
             else
               lib.concatStringsSep " " (
-                [
+                (if m.wrapper != null then m.wrapper else [ ])
+                ++ [
                   (lib.getExe' (modelPackage name) "llama-server")
                   "--port"
                   "\${PORT}"
@@ -494,6 +495,9 @@
                   swapKeyFile
                 ]
               );
+        }
+        // lib.optionalAttrs (m.ttl != null && m.ttl > 0) {
+          ttl = m.ttl;
         }
         // lib.optionalAttrs (m.aliases != [ ]) {
           inherit (m) aliases;
@@ -893,6 +897,29 @@
           '';
         };
 
+        options.wrapper = lib.mkOption {
+          type = lib.types.nullOr (lib.types.listOf lib.types.str);
+          default = null;
+          description = ''
+            A command prefix for the generated `llama-server` invocation, ending at `--`.
+
+            It exists for a model that must pass through a gate before it serves. The runtime's
+            companion gate reads the request body to decide whether the model may load at all, and
+            only a process on the entry port can do that; the generated argv follows the `--` so the
+            gate starts the same server llama-swap would have started.
+          '';
+        };
+        options.ttl = lib.mkOption {
+          type = lib.types.nullOr lib.types.int;
+          default = null;
+          description = ''
+            Seconds of idleness after which llama-swap unloads this model on its own. Zero and null
+            both mean "keep it resident".
+
+            It is the server-side answer to a colocated model that nobody remembers to unload; the
+            companion gate turns its unload into a return to the whole-card profile.
+          '';
+        };
         options.command = lib.mkOption {
           type = lib.types.nullOr (lib.types.listOf lib.types.str);
           default = null;

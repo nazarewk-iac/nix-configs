@@ -135,6 +135,8 @@ in
   };
 
   environment.systemPackages = [
+    # The runtime is named by `data/llm.nix` entries as an absolute path, so it must be on PATH.
+    inferenceHelpers
     pkgs.kdn.strata
     strataServe
     strataSelect
