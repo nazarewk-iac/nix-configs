@@ -113,6 +113,13 @@
   inputs.systems.url = "github:nix-systems/default";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.wezterm.url = "github:wez/wezterm/main?dir=nix";
+  # The nazarewk-iac fork adds `web_client.mobile_font_size`, a mobile-only font size for the
+  # web interface. The built-in mobile default is 24px, which on a high-DPI phone reads as a
+  # ~3x zoom. Upstream has no flake.nix, so this is a plain source input; the fork's `main` is
+  # the joined patch line cut from v0.45.1. `modules/den-pkgs/overlays.nix` swaps it into
+  # `zellij-unwrapped`.
+  inputs.zellij.flake = false;
+  inputs.zellij.url = "github:nazarewk-iac/zellij";
 
   inputs.sops-nix-upstream.flake = false; # no need for upstream to be a flake
   inputs.sops-nix-upstream.url = "github:Mic92/sops-nix";

@@ -1771,7 +1771,8 @@
         "treefmt-nix": "treefmt-nix",
         "uv2nix": "uv2nix",
         "wezterm": "wezterm",
-        "yensid": "yensid"
+        "yensid": "yensid",
+        "zellij": "zellij"
       }
     },
     "rosec": {
@@ -2143,6 +2144,22 @@
       "original": {
         "owner": "garnix-io",
         "repo": "yensid",
+        "type": "github"
+      }
+    },
+    "zellij": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795170495,
+        "narHash": "sha256-jlgqUWFqKDLP+oCyYtb1Wxbfn9iUe47Y92QcjQuB7/8=",
+        "owner": "nazarewk-iac",
+        "repo": "zellij",
+        "rev": "940e41f6fd50b0c648def0c09fd3bb33dc08ab08",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nazarewk-iac",
+        "repo": "zellij",
         "type": "github"
       }
     },

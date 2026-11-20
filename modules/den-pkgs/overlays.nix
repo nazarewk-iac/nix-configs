@@ -167,4 +167,14 @@ in
       patches = old.patches ++ [ ./patches/keepassxc-13321-secret-service-load-window.patch ];
     });
   })
+
+  # `zellij` from the nazarewk-iac fork (`inputs.zellij` in flake.nix), which adds
+  # `web_client.mobile_font_size`. Only the source changes, so `cargoHash` still matches and the
+  # wrapper keeps its version. Lives HERE, not in `nixpkgs.overlays`: a pinned host sets
+  # `nixpkgs.pkgs`, which makes `nixpkgs.overlays` inert.
+  (final: prev: {
+    zellij-unwrapped = prev.zellij-unwrapped.overrideAttrs (_: {
+      src = inputs.zellij;
+    });
+  })
 ]
