@@ -65,6 +65,10 @@ let
   # and the `sd-server` binary come from one file, and the card stays one card.
   imageModels = import ./image-models.nix { inherit pkgs lib; };
 
+  # The placement policy: the behaviour tree and the measured facts it decides over. The manager
+  # answers `/decide` from it; nothing acts on it until `admit` is wired into the entries.
+  placement = import ./policy.nix { inherit lib; };
+
   inferenceHelpers = pkgs.kdn.kdn-inference-helpers;
   strataManager = pkgs.writeShellScriptBin "strata-manager" ''
     exec ${inferenceHelpers}/bin/kdn-inference-helpers manager "$@"
@@ -129,6 +133,7 @@ in
     # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier
     # first (drain, then stop, then load) and selecting a text profile stops the editor.
     commands = imageModels.profiles;
+    policyPath = "/etc/kdn-inference-helpers/policy.json";
     # The policy the gate applies to qwen3-omni: only a profile that keeps the reserve satisfies it,
     # and only a colo tier may be named in `kdn_switch_to`.
     # The reviewer shares the companion's policy: it only fits beside the frontier when the engine
@@ -165,6 +170,10 @@ in
     ];
     engineLog = "${dataHome}/strata/engine.log";
   };
+
+  # The placement policy lives beside the runtime's deployment file, so a decision is one file to
+  # read and one diff to review.
+  environment.etc."kdn-inference-helpers/policy.json".text = builtins.toJSON placement;
 
   # nix-ld runs the Terminal's bundled CPython in place; the FHS wrapper cannot be used because a
   # systemd sandbox forbids the user namespace bubblewrap needs.
