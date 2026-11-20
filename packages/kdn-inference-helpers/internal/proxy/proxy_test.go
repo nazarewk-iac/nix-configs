@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+// alwaysLease grants every request immediately: the identity tests are about headers, not waiting.
+type alwaysLease struct{}
+
+func (alwaysLease) Acquire(context.Context) (int64, bool) { return 1, true }
+func (alwaysLease) Release(int64)                         {}
+
 // fakeLeaser records leases and can refuse a fixed number of acquires first, which is how a switch
 // under load looks to the proxy.
 type fakeLeaser struct {
@@ -383,5 +389,75 @@ func TestClientDisconnectReleasesTheLease(t *testing.T) {
 	}
 	if !leaser.idle() {
 		t.Fatal("the lease survived a client disconnect; the next switch would wait for it")
+	}
+}
+
+// A client must be able to learn what answered. The alias is what it asked for; the profile is what
+// the manager resolved it to, and the two differ exactly when a swap happened.
+func TestIdentityHeadersAreStampedOnEveryResponse(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer upstream.Close()
+	target, _ := url.Parse(upstream.URL)
+
+	h := New(target, alwaysLease{}, func() bool { return false })
+	h.Identity = map[string]string{"X-KDN-Alias": "qfn", "X-KDN-Profile": "omni-fast"}
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader("{}")))
+	if got := rec.Header().Get("X-KDN-Alias"); got != "qfn" {
+		t.Fatalf("alias header = %q", got)
+	}
+	if got := rec.Header().Get("X-KDN-Profile"); got != "omni-fast" {
+		t.Fatalf("profile header = %q", got)
+	}
+}
+
+// An empty value is not stamped: a bare `proxy` run has no alias to report, and a header that says
+// "unknown" is worse than no header.
+func TestAnEmptyIdentityValueIsNotStamped(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer upstream.Close()
+	target, _ := url.Parse(upstream.URL)
+
+	h := New(target, alwaysLease{}, func() bool { return false })
+	h.Identity = map[string]string{"X-KDN-Alias": "", "X-KDN-Profile": "max"}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/models", nil))
+	if rec.Header().Get("X-KDN-Alias") != "" {
+		t.Fatal("an empty alias was stamped")
+	}
+	if rec.Header().Get("X-KDN-Profile") != "max" {
+		t.Fatal("the profile was not stamped")
+	}
+}
+
+// The profile is asked per request, not remembered: `auto` (qfn) outlives a switch, and a listener
+// that reported the profile from its start-up would claim `max` while the engine served `omni-fast`.
+func TestTheProfileIsReadPerRequest(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer upstream.Close()
+	target, _ := url.Parse(upstream.URL)
+
+	h := New(target, alwaysLease{}, func() bool { return false })
+	var calls atomic.Int32
+	h.Profile = func(context.Context) string {
+		if calls.Add(1) == 1 {
+			return "max"
+		}
+		return "omni-fast"
+	}
+
+	first := httptest.NewRecorder()
+	h.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/v1/models", nil))
+	second := httptest.NewRecorder()
+	h.ServeHTTP(second, httptest.NewRequest(http.MethodGet, "/v1/models", nil))
+
+	if got := first.Header().Get("X-KDN-Profile"); got != "max" {
+		t.Fatalf("first profile = %q", got)
+	}
+	if got := second.Header().Get("X-KDN-Profile"); got != "omni-fast" {
+		t.Fatalf("second profile = %q", got)
 	}
 }

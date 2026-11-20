@@ -226,7 +226,7 @@ func runProxy(ctx context.Context, args []string) error {
 	if managerURL == "" {
 		managerURL = fmt.Sprintf("http://127.0.0.1:%d", cfg.ManagerPort)
 	}
-	return serveProxy(ctx, cfg, *port, targetURL, managerURL, "")
+	return serveProxy(ctx, cfg, *port, targetURL, managerURL, "", "", "")
 }
 
 // serveProxy forwards one llama-swap entry port to the engine and holds a lease per request.
@@ -236,7 +236,7 @@ func runProxy(ctx context.Context, args []string) error {
 // exists, and a stale listener is worse than none — it would forward a chat request to whatever
 // engine happens to hold the port next. `auto` (the profile-neutral frontier name) passes an empty
 // `watch`, because staying alive across a switch is exactly what that name promises.
-func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, managerURL, watch string) error {
+func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, managerURL, watch, alias, profile string) error {
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		return err
@@ -252,6 +252,25 @@ func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, ma
 		return status.Draining
 	}
 	handler := proxy.New(target, leaser, draining)
+	// The client learns what answered, not what it asked for. A harness records this next to the
+	// commit: `qfn` is a name, `max` is the pack and the reserve that actually served it.
+	handler.Identity = map[string]string{"X-KDN-Alias": alias}
+	if profile != "" {
+		// Ask per request: `auto` outlives a switch on purpose, so a startup snapshot would report
+		// the profile that was current when llama-swap spawned this listener, not the one answering.
+		handler.Profile = func(ctx context.Context) string {
+			var status struct {
+				Profile string `json:"profile"`
+			}
+			if err := getJSON(ctx, managerURL+"/status", &status); err != nil {
+				return profile
+			}
+			if status.Profile == "" {
+				return profile
+			}
+			return status.Profile
+		}
+	}
 
 	// Dual stack on purpose: llama-swap resolves localhost to ::1 first, and a 127.0.0.1-only bind
 	// fails its health check.
@@ -307,7 +326,9 @@ func watchProfile(ctx context.Context, stop context.CancelFunc, managerURL, want
 func runSelect(ctx context.Context, args []string) error {
 	// llama-swap passes `<profile> --port N`, and Go's `flag` stops at the first positional, so the
 	// order cannot be delegated to the flag package: this scans both shapes.
-	profile, flags, err := parsePositionalThenFlags(args, map[string]bool{"--port": true, "--manager": true, "--config": true})
+	profile, flags, err := parsePositionalThenFlags(args, map[string]bool{
+		"--port": true, "--manager": true, "--config": true, "--alias": true,
+	})
 	if err != nil {
 		return err
 	}
@@ -340,7 +361,18 @@ func runSelect(ctx context.Context, args []string) error {
 	log.Printf("select %s -> %v", profile, reply)
 	// `auto` keeps whatever profile is current, so this listener must survive a switch. Any other
 	// name is a promise about one profile, and the listener leaves when the manager breaks it.
-	watch, _ := reply["profile"].(string)
+	//
+	// `--alias` is the model name the caller used (`qfn`), which llama-swap does not pass on: the
+	// entry command carries the profile it forces. Without it the header would say `auto`, which is
+	// the manager's word, not the caller's.
+	aliasName := flags["--alias"]
+	if aliasName == "" {
+		aliasName = profile
+	}
+	// The profile is reported either way: it is the one thing a caller cannot know for itself, and
+	// `qfn` resolving to `max` is exactly the fact a commit needs to record.
+	resolved, _ := reply["profile"].(string)
+	watch := resolved
 	if cfg.Normalise(profile) == "auto" {
 		watch = ""
 	}
@@ -350,7 +382,7 @@ func runSelect(ctx context.Context, args []string) error {
 	if p, ok := reply["port"].(float64); ok && int(p) > 0 {
 		target = int(p)
 	}
-	return serveProxy(ctx, cfg, port, fmt.Sprintf("http://127.0.0.1:%d", target), managerURL, watch)
+	return serveProxy(ctx, cfg, port, fmt.Sprintf("http://127.0.0.1:%d", target), managerURL, watch, aliasName, resolved)
 }
 
 func runServe(ctx context.Context, args []string) error {

@@ -34,6 +34,14 @@ type Handler struct {
 	WaitTimeout time.Duration
 	// PollInterval is how often a waiting request re-asks for a lease.
 	PollInterval time.Duration
+	// Identity is stamped onto every response. A model name is not a model: `qfn` is `max` before a
+	// swap and `omni-fast` after it, and only the server knows which one answered. The client reads
+	// these headers and can record what actually served the request it just made.
+	Identity map[string]string
+	// Profile answers "which profile is serving right now" for each request. It has to be asked per
+	// request: `auto` (the profile-neutral frontier name) deliberately outlives a switch, so a value
+	// captured when this listener started would be a stale claim about the present.
+	Profile func(ctx context.Context) string
 
 	proxy *httputil.ReverseProxy
 }
@@ -86,6 +94,17 @@ func (h *Handler) build() *httputil.ReverseProxy {
 
 // ServeHTTP takes a lease, waits out a switch, and relays.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Before anything else, so a health answer, a 503 and a streamed token all carry it.
+	for key, value := range h.Identity {
+		if value != "" {
+			w.Header().Set(key, value)
+		}
+	}
+	if h.Profile != nil {
+		if profile := h.Profile(r.Context()); profile != "" {
+			w.Header().Set("X-KDN-Profile", profile)
+		}
+	}
 	// llama-swap health-checks this port. During a switch the engine is gone but this process is
 	// alive and holding requests, so answering 200 locally is the difference between "delayed" and
 	// "killed".

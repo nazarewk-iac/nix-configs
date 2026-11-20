@@ -127,6 +127,12 @@ func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile := g.currentProfile(r.Context())
+	// The caller learns what actually answered: the name it asked for and the profile the manager
+	// resolved it to. Same contract as the per-entry proxy.
+	w.Header().Set("X-KDN-Alias", g.Name)
+	if profile != "" {
+		w.Header().Set("X-KDN-Profile", profile)
+	}
 	if g.satisfied(profile) {
 		g.forward(w, r)
 		return
@@ -175,6 +181,9 @@ func (g *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("companion: switched to %s on request", profile)
+	// The header said what was current when the request arrived; after the switch it is a lie. This
+	// response is served by the new profile, and the client records what answered.
+	w.Header().Set("X-KDN-Profile", profile)
 	// The body was consumed; the switch must not lose it.
 	r.Body = io.NopCloser(bytes.NewReader(body))
 	r.ContentLength = int64(len(body))

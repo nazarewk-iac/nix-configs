@@ -167,3 +167,27 @@ func TestResolveArgvSplitsAfterTheSeparator(t *testing.T) {
 		t.Fatalf("argv = %v", argv)
 	}
 }
+
+// A request that switches must report the profile that served it, not the one that was current when
+// the request arrived. Otherwise a client records the wrong variant for exactly the requests that
+// changed it.
+func TestTheGateReportsTheProfileThatServedAfterASwitch(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer upstream.Close()
+	gate, selects := newGate(t, "max", upstream.URL)
+
+	body := `{"model":"qwen3-omni","kdn_switch_to":"omni-fast","messages":[{"role":"user","content":"hi"}]}`
+	rec := httptest.NewRecorder()
+	gate.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("X-KDN-Profile"); got != "omni-fast" {
+		t.Fatalf("profile header = %q, want the profile that served", got)
+	}
+	if *selects != 1 {
+		t.Fatalf("the switch ran %d times", *selects)
+	}
+}
