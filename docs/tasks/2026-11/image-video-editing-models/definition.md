@@ -76,18 +76,74 @@ Start with `stable-diffusion-cpp` on Vulkan: it matches how llama.cpp already re
 is one binary, and a failure there is a model-support question rather than a Python dependency
 question. Fall back to ComfyUI only if the pinned sd.cpp cannot run Qwen-Image-Edit.
 
+## What the user actually touches
+
+A diffusion model is not a chat endpoint. These are the clients, and they split across two hosts:
+
+| piece                                        | runs on                          | why                                                                                                   |
+| -------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| ComfyUI (or a `stable-diffusion-cpp` server) | **brys**                         | the card and the weights live there; the UI is a browser on any machine                               |
+| Krita + the "AI Diffusion" plugin            | **the workstation** (oams, anji) | brush, mask and layer editing against a remote ComfyUI backend: this is the "AI-enabled image editor" |
+| a browser tab to ComfyUI                     | anywhere                         | the node-graph surface for multi-image edits and the VACE video templates                             |
+| an NLE (Kdenlive, DaVinci)                   | the workstation                  | VACE produces clips; the timeline work is not model-aware                                             |
+
+So the model host and the editing host are different machines, and only the first needs a GPU. A
+Krita session on oams paints locally and posts an image plus an instruction to brys.
+
+**llama-swap is the wrong front door for these.** It speaks OpenAI chat and answers `/v1/models`; an
+image model answers neither. The exclusive-with-QFN rule therefore has to move: either the manager
+gains an `image` profile that stops the engine and starts the ComfyUI/sd.cpp server (the adapter is
+already the place for "which command serves which profile"), or ComfyUI runs as its own unit and
+asks the manager for a switch before it starts. The first fits the design; the second needs a new
+hook. This is the decision item 1 of the work plan should settle.
+
+## What fits on oams (12 GB RX 6800M, 62 GB RAM)
+
+Measured or published figures, for a laptop that is 6-9x slower than the R9700 but idle most days:
+
+| model                                             | oams                                    | note                                     |
+| ------------------------------------------------- | --------------------------------------- | ---------------------------------------- |
+| OmniGen2 (4B)                                     | **fits** (9.6 GB fp16 measured)         | composition + editing, Apache            |
+| ERNIE-Image Turbo (8B, Q8 GGUF)                   | **fits** (9.1 GB measured)              | generation, not editing                  |
+| Z-Image Turbo (6B, Q8)                            | **fits** (9.1 GB measured)              | fast generation; Edit variant unreleased |
+| Qwen-Image-Edit-2511 Q3_K_S                       | fits (9.2 GB) with visible quality loss | below the Q4 floor this model wants      |
+| FLUX.2 [klein] 4B                                 | fits (~8-13 GB)                         | Apache, generation + edits               |
+| LongCat-Image-Edit-Turbo (6B)                     | fits with CPU offload (~17 GB), slower  | the best editing quality per byte        |
+| Wan2.2 TI2V-5B, VACE 1.3B                         | fit (~7-8 GB)                           | small video, 480p class                  |
+| Qwen-Image-Edit Q8, VACE 14B, LTX-2.5, MiniMax H3 | **no**                                  | 14-66 GB of weights                      |
+
+That is the useful split: **oams is the prototyping box** for the small editors (LongCat-Turbo,
+OmniGen2, klein 4B) and brys is the production box for the 20B and 14B ones.
+
+## Can an editor share the card with QFN or omni?
+
+The arithmetic, on 31.86 GiB:
+
+| resting state                                 | used     | free   | what fits beside it                                    |
+| --------------------------------------------- | -------- | ------ | ------------------------------------------------------ |
+| `qfn-max` (whole card)                        | ~30 GB   | ~1 GB  | nothing                                                |
+| `qfn-colo` (reserve profile, omni not loaded) | ~10.5 GB | ~21 GB | any editor up to ~20 GB, **but then omni cannot load** |
+| `qfn-colo` + omni                             | ~30.5 GB | ~1 GB  | nothing                                                |
+
+So the answer is **no, not alongside the frontier**: `qfn-max` leaves a gigabyte, and the colo
+profiles only leave room for an editor by giving up the companion's reserve. An editor is an
+exclusive mode, which is what the `main` set already encodes.
+
 ## Work items
 
-1. **Prove the runtime.** Build `stable-diffusion-cpp` with Vulkan on brys, run Qwen-Image-Edit-2511
+1. **Decide where exclusivity lives.** The manager gains an `image` profile (adapter = `command`,
+   readiness path = the ComfyUI root) or ComfyUI asks the manager for a switch before it starts.
+   Everything else in this plan depends on that answer.
+2. **Prove the runtime.** Build `stable-diffusion-cpp` with Vulkan on brys, run Qwen-Image-Edit-2511
    Q8_0 (or Q4_K_M if memory is tight) through its server on `:8090`, and time one edit at
    1024×1024 with the 4-step Lightning LoRA. Acceptance: one edited image, under two minutes, card
    stays under 31 GiB.
-2. **Add the entry.** `data/llm.nix` gains `qwen-image-edit` with `set = "main"`, a `command` that
+3. **Add the entry.** `data/llm.nix` gains `qwen-image-edit` with `set = "main"`, a `command` that
    starts the sd.cpp server on `${PORT}`, and `contextSize` set to what the wrapper accepts. The
    model file lives under the persisted tree, so a second machine shares it.
-3. **Video, second.** Wan2.1 VACE 14B at fp8, same path. It is a bigger download and a slower job;
+4. **Video, second.** Wan2.1 VACE 14B at fp8, same path. It is a bigger download and a slower job;
    it lands only after the image editor is proven, and it may need the GGUF route.
-4. **Re-measure the switch cost.** An edit request evicts QFN: measure the reload for the image model
+5. **Re-measure the switch cost.** An edit request evicts QFN: measure the reload for the image model
    the way the text profiles were measured, and record it in the task's `solution.md`.
 
 ## Risks
