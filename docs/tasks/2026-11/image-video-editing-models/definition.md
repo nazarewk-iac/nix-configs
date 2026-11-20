@@ -83,13 +83,13 @@ Full timings, images and the two traps are in [measurements.md](measurements.md)
 different questions: **210 W** is the production cap (the VBIOS floor), **300 W** is the card's
 ceiling and the objective, policy-free number.
 
-| model | steps | 210 W | 300 W | peak VRAM | verdict |
-| --- | --- | --- | --- | --- | --- |
-| **Qwen-Image-Edit-2511 Q4_K_M + Lightning 4-step LoRA** | 4 | 44 s | **41 s** | 26.2 GiB | **the pick**: best fidelity per second |
-| Qwen-Image-Edit-2511 Q4_K_M | 20 | 293 s | 266 s | 25.4 GiB | same model, no LoRA, 6.7x the time |
-| LongCat-Image-Edit-Turbo, official bf16 | 8 | 30 s | **29 s** | 22.9 GiB | fastest, follows the instruction more literally |
-| LongCat-Image-Edit-Turbo, third-party Q8_0 GGUF | 8 | 25 s | — | 17.4 GiB | **broken conversion: noise** |
-| Wan2.1 VACE 14B, 832x480 x 33 frames | 20 | 1039 s | 940 s | 28.6 GiB | works; 2 s of video for a quarter of an hour |
+| model                                                   | steps | 210 W  | 300 W    | peak VRAM | verdict                                         |
+| ------------------------------------------------------- | ----- | ------ | -------- | --------- | ----------------------------------------------- |
+| **Qwen-Image-Edit-2511 Q4_K_M + Lightning 4-step LoRA** | 4     | 44 s   | **41 s** | 26.2 GiB  | **the pick**: best fidelity per second          |
+| Qwen-Image-Edit-2511 Q4_K_M                             | 20    | 293 s  | 266 s    | 25.4 GiB  | same model, no LoRA, 6.7x the time              |
+| LongCat-Image-Edit-Turbo, official bf16                 | 8     | 30 s   | **29 s** | 22.9 GiB  | fastest, follows the instruction more literally |
+| LongCat-Image-Edit-Turbo, third-party Q8_0 GGUF         | 8     | 25 s   | —        | 17.4 GiB  | **broken conversion: noise**                    |
+| Wan2.1 VACE 14B, 832x480 x 33 frames                    | 20    | 1039 s | 940 s    | 28.6 GiB  | works; 2 s of video for a quarter of an hour    |
 
 The power cap costs 3-10 % of wall time and buys back 90 W of heat. That is the right trade for a
 host that sits in a room, and it is why the production cap stays at 210 W while the table keeps the
@@ -106,6 +106,49 @@ Two facts that the plan did not anticipate:
 
 The stack decision holds: `stable-diffusion-cpp` with `vulkanSupport = true` runs every model on
 the shortlist, needs no torch, and is a single binary. ComfyUI is not needed.
+
+## Serving: implemented and proven
+
+The three editors are **profiles of the manager**, not separate servers:
+
+| profile         | port | command                                                    |
+| --------------- | ---- | ---------------------------------------------------------- |
+| `image-qwen`    | 8091 | `sd-server` + Qwen-Image-Edit-2511 Q4_K_M + Lightning LoRA |
+| `image-longcat` | 8092 | `sd-server` + LongCat-Image-Edit-Turbo bf16                |
+| `image-vace`    | 8093 | `sd-server` + Wan2.1 VACE 14B Q4_K_M                       |
+
+`data/llm.nix` registers each as a llama-swap model whose `cmd` is
+`strata-select image-<name> --port ${PORT}`. So a request for an editor asks the manager for that
+profile: the manager drains, stops the frontier, drops the cache and starts `sd-server`. A later
+`qfn` request evicts the editor the same way. The card is never double-booked because there is only
+one thing that switches it.
+
+Four details that are load-bearing, each found by breaking it:
+
+1. **One port per profile.** A stopped `sd-server` leaves TIME_WAIT sockets on its port, and the
+   strata engine's plain `bind()` reports "already in use" for a minute. The frontier keeps 8080;
+   each editor gets its own port. The manager reports the port in the `/select` reply, so the
+   proxy always forwards to the right one.
+2. **`cmdStop` plus a proxy that leaves.** llama-swap runs `cmdStop` (`ctl down`) and then waits for
+   the entry process to exit; a proxy that outlives its profile blocks the next model until
+   llama-swap's 15-minute kill timeout. `strata-select` now watches `/status` and exits when the
+   manager leaves the profile it selected. `auto` (`qfn`) is exempt: staying alive across a switch
+   is what that name promises.
+3. **`checkEndpoint: /sdapi/v1/options`.** llama-swap's default health path is not an A1111 path;
+   without this it marks a working editor as broken and kills it.
+4. **`unlisted: true`.** `/v1/models` is the chat catalogue. The editors stay addressable through
+   llama-swap's `/upstream/<model>/...` passthrough:
+   `POST /upstream/qwen-image-edit/sdapi/v1/txt2img`.
+
+The gate is the manager's own profile table plus two rules: `qfn` (`auto`) refuses to keep a
+running image profile and answers with `kdn_switch_to: max`, and the `qwen3-omni` gate keeps its
+`requireProfiles` check, so a companion request while an editor holds the card is refused with the
+same readable error instead of competing for VRAM.
+
+Measured on brys after the deploy: an edit through llama-swap at 384x384/4 steps returns in ~2 s
+with the profile warm; the eviction `image-qwen` -> `qfn` completes in **69 s** (stop, cache drop,
+max load) and the answer comes back from `qwen3.8-flash-next-unsloth-ud-iq4_xs`. A cold editor load
+is ~40 s.
 
 ## What the user actually touches
 
