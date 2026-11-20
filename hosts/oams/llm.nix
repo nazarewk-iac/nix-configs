@@ -1,5 +1,10 @@
 # Local LLM serving on oams — a second llama-swap host beside brys.
 #
+# Image and video editors: none are served here yet. The ones that fit this 12 GB card are listed in
+# docs/tasks/2026-11/image-video-editing-models/definition.md ("What fits on oams"): OmniGen2,
+# ERNIE-Image Turbo, Z-Image Turbo, FLUX.2 klein 4B, LongCat-Image-Edit-Turbo with CPU offload, and
+# the small Wan models. They need ComfyUI (or stable-diffusion-cpp), not llama-swap, so they are a
+# separate serving decision from the text fleet this file describes.
 # oams is a laptop with a 12 GB Radeon RX 6800M (NAVI22), measured 6-9x faster at
 # prefill than brys' 32 GB R9700 on the same small models (docs/local-llms.md). The
 # small GPU models live here; brys keeps the big CPU/offload models.
