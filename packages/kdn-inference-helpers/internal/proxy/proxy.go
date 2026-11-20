@@ -1,0 +1,143 @@
+// Package proxy is the per-entry HTTP listener llama-swap spawns: one lease per request, a wait
+// while the engine switches profiles, and a local health answer so llama-swap never kills the
+// process that is holding delayed requests.
+//
+// The HTTP itself is the standard library's reverse proxy. That is the whole reason this package is
+// short: chunked bodies, keep-alive, 100-continue, trailers and streaming flushes are not our code.
+package proxy
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"time"
+)
+
+// Leaser is the lease registry, either in-process (the manager) or over HTTP (a `select` process).
+type Leaser interface {
+	Acquire(ctx context.Context) (id int64, ok bool)
+	Release(id int64)
+}
+
+// Handler proxies to one engine and holds one lease per request.
+type Handler struct {
+	Target *url.URL
+	Leaser Leaser
+	// Draining reports whether a switch is in progress, so `/health` can be answered locally.
+	Draining func() bool
+	// Transport is optional; the default disables compression and HTTP/2, because the engine speaks
+	// plain HTTP/1.1 and a compressed stream would corrupt SSE boundaries.
+	Transport http.RoundTripper
+	// WaitTimeout bounds how long a request may wait for a switching engine (900 s on brys).
+	WaitTimeout time.Duration
+	// PollInterval is how often a waiting request re-asks for a lease.
+	PollInterval time.Duration
+
+	proxy *httputil.ReverseProxy
+}
+
+// New builds the handler. It is a constructor rather than a literal so the reverse proxy is always
+// configured the same way: a handler built by hand would silently lose `FlushInterval`.
+func New(target *url.URL, leaser Leaser, draining func() bool) *Handler {
+	h := &Handler{Target: target, Leaser: leaser, Draining: draining,
+		WaitTimeout: 900 * time.Second, PollInterval: 500 * time.Millisecond}
+	h.proxy = h.build()
+	return h
+}
+
+func (h *Handler) build() *httputil.ReverseProxy {
+	transport := h.Transport
+	if transport == nil {
+		transport = &http.Transport{
+			// No Accept-Encoding added: the engine's bytes must reach the client untouched.
+			DisableCompression: true,
+			// The engine is HTTP/1.1; h2 would change the streaming semantics for nothing.
+			ForceAttemptHTTP2:   false,
+			MaxIdleConnsPerHost: 8,
+			IdleConnTimeout:     90 * time.Second,
+		}
+	}
+	return &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			r.SetURL(h.Target)
+			// The engine is local and does not consume forwarding headers; sending them only invites
+			// downstream confusion.
+			r.Out.Header.Del("X-Forwarded-For")
+			r.Out.Header.Del("X-Forwarded-Host")
+			r.Out.Header.Del("X-Forwarded-Proto")
+		},
+		Transport: transport,
+		// -1 flushes after every write: this is what makes a streamed token reach the client while
+		// the model is still generating.
+		FlushInterval: -1,
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			// A JSON 502 instead of a bare EOF: the Python proxy closed the socket, and the client
+			// saw an unexplained failure.
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadGateway)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"error": "the engine did not answer: " + err.Error(),
+			})
+		},
+	}
+}
+
+// ServeHTTP takes a lease, waits out a switch, and relays.
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// llama-swap health-checks this port. During a switch the engine is gone but this process is
+	// alive and holding requests, so answering 200 locally is the difference between "delayed" and
+	// "killed".
+	if r.Method == http.MethodGet && r.URL.Path == "/health" && h.isDraining() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"switching"}`))
+		return
+	}
+
+	lease, ok := h.acquire(r.Context())
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"error": "the engine did not come back from a profile switch in time",
+		})
+		return
+	}
+	defer h.Leaser.Release(lease)
+
+	h.proxy.ServeHTTP(w, r)
+}
+
+// acquire retries until a lease is granted, the wait times out, or the client goes away. An
+// unreachable manager is not an error: the caller's Leaser decides that, and a manager restart is
+// shorter than a failed request.
+func (h *Handler) acquire(ctx context.Context) (int64, bool) {
+	timeout := h.WaitTimeout
+	if timeout <= 0 {
+		timeout = 900 * time.Second
+	}
+	poll := h.PollInterval
+	if poll <= 0 {
+		poll = 500 * time.Millisecond
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		if id, ok := h.Leaser.Acquire(ctx); ok {
+			return id, true
+		}
+		if time.Now().After(deadline) {
+			return 0, false
+		}
+		select {
+		case <-ctx.Done():
+			return 0, false
+		case <-time.After(poll):
+		}
+	}
+}
+
+func (h *Handler) isDraining() bool {
+	return h.Draining != nil && h.Draining()
+}

@@ -31,8 +31,12 @@ in
   kdnctl = pkgs.callPackage ./kdnctl { };
   kdn-anonymize = pkgs.callPackage ./kdn-anonymize { };
   kdn-certs = pkgs.callPackage ./kdn-certs { };
-  kdn-nix-bootstrap = pkgs.callPackage ./kdn-nix-bootstrap { };
+  kdn-nix-darwin-helper = pkgs.callPackage ./kdn-nix-darwin-helper { };
+  # Compatibility alias for callers that still name the old attribute. The new binary is the
+  # helper; the old *path* on anji is preserved separately by `hosts/anji/default.nix`.
+  kdn-nix-bootstrap = pkgs.callPackage ./kdn-nix-darwin-helper { };
   kdn-cidata-iso = pkgs.callPackage ./kdn-cidata-iso { };
+  kdn-inference-helpers = pkgs.callPackage ./kdn-inference-helpers { };
   kdn-nix = pkgs.callPackage ./kdn-nix { };
   kdn-ssh-access = pkgs.callPackage ./kdn-ssh-access { };
   kdn-yk = pkgs.callPackage ./kdn-yk { };
