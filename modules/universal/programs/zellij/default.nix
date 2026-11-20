@@ -4,6 +4,11 @@
 # runs the built-in web interface behind HTTPS. The web server is a systemd user service on
 # Linux. It binds loopback by default; set `web.bindAddress = "0.0.0.0"` and name the
 # interfaces in `web.firewallInterfaces` to expose it.
+#
+# Two web settings shape what a client sees: `web.sharedByDefault` marks new sessions as shared
+# (`web_sharing`), so the phone can attach without the Share plugin; `web.mobileFontSize` sets
+# `web_client.mobile_font_size`, the mobile-only font size (the built-in 24px reads as a ~3x
+# zoom on a high-DPI phone). Both come from the nazarewk-iac zellij fork.
 {
   lib,
   pkgs,
@@ -64,6 +69,31 @@ in
         example = [ "nb-priv" ];
         description = "Interfaces whose firewall opens `port`.";
       };
+
+      sharedByDefault = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Start every session shared with the web client (`web_sharing "on"`). A session reads
+          this value when it starts, so a session that is already running keeps its old value.
+          The web server still needs a login token, and a token can be read-only.
+        '';
+      };
+
+      mobileFontSize = lib.mkOption {
+        type = lib.types.nullOr (lib.types.ints.between 1 96);
+        default = 10;
+        example = 12;
+        description = ''
+          Font size in pixels for mobile viewports only (`web_client.mobile_font_size`, from the
+          nazarewk-iac zellij fork). Desktop web clients keep `web_client.font_size`. The built-in
+          mobile default is 24px, which on a high-DPI phone reads as a ~3x zoom: about 27 columns
+          on a 390px-wide screen. `null` keeps the built-in default.
+
+          A stock zellij ignores the key in silence, so a fork overlay that stops applying shows
+          the 24px default and no error.
+        '';
+      };
     };
   };
 
@@ -114,6 +144,15 @@ in
             programs.zellij.settings.support_kitty_keyboard_protocol = true;
           }
           (lib.mkIf (cfg.web.enable && pkgs.stdenv.hostPlatform.isLinux) {
+            # Both settings travel in `~/.config/zellij/config.kdl`. `web_sharing` is read by the
+            # session when it starts; `web_client.mobile_font_size` is read by the web server.
+            programs.zellij.settings = {
+              web_sharing = if cfg.web.sharedByDefault then "on" else "off";
+            }
+            // lib.optionalAttrs (cfg.web.mobileFontSize != null) {
+              web_client.mobile_font_size = cfg.web.mobileFontSize;
+            };
+
             systemd.user.services.zellij-web = {
               Unit = {
                 Description = "Zellij web interface";

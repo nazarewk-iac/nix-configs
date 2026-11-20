@@ -1105,6 +1105,14 @@ let
       };
     }
   ];
+  zellijWebHomeOptedOut = mkZellijWebHome [
+    {
+      kdn.zellij.web = {
+        sharedByDefault = false;
+        mobileFontSize = null;
+      };
+    }
+  ];
 
   zellijAssertions = [
     {
@@ -1279,6 +1287,31 @@ let
       actual = {
         enable = zellijWebHome.programs.zellij.enable;
         scrollback = zellijWebHome.programs.zellij.settings.scroll_buffer_size;
+      };
+    }
+    {
+      name = "a bare adopter shares new sessions and sets the 10px mobile font";
+      expected = {
+        web_sharing = "on";
+        mobile_font_size = 10;
+      };
+      actual = {
+        inherit (zellijWebHome.programs.zellij.settings) web_sharing;
+        mobile_font_size = zellijWebHome.programs.zellij.settings.web_client.mobile_font_size;
+      };
+    }
+    {
+      name = "both web settings can be turned off";
+      expected = {
+        web_sharing = "off";
+        mobile_font_size = null;
+      };
+      actual = {
+        inherit (zellijWebHomeOptedOut.programs.zellij.settings) web_sharing;
+        mobile_font_size = lib.attrByPath [
+          "web_client"
+          "mobile_font_size"
+        ] null zellijWebHomeOptedOut.programs.zellij.settings;
       };
     }
     {

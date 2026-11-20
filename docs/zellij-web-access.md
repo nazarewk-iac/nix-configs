@@ -76,6 +76,52 @@ Check the server:
 $ zellij web --status
 ```
 
+## Sessions are shared by default
+
+The web client can attach only to a session that is **shared**. A session records that flag when
+it starts, and the built-in default is `off`. Both trees set `web_sharing "on"` through
+`kdn.programs.zellij.web.sharedByDefault` (universal module) and `kdn.zellij.web.sharedByDefault`
+(den aspect), so a `main` session started after the change is attachable from the phone with no
+extra step.
+
+The flag belongs to the session, not to the server. A session that was already running keeps its
+old value. Either restart it, or toggle it from inside: `Ctrl+o` opens the session mode, and `s`
+opens the Share plugin, where the same switch is available.
+
+A shared session still needs a valid token, and a read-only token attaches as a watcher: it can
+watch but not type.
+
+## Mobile font size
+
+The web client picks its font size in `zellij-client/assets/terminal.js` (`settleFontSize`): the
+`web_client.font_size` value when set, otherwise 24px on a mobile viewport and 12px elsewhere. On
+a high-DPI phone the 24px default reads as a ~3x zoom. It shows about 27 columns on a 390px-wide
+screen and 31 on a 448px one, roughly a fifth of a desktop session.
+
+`web_client.mobile_font_size` (nazarewk-iac zellij fork) overrides that mobile default only, so a
+desktop browser keeps its own size. Both trees set it from `web.mobileFontSize`, which defaults to
+`10`:
+
+```nix
+kdn.programs.zellij.web.mobileFontSize = 10;  # or kdn.zellij.web.mobileFontSize in the den tree
+```
+
+Measured on a Pixel 8 Pro (448x998 CSS pixels, device pixel ratio 3), with the same session:
+
+| `mobile_font_size` | columns x rows | share of a 120-column desktop |
+| ------------------ | -------------- | ----------------------------- |
+| `24` (built-in)    | 31 x 34        | 26% wide, 85% tall            |
+| `12`               | 64 x 68        | 53% wide, 100% tall           |
+| `10` (this repo)   | 74 x 86        | 62% wide, 100% tall           |
+| `8`                | 83 x 88        | 70% wide, 100% tall           |
+
+The value is read by the web server at start, so a change needs
+`systemctl --user restart zellij-web` and a page reload. `null` keeps the built-in 24px.
+
+Stock zellij ignores `mobile_font_size` in silence: the key parses, and the client keeps the
+24px default. So if the fork overlay ever stops applying, nothing fails — the phone just looks
+zoomed in again.
+
 ## Connect from Firefox on an Android phone
 
 1. Install the NetBird app from the Play Store (Google Play). Log in to the same NetBird
@@ -186,6 +232,10 @@ all four leaves the day after the first issuance, fixed 2026-10-12). Renew befor
 - `modules/den/aspects/zellij.nix` and `modules/universal/programs/zellij/default.nix` —
   the web aspect and module: user service, options, firewall, token storage comment. The
   host blocks use `kdn.programs.zellij.web`.
+- `modules/den-pkgs/overlays.nix` and `flake.nix` — `inputs.zellij`, the nazarewk-iac zellij fork
+  that carries `web_client.mobile_font_size`, swapped into `zellij-unwrapped`.
+- <https://github.com/nazarewk-iac/zellij> — the fork. Its `main` is the joined patch line cut from
+  `v0.45.1`; the patch bookmark is `mobile-font-size`.
 - `hosts/{oams,brys,etra,moss}/default.nix` — per-host web block and certificate block.
 - `modules/universal/networking/netbird/default.nix` — interface naming `nb-<name>`.
 - `modules/universal/profile/machine/baseline/default.nix` — enables `clients.priv` and

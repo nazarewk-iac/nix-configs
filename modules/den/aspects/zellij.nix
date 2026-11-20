@@ -64,7 +64,14 @@
 # `kdn.zellij-web` adds the built-in zellij web interface. It includes `kdn.zellij`, so it carries
 # the base configuration too. The interface is a systemd user service on Linux, and it binds
 # loopback by default. A consumer sets `kdn.zellij.web.*`: `bindAddress`, `port`, `certFile`,
-# `keyFile`, `user` and `firewallInterfaces`.
+# `keyFile`, `user`, `firewallInterfaces`, `sharedByDefault` and `mobileFontSize`.
+#
+# The last two shape what a client sees, and both live in `~/.config/zellij/config.kdl`:
+# `sharedByDefault` writes `web_sharing`, so a new session is attachable from the phone without
+# the Share plugin, and `mobileFontSize` writes `web_client.mobile_font_size`, the mobile-only
+# font size. The built-in mobile default is 24px, which reads as a ~3x zoom on a high-DPI phone.
+# Both keys come from the nazarewk-iac zellij fork (`inputs.zellij`, applied in
+# `modules/den-pkgs/overlays.nix`).
 #
 # The aspect declares no `enable` option. Inclusion is the switch, as rule 2 states. The `web`
 # options hold no `enable` either, so the standalone check finds no reachable one.
@@ -122,6 +129,31 @@ let
           default = [ ];
           example = [ "nb-priv" ];
           description = "Interfaces whose firewall opens `port`.";
+        };
+
+        sharedByDefault = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Start every session shared with the web client (`web_sharing "on"`). A session reads
+            this value when it starts, so a session that is already running keeps its old value.
+            The web server still needs a login token, and a token can be read-only.
+          '';
+        };
+
+        mobileFontSize = lib.mkOption {
+          type = lib.types.nullOr (lib.types.ints.between 1 96);
+          default = 10;
+          example = 12;
+          description = ''
+              Font size in pixels for mobile viewports only (`web_client.mobile_font_size`, from the
+              nazarewk-iac zellij fork). Desktop web clients keep `web_client.font_size`. The
+              built-in mobile default is 24px, which on a high-DPI phone reads as a ~3x zoom: about
+              27 columns on a 390px-wide screen. `null` keeps the built-in default.
+
+            A stock zellij ignores the key in silence, so a fork overlay that stops applying
+            shows the 24px default and no error.
+          '';
         };
       };
     };
@@ -305,6 +337,11 @@ in
 
   # The user service. It runs on Linux only, and it needs a certificate. A missing key is not fatal
   # at start: the unit restarts until the consumer supplies it.
+  #
+  # The two settings below travel in `~/.config/zellij/config.kdl`. `web_sharing` is read by the
+  # session when it starts; `web_client.mobile_font_size` is read by the web server. They live here,
+  # not in the base aspect's Home Manager body: this module imports `optionsModule`, so `cfg.web` is
+  # always defined, and the base aspect still evaluates on its own.
   kdn.zellij-web.homeManager =
     {
       config,
@@ -318,34 +355,44 @@ in
     {
       imports = [ optionsModule ];
 
-      config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.web.certFile != null) {
-        systemd.user.services.zellij-web = {
-          Unit = {
-            Description = "Zellij web interface";
-            After = [ "network.target" ];
+      config = lib.mkMerge [
+        (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+          programs.zellij.settings = {
+            web_sharing = if cfg.web.sharedByDefault then "on" else "off";
+          }
+          // lib.optionalAttrs (cfg.web.mobileFontSize != null) {
+            web_client.mobile_font_size = cfg.web.mobileFontSize;
           };
-          Service = {
-            Type = "simple";
-            ExecStart = lib.escapeShellArgs [
-              (lib.getExe config.programs.zellij.finalPackage)
-              "web"
-              "--start"
-              "--ip"
-              cfg.web.bindAddress
-              "--port"
-              (toString cfg.web.port)
-              "--cert"
-              cfg.web.certFile
-              "--key"
-              cfg.web.keyFile
-            ];
-            # The key may not exist yet at first start; retry.
-            Restart = "on-failure";
-            RestartSec = 5;
+        })
+        (lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.web.certFile != null) {
+          systemd.user.services.zellij-web = {
+            Unit = {
+              Description = "Zellij web interface";
+              After = [ "network.target" ];
+            };
+            Service = {
+              Type = "simple";
+              ExecStart = lib.escapeShellArgs [
+                (lib.getExe config.programs.zellij.finalPackage)
+                "web"
+                "--start"
+                "--ip"
+                cfg.web.bindAddress
+                "--port"
+                (toString cfg.web.port)
+                "--cert"
+                cfg.web.certFile
+                "--key"
+                cfg.web.keyFile
+              ];
+              # The key may not exist yet at first start; retry.
+              Restart = "on-failure";
+              RestartSec = 5;
+            };
+            Install.WantedBy = [ "default.target" ];
           };
-          Install.WantedBy = [ "default.target" ];
-        };
-      };
+        })
+      ];
     };
 
   # The system side. It opens the port on each named interface. It is inert when the consumer
