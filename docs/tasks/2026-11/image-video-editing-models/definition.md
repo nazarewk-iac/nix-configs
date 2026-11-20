@@ -76,6 +76,37 @@ Start with `stable-diffusion-cpp` on Vulkan: it matches how llama.cpp already re
 is one binary, and a failure there is a model-support question rather than a Python dependency
 question. Fall back to ComfyUI only if the pinned sd.cpp cannot run Qwen-Image-Edit.
 
+## Survey results (measured)
+
+Full timings, images and the two traps are in [measurements.md](measurements.md). The short form,
+1024x1024, one photograph, one instruction. Two wall times are given because they answer two
+different questions: **210 W** is the production cap (the VBIOS floor), **300 W** is the card's
+ceiling and the objective, policy-free number.
+
+| model | steps | 210 W | 300 W | peak VRAM | verdict |
+| --- | --- | --- | --- | --- | --- |
+| **Qwen-Image-Edit-2511 Q4_K_M + Lightning 4-step LoRA** | 4 | 44 s | **41 s** | 26.2 GiB | **the pick**: best fidelity per second |
+| Qwen-Image-Edit-2511 Q4_K_M | 20 | 293 s | 266 s | 25.4 GiB | same model, no LoRA, 6.7x the time |
+| LongCat-Image-Edit-Turbo, official bf16 | 8 | 30 s | **29 s** | 22.9 GiB | fastest, follows the instruction more literally |
+| LongCat-Image-Edit-Turbo, third-party Q8_0 GGUF | 8 | 25 s | — | 17.4 GiB | **broken conversion: noise** |
+| Wan2.1 VACE 14B, 832x480 x 33 frames | 20 | 1039 s | 940 s | 28.6 GiB | works; 2 s of video for a quarter of an hour |
+
+The power cap costs 3-10 % of wall time and buys back 90 W of heat. That is the right trade for a
+host that sits in a room, and it is why the production cap stays at 210 W while the table keeps the
+300 W column for comparison with other cards.
+
+Two facts that the plan did not anticipate:
+
+1. **Device order.** `sd-cli` enumerates the 4 GB RX 550 as `vulkan0` and the R9700 as `vulkan1`.
+   The first run silently used the RX 550 at 147 s/it. Every entry must pin the device, preferably
+   with `GGML_VK_VISIBLE_DEVICES=1`.
+2. **Not every GGUF is a conversion.** The LongCat GGUF named in the model list loads cleanly and
+   produces noise; the official safetensors is correct. Prove a new model with official weights
+   before trusting a quantisation of it.
+
+The stack decision holds: `stable-diffusion-cpp` with `vulkanSupport = true` runs every model on
+the shortlist, needs no torch, and is a single binary. ComfyUI is not needed.
+
 ## What the user actually touches
 
 A diffusion model is not a chat endpoint. These are the clients, and they split across two hosts:
