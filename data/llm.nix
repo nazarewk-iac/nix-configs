@@ -1440,6 +1440,58 @@ in
         };
       };
     };
+    # The reviewer: a text-out vision model that reads sampled frames and *decides* — which shot is
+    # the keeper, what changed, where to cut. It never generates a pixel; ffmpeg applies what it
+    # says. Qwen2.5-VL is the open model with native video temporal grounding, so it is the better
+    # "when" half; `qwen3-omni` is the better "what and why" half.
+    #
+    # It lives on the `surveyed` router beside `qwen3-omni` (modelsMax = 1, so the two evict each
+    # other) and co-resides with the frontier in a colo profile: 8.1 GB + 1.35 GB of projector plus
+    # KV fits the 21.5 GB reserve, so reviewing a cut does not need to evict `qfn`.
+    #
+    # The gate is the same policy as the companion: only a colo profile has the reserve, and a
+    # caller that names a colo tier in `kdn_switch_to` gets the switch and the answer in one request.
+    "qwen2.5-vl-7b" = {
+      aliases = [ ];
+      wrapper = [
+        "/run/current-system/sw/bin/kdn-inference-helpers"
+        "gate"
+        "--name"
+        "qwen2.5-vl-7b"
+        "--"
+      ];
+      ttl = 3600;
+      capabilities = {
+        loadSeconds = 20;
+        operation = "gpu";
+      };
+      vision = true;
+      gpu = true;
+      contextSize = 32768;
+      hosts.brys = {
+        set = "surveyed";
+        servedContext = 16384;
+        common = {
+          download = {
+            enable = false;
+          };
+          enable = true;
+          # The file is the same one the image editors load as their text encoder; `qwen2.5-vl-7b`
+          # is a directory of hard links, not a second copy.
+          hfFile = "Qwen2.5-VL-7B-Instruct-Q8_0.gguf";
+          hfRepo = "qwen2.5-vl-7b";
+          mmproj = {
+            enable = true;
+            hfFile = "mmproj-F16.gguf";
+            hfRepo = "qwen2.5-vl-7b";
+          };
+          perf = {
+            parallel = 1;
+            threads = 8;
+          };
+        };
+      };
+    };
     "qwen3-reranker-4b" = {
       aliases = [ "rank-std-fast" ];
       capabilities = {

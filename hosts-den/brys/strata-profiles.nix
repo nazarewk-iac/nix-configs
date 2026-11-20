@@ -131,6 +131,20 @@ in
     commands = imageModels.profiles;
     # The policy the gate applies to qwen3-omni: only a profile that keeps the reserve satisfies it,
     # and only a colo tier may be named in `kdn_switch_to`.
+    # The reviewer shares the companion's policy: it only fits beside the frontier when the engine
+    # holds a reserve, so the same two colo profiles satisfy it and the same field asks for the
+    # switch.
+    gates."qwen2.5-vl-7b" = {
+      requireProfiles = [
+        "omni-max"
+        "omni-fast"
+      ];
+      allow = [
+        "omni-max"
+        "omni-fast"
+      ];
+      confirmField = "kdn_switch_to";
+    };
     gates.qwen3-omni = {
       requireProfiles = [
         "omni-max"
