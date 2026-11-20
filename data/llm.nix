@@ -381,7 +381,40 @@ in
         };
       };
     };
-    "qfn-colo" = {
+    "qfn-max-colo" = {
+      aliases = [ ];
+      capabilities = {
+        rates = {
+          decode = 42.3;
+          prefill = 1000.0;
+          mode = "GPU";
+        };
+        loadSeconds = 60;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      # The best pack WITH the reserve: qfn at 42 t/s at 1M, the companion at full speed beside it.
+      command = [
+        "/run/current-system/sw/bin/strata-select"
+        "omni-max"
+        "--port"
+        "\${PORT}"
+      ];
+      hosts.brys = {
+        set = "main";
+        servedContext = 1048576;
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+          perf.contextSize = 1048576;
+        };
+      };
+    };
+    "qfn-fast-colo" = {
       aliases = [ ];
       capabilities = {
         rates = {
@@ -395,7 +428,7 @@ in
       gpu = true;
       contextSize = 1048576;
 
-      # Forces the colocation profile: the pack plus the 21.5 GB reserve the companion needs.
+      # The fast pack WITH the reserve: qfn at 72 t/s at 1M, the companion at full speed beside it.
       command = [
         "/run/current-system/sw/bin/strata-select"
         "omni-fast"

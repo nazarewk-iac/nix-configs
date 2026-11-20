@@ -52,21 +52,24 @@ let
     exec ${pkgs.bash}/bin/bash ${./strata-serve.sh} "$@"
   '';
 
-  # The manager owns the one engine and answers /select; `strata-select` is what llama-swap calls.
+  # The runtime is one Go binary (`packages/kdn-inference-helpers`). The three wrappers below keep
+  # the historical names, so the units, the sudoers line and `data/llm.nix` are untouched:
+  #
+  #   strata-manager  the control plane on :8181
+  #   strata-select   the llama-swap entry: select the profile, then serve the proxy in-process
+  #   strata-proxy    a bare proxy, kept for a hand run and for the fallback unit
+  #
+  # The Python implementations stay in the tree for one release as the rollback path; deleting them
+  # is the last step of docs/tasks/2026-11/kdn-inference-helpers.
+  inferenceHelpers = pkgs.kdn.kdn-inference-helpers;
   strataManager = pkgs.writeShellScriptBin "strata-manager" ''
-    exec ${pkgs.python3}/bin/python3 ${./strata-manager.py}
+    exec ${inferenceHelpers}/bin/kdn-inference-helpers manager "$@"
   '';
   strataProxy = pkgs.writeShellScriptBin "strata-proxy" ''
-    exec ${pkgs.python3}/bin/python3 ${./strata-proxy.py} "$@"
+    exec ${inferenceHelpers}/bin/kdn-inference-helpers proxy "$@"
   '';
   strataSelect = pkgs.writeShellScriptBin "strata-select" ''
-    export PATH=${
-      pkgs.lib.makeBinPath [
-        pkgs.curl
-        pkgs.coreutils
-      ]
-    }:$PATH
-    exec ${pkgs.bash}/bin/bash ${./strata-select.sh} "$@"
+    exec ${inferenceHelpers}/bin/kdn-inference-helpers select "$@"
   '';
 in
 {
@@ -85,6 +88,39 @@ in
     home = "${llmsRoot}/home";
     createHome = true;
     description = "Generic LLMs runner account";
+  };
+
+  # The runtime's deployment file. The Go CLI and both daemons read this one path, so a port, an
+  # alias or the cache-drop hook is a Nix value here and never a rebuild of the binary. The built-in
+  # defaults describe brys, so this file is deliberately a complete copy rather than a delta: it is
+  # the place a person edits.
+  environment.etc."kdn-inference-helpers/config.json".text = builtins.toJSON {
+    engine = "strata";
+    dataDir = dataHome;
+    enginePort = 8080;
+    managerPort = 8181;
+    swapURL = "http://127.0.0.1:39700";
+    engineBin = "${engines}/bin/strata";
+    aliases = {
+      qfn = "auto";
+      qfn-max = "max";
+      qfn-max-colo = "omni-max";
+      qfn-fast-colo = "omni-fast";
+    };
+    frontierIDs = [
+      "qfn"
+      "qfn-max"
+      "qfn-max-colo"
+      "qfn-fast-colo"
+    ];
+    cacheDropCommand = [
+      "/run/wrappers/bin/sudo"
+      "-n"
+      "/run/current-system/sw/bin/systemctl"
+      "start"
+      "strata-drop-cache.service"
+    ];
+    engineLog = "${dataHome}/strata/engine.log";
   };
 
   # nix-ld runs the Terminal's bundled CPython in place; the FHS wrapper cannot be used because a
