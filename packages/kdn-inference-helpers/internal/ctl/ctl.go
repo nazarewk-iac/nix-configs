@@ -19,9 +19,15 @@ type Client struct {
 	HTTP    *http.Client
 }
 
-// New returns a client with a sane timeout.
+// New returns a client whose timeout fits the slowest call it makes.
+//
+// A cold switch is a 95 GiB page-cache read and a model load: 70-100 s measured on brys, longer
+// when the engine has to evict a companion first. The old 30 s limit fired mid-load, and because
+// the request context is what the manager runs the switch under, the hang-up *aborted* the switch
+// and left the manager believing nothing was loaded while the engine was resident. Reads return
+// in milliseconds, so a generous ceiling costs nothing.
 func New(baseURL string) *Client {
-	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTP: &http.Client{Timeout: 30 * time.Second}}
+	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTP: &http.Client{Timeout: 10 * time.Minute}}
 }
 
 func (c *Client) call(ctx context.Context, method, path string, body any) (map[string]any, error) {

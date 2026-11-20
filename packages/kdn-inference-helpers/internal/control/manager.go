@@ -405,7 +405,11 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": fmt.Sprintf("unknown profile %q", body.Profile)})
 		return
 	}
-	writeJSON(w, http.StatusOK, m.SelectKeeping(r.Context(), body.Profile, body.DryRun, body.KeepCompanions))
+	// A switch that has started must finish. The client may time out, lose its connection or be a
+	// `curl` that was interrupted; none of that is a reason to leave the engine half-loaded and the
+	// recorded profile out of step with what is actually resident. Detach the work from the request
+	// context and let the response fail if nobody is listening.
+	writeJSON(w, http.StatusOK, m.SelectKeeping(context.WithoutCancel(r.Context()), body.Profile, body.DryRun, body.KeepCompanions))
 }
 
 func (m *Manager) handleLease(w http.ResponseWriter, r *http.Request) {
