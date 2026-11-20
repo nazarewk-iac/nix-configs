@@ -265,8 +265,32 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = kdnConfig.inputs.rosec.packages.${pkgs.stdenv.hostPlatform.system}.rosec;
-      defaultText = lib.literalExpression "kdnConfig.inputs.rosec.packages.\${system}.rosec";
+      # The fork publishes Linux packages only. A Darwin host imports this module through the
+      # universal profile with rosec off by default, so the option still has to evaluate there.
+      # The placeholder keeps the evaluation green and makes an accidental enable fail loudly at
+      # runtime instead of at build time.
+      default =
+        let
+          system = pkgs.stdenv.hostPlatform.system;
+          packages = kdnConfig.inputs.rosec.packages;
+        in
+        if packages ? ${system} then
+          packages.${system}.rosec
+        else
+          # A directory package, not a bare script: `home.packages` merges this into a
+          # `buildEnv`, and a single file at the store root cannot be merged.
+          pkgs.runCommand "rosec-unavailable" { } ''
+            mkdir -p $out/bin
+            for name in rosec rosecd; do
+              cat > $out/bin/$name <<'SH'
+            #!/bin/sh
+            echo "rosec is not packaged for this system; disable kdn.services.rosec or set its package" >&2
+            exit 1
+            SH
+              chmod 0555 $out/bin/$name
+            done
+          '';
+      defaultText = lib.literalExpression "kdnConfig.inputs.rosec.packages.\${system}.rosec, with a Darwin placeholder";
       description = ''
         The rosec package. The default is the fork's own flake output, so the daemon and the
         `rosec` CLI cannot drift apart.
