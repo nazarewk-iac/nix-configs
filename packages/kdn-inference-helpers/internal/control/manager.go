@@ -123,7 +123,12 @@ func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map
 	case profile == current:
 		return map[string]any{"changed": false, "profile": current, "note": "already selected"}
 	case profile == "auto":
-		return map[string]any{"changed": false, "profile": current, "note": "auto: kept the current profile"}
+		// `qfn` must never switch a running model. With nothing loaded it starts the best profile,
+		// which is the "first request of the day" case.
+		if current != "" && current != "none" {
+			return map[string]any{"changed": false, "profile": current, "note": "auto: kept the current profile"}
+		}
+		profile = "max"
 	case dryRun:
 		body := map[string]any{"dry_run": true, "would_change": true, "current": current,
 			"profile": profile, "expected_seconds": m.ExpectedSeconds[profile]}
@@ -250,15 +255,51 @@ func (m *Manager) WatchCompanions(ctx context.Context, interval time.Duration) {
 				}
 			}
 			m.observedMu.Lock()
+			lastGone := ""
 			for id, was := range m.companions {
 				if was && !seen[id] {
 					delete(m.companions, id)
+					lastGone = id
 					_ = m.Journal.Append(map[string]any{"event": journal.EventCompanionDown,
 						"model": id, "observed": true})
 				}
 			}
+			left := len(m.companions) == 0
 			m.observedMu.Unlock()
+			// The reserve exists for the companion. When the last one goes away, the engine goes
+			// back to the whole card on its own: `qfn` would otherwise keep paying for a reserve
+			// nothing is using.
+			if lastGone != "" && left {
+				m.revertToDefault(ctx)
+			}
 		}
+	}
+}
+
+// revertToDefault switches back to `max` after the last companion unloaded, unless the deployment's
+// aliases say a different resting profile. It runs in the watcher goroutine and takes the switch
+// lock, so it queues behind any explicit selection.
+func (m *Manager) revertToDefault(ctx context.Context) {
+	resting := "max"
+	if named, ok := m.Cfg.Aliases["qfn-default"]; ok && named != "" && named != "auto" {
+		resting = named
+	}
+	current := m.CurrentProfile()
+	if current == "" || current == "none" || current == resting {
+		return
+	}
+	_ = m.Journal.Append(map[string]any{"event": "companion_revert", "from": current, "to": resting})
+	go m.Select(context.WithoutCancel(ctx), resting, false)
+}
+
+// HasReserve reports whether a profile keeps VRAM aside for a companion. The companion entry uses
+// this to decide between serving and answering the confirmation error.
+func (m *Manager) HasReserve() bool {
+	switch m.CurrentProfile() {
+	case "omni-max", "omni-fast":
+		return true
+	default:
+		return false
 	}
 }
 

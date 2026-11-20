@@ -19,11 +19,13 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"kdn-inference-helpers/internal/companion"
 	"kdn-inference-helpers/internal/config"
 	"kdn-inference-helpers/internal/control"
 	"kdn-inference-helpers/internal/ctl"
@@ -52,6 +54,8 @@ func main() {
 		err = runSelect(ctx, os.Args[2:])
 	case "serve":
 		err = runServe(ctx, os.Args[2:])
+	case "omni":
+		err = runOmni(ctx, os.Args[2:])
 	case "ctl":
 		err = runCtl(ctx, os.Args[2:])
 	case "version":
@@ -74,6 +78,7 @@ func usage() {
   proxy    forward one llama-swap entry port to the engine
   select   select a profile, then serve the proxy
   serve    materialise a profile and exec the engine
+  omni     the companion gate: refuse, or switch as the body asks, then serve the model
   ctl      up, down, status, stats, unload`)
 	os.Exit(2)
 }
@@ -336,6 +341,47 @@ func parsePositionalThenFlags(args []string, known map[string]bool) (string, map
 		positional = arg
 	}
 	return positional, flags, nil
+}
+
+// runOmni is the companion gate: it owns the model server (started lazily, after the reserve check)
+// and answers the 409 that turns a silently slow companion into an actionable error.
+func runOmni(ctx context.Context, args []string) error {
+	configPath, rest := extractConfigFlag(args)
+	argv := companion.ResolveArgv(rest)
+	if len(argv) == 0 {
+		return fmt.Errorf("omni needs `-- <model server argv>`; llama-swap supplies it")
+	}
+	cfg, _, err := loadConfig(configPath)
+	if err != nil {
+		return err
+	}
+	port, err := companion.PublicPort(argv)
+	if err != nil {
+		return err
+	}
+	supervisor := &companion.Supervisor{
+		Argv:    argv,
+		LogPath: filepath.Join(cfg.DataDir, "strata", "companion.log"),
+		Port:    port,
+	}
+	gate := &companion.Gate{
+		Cfg:      cfg,
+		Manager:  fmt.Sprintf("http://127.0.0.1:%d", cfg.ManagerPort),
+		Upstream: supervisor.Upstream,
+	}
+	srv := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: gate, ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		<-ctx.Done()
+		supervisor.Stop()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+	log.Printf("kdn-inference-helpers companion gate :%d (model starts on first allowed request)", port)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func runCtl(ctx context.Context, args []string) error {

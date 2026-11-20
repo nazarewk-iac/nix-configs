@@ -432,3 +432,71 @@ func TestCompanionWatcherJournalsUpAndDown(t *testing.T) {
 func writeFile(path, body string) error {
 	return os.WriteFile(path, []byte(body), 0o644)
 }
+
+func TestAutoStartsMaxWhenNothingIsLoadedAndNeverSwitchesARunningProfile(t *testing.T) {
+	rec := &recorder{}
+	m, _ := newTestManager(t, rec)
+
+	// Nothing loaded: `qfn` is the first request of the day and must start the best profile.
+	got := m.Select(context.Background(), "qfn", false)
+	if got["changed"] != true || got["profile"] != "max" {
+		t.Fatalf("first qfn request = %#v, want max", got)
+	}
+
+	// Running: `qfn` must not touch it, whatever it is.
+	for _, profile := range []string{"omni-fast", "omni-max", "max"} {
+		_ = m.saveState(map[string]any{"profile": profile})
+		before := len(rec.order())
+		got := m.Select(context.Background(), "qfn", false)
+		if got["changed"] != false || got["profile"] != profile {
+			t.Fatalf("qfn while %s = %#v", profile, got)
+		}
+		if len(rec.order()) != before {
+			t.Fatalf("qfn touched the engine while %s was running: %v", profile, rec.order()[before:])
+		}
+	}
+}
+
+func TestLastCompanionUnloadReturnsTheEngineToMax(t *testing.T) {
+	rec := &recorder{}
+	m, j := newTestManager(t, rec)
+	acc := &fakeAccessory{loaded: []string{"qwen3-omni"}}
+	m.Accessories = acc
+	_ = m.saveState(map[string]any{"profile": "omni-fast"})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go m.WatchCompanions(ctx, 20*time.Millisecond)
+
+	// First observation: the companion is loaded, nothing to revert.
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) && len(m.LoadedCompanions()) == 0 {
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// The companion goes away (llama-swap's ttl, or an explicit unload). The engine must return to
+	// the whole-card profile on its own.
+	acc.mu.Lock()
+	acc.loaded = nil
+	acc.mu.Unlock()
+
+	deadline = time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if m.CurrentProfile() == "max" {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if got := m.CurrentProfile(); got != "max" {
+		t.Fatalf("profile = %q after the companion unloaded, want max", got)
+	}
+	var reverted bool
+	for _, e := range j.Events(0) {
+		if e["event"] == "companion_revert" {
+			reverted = true
+		}
+	}
+	if !reverted {
+		t.Fatal("the revert was not journaled")
+	}
+}
