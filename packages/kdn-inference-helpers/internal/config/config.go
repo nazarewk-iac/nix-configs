@@ -44,6 +44,9 @@ type Config struct {
 	LeaseTTLSeconds int `json:"leaseTTLSeconds"`
 	// Profiles optionally overrides the adapter's profile table.
 	Profiles map[string]ProfileOverride `json:"profiles"`
+	// Commands is the `command` adapter's profile table: profile name → argv. It exists so the whole
+	// runtime can be exercised against a tiny model with no GPU, and so a second engine needs no code.
+	Commands map[string][]string `json:"commands"`
 	// Gates is the policy for a gated model: which profiles satisfy it, which targets a caller may
 	// ask for, and which request field carries the request. The gate itself is generic; this is the
 	// deployment's data.

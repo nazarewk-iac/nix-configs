@@ -30,6 +30,7 @@ import (
 	"kdn-inference-helpers/internal/control"
 	"kdn-inference-helpers/internal/ctl"
 	"kdn-inference-helpers/internal/engine"
+	enginecmd "kdn-inference-helpers/internal/engine/command"
 	"kdn-inference-helpers/internal/engine/strata"
 	"kdn-inference-helpers/internal/journal"
 	"kdn-inference-helpers/internal/proxy"
@@ -92,8 +93,12 @@ func loadConfig(path string) (*config.Config, engine.Adapter, error) {
 	switch cfg.Engine {
 	case "strata":
 		return cfg, strata.New(cfg.EngineBin, cfg.DataDir, cfg.Profiles), nil
+	case "command":
+		// Every profile is a command from the deployment config. It exists so the runtime can be
+		// tested with a 1 MB model and no GPU, and so a second engine needs no code.
+		return cfg, enginecmd.New(cfg.Commands), nil
 	default:
-		return nil, nil, fmt.Errorf("unknown engine %q (known: strata)", cfg.Engine)
+		return nil, nil, fmt.Errorf("unknown engine %q (known: strata, command)", cfg.Engine)
 	}
 }
 
