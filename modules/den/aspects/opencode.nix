@@ -36,6 +36,17 @@
 # baseline. This aspect merges the baseline in the `config` instead. So the baseline always applies,
 # and a consumer overrides it only by setting `settings.permission` itself.
 #
+# ## The image budget
+#
+# The aspect also installs `kdn.image-budget`, a plugin that keeps every outgoing request inside a
+# gateway image cap. A gateway caps how many images one request may carry; OpenCode caps image
+# bytes and never the count, and it does not treat an image-count rejection as context overflow, so
+# a session that collects screenshots bricks permanently — `/compact` fails the same way. The
+# plugin prunes the request (not the transcript), gives a compaction or title request a zero image
+# budget, and learns an unknown cap from the rejection message. The numbers live in
+# `kdn.opencode.imageBudget`; the source is `./opencode/kdn-image-budget.ts`. See
+# ../../../docs/tasks/2026-11/opencode-image-budget/.
+#
 # ## The three rules this tree holds for every aspect
 #
 # 1. **No entity argument.** An aspect that reads `{ host, ... }` resolves to `{ imports = [ ]; }`
@@ -150,6 +161,40 @@
       # opencode-specific, so it lives in `.opencode/`, not `.agents/skills/`). It is not
       # generated here, so git can track it. See
       # docs/tasks/2026-10/opencode-stable-system-prompt/.
+      # The image-count guard. It is a tracked source file, not a Nix string: the plugin is a few
+      # hundred lines and a string literal would make it unreviewable. The aspect injects only the
+      # configured numbers, at the placeholder, so the file stays valid TypeScript on its own.
+      #
+      # Why the guard exists: a gateway caps how many images one request may carry (requesty and
+      # the OpenCode gateway: 30; Azure: 50). OpenCode caps image *bytes* and never the image
+      # *count*, and it does not treat an image-count rejection as context overflow, so a session
+      # that collects screenshots bricks permanently — `/compact` fails the same way. The plugin
+      # keeps the newest images inside a budget and replaces older ones with a line that names the
+      # file. See docs/tasks/2026-11/opencode-image-budget/.
+      imageBudgetPlugin =
+        builtins.replaceStrings
+          [ "/* @KDN_IMAGE_BUDGET_OPTIONS@ */ {}" ]
+          [ (builtins.toJSON cfg.imageBudget) ]
+          (builtins.readFile ./opencode/kdn-image-budget.ts);
+
+      # One budget layer: a count of images and a payload size. Both default to null, so a provider
+      # or a model overrides only the number it sets and leaves the rest to the layer above.
+      imageBudgetLayer = lib.types.submodule {
+        options = {
+          maxImages = lib.mkOption {
+            type = lib.types.nullOr lib.types.ints.unsigned;
+            default = null;
+            description = "How many images this layer allows in one request. Newest images win.";
+          };
+          maxBytes = lib.mkOption {
+            type = lib.types.nullOr (lib.types.either lib.types.ints.unsigned lib.types.str);
+            default = null;
+            example = "12MiB";
+            description = "The cumulative Base64 payload this layer allows, as bytes or a size string.";
+          };
+        };
+      };
+
       # The ClankTalk shim. It is a folder plugin: OpenCode loads `index` for the server part and
       # `tui` beside it. The upstream plugin adds `clank_talk` in `setup` before it checks the mode,
       # so a normal session must not call `setup` at all. `clank-opencode` sets KDN_CLANK_TALK.
@@ -310,6 +355,96 @@
         '';
       };
 
+      options.kdn.opencode.imageBudget = lib.mkOption {
+        type = lib.types.submodule {
+          options = {
+            maxImages = lib.mkOption {
+              type = lib.types.ints.unsigned;
+              default = 8;
+              description = ''
+                How many images one request may carry. The newest images win and older ones become a
+                one-line note that names the file.
+
+                The default sits below every known gateway cap (30 and 50) and costs roughly 8k
+                tokens of the context window. A local llama.cpp server has no image-count cap, so
+                there the number is a cost decision, not a safety one; raise it per provider when a
+                workflow really needs more.
+              '';
+            };
+            maxBytes = lib.mkOption {
+              type = lib.types.either lib.types.ints.unsigned lib.types.str;
+              default = "8MiB";
+              description = ''
+                The cumulative Base64 payload one request may carry, as a byte count or a size
+                string. It counts the encoded image, which is what the request body holds.
+              '';
+            };
+            compaction = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  maxImages = lib.mkOption {
+                    type = lib.types.ints.unsigned;
+                    default = 0;
+                    description = "How many images a compaction or title request may carry.";
+                  };
+                  maxBytes = lib.mkOption {
+                    type = lib.types.either lib.types.ints.unsigned lib.types.str;
+                    default = 0;
+                    description = "The payload a compaction or title request may carry.";
+                  };
+                };
+              };
+              default = { };
+              description = ''
+                The budget for a compaction or title request. It defaults to zero images: a summary
+                does not need the pixels, and a compaction that still carries every image fails
+                exactly like the request it was meant to rescue.
+              '';
+            };
+            providers = lib.mkOption {
+              type = lib.types.attrsOf imageBudgetLayer;
+              default = { };
+              example = lib.literalExpression ''
+                {
+                  litellm = {
+                    maxImages = 32;
+                    maxBytes = "32MiB";
+                  };
+                }
+              '';
+              description = "Per-provider overrides, keyed by the provider id in `opencode.jsonc`.";
+            };
+            models = lib.mkOption {
+              type = lib.types.attrsOf imageBudgetLayer;
+              default = { };
+              example = lib.literalExpression ''
+                {
+                  "requesty/some-model" = {
+                    maxImages = 4;
+                  };
+                }
+              '';
+              description = "Per-model overrides, keyed by `<provider>/<model>`.";
+            };
+            debug = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Log one line per pruned request to the OpenCode server log.";
+            };
+          };
+        };
+        default = { };
+        description = ''
+          The image-count guard for outgoing requests. It keeps the newest images inside a count and
+          a byte budget and replaces every older image with a one-line note that names the file, so
+          a session can never brick on a gateway image cap.
+
+          The plugin also learns a cap it did not know: when a request fails with
+          `Too many images in request: N > M`, it stores `M` for that provider and model and asks
+          for one immediate retry, which then passes. The learned value survives a restart.
+        '';
+      };
+
       options.kdn.opencode.clankTalk = lib.mkOption {
         type = lib.types.submodule {
           options.enable = lib.mkEnableOption "the ClankTalk OpenCode plugin shim";
@@ -349,6 +484,10 @@
         # `.opencode/skills/`, not generated here.
         files.".opencode/plugins/kdn-opencode-stable-prompt.ts".text = stablePromptPlugin;
 
+        # The image-count guard. opencode auto-loads it, so a session can never brick on a gateway
+        # image cap, and a compaction request always passes.
+        files.".opencode/plugins/kdn-image-budget.ts".text = imageBudgetPlugin;
+
         # The ClankTalk shim is a plugin package directory. OpenCode 2.2.5 loads it only when its
         # files are regular files, so copy them from the store on each shell entry. Compare first
         # and replace atomically, so a live server never reads a half-written file.
@@ -378,6 +517,11 @@
 
           echo "• opencode: the wrapper execs a store path" >&2
           grep -qE '^exec /nix/store/' "$(command -v opencode)"
+
+          echo "• opencode: the image budget plugin is generated with the configured numbers" >&2
+          test -f .opencode/plugins/kdn-image-budget.ts
+          grep -q 'kdn.image-budget' .opencode/plugins/kdn-image-budget.ts
+          grep -q '"maxImages":${toString cfg.imageBudget.maxImages},"models"' .opencode/plugins/kdn-image-budget.ts
 
           ${lib.optionalString cfg.clankTalk.enable ''
             echo "• opencode: the ClankTalk shim is a regular file" >&2
