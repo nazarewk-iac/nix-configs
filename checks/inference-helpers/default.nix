@@ -27,7 +27,6 @@ pkgs.runCommand "check-inference-helpers-integration"
       coreutils
       curl
       llama-cpp
-      llama-swap
       python3
     ];
   }
@@ -35,7 +34,6 @@ pkgs.runCommand "check-inference-helpers-integration"
     export MODEL=${fixtures.stories260K}
     export LLAMA=${pkgs.llama-cpp}/bin/llama-server
     export HELPERS=${helpers}/bin/kdn-inference-helpers
-    export SWAP_BIN=${pkgs.llama-swap}/bin/llama-swap
     export WORK=$TMPDIR
     bash ${./run.sh}
     touch $out

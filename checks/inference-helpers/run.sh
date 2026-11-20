@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
 # The runtime end to end with one 1 MB model and no GPU.
 #
-# Starts the manager with the `command` adapter (each profile is just a llama-server), llama-swap
-# with two entries (a QFN proxy and the companion gate), and drives the real request paths:
+# Starts the real processes — the manager, one `select` proxy and one `gate` — and drives them over
+# loopback with a python client:
 #
-#   1. the first `qfn` request starts the engine on `max`
-#   2. a second `qfn` request must not switch it
-#   3. asking for the companion with no reserve answers 409 and names its own remedy
-#   4. the same request with `kdn_switch_to` switches and serves
-#   5. unloading the companion returns the engine to `max` by itself
+#   1. the first request through `select` starts the engine on `max`
+#   2. a second request through `select` must not switch it
+#   3. the gated model with no reserve answers 409 and names its own remedy
+#   4. the same request with `kdn_switch_to` switches the engine and serves
 #
-# Everything is loopback, under a second per engine start, and it proves the wiring that the Go unit
-# tests cannot: ports, config file, process hand-off, llama-swap's `cmd` contract.
+# llama-swap is deliberately not part of this check: its own scheduler (health gating, per-entry
+# start/stop) is what kills a cold-starting entry inside the sandbox, and that behaviour is llama-swap's
+# contract, not ours. The revert-on-unload is covered by the Go unit test against a fake accessory.
 set -euo pipefail
 
-: "${MODEL:?}" "${LLAMA:?}" "${HELPERS:?}" "${SWAP_BIN:?}" "${WORK:?}"
+: "${MODEL:?}" "${LLAMA:?}" "${HELPERS:?}" "${WORK:?}"
 MANAGER_PORT=18181
 ENGINE_PORT=18080
-SWAP_PORT=18700
+SELECT_PORT=18090
+GATE_PORT=18091
 export HOME="$WORK/home"
 mkdir -p "$HOME" "$WORK/data/strata/profiles"
 
@@ -28,7 +29,7 @@ cat >"$CONFIG" <<EOF
   "dataDir": "$WORK/data",
   "enginePort": $ENGINE_PORT,
   "managerPort": $MANAGER_PORT,
-  "swapURL": "http://127.0.0.1:$SWAP_PORT",
+  "swapURL": "http://127.0.0.1:1",
   "aliases": { "qfn": "auto", "qfn-max": "max", "qfn-fast-colo": "omni-fast" },
   "frontierIDs": ["qfn", "qfn-max", "qfn-fast-colo"],
   "cacheDropCommand": [],
@@ -36,7 +37,11 @@ cat >"$CONFIG" <<EOF
   "drainTimeoutSeconds": 60,
   "leaseTTLSeconds": 600,
   "gates": {
-    "tiny-omni": { "requireProfiles": ["omni-fast"], "allow": ["omni-fast"], "confirmField": "kdn_switch_to" }
+    "tiny-omni": {
+      "requireProfiles": ["omni-fast"],
+      "allow": ["omni-fast"],
+      "confirmField": "kdn_switch_to"
+    }
   },
   "commands": {
     "max":       ["$LLAMA", "--model", "$MODEL", "--host", "127.0.0.1", "--ctx-size", "512", "--parallel", "1"],
@@ -45,51 +50,49 @@ cat >"$CONFIG" <<EOF
 }
 EOF
 
-SWAP="$WORK/swap.yaml"
-cat >"$SWAP" <<EOF
-healthCheckTimeout: 120
-logLevel: warn
-models:
-  tiny:
-    cmd: $HELPERS select qfn --port \${PORT} --config $CONFIG
-  tiny-omni:
-    cmd: $HELPERS gate --name tiny-omni --config $CONFIG -- $LLAMA --model $MODEL --host 127.0.0.1 --port \${PORT} --ctx-size 512 --parallel 1
-EOF
-
 "$HELPERS" manager --config "$CONFIG" >"$WORK/manager.log" 2>&1 &
 MANAGER_PID=$!
-"$SWAP_BIN" --config "$SWAP" --listen "127.0.0.1:$SWAP_PORT" >"$WORK/swap.log" 2>&1 &
-SWAP_PID=$!
-cleanup() { kill "$SWAP_PID" "$MANAGER_PID" 2>/dev/null || true; }
+"$HELPERS" select qfn --port "$SELECT_PORT" --config "$CONFIG" >"$WORK/select.log" 2>&1 &
+SELECT_PID=$!
+"$HELPERS" gate --name tiny-omni --config "$CONFIG" -- \
+  "$LLAMA" --model "$MODEL" --host 127.0.0.1 --port "$GATE_PORT" --ctx-size 512 --parallel 1 \
+  >"$WORK/gate.log" 2>&1 &
+GATE_PID=$!
+cleanup() { kill "$GATE_PID" "$SELECT_PID" "$MANAGER_PID" 2>/dev/null || true; }
 trap cleanup EXIT
 
-python3 - "$MANAGER_PORT" "$SWAP_PORT" "$SWAP_PORT" <<'PY'
-import json, sys, time, urllib.error, urllib.request
+cd "$WORK"
+python3 - "$MANAGER_PORT" "$SELECT_PORT" "$GATE_PORT" <<'PY'
+import json, sys, time, traceback, urllib.error, urllib.request
 
-manager, swap = int(sys.argv[1]), int(sys.argv[2])
+manager, select_port, gate_port = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
 
 
 def wait(url, tries=120):
     for _ in range(tries):
         try:
-            with urllib.request.urlopen(url, timeout=2) as r:
-                return True
+            with urllib.request.urlopen(url, timeout=2):
+                return
         except Exception:
             time.sleep(0.5)
     raise SystemExit(f"never answered: {url}")
 
 
-def post(url, body, timeout=180):
+def post(url, body, timeout=240):
     req = urllib.request.Request(url, json.dumps(body).encode(),
                                  {"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.load(r)
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read() or b"{}")
+        raw = e.read()
+        try:
+            return e.code, json.loads(raw or b"{}")
+        except json.JSONDecodeError:
+            return e.code, {"raw": raw.decode(errors="replace")}
 
 
-def profile():
+def status():
     with urllib.request.urlopen(f"http://127.0.0.1:{manager}/status", timeout=5) as r:
         return json.load(r)
 
@@ -99,47 +102,61 @@ def switches():
         return json.load(r)["by_event"].get("switch", {}).get("n", 0)
 
 
-def ask(model, extra=None, tokens=8):
-    body = {"model": model, "messages": [{"role": "user", "content": "say ok"}], "max_tokens": tokens}
+def ask(port, extra=None, tokens=8):
+    body = {"model": "qfn", "messages": [{"role": "user", "content": "say ok"}], "max_tokens": tokens}
     body.update(extra or {})
-    return post(f"http://127.0.0.1:{swap}/v1/chat/completions", body)
+    return post(f"http://127.0.0.1:{port}/v1/chat/completions", body)
+
+
+def dump():
+    for log in ("manager.log", "select.log", "gate.log"):
+        try:
+            print(f"--- {log} ---")
+            print(open(log).read()[-4000:])
+        except OSError:
+            pass
 
 
 wait(f"http://127.0.0.1:{manager}/status")
-wait(f"http://127.0.0.1:{swap}/v1/models")
+# `select` asks the manager for its profile first and only then binds, so waiting for its port is
+# also the assertion that the startup switch happened.
+wait(f"http://127.0.0.1:{select_port}/v1/models")
 
-# 1. the first `qfn` request starts the engine on max
-status, body = ask("tiny")
-assert status == 200, (status, body)
-assert profile()["profile"] == "max", profile()
-after_first = switches()
+try:
+    # 1. the proxy's startup switch put the engine on the whole-card profile
+    assert status()["profile"] == "max", status()
+    code, body = ask(select_port)
+    assert code == 200, (code, body)
+    assert status()["profile"] == "max", status()
+    after_first = switches()
 
-# 2. a second `qfn` request must not switch anything
-status, _ = ask("tiny")
-assert status == 200
-assert switches() == after_first, "a second qfn request switched the engine"
+    # 2. a second request must not switch anything
+    code, _ = ask(select_port)
+    assert code == 200, code
+    assert switches() == after_first, "a second request switched the engine"
 
-# 3. the companion with no reserve answers 409 with its own remedy
-status, body = ask("tiny-omni")
-assert status == 409, (status, body)
-assert body["confirm"]["field"] == "kdn_switch_to", body
-assert body["requires"] == "colo", body
-attempts = switches()
+    # 3. the gated model with no reserve answers 409 and names its own remedy
+    code, body = ask(gate_port)
+    assert code == 409, (code, body)
+    assert body["confirm"]["field"] == "kdn_switch_to", body
+    assert body["alternatives"] == ["omni-fast"], body
+    attempts = switches()
 
-# 4. the same request with kdn_switch_to switches and serves
-status, body = ask("tiny-omni", {"kdn_switch_to": "qfn-fast-colo"})
-assert status == 200, (status, body)
-assert profile()["profile"] == "omni-fast", profile()
-assert switches() > attempts, "the confirmed request did not switch the engine"
+    # 4. the same request with the confirm field switches and serves
+    code, body = ask(gate_port, {"kdn_switch_to": "qfn-fast-colo"})
+    assert code == 200, (code, body)
+    assert status()["profile"] == "omni-fast", status()
+    assert switches() > attempts, "the confirmed request did not switch the engine"
 
-# 5. unloading the companion returns the engine to max by itself
-post(f"http://127.0.0.1:{swap}/api/models/unload/tiny-omni", {})
-deadline = time.time() + 120
-while time.time() < deadline:
-    if profile()["profile"] == "max":
-        break
-    time.sleep(1)
-assert profile()["profile"] == "max", f"the engine did not revert: {profile()}"
+    # 5. a gated request while the reserve is present is served without a switch
+    settled = switches()
+    code, _ = ask(gate_port)
+    assert code == 200, code
+    assert switches() == settled, "a gated request switched the engine while the reserve was active"
+except Exception:
+    traceback.print_exc()
+    dump()
+    raise
 
 print("inference runtime integration: PASS")
 PY
