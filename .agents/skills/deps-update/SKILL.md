@@ -1,6 +1,6 @@
 ---
 name: deps-update
-description: Update the repository's dependencies as one flow — flake inputs and devenv.lock, and the separate rosec fork/input. Ask the user with a multi-select which groups to update; every group is selected by default. Use when asked to update dependencies, flake inputs, devenv, or the rosec fork.
+description: Update the repository's dependencies as one flow — flake inputs and devenv.lock, and the separate rosec and zellij forks/inputs. Ask the user with a multi-select which groups to update; every group is selected by default. Use when asked to update dependencies, flake inputs, devenv, or a fork.
 type: Skill
 timestamp: 2026-11-14T22:00:00+01:00
 ---
@@ -19,6 +19,7 @@ each marked recommended (selected by default):
 >
 > - `flake inputs + devenv.lock` (Recommended)
 > - `rosec fork + input` (Recommended)
+> - `zellij fork + input` (Recommended)
 
 If the user deselects a group, skip it and say so. Never update a group the user did not select.
 
@@ -47,11 +48,41 @@ Follow [rosec.md](https://github.com/nazarewk-iac/nix-configs/blob/main/docs/ros
 The rosec update changes a separate repository, so it is never silent: it is a group the user
 selects.
 
+## Group: zellij fork + input
+
+The fork `nazarewk-iac/zellij` carries `web_client.mobile_font_size` on top of the zellij release
+that nixpkgs builds. `inputs.zellij` is a plain source input, and
+`modules/den-pkgs/overlays.nix` swaps it into `zellij-unwrapped`.
+
+1. `repo="$(g-dir github.com/nazarewk-iac/zellij)"`; `jj -R "$repo" git fetch --remote origin`.
+2. Rebase the patch bookmark onto the vendored release tag, then re-join `main`:
+
+   ```bash
+   jj -R "$repo" rebase -s mobile-font-size -d v<release>
+   jj -R "$repo" bookmark set main -r mobile-font-size --allow-backwards
+   ```
+
+   A zellij bump also needs the same edits re-cut by hand when the release changed the touched
+   files (`zellij-utils/src/input/web_client.rs`,
+   `zellij-client/src/web_client/control_message.rs`, `zellij-client/assets/terminal.js`), then
+   `cargo xtask assets` to regenerate `app.js` and the SRI hashes.
+
+3. Run the two checks: `cargo xtask assets --check` and
+   `cargo test -p zellij-utils --lib kdl::`.
+4. `jj git push --bookmark main --bookmark mobile-font-size --remote nazarewk`.
+5. `nix flake update zellij`; review the new rev in `flake.lock`.
+6. Commit the lock (`chore(flake): update zellij`), then build the package and confirm the binary
+   embeds the option: `nix build` it and run `zellij --config <cfg-with-mobile_font_size> setup
+--check`.
+
+The zellij update changes a separate repository, so it is never silent: it is a group the user
+selects.
+
 ## Order
 
-When both groups are selected, update the **rosec fork first**, then run the flake update: `nix run
-'.#update'` then resolves the new rosec `main` in the same lock pass. If the flake update ran
-first, run `nix flake update rosec` afterwards.
+When several groups are selected, update the forks first, then run the flake update: `nix run
+'.#update'` then resolves the new fork `main`s in the same lock pass. If the flake update ran
+first, run `nix flake update rosec zellij` afterwards.
 
 ## Rules
 
