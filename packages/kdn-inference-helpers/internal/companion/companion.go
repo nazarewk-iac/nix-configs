@@ -151,8 +151,12 @@ func (g *Gate) currentProfile(ctx context.Context) string {
 }
 
 func (g *Gate) selectProfile(ctx context.Context, profile string) error {
-	body, _ := json.Marshal(map[string]any{"profile": profile})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, g.Manager+"/select", bytes.NewReader(body))
+	// `keep_companions` is what stops the switch from unloading this very process: the manager
+	// treats every non-frontier model as evictable, and the gate is one.
+	body, _ := json.Marshal(map[string]any{"profile": profile, "keep_companions": true})
+	// The switch outlives the client's connection: a client that gives up must not cancel a reload
+	// that is already stopping the engine.
+	req, err := http.NewRequestWithContext(context.WithoutCancel(ctx), http.MethodPost, g.Manager+"/select", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

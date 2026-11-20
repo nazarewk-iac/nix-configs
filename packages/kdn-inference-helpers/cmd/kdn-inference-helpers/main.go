@@ -412,8 +412,12 @@ func extractConfigFlag(args []string) (string, []string) {
 }
 
 func execReplace(path string, argv, env []string) error {
-	// Kept in a helper so `serve` is testable without a process replacement in the test binary.
-	return syscallExec(path, argv, env)
+	// syscall.Exec passes argv untouched, so argv[0] must be the program: without it the launcher
+	// sees its own subcommand as the program name and parses `--profile <path>` as the command
+	// (measured: "invalid choice: .../strata-omni-max.json"). `exec.Command` prepends it for us;
+	// `Exec` does not.
+	full := append([]string{path}, argv...)
+	return syscallExec(path, full, env)
 }
 
 var syscallExec = func(path string, argv, env []string) error {

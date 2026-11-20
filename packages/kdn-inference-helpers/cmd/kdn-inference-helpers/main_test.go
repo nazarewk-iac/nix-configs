@@ -33,3 +33,24 @@ func TestParsePositionalThenFlagsAcceptsBothOrders(t *testing.T) {
 		}
 	}
 }
+
+func TestExecReplacePassesTheProgramAsArgvZero(t *testing.T) {
+	// syscall.Exec does not add argv[0]; the launcher parses argv[1] as its subcommand, so a missing
+	// argv[0] shifts every argument by one and the profile path becomes the command.
+	var gotPath string
+	var gotArgv []string
+	original := syscallExec
+	syscallExec = func(path string, argv, env []string) error {
+		gotPath, gotArgv = path, argv
+		return nil
+	}
+	defer func() { syscallExec = original }()
+
+	err := execReplace("/bin/strata", []string{"serve", "--profile", "/cfg.json", "--port", "8099"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/bin/strata" || len(gotArgv) != 6 || gotArgv[0] != "/bin/strata" || gotArgv[1] != "serve" {
+		t.Fatalf("argv = %v", gotArgv)
+	}
+}

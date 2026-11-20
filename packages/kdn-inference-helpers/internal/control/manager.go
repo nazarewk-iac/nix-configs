@@ -99,6 +99,13 @@ func (m *Manager) CurrentProfile() string {
 
 // Select switches, or reports what a switch would cost. The returned map is the JSON body.
 func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map[string]any {
+	return m.SelectKeeping(ctx, requested, dryRun, false)
+}
+
+// SelectKeeping is Select with one knob: a switch asked for by the companion gate keeps the gate
+// alive. Without it the switch unloads every non-frontier model — including the gate process that
+// is waiting on this very call, which cancels the call and fails the switch it asked for.
+func (m *Manager) SelectKeeping(ctx context.Context, requested string, dryRun, keepCompanions bool) map[string]any {
 	profile := m.Cfg.Normalise(requested)
 	if !config.Accepted[profile] {
 		return map[string]any{"error": fmt.Sprintf("unknown profile %q", requested)}
@@ -155,7 +162,10 @@ func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map
 			"seconds": round(waited), "clean": clean})
 	}
 
-	unloaded, _ := m.Backend.UnloadCompanions(ctx)
+	var unloaded []string
+	if !keepCompanions {
+		unloaded, _ = m.Backend.UnloadCompanions(ctx)
+	}
 	if len(unloaded) > 0 {
 		_ = m.Journal.Append(map[string]any{"event": journal.EventCompanionDown,
 			"model": strings.Join(unloaded, ","), "cause": "switch"})
@@ -168,8 +178,14 @@ func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map
 	}
 	loadStart := time.Now()
 	loadDur, err := m.Backend.StartEngine(ctx, profile)
-	_ = m.Journal.Append(map[string]any{"event": journal.EventEngineLoad,
-		"profile": profile, "seconds": round(loadDur), "ok": err == nil})
+	loadEvent := map[string]any{"event": journal.EventEngineLoad,
+		"profile": profile, "seconds": round(loadDur), "ok": err == nil}
+	if err != nil {
+		// Without the reason a failed switch is indistinguishable from a slow one.
+		loadEvent["error"] = err.Error()
+		log.Printf("switch to %s failed: %v", profile, err)
+	}
+	_ = m.Journal.Append(loadEvent)
 	// Phase 2 ends here: whatever was running is gone and the new engine either answers or failed.
 	m.Leases.EndDrain()
 
@@ -374,8 +390,9 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Profile string `json:"profile"`
-		DryRun  bool   `json:"dry_run"`
+		Profile        string `json:"profile"`
+		DryRun         bool   `json:"dry_run"`
+		KeepCompanions bool   `json:"keep_companions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "body must be JSON"})
@@ -385,7 +402,7 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": fmt.Sprintf("unknown profile %q", body.Profile)})
 		return
 	}
-	writeJSON(w, http.StatusOK, m.Select(r.Context(), body.Profile, body.DryRun))
+	writeJSON(w, http.StatusOK, m.SelectKeeping(r.Context(), body.Profile, body.DryRun, body.KeepCompanions))
 }
 
 func (m *Manager) handleLease(w http.ResponseWriter, r *http.Request) {
