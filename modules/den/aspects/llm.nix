@@ -501,6 +501,15 @@
         }
         // lib.optionalAttrs (m.aliases != [ ]) {
           inherit (m) aliases;
+        }
+        // lib.optionalAttrs (m.checkEndpoint != null) {
+          checkEndpoint = m.checkEndpoint;
+        }
+        // lib.optionalAttrs m.unlisted {
+          unlisted = true;
+        }
+        // lib.optionalAttrs (m.cmdStop != null) {
+          cmdStop = lib.concatStringsSep " " m.cmdStop;
         };
 
       # The `group` engine: one group per router, holding its model set. The primary router (`main`)
@@ -930,6 +939,45 @@
             OpenAI-compatible API on the port llama-swap passes through its PORT placeholder.
             `perf.contextSize` still feeds `capabilities.context`, so a client reads
             the window from `/v1/models` without starting the model.
+          '';
+        };
+
+        options.checkEndpoint = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "/sdapi/v1/options";
+          description = ''
+            The path llama-swap polls to decide this model is up. llama-swap defaults to its own
+            health path, which a non-OpenAI server does not answer.
+
+            It exists for the same reason as `command`: a diffusion server speaks the A1111 API,
+            not `/v1/models`, and a health check against the wrong path marks a working model as
+            broken and kills it.
+          '';
+        };
+
+        options.unlisted = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Keep this model out of `/v1/models` while it stays addressable by name.
+
+            An image editor is not a chat model. Listing it next to the frontier invites a client
+            to send chat to a diffusion server; leaving it unlisted keeps the chat catalogue honest
+            and the model reachable through llama-swap's `/upstream/<model>/...` passthrough.
+          '';
+        };
+
+        options.cmdStop = lib.mkOption {
+          type = lib.types.nullOr (lib.types.listOf lib.types.str);
+          default = null;
+          description = ''
+            A command llama-swap runs when it unloads this model.
+
+            `strata-select` proxies a profile the *manager* owns, so stopping the proxy frees
+            nothing: the manager still holds the card. This is the hook that tells the manager to
+            let go — `ctl down` for a batch model, so the next chat request finds an empty card and
+            starts the resting profile.
           '';
         };
 

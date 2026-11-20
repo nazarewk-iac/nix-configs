@@ -226,6 +226,12 @@ let
       # which llama-swap unloads the model by itself.
       wrapper = m.wrapper or null;
       ttl = m.ttl or null;
+      # A model that is not an OpenAI server: the path llama-swap polls instead of its own health
+      # check, whether it belongs in `/v1/models` at all, and the command that releases what it
+      # proxied when llama-swap unloads it.
+      checkEndpoint = m.checkEndpoint or null;
+      unlisted = m.unlisted or false;
+      cmdStop = m.cmdStop or null;
       enable = c.enable or true;
       mainRouter = h.set;
       inherit (c) hfRepo hfFile;

@@ -61,6 +61,10 @@ let
   #
   # The Python implementations stay in the tree for one release as the rollback path; deleting them
   # is the last step of docs/tasks/2026-11/kdn-inference-helpers.
+  # The image and video editors are profiles of the same manager: their argv, their readiness path
+  # and the `sd-server` binary come from one file, and the card stays one card.
+  imageModels = import ./image-models.nix { inherit pkgs lib; };
+
   inferenceHelpers = pkgs.kdn.kdn-inference-helpers;
   strataManager = pkgs.writeShellScriptBin "strata-manager" ''
     exec ${inferenceHelpers}/bin/kdn-inference-helpers manager "$@"
@@ -113,6 +117,18 @@ in
       "qfn-max-colo"
       "qfn-fast-colo"
     ];
+    # The profiles that serve chat. `qfn` (alias `auto`) keeps only one of these: an image profile
+    # is never "kept" for a chat request, because a diffusion server answers no chat. Anything
+    # outside this list is a batch profile, and asking for `auto` while one is loaded is refused
+    # with an error that names the way back.
+    textProfiles = [
+      "max"
+      "omni-max"
+      "omni-fast"
+    ];
+    # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier
+    # first (drain, then stop, then load) and selecting a text profile stops the editor.
+    commands = imageModels.profiles;
     # The policy the gate applies to qwen3-omni: only a profile that keeps the reserve satisfies it,
     # and only a colo tier may be named in `kdn_switch_to`.
     gates.qwen3-omni = {
@@ -150,6 +166,8 @@ in
   environment.systemPackages = [
     # The runtime is named by `data/llm.nix` entries as an absolute path, so it must be on PATH.
     inferenceHelpers
+    # The editors' server binary. It is named absolutely in the config, so this is for a hand run.
+    imageModels.sd
     pkgs.kdn.strata
     strataServe
     strataSelect

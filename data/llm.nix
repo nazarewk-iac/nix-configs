@@ -449,37 +449,54 @@ in
     };
 
     # ---------------------------------------------------------------- image and video editing
-    # Both editors join the `main` set, the same one the frontier profiles use, so llama-swap evicts
-    # QFN for them and they for QFN. That is the hardware's verdict: Qwen-Image-Edit at Q8_0 is
-    # 21.8 GB plus a 9.4 GB encoder, and VACE 14B at fp8 wants most of the card too.
+    # Diffusion models are not llama-server. Each entry runs `strata-select <profile>`, which asks
+    # the manager to make the profile current and then proxies the port — so an edit *evicts* the
+    # frontier (drain, stop, load the editor) and a later chat request evicts the editor. The card
+    # is one card, and the manager is the only thing that switches it.
     #
-    # They are DISABLED until the serving stack is wired (docs/tasks/2026-11/image-video-editing-models):
-    # llama.cpp cannot run a diffusion model, so the entry is a `stable-diffusion-cpp` server on the
-    # port llama-swap hands over, not a llama-server. The `command` is deliberately left out until
-    # the manager has an `image` profile to start it, so nothing advertises a model that no process
-    # serves.
+    # They are unlisted: `/v1/models` is the chat catalogue, and an image editor in it invites a
+    # client to send chat to a diffusion server. They stay addressable by name through llama-swap's
+    # `/upstream/<model>/...` passthrough, which is how an A1111 client reaches them:
     #
-    # The runtime is proven: sd.cpp on Vulkan, no torch, no ROCm. Measured on brys, 1024x1024, one
-    # photograph, one instruction (docs/tasks/2026-11/image-video-editing-models/measurements.md):
-    #   qwen-image-edit + the 4-step Lightning LoRA   44 s, 26.2 GiB
-    #   longcat-image-edit, official bf16             30 s, 22.9 GiB
-    #   wan-vace-14b, 480p x 33 frames                 see the measurements file
-    # Two traps that cost hours: the RX 550 enumerates as vulkan0 and the R9700 as vulkan1, and the
-    # third-party LongCat GGUF is a broken conversion that renders noise. Pin the device, and prove
-    # a model with its official weights before trusting a quantisation of it.
+    #   POST /upstream/qwen-image-edit/sdapi/v1/txt2img
+    #   GET  /upstream/qwen-image-edit/          (the sd-server web UI)
+    #
+    # `cmdStop` is the part that makes the eviction complete: stopping the proxy frees nothing,
+    # because the manager owns the server. `ctl down` tells it to let go, so the next chat request
+    # finds an empty card and starts the resting profile. `ttl` is what fires it after 15 minutes
+    # of nobody asking.
+    #
+    # Measured on brys (docs/tasks/2026-11/image-video-editing-models/measurements.md):
+    #   qwen-image-edit + the 4-step Lightning LoRA   41-44 s per 1024x1024 edit, 26 GiB
+    #   longcat-image-edit, official bf16             29-30 s per edit, 23 GiB
+    #   wan-vace-14b, 480p x 33 frames                940-1039 s, 29 GiB
     "qwen-image-edit" = {
       aliases = [ ];
       capabilities = {
-        loadSeconds = 90;
+        loadSeconds = 40;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 4096;
+      command = [
+        "/run/current-system/sw/bin/strata-select"
+        "image-qwen"
+        "--port"
+        "\${PORT}"
+      ];
+      checkEndpoint = "/sdapi/v1/options";
+      unlisted = true;
+      ttl = 900;
+      cmdStop = [
+        "/run/current-system/sw/bin/kdn-inference-helpers"
+        "ctl"
+        "down"
+      ];
       hosts.brys = {
         set = "main";
         servedContext = 4096;
         common = {
-          enable = false;
+          enable = true;
           # The set: this GGUF, Qwen2.5-VL-7B-Instruct-Q8_0 (text encoder), mmproj-F16 (vision),
           # qwen_image_vae.safetensors, and the Lightning 4-step LoRA.
           hfFile = "qwen-image-edit-2511-Q4_K_M.gguf";
@@ -497,11 +514,25 @@ in
       };
       gpu = true;
       contextSize = 4096;
+      command = [
+        "/run/current-system/sw/bin/strata-select"
+        "image-longcat"
+        "--port"
+        "\${PORT}"
+      ];
+      checkEndpoint = "/sdapi/v1/options";
+      unlisted = true;
+      ttl = 900;
+      cmdStop = [
+        "/run/current-system/sw/bin/kdn-inference-helpers"
+        "ctl"
+        "down"
+      ];
       hosts.brys = {
         set = "main";
         servedContext = 4096;
         common = {
-          enable = false;
+          enable = true;
           # Official ComfyUI single file. It uses the FLUX VAE and the same Qwen2.5-VL encoder as
           # qwen-image-edit. The vantagewithai GGUF of this model loads and renders noise.
           hfFile = "split_files/diffusion_models/longcat_image_edit_turbo_bf16.safetensors";
@@ -514,16 +545,30 @@ in
     "wan-vace-14b" = {
       aliases = [ ];
       capabilities = {
-        loadSeconds = 120;
+        loadSeconds = 60;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 4096;
+      command = [
+        "/run/current-system/sw/bin/strata-select"
+        "image-vace"
+        "--port"
+        "\${PORT}"
+      ];
+      checkEndpoint = "/sdapi/v1/options";
+      unlisted = true;
+      ttl = 900;
+      cmdStop = [
+        "/run/current-system/sw/bin/kdn-inference-helpers"
+        "ctl"
+        "down"
+      ];
       hosts.brys = {
         set = "main";
         servedContext = 4096;
         common = {
-          enable = false;
+          enable = true;
           # The set: this GGUF, umt5-xxl-encoder-Q8_0 (text encoder), wan_2.1_vae.safetensors.
           hfFile = "Wan2.1_14B_VACE-Q4_K_M.gguf";
           hfRepo = "QuantStack/Wan2.1_14B_VACE-GGUF";
