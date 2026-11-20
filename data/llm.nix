@@ -448,6 +448,57 @@ in
       };
     };
 
+    # ---------------------------------------------------------------- image and video editing
+    # Both editors join the `main` set, the same one the frontier profiles use, so llama-swap evicts
+    # QFN for them and they for QFN. That is the hardware's verdict: Qwen-Image-Edit at Q8_0 is
+    # 21.8 GB plus a 9.4 GB encoder, and VACE 14B at fp8 wants most of the card too.
+    #
+    # They are DISABLED until the serving stack is proven (docs/tasks/2026-11/image-video-editing-models):
+    # llama.cpp cannot run a diffusion model, so the entry is a `stable-diffusion-cpp` server on the
+    # port llama-swap hands over, not a llama-server. The `command` below is the intended shape and
+    # is deliberately left out until the smoke test passes, so nothing advertises a model that no
+    # process serves.
+    "qwen-image-edit" = {
+      aliases = [ ];
+      capabilities = {
+        loadSeconds = 90;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 4096;
+      hosts.brys = {
+        set = "main";
+        servedContext = 4096;
+        common = {
+          enable = false;
+          hfFile = "Qwen-Image-Edit-2511-Q8_0.gguf";
+          hfRepo = "unsloth/Qwen-Image-Edit-2511-GGUF";
+          download.enable = false;
+          perf.contextSize = 4096;
+        };
+      };
+    };
+    "wan-vace-14b" = {
+      aliases = [ ];
+      capabilities = {
+        loadSeconds = 120;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 4096;
+      hosts.brys = {
+        set = "main";
+        servedContext = 4096;
+        common = {
+          enable = false;
+          hfFile = "wan2.1_vace_14B_fp8.safetensors";
+          hfRepo = "Wan-AI/Wan2.1-VACE-14B";
+          download.enable = false;
+          perf.contextSize = 4096;
+        };
+      };
+    };
+
     "qwen3.8-flash-next" = {
       # RE-ENABLED 2026-11-18 on the R9700, measured. The 2026-11-13 retirement was correct for
       # the 8 GB W6600 (2.36 t/s decode, CPU-only). The 32 GB R9700 runs the same model at
