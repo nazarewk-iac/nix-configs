@@ -645,6 +645,9 @@ in
         # The Strata engine and the `strata-serve` adaptor that llama-swap calls per profile.
         ./strata-profiles.nix
 
+        # The board-power cap: 210 W, the card's own floor, re-applied at boot and on resume.
+        ./gpu-power.nix
+
         # The motherboard sensors: the Nuvoton NCT6798D behind the `nct6775` driver, plus the
         # libsensors labels. node_exporter picks them up through its `hwmon` collector.
         ./sensors.nix
