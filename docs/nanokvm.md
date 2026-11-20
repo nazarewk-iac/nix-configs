@@ -86,6 +86,37 @@ curl -ksS -X POST https://kvm-26e2.lan.etra.net.int.kdn.im/api/mcp \
 - Never commit the API key. Refer to it as `<key>`.
 - Do not click destructive controls (erase, power, reboot) unless the task needs the exact one.
 
+### HID can stop working
+
+Measured on `kvm-2795` on 2026-11-20 during the `anji` SSH lockout. After a long GUI session with
+many permission prompts, mouse clicks stopped landing while keyboard injection and screenshots
+still worked. A move returned `ok`, a click returned `ok`, and the cursor still moved, but no
+button event reached the host. Later the mouse endpoint failed outright:
+
+```
+timeout after 50ms: write /dev/hidg2: i/o timeout
+```
+
+The keyboard endpoint (`/dev/hidg0`) kept working. This is a wedged USB HID gadget, not a dead
+host and not a capture fault. Recover in this order:
+
+1. **UDC rebind** on the KVM. This fixed the mouse on 2026-11-20 without touching the host:
+
+   ```bash
+   ssh root@kvm-2795.lan.etra.net.int.kdn.im '
+     echo "" > /sys/kernel/config/usb_gadget/g0/UDC; sleep 2;
+     echo 4340000.usb > /sys/kernel/config/usb_gadget/g0/UDC'
+   ```
+
+2. **Restart the KVM server** only if the rebind does not help. `manual control is active` is a
+   different fault: a browser WebSocket holds the input lock. A server restart releases it.
+3. **Reboot the KVM** when screenshots then fail with `retCode: -7` (`failed to capture
+   screenshot`). On 2026-11-20 a server restart left the capture pipeline in that state, and a
+   full KVM reboot restored both capture and HID.
+
+Do not reset the Mac for this signature. The host is still running; only the KVM's input path is
+stuck.
+
 ## Diagnostics
 
 Four distinct faults, and they must not be confused:
