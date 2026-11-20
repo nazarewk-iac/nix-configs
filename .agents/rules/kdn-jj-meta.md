@@ -33,7 +33,9 @@ kdn-jj-meta attribute <change-id>
   served it: `--local-model qfn=max`. A bare alias is resolved against the manager's current
   profile, because `qfn` can be `max` in the morning and `omni-fast` after a swap, and a trailer
   that names only the alias is not a record of what ran. Repeat the flag per model. Record only
-  models that actually contributed; a config change *about* a model is not the model working.
+  models that actually contributed; a config change _about_ a model is not the model working.
+  Every inference response carries `X-KDN-Alias` and `X-KDN-Profile`; take the profile from the
+  response you just received, not from a later `/status`, which describes a different moment.
 - Never add `Co-authored-by:` for the human author. The human is already the author. If a project
   wants the GitHub convention, the co-author is the agent and it needs an explicit agent email:
   `kdn-jj-meta attribute <id> --profile github --coauthor-email <email>`.

@@ -158,6 +158,11 @@ Local-model: qwen-image-edit=image-qwen (Qwen-Image-Edit-2511 Q4_K_M)
   `/status` on `KDN_INFERENCE_MANAGER_URL` (default `http://127.0.0.1:8181`) which profile is
   current and appends it. The manager is the only component that knows, because it is the thing
   that swaps.
+- **The response itself carries the answer.** Every inference response from the fleet has
+  `X-KDN-Alias` (the model the caller asked for) and `X-KDN-Profile` (the profile that served it),
+  and the body's `model` field names the concrete engine model. A harness should read the header
+  from the response it just received and pass `--local-model "<alias>=<profile>"`: that is the
+  profile that answered _that request_, where `/status` is only what is current _now_.
 - `alias=profile` is kept verbatim. The profile the caller names wins over the one the manager
   reports: the caller may know that the work happened before the swap.
 - An unreachable manager leaves the bare alias. A commit never fails because the serving host is
@@ -165,7 +170,7 @@ Local-model: qwen-image-edit=image-qwen (Qwen-Image-Edit-2511 Q4_K_M)
 - `KDN_JJ_META_LOCAL_MODELS` (comma separated) supplies the default list, so a harness that knows
   which models it used does not have to repeat flags.
 - Record only models that actually contributed to the change. A model that served an unrelated
-  request is not part of the change; a configuration change *about* a model is not the model
+  request is not part of the change; a configuration change _about_ a model is not the model
   doing the work.
 
 ## Preservation and idempotency
