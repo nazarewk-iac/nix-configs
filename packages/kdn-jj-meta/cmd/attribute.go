@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"kdn-jj-meta/internal/attribution"
+	"kdn-jj-meta/internal/localmodel"
 	"kdn-jj-meta/internal/session"
 	"kdn-jj-meta/internal/trailer"
 )
@@ -19,6 +20,7 @@ type attributeOptions struct {
 	model          string
 	profiles       []string
 	trailers       []string
+	localModels    []string
 	coauthor       bool
 	coauthorEmail  string
 	generated      bool
@@ -79,6 +81,9 @@ func newAttributeCmd(app *App) *cobra.Command {
 	flags.StringVar(&opts.model, "model", "", "model name and version")
 	flags.StringArrayVar(&opts.profiles, "profile", nil, "active trailer profiles: agent, nixpkgs, asf, github, full; repeatable or comma-separated (default: agent,nixpkgs,asf)")
 	flags.StringArrayVar(&opts.trailers, "trailer", nil, "extra trailer as key=value; repeatable")
+	flags.StringArrayVar(&opts.localModels, "local-model", nil,
+		"locally served model that produced the change: alias, alias=profile, or alias=profile (weights); "+
+			"repeatable (default: KDN_JJ_META_LOCAL_MODELS)")
 	flags.BoolVar(&opts.coauthor, "coauthor", false, "also add the agent Co-authored-by line (needs an email)")
 	flags.StringVar(&opts.coauthorEmail, "coauthor-email", "", "agent email for Co-authored-by (default: KDN_JJ_META_COAUTHOR_EMAIL)")
 	flags.BoolVar(&opts.generated, "generated", false, "also add Generated-by for mostly machine-authored work")
@@ -123,6 +128,11 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 		email = a.Getenv("KDN_JJ_META_COAUTHOR_EMAIL")
 	}
 	sess := session.Detect(a.Getenv).Apply(opts.harness, opts.session, opts.model)
+	localModels := opts.localModels
+	if len(localModels) == 0 {
+		localModels = localmodel.FromEnv(a.Getenv)
+	}
+	localModels = localmodel.Resolve(localModels, a.Getenv)
 	plan, err := attribution.Build(attribution.Options{
 		Profiles:      profiles,
 		Session:       sess,
@@ -131,6 +141,7 @@ func (a *App) attribute(revset string, opts attributeOptions) error {
 		CoauthorEmail: email,
 		Generated:     opts.generated,
 		Extra:         extra,
+		LocalModels:   localModels,
 	})
 	if err != nil {
 		return err

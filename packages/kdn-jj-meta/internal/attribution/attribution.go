@@ -103,6 +103,10 @@ type Options struct {
 	CoauthorEmail string
 	Generated     bool
 	Extra         []trailer.Trailer
+	// LocalModels are the locally served models that produced the change, already normalised to
+	// `alias=profile` by internal/localmodel. One trailer each, so a change that used qfn and an
+	// image editor records both.
+	LocalModels []string
 }
 
 // Plan is the trailer set to append, plus the warnings the caller should print.
@@ -155,6 +159,14 @@ func Build(opts Options) (Plan, error) {
 		}
 		add("Harness", s.Harness)
 		add("Model", s.Model)
+	}
+	seenLocal := map[string]bool{}
+	for _, model := range opts.LocalModels {
+		if seenLocal[model] {
+			continue
+		}
+		seenLocal[model] = true
+		add("Local-model", model)
 	}
 	if active[GitHub] || opts.Coauthor {
 		email := strings.TrimSpace(opts.CoauthorEmail)

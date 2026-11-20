@@ -33,6 +33,10 @@ Rules:
 - Never add `Signed-off-by` for an agent. That is the human's DCO certification.
 - Attribute only a mutable change. The tool refuses immutable history.
 - Never attribute the unnamed empty `@` at the tip. Attribute the described change you created.
+- `Local-model: <alias>=<profile>` records which locally served model produced the change, with
+  the profile that served it (`--local-model qfn=max`). A bare alias is resolved against the
+  manager's current profile, because the same alias is `max` before a swap and `omni-fast` after
+  it. Repeat per model; record only models that actually contributed.
 - Never delete or rewrite an existing trailer. The tool appends only missing lines.
 
 ## Narrow the profiles

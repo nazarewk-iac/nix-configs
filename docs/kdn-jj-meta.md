@@ -135,6 +135,39 @@ still reported when `AI_AGENT` or `AGENT_HARNESS` names one, so the `Harness` tr
 `Assisted-by` and warns. An unknown model writes `Assisted-by: <harness>` and warns, because the
 policy wants a model name and version.
 
+## Local models
+
+The fleet serves the same name from different profiles over a day: `qfn` is `max` (whole card,
+UD-IQ4_XS) in the morning and `omni-fast` (IQ2_XS plus a reserve) in the afternoon, and an image
+editor is its own profile. A trailer that says only `qfn` therefore records which alias was typed,
+not what ran.
+
+`--local-model` records the pair, one trailer per model:
+
+```sh
+kdn-jj-meta attribute @ --local-model qfn=max
+kdn-jj-meta attribute @ --local-model 'qwen-image-edit=image-qwen (Qwen-Image-Edit-2511 Q4_K_M)'
+```
+
+```
+Local-model: qfn=max
+Local-model: qwen-image-edit=image-qwen (Qwen-Image-Edit-2511 Q4_K_M)
+```
+
+- A bare alias (`--local-model qfn`) is resolved against the manager: the tool asks
+  `/status` on `KDN_INFERENCE_MANAGER_URL` (default `http://127.0.0.1:8181`) which profile is
+  current and appends it. The manager is the only component that knows, because it is the thing
+  that swaps.
+- `alias=profile` is kept verbatim. The profile the caller names wins over the one the manager
+  reports: the caller may know that the work happened before the swap.
+- An unreachable manager leaves the bare alias. A commit never fails because the serving host is
+  asleep.
+- `KDN_JJ_META_LOCAL_MODELS` (comma separated) supplies the default list, so a harness that knows
+  which models it used does not have to repeat flags.
+- Record only models that actually contributed to the change. A model that served an unrelated
+  request is not part of the change; a configuration change *about* a model is not the model
+  doing the work.
+
 ## Preservation and idempotency
 
 The trailer block is the last paragraph when every line of it is `Key: value` or a folded

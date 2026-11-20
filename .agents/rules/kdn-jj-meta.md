@@ -29,6 +29,11 @@ kdn-jj-meta attribute <change-id>
 - `Assisted-by: <harness>:<model>` is the disclosure the Nixpkgs transparency policy requires.
   `Co-authored-by:` does **not** satisfy that policy.
 - `Session-Id:` and `Harness:` tie the change to the agent session. `kdn-journal` reads them back.
+- `Local-model:` records which **locally served** model produced the change, with the profile that
+  served it: `--local-model qfn=max`. A bare alias is resolved against the manager's current
+  profile, because `qfn` can be `max` in the morning and `omni-fast` after a swap, and a trailer
+  that names only the alias is not a record of what ran. Repeat the flag per model. Record only
+  models that actually contributed; a config change *about* a model is not the model working.
 - Never add `Co-authored-by:` for the human author. The human is already the author. If a project
   wants the GitHub convention, the co-author is the agent and it needs an explicit agent email:
   `kdn-jj-meta attribute <id> --profile github --coauthor-email <email>`.

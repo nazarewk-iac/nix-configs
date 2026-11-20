@@ -184,3 +184,22 @@ func TestParseProfiles(t *testing.T) {
 		t.Fatal("ParseProfiles accepted the removed portable profile")
 	}
 }
+
+// A change can involve more than one local model, and each is recorded with the profile that
+// served it. Two entries with the same value collapse; different values both survive.
+func TestLocalModelsAreOneTrailerEach(t *testing.T) {
+	plan, err := Build(Options{
+		Profiles:    []Profile{Agent},
+		Session:     agent,
+		LocalModels: []string{"qfn=max", "qwen-image-edit=image-qwen", "qfn=max"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := joined(plan)
+	want := "Session-Id=ses_1\nHarness=opencode\nModel=model\n" +
+		"Local-model=qfn=max\nLocal-model=qwen-image-edit=image-qwen"
+	if got != want {
+		t.Fatalf("trailers = %q, want %q", got, want)
+	}
+}
