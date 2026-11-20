@@ -294,6 +294,13 @@ in
   # The wrapper defaults the shim to the dataset copy; the sandbox hides /home, so name it here.
   systemd.services.llama-swap.environment.ROCM_SHIM = "${engines}/rocm-skip.so";
 
+  # A llama-swap entry is a child process that lives until the model is unloaded, so a deploy that
+  # only changes the helper binary leaves the *old* helper serving: measured 2026-11-20, a `select`
+  # process from the previous store path kept answering after the switch. The manager's unit names
+  # the helper, so it changes on every deploy; tie llama-swap to it and the entries respawn with the
+  # binary that was just built.
+  systemd.services.llama-swap.restartTriggers = [ "strata-manager.service" ];
+
   # The data tree belongs to the engine user, and everyone may read the models.
   systemd.tmpfiles.rules = [
     "d ${engines} 0755 llm-server llm-server -"

@@ -333,6 +333,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "auto"
+        "--alias"
+        "qfn"
         "--port"
         "\${PORT}"
       ];
@@ -366,6 +368,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "max"
+        "--alias"
+        "qfn-max"
         "--port"
         "\${PORT}"
       ];
@@ -399,6 +403,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "omni-max"
+        "--alias"
+        "qfn-max-colo"
         "--port"
         "\${PORT}"
       ];
@@ -432,6 +438,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "omni-fast"
+        "--alias"
+        "qfn-fast-colo"
         "--port"
         "\${PORT}"
       ];
@@ -481,6 +489,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "image-qwen"
+        "--alias"
+        "qwen-image-edit"
         "--port"
         "\${PORT}"
       ];
@@ -517,6 +527,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "image-longcat"
+        "--alias"
+        "longcat-image-edit"
         "--port"
         "\${PORT}"
       ];
@@ -553,6 +565,8 @@ in
       command = [
         "/run/current-system/sw/bin/strata-select"
         "image-vace"
+        "--alias"
+        "wan-vace-14b"
         "--port"
         "\${PORT}"
       ];
