@@ -106,6 +106,28 @@ The feature needs Apple Silicon, macOS 26+, FileVault and Remote Login, all of w
 4. A strict connection from `oams` passes, and the CA still verifies the host certificate.
 5. A documented revert restores Apple's sshd and Remote Login.
 
+## Incident 2026-11-20 — the lockout is the TCC grant, not the sshd binary
+
+Measured during the recovery:
+
+- `anji` accepted TCP on 22 but sent no SSH banner. The GUI was stuck behind a TCC sheet for a nix
+  binary; Finder and Terminal were hung. The login password is
+  `pass show hosts/anji/users/kdn/password` (the same account password the pre-boot FileVault SSH
+  unlock uses). It unlocked the login screen and publickey worked again.
+- The old stable helper's grant was `auth_value=0` in the TCC database. That is the lockout cause:
+  the helper that mounts `/nix` and fronts every launchd daemon was denied. The new helper
+  (`/usr/local/bin/kdn-nix-darwin-helper`) was installed, granted (`auth_value=2`), and every
+  launchd plist was pointed at it. The old `kdn-nix-bootstrap` path remains the fallback.
+- The `AuthorizedKeysCommand` was rewritten to a `/bin/sh` script. The previous command had a
+  `/nix/store` bash shebang, so key login depended on the store it was meant to recover.
+- Apple's sshd 10.3 still logs `Unable to load host key "/etc/ssh/ssh_host_mldsa44_ed25519_key":
+  unknown or unsupported key type`, so the PQ host identity remains inert on this host. The task
+  stay open for the nixpkgs-sshd replacement.
+
+The live launchd plists now use the new helper. The system build with `helperSwitch = true` is
+green at `/nix/store/gbblabbzj3k2s67z78939z68l1vsicxm-darwin-system-26.11.ff0e21a`; the
+activation is the owner's step.
+
 ## Out of scope
 
 - Replacing sshd on any other darwin host (there is none).
