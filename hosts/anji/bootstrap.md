@@ -253,10 +253,15 @@ of the migration ends.
 UUID=A8D810B7-5177-4930-890A-10CD1BF7AC96 /nix apfs rw,noauto,nobrowse,suid,owners
 ```
 
-The launchd job `org.nixos.darwin-store` runs `/usr/local/bin/kdn-nix-bootstrap mount-store`. The
-bootstrap reads `/etc/kdn/nix-bootstrap/store.json` (real files, written at activation), unlocks
+The launchd job `org.nixos.darwin-store` runs `/usr/local/bin/kdn-nix-darwin-helper mount-store`.
+The helper reads `/etc/kdn/nix-bootstrap/store.json` (real files, written at activation), unlocks
 the anchor container from the System keychain, and mounts the store at `/nix`. It holds the one
 Full Disk Access grant that the whole daemon tree needs.
+
+The 2026-11-20 rename installs the new helper at that path but keeps every launchd job on the
+legacy `/usr/local/bin/kdn-nix-bootstrap` until the owner grants Full Disk Access to the new path
+and sets `helperSwitch = true` in `hosts/anji/default.nix`. The legacy path is the fallback during
+that window. The grant binds path and cdhash, so a rename always needs one fresh GUI approval.
 
 The installer receipt of the original internal volume is at `/nix/receipt.json` (installer version
 0.17.1, planner `macos`). A fresh install recreates an internal store volume with a new random
@@ -281,7 +286,7 @@ A full wipe gives every APFS volume a new random UUID. This section lists every 
 
 ### The first-boot window
 
-After a wipe, neither `/usr/local/bin/kdn-nix-bootstrap` nor `/etc/kdn/nix-bootstrap/` exists
+After a wipe, neither `/usr/local/bin/kdn-nix-darwin-helper` nor `/etc/kdn/nix-bootstrap/` exists
 before the first activation. In that window only the installer's `/nix` fstab line and its own
 plists can bring up the store, and they point at the internal volume. A stale on-disk
 `store.json` matters in one case only: if you change the nix constants and reboot before you
@@ -313,7 +318,7 @@ first activation, and activate against that mount.
    UUIDs in `unlockVolumesScript` to the new `anji-ext-01` and `anji-ext-02` UUIDs. Commit.
 8. First activation: `nix run .#darwin-rebuild -- switch remote=anji`. This lands the bootstrap
    binary, writes `/etc/kdn/nix-bootstrap/` as real files, and takes over the plists.
-9. Grant Full Disk Access to `/usr/local/bin/kdn-nix-bootstrap` (GUI, System Settings → Privacy &
+9. Grant Full Disk Access to `/usr/local/bin/kdn-nix-darwin-helper` (GUI, System Settings → Privacy &
    Security → Full Disk Access). Do this before any daemon touches the external volume.
 10. Seed the store volume. Unlock ext-02, mount `Nix Store Ext` at a scratch point, then
     `rsync -aHAX` the whole `/nix/` (store first, then a `--delete` pass over the whole volume to
@@ -335,7 +340,7 @@ first activation, and activate against that mount.
 diskutil apfs list            # names, UUIDs, roles; Nix Store Ext mounted at /nix
 diskutil info <store-UUID> | grep -e 'Volume UUID' -e 'Mount Point'
 mount | grep ' on /nix '      # the external disk node, e.g. /dev/disk7s2
-sudo /usr/local/bin/kdn-nix-bootstrap status     # expect: mounted
+sudo /usr/local/bin/kdn-nix-darwin-helper status     # expect: mounted
 sudo security find-generic-password -s <ext-02-UUID> -a <ext-02-UUID> \
   /Library/Keychains/System.keychain             # metadata only, no -w
 nix build nixpkgs#hello --no-link                # nix-daemon green through the wrapper

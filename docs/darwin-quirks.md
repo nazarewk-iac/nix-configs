@@ -73,6 +73,20 @@ launchd job (`tcc-ok`). Three further measurements from the same host:
   leaves the kernel killing execs with "rejecting invalid page … (tainted)". Replace atomically
   (`cp` to a sibling + `mv`), and in practice install-if-missing and rotate only with the owner.
 
+**Renamed and widened 2026-11-20.** The production stable binary is now
+`/usr/local/bin/kdn-nix-darwin-helper` (formerly `kdn-nix-bootstrap`). It keeps the one grant and
+adds `exec -- <argv...>`: an operator or agent runs a privileged command as a child of the granted
+top-level binary, so the command does not need its own `/nix/store` grant. The rename changes the
+granted path, so it needs one fresh Full Disk Access approval; the old path stays installed as the
+fallback until `helperSwitch = true` in `hosts/anji/default.nix`.
+
+A denied nix binary can raise the TCC sheet "… would like to access files on a removable volume".
+On 2026-11-20 such a sheet, left unanswered, hung Finder and Terminal while `sshd` kept accepting
+TCP without a banner. The way out is the account password from `pass`
+(`hosts/anji/users/kdn/password`), then a full logout/login: the login session resets the stuck
+TCC state. The session that first proved the password injection is recorded in
+`docs/tasks/2026-10/nanokvm-mcp-macos-control/definition.md`.
+
 Earlier, on 2026-09-26, every test ran as root in the same directory with the same uid. Only the
 binary changed the result:
 

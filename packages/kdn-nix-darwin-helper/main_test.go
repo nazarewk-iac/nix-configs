@@ -57,6 +57,31 @@ func writeConfigs(t *testing.T, store, job string) string {
 	return dir
 }
 
+func TestParseExecArgs(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		in   []string
+		want []string
+		ok   bool
+	}{
+		{"separator", []string{"--", "/bin/echo", "hi"}, []string{"/bin/echo", "hi"}, true},
+		{"no separator", []string{"/bin/echo", "hi"}, []string{"/bin/echo", "hi"}, true},
+		{"empty", nil, nil, false},
+		{"only separator", []string{"--"}, nil, false},
+	} {
+		got, err := parseExecArgs(tc.in)
+		if tc.ok && err != nil {
+			t.Errorf("%s: unexpected error: %v", tc.name, err)
+		}
+		if !tc.ok && err == nil {
+			t.Errorf("%s: want an error", tc.name)
+		}
+		if tc.ok && strings.Join(got, "\x00") != strings.Join(tc.want, "\x00") {
+			t.Errorf("%s: got %v want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
 func TestLoadStoreConfigRejectsMissingFields(t *testing.T) {
 	for _, body := range []string{
 		`{}`,

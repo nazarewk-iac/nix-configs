@@ -26,7 +26,7 @@ The Nix store itself lives on a third volume, on the `anji-ext-02` container:
 `Nix Store Ext` has no own encryption, so its unlock is the container unlock: `diskutil` on any
 encrypted volume of a container unlocks every volume of that container. The anchor is
 `anji-ext-02` itself, and its System keychain item (below) is the secret for both. The
-`org.nixos.darwin-store` launchd job runs `/usr/local/bin/kdn-nix-bootstrap mount-store`, which
+`org.nixos.darwin-store` launchd job runs `/usr/local/bin/kdn-nix-darwin-helper mount-store`, which
 reads `/etc/kdn/nix-bootstrap/store.json`. The migration task:
 [docs/tasks/2026-10/nix-store-external-drive/definition.md](../../docs/tasks/2026-10/nix-store-external-drive/definition.md).
 

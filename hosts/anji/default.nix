@@ -43,17 +43,17 @@ let
   # Store-on-external switch — the cutover flag of `docs/tasks/2026-10/nix-store-external-drive/
   # migration/`. `false`: everything below writes nothing and changes no plist; anji runs its store
   # from the internal volume exactly as before. `true`: every launchd daemon whose payload is a nix
-  # binary gets `/usr/local/bin/kdn-nix-bootstrap` as its top-level process (the one binary holding
-  # the Full Disk Access grant — see `docs/darwin-quirks.md`), the bootstrap config files land in
-  # `/etc/kdn/nix-bootstrap/` as real files, and `darwin-store` mounts `/nix` from the external
-  # volume instead of the internal one.
+  # binary gets the stable helper (`helperPath`, or the legacy path until `helperSwitch`) as its
+  # top-level process (the one binary holding the Full Disk Access grant — see
+  # `docs/darwin-quirks.md`), the helper config files land in `/etc/kdn/nix-bootstrap/` as real
+  # files, and `darwin-store` mounts `/nix` from the external volume instead of the internal one.
   #
   # The config files must be real files, not `environment.etc` symlinks: the symlinks point into
-  # `/nix/store`, and the bootstrap reads them precisely when `/nix/store` is not mounted yet.
+  # `/nix/store`, and the helper reads them precisely when `/nix/store` is not mounted yet.
   #
-  # The Full Disk Access grant on `/usr/local/bin/kdn-nix-bootstrap` is a manual GUI step the owner
-  # performs after the binary first lands and before the cutover reboot. Flipping this flag before
-  # that grant leaves every nix daemon unable to touch the external volume.
+  # The Full Disk Access grant on the helper is a manual GUI step the owner performs after the
+  # binary first lands and before the cutover reboot. Flipping this flag before that grant leaves
+  # every nix daemon unable to touch the external volume.
   storeOnExternal = true;
 
   # The external store volume: `Nix Store Ext`, created 2026-10-13 on the `anji-ext-02` APFS
@@ -63,7 +63,14 @@ let
   storeVolumeUuid = "A8D810B7-5177-4930-890A-10CD1BF7AC96";
   storeUnlockAnchorUuid = "14E59EC3-0C46-4D5C-9CCE-B3D716896F14";
 
-  bootstrapPath = "/usr/local/bin/kdn-nix-bootstrap";
+  # The stable path. The 2026-11-20 rename adds a new path, so it needs one new Full Disk Access
+  # grant. The old path stays installed and keeps its old grant. `helperSwitch = false` keeps every
+  # launchd job on the old path while the owner grants the new binary; flip it to `true` in the
+  # same change that records the grant. See `docs/darwin-quirks.md` and `hosts/anji/README.md`.
+  helperPath = "/usr/local/bin/kdn-nix-darwin-helper";
+  legacyBootstrapPath = "/usr/local/bin/kdn-nix-bootstrap";
+  helperSwitch = true;
+  bootstrapPath = if helperSwitch then helperPath else legacyBootstrapPath;
 
   # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. The wrapper's own comment
   # claimes socket activation survives the spawn (launchd resolves `launch_activate_socket` by the
@@ -92,7 +99,7 @@ let
     mountPoint = "/nix";
   };
 
-  bootstrapConfigDrv = pkgs.runCommand "kdn-nix-bootstrap-config" { } (
+  bootstrapConfigDrv = pkgs.runCommand "kdn-nix-darwin-helper-config" { } (
     ''
       mkdir -p "$out/jobs"
       cp ${pkgs.writeText "store.json" bootstrapStoreJson} "$out/store.json"
@@ -344,7 +351,7 @@ in
       # same prefix fixed it: Apple ssh 10.3.1 parses the option and the guest booted + served
       # sshd). `mkBefore` prepends to the fork's list; the fork should carry /usr/bin upstream.
       launchd.daemons.rosetta-builderd.path = lib.mkBefore [ "/usr/bin" ];
-      # Disable socket activation. The daemon is re-homed behind `kdn-nix-bootstrap`
+      # Disable socket activation. The daemon is re-homed behind `kdn-nix-darwin-helper`
       # (`bootstrapJobs` above) for the Full Disk Access grant, so launchd's top-level process is
       # the wrapper and `limactl hostagent` is a *grandchild*. On the onDemand path lima calls
       # `launch_activate_socket("Listener")` from that grandchild; the call resolves the socket by
@@ -655,25 +662,33 @@ in
       # bytes at the granted path flips the entry to DENIED (auth_value 0) for the whole tree,
       # until the owner re-grants in the GUI; (2) `cp -f` truncates the vnode a running job is
       # executing from, tainting it so even the ORIGINAL bytes SIGKILL at exec ("rejecting
-      # invalid page ... tainted"). So: create-if-missing only. Rotating the bootstrap is an
-      # explicit, owner-coordinated move: `rm /usr/local/bin/kdn-nix-bootstrap`, activate, re-grant.
+      # invalid page ... tainted"). So: create-if-missing only. Rotating the helper is an
+      # explicit, owner-coordinated move: remove the path, activate, re-grant.
+      #
+      # The 2026-11-20 rename installs the new helper at `helperPath` while every job stays on
+      # `legacyBootstrapPath`. The owner grants the new path, then sets `helperSwitch = true`.
       system.activationScripts.preActivation.text = lib.mkAfter ''
         mkdir -p /etc/kdn/nix-bootstrap/jobs /usr/local/bin
         cp -f ${bootstrapConfigDrv}/store.json /etc/kdn/nix-bootstrap/store.json
         cp -f ${bootstrapConfigDrv}/jobs/*.json /etc/kdn/nix-bootstrap/jobs/
-        if [ ! -e ${bootstrapPath} ]; then
-          cp ${pkgs.kdn.kdn-nix-bootstrap}/bin/kdn-nix-bootstrap ${bootstrapPath}.new
-          chmod 0755 ${bootstrapPath}.new
-          mv -f ${bootstrapPath}.new ${bootstrapPath}
-          echo "anji: kdn-nix-bootstrap installed — it needs a Full Disk Access grant before the next activation of a store-on-external config" >&2
+        if [ ! -e ${helperPath} ]; then
+          cp ${pkgs.kdn.kdn-nix-darwin-helper}/bin/kdn-nix-darwin-helper ${helperPath}.new
+          chmod 0755 ${helperPath}.new
+          mv -f ${helperPath}.new ${helperPath}
+          echo "anji: kdn-nix-darwin-helper installed — grant Full Disk Access before setting helperSwitch = true" >&2
         fi
+        ${lib.optionalString (!helperSwitch) ''
+          if [ ! -e ${legacyBootstrapPath} ]; then
+            echo "anji: legacy kdn-nix-bootstrap is missing; restore it, or grant the helper and set helperSwitch = true" >&2
+          fi
+        ''}
       '';
 
       # Fail the evaluation when a wrapped daemon has no command: the swap would then write an
       # empty payload and the job would die at boot.
       assertions = map (name: {
         assertion = config.launchd.daemons."${name}".command != "";
-        message = "kdn-nix-bootstrap: launchd.daemons.${name} has no command to wrap";
+        message = "kdn-nix-darwin-helper: launchd.daemons.${name} has no command to wrap";
       }) bootstrapJobs;
     })
     {
