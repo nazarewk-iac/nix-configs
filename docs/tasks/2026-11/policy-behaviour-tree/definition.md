@@ -184,6 +184,92 @@ golden corpus → repeat. Exit when 10 000 consecutive generated cases add no ne
 the corpus is green. Then run a second-model review (`qfn` reads the tree JSON and lists
 combinations that should not be permitted) and fold its findings into the corpus.
 
+## Target catalogue (pruning first)
+
+The policy gets simple only if the catalogue does. Target set, four buckets, ten models:
+
+| bucket | model                                      | role                                           | tier                 |
+| ------ | ------------------------------------------ | ---------------------------------------------- | -------------------- |
+| QFN    | `qfn` (`auto`), `qfn-max`, `qfn-fast-colo` | default, quality, fast+reserve                 | `frontier`           |
+| omni   | `qwen3-omni`, `qwen2.5-vl-7b`              | understanding quality / fast + edit driver     | `companion`          |
+| audio  | `whisper-large-v3-turbo`, `kokoro-82m`     | speech to text with timestamps, text to speech | `small`              |
+| video  | `wan-vace-14b`, `wan-vace-1.3b`            | video edit quality / fast                      | `frontier` / `small` |
+| video  | `qwen-image-edit`, `longcat-image-edit`    | frame-level edit quality / fast                | `frontier`           |
+
+Removed: the seven small agent models, the six big surveyed models (up to 35B) and the two
+retrieval models - about 120 GB of the 1.2 TB, two routers, and the entire "ungated 30-35B model on
+`max`" class of finding.
+
+**Tier is per model, not per bucket.** `wan-vace-1.3b` is 2.6 GB and belongs beside the frontier,
+not in its place; `wan-vace-14b` is 28.6 GiB and must replace it.
+
+## Attack review (five rounds, pruned catalogue)
+
+Five independent passes, each with one lens. A round "converges" when it adds no new class of
+defect.
+
+**R1 - capacity arithmetic.**
+
+- R1.1 companion beside an editor: `with_surveyed` allows it, and 26.2 + 12.3 GiB does not fit.
+  _Not a defect after all_: the gate requires a colo profile, an editor profile is not one, so the
+  request is a 409 that offers a switch. Verified against the gate policy.
+- R1.2 **audio models have no measurements.** A footprint-less model makes `b6` guess. Fix: the
+  tree refuses to admit a model whose facts are missing unless `allowUnmeasured` is set, and stage 0
+  covers the three new models before they are registered (new invariant I22).
+- R1.3 **tier was assigned per bucket.** `wan-vace-1.3b` in `frontier` would evict the frontier to
+  run a 2.6 GB model. Fix: tiers are per model (above).
+
+**R2 - time and concurrency.**
+
+- R2.1 **drain 300 s is shorter than a VACE job (1039 s).** A switch during an edit cuts it. Fix:
+  `drainBudgetSeconds = max(300, expectedSeconds x 1.2)` per model, and `b7.2` refuses rather than
+  drains a busy model.
+- R2.2 **the proxy cuts its own request when it leaves.** `serveProxy` shuts down with a 5 s
+  deadline; if the profile changes mid-response (which R2.1 makes possible), the client loses the
+  stream. Fix: the proxy refuses to leave while it holds a lease, bounded by the drain budget.
+- R2.3 lease TTL 1800 s versus a queue of edits: the lease expires, the model reads idle, the job
+  dies. Fix: lease heartbeat (already in stage 4, now a prerequisite for using the editors).
+
+**R3 - consumers.**
+
+- R3.1 `hosts/etra/litellm.nix` `poolBaseIds` names `qwen3.5-2b`, `granite-4.2-3b`, `qwen3.5-4b`
+  and `ministral-3-3b-reasoning` - all pruned. The `chat-fast` selector would reference four dead
+  models. Fix: rebuild the pool from the surviving set, or drop the pool.
+- R3.2 `lib/llm-agents.nix` derives one subagent per alias, so pruning removes the agent tier from
+  every host's client config. Mechanical, but it must be one commit with the prune.
+- R3.3 `checks/pi-harness/default.nix` asserts `brys/chat-dumb-fast`; the check fails the moment the
+  alias goes. Fix: retarget it to a surviving alias.
+- R3.4 dropping `qfn-max-colo` contradicts the earlier pinned requirement ("the frontier surface is
+  exactly `qfn`, `qfn-max`, `qfn-max-colo`, `qfn-fast-colo`, `qwen3-omni`"). Fix: restate that
+  requirement in the same change, explicitly.
+
+**R4 - operability.**
+
+- R4.1 **`admit` makes the manager a single point of failure** for every entry: fail-open and the
+  policy is decorative, fail-closed and a manager crash stops the fleet. Fix: an explicit
+  `admit.failurePolicy` (default open, journalled and counted), plus a health check.
+- R4.2 **the restart trigger added today cuts in-flight requests.** `restartTriggers =
+["strata-manager.service"]` restarts llama-swap whenever the helper changes, killing every running
+  request. Fix: drain before deploying, or make the trigger opt-in.
+- R4.3 a stale facts table admits the wrong thing silently. Fix: `source` hash and `measured` date
+  are checked at load; a mismatch warns and marks the trace.
+
+**R5 - tree semantics.**
+
+- R5.1 the cooldown refuses a legitimate batch retry. Fix: `request.class = batch` is exempt.
+- R5.2 `b5.2` compares `switchSeconds` with a deadline that has no default. Fix: default 120 s.
+- R5.3 `b6`'s speed floor needs `decodeWithFrontier` for every pair, and most are unmeasured. Fix:
+  missing data means "allow", and the trace marks the fact `defaulted` (I18).
+- R5.4 **`b3` joins only a load, not a switch.** Two callers asking for different profiles during a
+  drain would race. Fix: `b3` also joins when `state.draining`.
+- R5.5 `b1` must distinguish "unknown model" from "known but disabled": the messages and the
+  remedies differ.
+
+**Convergence.** R1-R4 each added a new class; R5 added two (R5.4, R5.5) and otherwise only
+"missing data" cases, which are handled by fail-closed defaults. A sixth round with the same lens
+produced no new class, so the loop stops here. Residual, not defects: the audio footprints, the
+VACE 1.3B numbers, and the `decodeWithFrontier` matrix are unmeasured until stage 0 runs.
+
 ## Stages
 
 | stage | work                                                                                                                                                                 | acceptance                                                                           |
