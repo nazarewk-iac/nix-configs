@@ -1,7 +1,8 @@
 ---
 type: Task
 description: Cap the 300 W board power of the Radeon AI PRO R9700 on brys to cut heat and wall power, after measuring what each cap costs in llama.cpp decode and prefill.
-status: open
+status: done
+solution: solution.md
 authored_by: agent
 timestamp: 2026-11-19T06:00:00+01:00
 ---
