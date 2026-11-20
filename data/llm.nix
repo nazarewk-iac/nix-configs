@@ -478,6 +478,26 @@ in
         };
       };
     };
+    "longcat-image-edit" = {
+      aliases = [ ];
+      capabilities = {
+        loadSeconds = 40;
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 4096;
+      hosts.brys = {
+        set = "main";
+        servedContext = 4096;
+        common = {
+          enable = false;
+          hfFile = "LongCat-Image-Edit-Turbo/LongCat-Image-Edit-Turbo.safetensors";
+          hfRepo = "meituan-longcat/LongCat-Image-Edit-Turbo";
+          download.enable = false;
+          perf.contextSize = 4096;
+        };
+      };
+    };
     "wan-vace-14b" = {
       aliases = [ ];
       capabilities = {
