@@ -150,6 +150,37 @@ with the profile warm; the eviction `image-qwen` -> `qfn` completes in **69 s** 
 max load) and the answer comes back from `qwen3.8-flash-next-unsloth-ud-iq4_xs`. A cold editor load
 is ~40 s.
 
+## Driving an edit: read and adjust, without generating
+
+The editors generate pixels. The _decision_ — which shot is the keeper, what changed, where to cut
+— is a different job, and a vision model that only answers text does it better and cheaper.
+
+**`qwen2.5-vl-7b` is served as a `reviewer`** (router `surveyed`, gate identical to the companion's,
+`ttl = 3600`). It is the same file the image editors load as their text encoder, hard-linked into
+`models/qwen2.5-vl-7b/`, so it costs disk nothing.
+
+- It **co-resides with the frontier**: measured 22.2 GiB of VRAM with the IQ2_XS engine loaded, and
+  `qfn` kept answering while it was loaded. Reviewing a cut does not evict the frontier.
+- It **shares the companion's gate**: without a reserve it answers `409` naming
+  `kdn_switch_to: omni-fast`; with the field it switches, loads and answers in one request (74 s).
+  `modelsMax = 1` on the router means the reviewer and `qwen3-omni` evict each other, so the two
+  never fight for the reserve.
+
+**The tool** is `hack/video-edit.py`: ffmpeg scene detection and sampling → one schema-constrained
+request → validation → apply with ffmpeg, plus an MLT project for a Kdenlive review pass.
+
+| measured                                     | value                                                  |
+| -------------------------------------------- | ------------------------------------------------------ |
+| tokens per 832x480 frame                     | ~400                                                   |
+| 3 frames                                     | 1274 prompt tokens, 2 s                                |
+| 12 frames                                    | 4791 prompt tokens, 8 s                                |
+| frames per request at the 16k served context | ~30, i.e. ~60 s of footage at 1 frame/2 s              |
+| hand plan (cut 2.05-5.05 of a 7.13 s clip)   | 4.13 s output, boundaries snapped to the detected cuts |
+
+The division of labour is the point: the model's timestamps are _intent_, so the tool snaps every
+boundary to a detected scene cut and validates the result. A 7B model sees one frame every few
+hundred milliseconds; it cannot place a cut at 1.37 s, and a tool that trusts it will.
+
 ## What the user actually touches
 
 A diffusion model is not a chat endpoint. These are the clients, and they split across two hosts:
