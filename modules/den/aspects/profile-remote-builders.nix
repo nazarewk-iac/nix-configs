@@ -324,8 +324,13 @@
               (builtins.concatStringsSep " ")
               (keysString: "AuthorizedKeysCommand /etc/ssh/authorized-keys-command ${keysString}")
             ];
+            # SSH is the recovery path, so the command sshd runs must not depend on the
+            # external store. A nixpkgs `writeShellScript` puts a /nix/store bash in the
+            # shebang; when the store volume is unmounted, that command fails and every
+            # key login is denied (measured 2026-11-20 on anji). `/bin/sh` is stable.
             system.activationScripts.preActivation.text = ''
-              cp -a ${pkgs.writeShellScript "cat-nofail" ''/bin/cat "$@" || :''} /etc/ssh/authorized-keys-command
+              printf '#!/bin/sh\n/bin/cat "$@" || :\n' > /etc/ssh/authorized-keys-command
+              chmod 0555 /etc/ssh/authorized-keys-command
             '';
           }
 
