@@ -72,7 +72,7 @@ func (a *Adapter) Profile(name string) (Profile, bool) {
 }
 
 // ReadyPath is the endpoint that answers 200 once the engine serves.
-func (a *Adapter) ReadyPath() string { return "/v1/models" }
+func (a *Adapter) ReadyPath(string) string { return "/v1/models" }
 
 // Prepare materialises `<data>/strata/profiles/strata-<profile>.json` from the base config and
 // returns the command that serves it.
@@ -86,8 +86,9 @@ func (a *Adapter) Prepare(profile string) (engine.Command, error) {
 		return engine.Command{}, err
 	}
 	return engine.Command{
-		Path: a.Bin,
-		Args: []string{"serve", "--profile", cfgPath, "--host", "127.0.0.1"},
+		Path:     a.Bin,
+		Args:     []string{"serve", "--profile", cfgPath, "--host", "127.0.0.1"},
+		PortFlag: "--port",
 	}, nil
 }
 

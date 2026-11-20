@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"kdn-inference-helpers/internal/config"
+	"kdn-inference-helpers/internal/engine/command"
 	"kdn-inference-helpers/internal/journal"
 )
 
@@ -53,6 +54,7 @@ func (r *recorder) LoadedModels(ctx context.Context) ([]string, error) {
 	return r.loadedIDs, nil
 }
 func (r *recorder) EngineReady() bool  { return false }
+func (r *recorder) CurrentPort() int   { return 8080 }
 func (r *recorder) Profiles() []string { return []string{"max", "omni-max", "omni-fast"} }
 
 func (r *recorder) order() []string {
@@ -499,5 +501,63 @@ func TestLastCompanionUnloadReturnsTheEngineToMax(t *testing.T) {
 	}
 	if !reverted {
 		t.Fatal("the revert was not journaled")
+	}
+}
+
+// An image profile is a profile: it is a legal destination, it switches like any other, and it
+// stops the text engine first. The card is one card.
+func TestAnImageProfileSwitchesLikeAnyOtherProfile(t *testing.T) {
+	rec := &recorder{}
+	m, _ := newTestManager(t, rec)
+	cfg := m.Cfg
+	cfg.Commands = map[string]command.Spec{
+		"image-qwen": {Argv: []string{"sd-server"}, ReadyPath: "/sdapi/v1/options", PortFlag: "--listen-port"},
+	}
+	if !cfg.Accepts("image-qwen") {
+		t.Fatal("the deployment declares image-qwen but /select would refuse it")
+	}
+	_ = m.saveState(map[string]any{"profile": "max"})
+
+	got := m.Select(context.Background(), "image-qwen", false)
+	if got["changed"] != true || got["profile"] != "image-qwen" {
+		t.Fatalf("select = %#v", got)
+	}
+	if order := rec.order(); len(order) < 3 || order[1] != "stop" {
+		t.Fatalf("an image profile did not stop the text engine first: %v", order)
+	}
+}
+
+// `qfn` keeps a running text profile, refuses to keep an image one, and names the way out. It never
+// switches: a model name that reloads the engine behind the caller's back is the thing this whole
+// design avoids.
+func TestAutoRefusesToServeChatFromAnImageProfile(t *testing.T) {
+	rec := &recorder{}
+	m, _ := newTestManager(t, rec)
+	_ = m.saveState(map[string]any{"profile": "image-qwen"})
+
+	got := m.Select(context.Background(), "qfn", false)
+	if got["error"] == nil {
+		t.Fatalf("auto kept an image profile: %#v", got)
+	}
+	if got["kdn_switch_to"] != "max" {
+		t.Fatalf("the refusal does not name the way out: %#v", got)
+	}
+	if msg, _ := got["error"].(string); !strings.Contains(msg, "kdn_switch_to") {
+		t.Fatalf("the error is not readable: %q", msg)
+	}
+	if len(rec.order()) != 0 {
+		t.Fatalf("auto switched the engine: %v", rec.order())
+	}
+}
+
+// With nothing loaded, `auto` starts the first text profile — the "first request of the day" case.
+func TestAutoStartsTheFirstTextProfileWhenNothingIsLoaded(t *testing.T) {
+	rec := &recorder{}
+	m, _ := newTestManager(t, rec)
+	_ = m.saveState(map[string]any{"profile": "none"})
+
+	got := m.Select(context.Background(), "qfn", false)
+	if got["changed"] != true || got["profile"] != "max" {
+		t.Fatalf("select = %#v", got)
 	}
 }

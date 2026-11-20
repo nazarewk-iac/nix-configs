@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"kdn-inference-helpers/internal/engine/command"
 )
 
 // Config is everything the runtime needs to know that is not engine-specific.
@@ -44,9 +46,16 @@ type Config struct {
 	LeaseTTLSeconds int `json:"leaseTTLSeconds"`
 	// Profiles optionally overrides the adapter's profile table.
 	Profiles map[string]ProfileOverride `json:"profiles"`
-	// Commands is the `command` adapter's profile table: profile name → argv. It exists so the whole
-	// runtime can be exercised against a tiny model with no GPU, and so a second engine needs no code.
-	Commands map[string][]string `json:"commands"`
+	// Commands is the `command` adapter's profile table: profile name → argv, plus the two facts the
+	// runtime would otherwise guess (the readiness path and the port flag). It exists so the whole
+	// runtime can be exercised against a tiny model with no GPU, and so a second engine needs no
+	// code.
+	Commands map[string]command.Spec `json:"commands"`
+	// TextProfiles are the profiles that serve chat. `auto` (the profile-neutral frontier name)
+	// keeps only one of these: a chat request must never be answered by a diffusion server, and a
+	// switch must never happen behind the caller's back. Anything outside this list is an image or
+	// batch profile, and asking for `auto` while one is loaded is refused with a readable error.
+	TextProfiles []string `json:"textProfiles"`
 	// Gates is the policy for a gated model: which profiles satisfy it, which targets a caller may
 	// ask for, and which request field carries the request. The gate itself is generic; this is the
 	// deployment's data.
@@ -87,6 +96,7 @@ func Defaults() *Config {
 			"qfn-fast-colo": "omni-fast",
 		},
 		FrontierIDs:         []string{"qfn", "qfn-max", "qfn-max-colo", "qfn-fast-colo"},
+		TextProfiles:        []string{"max", "omni-max", "omni-fast"},
 		CacheDropCommand:    []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
 		Profiles:            map[string]ProfileOverride{},
 		Gates:               map[string]GateSpec{},
@@ -137,9 +147,49 @@ func (c *Config) Normalise(profile string) string {
 	return profile
 }
 
-// Accepted is every value `/select` may receive after alias resolution. `auto` keeps the current
-// profile; `none` stops the engine.
-var Accepted = map[string]bool{"max": true, "omni-max": true, "omni-fast": true, "auto": true, "none": true}
+// Accepts reports whether `/select` may receive this value after alias resolution.
+//
+// The set is derived, not compiled in: `auto` and `none` are the two verbs, every alias target is
+// reachable, and every profile the deployment declares (text profiles and command profiles) is a
+// destination. Adding an image profile is then a config change, which is the point of the file.
+func (c *Config) Accepts(profile string) bool {
+	switch profile {
+	case "auto", "none":
+		return true
+	}
+	for _, alias := range c.Aliases {
+		if alias == profile {
+			return true
+		}
+	}
+	if contains(c.TextProfiles, profile) {
+		return true
+	}
+	_, ok := c.Commands[profile]
+	return ok
+}
+
+// IsText reports whether a profile serves chat. `auto` and `none` are not profiles: they are
+// resolved before this is asked.
+func (c *Config) IsText(profile string) bool { return contains(c.TextProfiles, profile) }
+
+// DefaultTextProfile is where a batch profile returns to: the first text profile, which on brys is
+// the whole-card frontier.
+func (c *Config) DefaultTextProfile() string {
+	if len(c.TextProfiles) == 0 {
+		return "max"
+	}
+	return c.TextProfiles[0]
+}
+
+func contains(list []string, want string) bool {
+	for _, v := range list {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
 
 // Validate catches the mistakes that would otherwise surface as a confusing runtime error.
 func (c *Config) Validate() error {

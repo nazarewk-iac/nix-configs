@@ -29,6 +29,9 @@ type Backend interface {
 	UnloadCompanions(ctx context.Context) ([]string, error)
 	LoadedModels(ctx context.Context) ([]string, error)
 	EngineReady() bool
+	// CurrentPort is where the running profile listens. The frontier uses the deployment's engine
+	// port; a diffusion server gets its own, so a caller proxies to the right one.
+	CurrentPort() int
 	// Profiles is the adapter's table, so a gate can check a requested target against what this
 	// deployment can actually serve.
 	Profiles() []string
@@ -110,7 +113,7 @@ func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map
 // is waiting on this very call, which cancels the call and fails the switch it asked for.
 func (m *Manager) SelectKeeping(ctx context.Context, requested string, dryRun, keepCompanions bool) map[string]any {
 	profile := m.Cfg.Normalise(requested)
-	if !config.Accepted[profile] {
+	if !m.Cfg.Accepts(profile) {
 		return map[string]any{"error": fmt.Sprintf("unknown profile %q", requested)}
 	}
 
@@ -131,14 +134,28 @@ func (m *Manager) SelectKeeping(ctx context.Context, requested string, dryRun, k
 		m.journalSwitch(current, "none", round(time.Since(start)), true, "select")
 		return map[string]any{"changed": current != "" && current != "none", "profile": "none"}
 	case profile == current:
-		return map[string]any{"changed": false, "profile": current, "note": "already selected"}
+		return map[string]any{"changed": false, "profile": current, "note": "already selected",
+			"port": m.Backend.CurrentPort()}
 	case profile == "auto":
 		// `qfn` must never switch a running model. With nothing loaded it starts the best profile,
 		// which is the "first request of the day" case.
 		if current != "" && current != "none" {
+			// ...but "never switch" must not become "serve chat from whatever is loaded". A
+			// diffusion server answers no chat, so a kept image profile would turn a model name into
+			// a 404 from the wrong process. Refuse, and name the way out.
+			if !m.Cfg.IsText(current) {
+				return map[string]any{
+					"error": fmt.Sprintf(
+						"profile %q serves images, not chat; switch to a text profile first (kdn_switch_to: %q)",
+						current, m.Cfg.DefaultTextProfile()),
+					"profile":       current,
+					"kdn_switch_to": m.Cfg.DefaultTextProfile(),
+					"changed":       false,
+				}
+			}
 			return map[string]any{"changed": false, "profile": current, "note": "auto: kept the current profile"}
 		}
-		profile = "max"
+		profile = m.Cfg.DefaultTextProfile()
 	case dryRun:
 		body := map[string]any{"dry_run": true, "would_change": true, "current": current,
 			"profile": profile, "expected_seconds": m.ExpectedSeconds[profile]}
@@ -201,7 +218,8 @@ func (m *Manager) SelectKeeping(ctx context.Context, requested string, dryRun, k
 	_ = m.saveState(map[string]any{"profile": profile})
 	_ = loadStart
 	m.journalSwitch(current, profile, total, true, "select")
-	return map[string]any{"changed": true, "profile": profile, "seconds": total}
+	return map[string]any{"changed": true, "profile": profile, "seconds": total,
+		"port": m.Backend.CurrentPort()}
 }
 
 func (m *Manager) journalSwitch(from, to string, seconds int, ok bool, cause string) {
@@ -401,7 +419,7 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "body must be JSON"})
 		return
 	}
-	if !config.Accepted[m.Cfg.Normalise(body.Profile)] {
+	if !m.Cfg.Accepts(m.Cfg.Normalise(body.Profile)) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": fmt.Sprintf("unknown profile %q", body.Profile)})
 		return
 	}

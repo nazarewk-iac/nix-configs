@@ -19,9 +19,9 @@ import (
 // fakeAdapter is the smallest engine that satisfies the adapter contract.
 type fakeAdapter struct{}
 
-func (fakeAdapter) Name() string       { return "fake" }
-func (fakeAdapter) Profiles() []string { return []string{"max"} }
-func (fakeAdapter) ReadyPath() string  { return "/v1/models" }
+func (fakeAdapter) Name() string            { return "fake" }
+func (fakeAdapter) Profiles() []string      { return []string{"max"} }
+func (fakeAdapter) ReadyPath(string) string { return "/v1/models" }
 func (fakeAdapter) Prepare(string) (engine.Command, error) {
 	// /bin/sh exists on NixOS; /bin/true does not.
 	return engine.Command{Path: "/bin/sh", Args: []string{"-c", "sleep 30"}}, nil

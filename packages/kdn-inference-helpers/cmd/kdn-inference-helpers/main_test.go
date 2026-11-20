@@ -1,6 +1,12 @@
 package main
 
-import "testing"
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+)
 
 func TestParsePositionalThenFlagsAcceptsBothOrders(t *testing.T) {
 	known := map[string]bool{"--port": true, "--manager": true}
@@ -53,4 +59,46 @@ func TestExecReplacePassesTheProgramAsArgvZero(t *testing.T) {
 	if gotPath != "/bin/strata" || len(gotArgv) != 6 || gotArgv[0] != "/bin/strata" || gotArgv[1] != "serve" {
 		t.Fatalf("argv = %v", gotArgv)
 	}
+}
+
+// A listener that served an explicit profile must leave when the manager moves away from it:
+// llama-swap's unload runs `cmdStop` and then waits for this process to exit, so a proxy that stays
+// alive blocks the next model until the 15-minute kill timeout.
+func TestTheProxyLeavesWhenTheProfileChanges(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"profile":"none","draining":false}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen")
+		close(done)
+	}()
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the proxy did not leave after the profile changed")
+	}
+	<-done
+}
+
+func TestTheProxyStaysWhileItsProfileIsCurrent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"profile":"image-qwen","draining":false}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	go watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen")
+	select {
+	case <-stopped:
+		t.Fatal("the proxy left while its profile was still current")
+	case <-time.After(4 * time.Second):
+	}
+	cancel()
 }

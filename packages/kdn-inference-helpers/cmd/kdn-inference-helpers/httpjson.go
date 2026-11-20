@@ -39,7 +39,10 @@ func postJSON(ctx context.Context, url string, body, out any) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{Timeout: 15 * time.Second}
+	// A `/select` is a model switch: drain, stop, a 95 GiB page-cache drop and a load. 15 s is
+	// shorter than any cold switch on this host, and a client that gives up mid-load used to abort
+	// the switch it asked for. Reads have their own, short, client below.
+	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

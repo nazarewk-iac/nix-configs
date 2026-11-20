@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -15,9 +16,9 @@ type fakeAdapter struct {
 	stopRuns int
 }
 
-func (f *fakeAdapter) Name() string       { return "fake" }
-func (f *fakeAdapter) Profiles() []string { return []string{"max"} }
-func (f *fakeAdapter) ReadyPath() string  { return "/v1/models" }
+func (f *fakeAdapter) Name() string            { return "fake" }
+func (f *fakeAdapter) Profiles() []string      { return []string{"max"} }
+func (f *fakeAdapter) ReadyPath(string) string { return "/v1/models" }
 func (f *fakeAdapter) Prepare(profile string) (Command, error) {
 	return Command{Path: f.bin, Args: []string{"serve", "--profile", profile, "--host", "127.0.0.1"}}, nil
 }
@@ -126,6 +127,68 @@ type errAdapter struct{}
 
 func (errAdapter) Name() string                    { return "err" }
 func (errAdapter) Profiles() []string              { return nil }
-func (errAdapter) ReadyPath() string               { return "/v1/models" }
+func (errAdapter) ReadyPath(string) string         { return "/v1/models" }
 func (errAdapter) Prepare(string) (Command, error) { return Command{}, context.Canceled }
 func (errAdapter) Stop(context.Context) error      { return nil }
+
+// A child that dies during startup must fail the switch at once. Waiting only in Stop leaves
+// ProcessState nil, so a dead engine looks exactly like a slow one and the manager polls for the
+// whole 15-minute timeout with the profile mutex held.
+func TestAChildThatDiesDuringStartupFailsFast(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "dies")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nexit 3\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := &fakeAdapter{bin: bin}
+	s := &Supervisor{
+		Adapter: a, EnginePort: 1,
+		LogPath:      filepath.Join(t.TempDir(), "engine.log"),
+		ReadyTimeout: 60 * time.Second,
+		ReadyFn:      func(context.Context) bool { return false },
+	}
+	start := time.Now()
+	_, err := s.Start(context.Background(), "max")
+	if err == nil {
+		t.Fatal("a dead child was reported as ready")
+	}
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Fatalf("the failure took %s; the readiness loop did not notice the exit", elapsed)
+	}
+	_, _ = s.Stop(context.Background())
+}
+
+// A server that reads its control input from stdin treats EOF as "shut down". A nil cmd.Stdin is
+// /dev/null, i.e. an immediate EOF: sd-server loaded 21 GiB of weights, printed its listen address
+// and quit. The supervisor has to hold the pipe open and close it as the graceful stop.
+func TestTheChildStdinStaysOpenUntilStop(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "reads-stdin")
+	// Blocks in `read` until EOF, then exits.
+	script := "#!/bin/sh\nread line\nexit 7\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := &fakeAdapter{bin: bin}
+	s := &Supervisor{
+		Adapter: a, EnginePort: 1,
+		LogPath:      filepath.Join(t.TempDir(), "engine.log"),
+		ReadyTimeout: 5 * time.Second,
+		ReadyFn:      func(context.Context) bool { return true },
+	}
+	if _, err := s.Start(context.Background(), "max"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if s.exited() {
+		t.Fatal("the child saw EOF on stdin and exited while it should be serving")
+	}
+	pid := s.cmd.Process.Pid
+	if _, err := s.Stop(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if err := syscall.Kill(pid, 0); err == nil {
+		t.Fatal("the child is still alive after stop")
+	}
+}

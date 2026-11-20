@@ -31,6 +31,7 @@ import (
 	"kdn-inference-helpers/internal/ctl"
 	"kdn-inference-helpers/internal/engine"
 	enginecmd "kdn-inference-helpers/internal/engine/command"
+	"kdn-inference-helpers/internal/engine/router"
 	"kdn-inference-helpers/internal/engine/strata"
 	"kdn-inference-helpers/internal/journal"
 	"kdn-inference-helpers/internal/proxy"
@@ -92,7 +93,10 @@ func loadConfig(path string) (*config.Config, engine.Adapter, error) {
 	}
 	switch cfg.Engine {
 	case "strata":
-		return cfg, strata.New(cfg.EngineBin, cfg.DataDir, cfg.Profiles), nil
+		text := strata.New(cfg.EngineBin, cfg.DataDir, cfg.Profiles)
+		// A deployment that also serves batch models names them in `commands`; each one is a
+		// profile of the same manager, so an image job and the frontier cannot both hold the card.
+		return cfg, router.New(text, enginecmd.New(cfg.Commands)), nil
 	case "command":
 		// Every profile is a command from the deployment config. It exists so the runtime can be
 		// tested with a 1 MB model and no GPU, and so a second engine needs no code.
@@ -222,10 +226,17 @@ func runProxy(ctx context.Context, args []string) error {
 	if managerURL == "" {
 		managerURL = fmt.Sprintf("http://127.0.0.1:%d", cfg.ManagerPort)
 	}
-	return serveProxy(ctx, cfg, *port, targetURL, managerURL)
+	return serveProxy(ctx, cfg, *port, targetURL, managerURL, "")
 }
 
-func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, managerURL string) error {
+// serveProxy forwards one llama-swap entry port to the engine and holds a lease per request.
+//
+// `watch` is the profile this listener was selected for. When it is set, the proxy leaves as soon
+// as the manager moves to a different profile: it is the listener for a server that no longer
+// exists, and a stale listener is worse than none — it would forward a chat request to whatever
+// engine happens to hold the port next. `auto` (the profile-neutral frontier name) passes an empty
+// `watch`, because staying alive across a switch is exactly what that name promises.
+func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, managerURL, watch string) error {
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		return err
@@ -244,18 +255,53 @@ func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, ma
 
 	// Dual stack on purpose: llama-swap resolves localhost to ::1 first, and a 127.0.0.1-only bind
 	// fails its health check.
+	runCtx, stop := context.WithCancel(ctx)
+	defer stop()
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
-		<-ctx.Done()
+		<-runCtx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
 	}()
+	if watch != "" {
+		go watchProfile(runCtx, stop, managerURL, watch)
+	}
 	log.Printf("kdn-inference-helpers proxy :%d -> %s", port, targetURL)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
+}
+
+// watchProfile stops the proxy when the manager is no longer serving `want`.
+//
+// llama-swap's unload path runs the entry's `cmdStop` and then waits for the entry process to exit;
+// a proxy that never exits makes that wait last until llama-swap's 15-minute kill timeout, and the
+// next model never starts. Leaving on our own is also the correct behaviour: the listener belongs
+// to a profile, and the profile is gone.
+func watchProfile(ctx context.Context, stop context.CancelFunc, managerURL, want string) {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+		var status struct {
+			Profile string `json:"profile"`
+		}
+		if err := getJSON(ctx, managerURL+"/status", &status); err != nil {
+			continue
+		}
+		if status.Profile == "" || status.Profile == want {
+			continue
+		}
+		log.Printf("profile is %q, this listener served %q: leaving", status.Profile, want)
+		stop()
+		return
+	}
 }
 
 func runSelect(ctx context.Context, args []string) error {
@@ -292,7 +338,19 @@ func runSelect(ctx context.Context, args []string) error {
 		return fmt.Errorf("select %s: %v", profile, e)
 	}
 	log.Printf("select %s -> %v", profile, reply)
-	return serveProxy(ctx, cfg, port, fmt.Sprintf("http://127.0.0.1:%d", cfg.EnginePort), managerURL)
+	// `auto` keeps whatever profile is current, so this listener must survive a switch. Any other
+	// name is a promise about one profile, and the listener leaves when the manager breaks it.
+	watch, _ := reply["profile"].(string)
+	if cfg.Normalise(profile) == "auto" {
+		watch = ""
+	}
+	// The manager names the port the profile listens on: a diffusion server has its own, so the
+	// frontier's port is never left in TIME_WAIT by a server that just stopped.
+	target := cfg.EnginePort
+	if p, ok := reply["port"].(float64); ok && int(p) > 0 {
+		target = int(p)
+	}
+	return serveProxy(ctx, cfg, port, fmt.Sprintf("http://127.0.0.1:%d", target), managerURL, watch)
 }
 
 func runServe(ctx context.Context, args []string) error {

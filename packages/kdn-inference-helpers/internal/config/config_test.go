@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"kdn-inference-helpers/internal/engine/command"
 )
 
 func TestDefaultsDescribeBrys(t *testing.T) {
@@ -91,5 +93,51 @@ func TestPathsDeriveFromDataDir(t *testing.T) {
 	}
 	if got, want := c.EngineLog, "/d/strata/engine.log"; got != want {
 		t.Fatalf("log = %q, want %q", got, want)
+	}
+}
+
+// Acceptance is derived, not compiled in: a deployment that adds an image profile does not have to
+// touch the runtime.
+func TestAcceptsIsDerivedFromTheDeployment(t *testing.T) {
+	c := Defaults()
+	for _, want := range []string{"auto", "none", "max", "omni-fast", "qfn", "qfn-max"} {
+		if !c.Accepts(c.Normalise(want)) {
+			t.Fatalf("%q is not accepted", want)
+		}
+	}
+	if c.Accepts("image-qwen") {
+		t.Fatal("an undeclared image profile is accepted")
+	}
+	c.Commands = map[string]command.Spec{"image-qwen": {Argv: []string{"sd-server"}}}
+	if !c.Accepts("image-qwen") {
+		t.Fatal("a declared image profile is not accepted")
+	}
+	if c.IsText("image-qwen") {
+		t.Fatal("an image profile is treated as text")
+	}
+	if !c.IsText("max") || c.DefaultTextProfile() != "max" {
+		t.Fatalf("text profiles = %v", c.TextProfiles)
+	}
+}
+
+func TestTheCommandSpecAcceptsBothShapes(t *testing.T) {
+	body := []byte(`{"commands":{"tiny":["llama-server","--model","/m.gguf"],
+		"image":{"argv":["sd-server"],"readyPath":"/sdapi/v1/options","portFlag":"--listen-port"}}}`)
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Commands["tiny"].Argv; len(got) != 3 || got[0] != "llama-server" {
+		t.Fatalf("array form = %v", got)
+	}
+	if got := c.Commands["image"].ReadyPath; got != "/sdapi/v1/options" {
+		t.Fatalf("object form readyPath = %q", got)
+	}
+	if !c.Accepts("tiny") || !c.Accepts("image") {
+		t.Fatal("a command profile is not accepted")
 	}
 }

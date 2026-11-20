@@ -25,6 +25,10 @@ func (b *Backend) StartEngine(ctx context.Context, profile string) (time.Duratio
 	return b.Supervisor.Start(ctx, profile)
 }
 
+// CurrentPort is the port the running engine listens on: the deployment's engine port for the
+// frontier, a profile's own port for a diffusion server.
+func (b *Backend) CurrentPort() int { return b.Supervisor.CurrentPort() }
+
 // StopEngine terminates the engine this runtime owns and the one it does not.
 func (b *Backend) StopEngine(ctx context.Context) (time.Duration, error) {
 	return b.Supervisor.Stop(ctx)
