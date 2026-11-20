@@ -92,8 +92,8 @@ creation_rules:
           - *ssh-etra
           - *yk-etra-touch
           - *yk-pton-touch
-          - *yk-brys-touch
-          - *yk-oams-touch
+          - *yk-brys-unattended
+          - *yk-oams-unattended
   - path_regex: 'dns\.sops\.[^.]+$'
     key_groups:
       - age:
