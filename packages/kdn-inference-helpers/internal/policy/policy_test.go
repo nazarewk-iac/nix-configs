@@ -399,3 +399,93 @@ func TestAnUnmeasuredModelRefusesToLoad(t *testing.T) {
 		t.Fatal("empty error")
 	}
 }
+
+// ---------------------------------------------------------------- the KV reserve
+
+// withReserve is the fixture with one model's KV reserve set, so a test can change one number and
+// see exactly what it decides.
+func withReserve(t *testing.T, model string, reserve int) *Policy {
+	t.Helper()
+	p := fixture(t)
+	m, ok := p.Models[model]
+	if !ok {
+		t.Fatalf("the fixture has no %q", model)
+	}
+	m.KVReserveMiB = reserve
+	p.Models[model] = m
+	return p
+}
+
+// The newcomer's own KV is part of what it needs: a model whose footprint fits but whose cache does
+// not is refused, not admitted into an oversubscribed card.
+func TestTheKVReserveOfTheNewcomerIsCounted(t *testing.T) {
+	active := []Active{{Model: "qfn-fast-colo", Kind: "engine", Tier: "frontier", Profile: "omni-fast", VRAMMiB: 10957}}
+	state := State{Profile: "omni-fast", VRAMFreeMiB: 3000, RAMFreeMiB: 50000}
+
+	without := fixture(t)
+	if res := without.Decide(Request{Model: "whisper-large-v3-turbo"}, active, state); res.Verdict != verdictAdmit {
+		t.Fatalf("the fixture no longer admits a 2 GiB model with 3 GiB free: %+v", res)
+	}
+
+	with := withReserve(t, "whisper-large-v3-turbo", 2000)
+	res := with.Decide(Request{Model: "whisper-large-v3-turbo"}, active, state)
+	if res.Verdict != verdictRefuse {
+		t.Fatalf("a 2 GiB footprint plus a 2 GiB reserve was admitted with 3 GiB free: %+v", res)
+	}
+	// The refusal carries the arithmetic, so an operator can see which half did not fit.
+	var facts map[string]any
+	for _, step := range res.Why {
+		if step.Verb == "fits-beside" {
+			facts = step.Facts
+		}
+	}
+	if facts == nil {
+		t.Fatalf("no fits-beside step in the trace: %+v", res.Why)
+	}
+	if facts["needMiB"] != 4048 || facts["kvReserveMiB"] != 2000 || facts["footprintMiB"] != 2048 {
+		t.Fatalf("the trace does not show the reserve: %v", facts)
+	}
+}
+
+// The resident models' reserves are not free VRAM either: the same request that fits beside an
+// engine alone has to evict a companion when that companion's cache is counted. The manager fills
+// `Active.KVReserveMiB` from the model's facts, so the test sets both.
+func TestTheKVReserveOfResidentsIsCounted(t *testing.T) {
+	state := State{Profile: "omni-fast", VRAMFreeMiB: 3000, RAMFreeMiB: 50000}
+	resident := func(reserve int) []Active {
+		return []Active{
+			{Model: "qfn-fast-colo", Kind: "engine", Tier: "frontier", Profile: "omni-fast", VRAMMiB: 10957},
+			{Model: "qwen3-omni", Kind: "companion", Tier: "companion", VRAMMiB: 20685, KVReserveMiB: reserve},
+		}
+	}
+
+	without := fixture(t)
+	if res := without.Decide(Request{Model: "whisper-large-v3-turbo"}, resident(0), state); res.Verdict != verdictAdmit ||
+		len(res.Plan.Evict) != 0 {
+		t.Fatalf("the fixture no longer loads beside the companion: %+v", res)
+	}
+
+	with := withReserve(t, "qwen3-omni", 1536)
+	res := with.Decide(Request{Model: "whisper-large-v3-turbo"}, resident(1536), state)
+	if res.Verdict != verdictAdmit || len(res.Plan.Evict) != 1 || res.Plan.Evict[0] != "qwen3-omni" {
+		t.Fatalf("the resident reserve did not narrow the card: %+v", res)
+	}
+}
+
+// The predicted end state counts the reserve too, or an operator comparing it with the card reads a
+// number that is too small by exactly the KV.
+func TestTheResultingVRAMCountsTheReserve(t *testing.T) {
+	p := withReserve(t, "qfn-fast-colo", 336)
+	res := p.Decide(
+		Request{Model: "qfn"},
+		[]Active{{Model: "qfn-fast-colo", Kind: "engine", Tier: "frontier", Profile: "omni-fast",
+			VRAMMiB: 10957, KVReserveMiB: 336}},
+		State{Profile: "omni-fast", VRAMFreeMiB: 20000},
+	)
+	if res.Verdict != verdictAdmit {
+		t.Fatalf("qfn on its own profile = %+v", res)
+	}
+	if res.Resulting.VRAMMiB != 11293 {
+		t.Fatalf("resulting = %d MiB, want 11293 (10957 + 336)", res.Resulting.VRAMMiB)
+	}
+}

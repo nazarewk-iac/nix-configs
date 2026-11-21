@@ -34,6 +34,24 @@ let
     type = "selector";
     inherit children;
   };
+  # The KV reserve. A model's VRAM is `vramMiB` plus `kvReserveMiB`: the footprint is what the
+  # weights, the projector and the compute buffers took when the model was measured, and the reserve
+  # is the KV cache it holds at the context it serves. `fits-beside` subtracts both, for the
+  # newcomer and for every resident model, so a card whose VRAM is filled by caches never reads as
+  # free. A model with no reserve set keeps its KV inside `vramMiB`, which is what a footprint
+  # measured at the served context already contains.
+  #
+  # The frontier: `--kv-resident 32768` keeps 32768 cells of each QSA layer in VRAM (it is a
+  # per-layer streaming window, not a per-slot allocation), and k8v4 costs ~10.5 KiB per token
+  # against int8's 13.7 KiB — 336 MiB. The omni profiles were measured with a 4096-cell window, so
+  # this is a real addition for them; `max` was measured with 32768 already, so its 336 MiB is a
+  # deliberate double count that errs in the safe direction.
+  frontierKvReserveMiB = 336;
+  # The companions, at the 16384-token context they are served at: llama.cpp reported
+  # `Vulkan0 KV buffer size = 1536.00 MiB` (qwen3-omni) and `896.00 MiB` (qwen2.5-vl-7b) at
+  # n_ctx = 16384 in `companion.log` on 2026-11-21. Both footprints were measured with the cache
+  # allocated, so it is carried here instead of inside `vramMiB` — the sum is unchanged, which is
+  # why the measured colo pair still fits.
 in
 {
   schemaVersion = 1;
@@ -144,6 +162,7 @@ in
         "omni-fast"
       ];
       vramMiB = 10957;
+      kvReserveMiB = frontierKvReserveMiB;
       ramMiB = 60000;
       measured = "2026-11-20";
       source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
@@ -154,6 +173,7 @@ in
       profile = "max";
       persistent = true;
       vramMiB = 31539;
+      kvReserveMiB = frontierKvReserveMiB;
       ramMiB = 62000;
       switchSeconds = 72;
       measured = "2026-11-20";
@@ -164,6 +184,7 @@ in
       profile = "omni-fast";
       persistent = true;
       vramMiB = 10957;
+      kvReserveMiB = frontierKvReserveMiB;
       ramMiB = 60000;
       switchSeconds = 55;
       measured = "2026-11-20";
@@ -207,7 +228,11 @@ in
         "omni-max"
         "omni-fast"
       ];
-      vramMiB = 20685;
+      # 20685 MiB measured, of which 1536 MiB is the KV cache at n_ctx 16384: the weights and the
+      # projector are 18561 MiB and the rest is 588 MiB of compute buffers. The two are carried apart
+      # so the policy can hold the cache back on the card without counting it twice.
+      vramMiB = 19149;
+      kvReserveMiB = 1536;
       ramMiB = 21000;
       minResidencySeconds = 60;
       # Measured: 98.8 t/s beside omni-fast, 6.1 t/s beside max. The floor is what stops the second.
@@ -216,6 +241,7 @@ in
         max = 6.1;
       };
       measured = "2026-11-20";
+      source = "hack/measure-footprint.py; KV from companion.log at n_ctx 16384 (2026-11-21)";
     };
     "qwen2.5-vl-7b" = {
       kind = "companion";
@@ -224,13 +250,16 @@ in
         "omni-max"
         "omni-fast"
       ];
-      vramMiB = 12595;
+      # 12595 MiB measured, of which 896 MiB is the KV cache at n_ctx 16384.
+      vramMiB = 11699;
+      kvReserveMiB = 896;
       ramMiB = 11000;
       minResidencySeconds = 60;
       decodeWithFrontier = {
         omni-fast = 40.0;
       };
       measured = "2026-11-20";
+      source = "hack/measure-footprint.py; KV from companion.log at n_ctx 16384 (2026-11-21)";
     };
 
     "gemma-4-e4b" = {

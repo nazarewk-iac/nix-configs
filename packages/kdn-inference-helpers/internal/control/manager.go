@@ -725,7 +725,7 @@ func (m *Manager) activeForPolicy(ctx context.Context) []policy.Active {
 		model := m.Policy.Models[engine]
 		out = append(out, policy.Active{
 			Model: engine, Kind: model.Kind, Tier: model.Tier, Profile: profile,
-			VRAMMiB: model.VRAMMiB, RAMMiB: model.RAMMiB,
+			VRAMMiB: model.VRAMMiB, KVReserveMiB: model.KVReserveMiB, RAMMiB: model.RAMMiB,
 		})
 	}
 	for _, name := range m.safeLoaded(ctx) {
@@ -735,7 +735,7 @@ func (m *Manager) activeForPolicy(ctx context.Context) []policy.Active {
 		}
 		out = append(out, policy.Active{
 			Model: name, Kind: model.Kind, Tier: model.Tier, Profile: model.Profile,
-			VRAMMiB: model.VRAMMiB, RAMMiB: model.RAMMiB,
+			VRAMMiB: model.VRAMMiB, KVReserveMiB: model.KVReserveMiB, RAMMiB: model.RAMMiB,
 		})
 	}
 	return out

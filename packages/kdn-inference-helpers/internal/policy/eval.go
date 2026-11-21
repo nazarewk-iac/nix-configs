@@ -416,20 +416,29 @@ func checkTierFree(e *eval, _ map[string]any) (bool, map[string]any, string) {
 	return true, map[string]any{"tier": m.Tier}, ""
 }
 
+// checkFitsBeside is the capacity question, and the KV is half of it. The free VRAM is what the
+// budget leaves after every resident model's footprint *and* its KV reserve; the newcomer needs its
+// own footprint and its own reserve. Without the reserve a card whose VRAM is filled by KV reads as
+// free, which is how a 35B once landed on `max` at 30.7 GiB.
 func checkFitsBeside(e *eval, _ map[string]any) (bool, map[string]any, string) {
 	m, ok := e.p.Models[e.req.Model]
 	if !ok {
 		return false, nil, ""
 	}
-	need := m.VRAMMiB
-	free := e.st.VRAMFreeMiB
+	resident := 0
+	for _, a := range e.active {
+		resident += a.KVReserveMiB
+	}
+	need := m.VRAMTotalMiB()
+	free := e.st.VRAMFreeMiB - resident
 	ramNeed := m.RAMMiB
 	ramFree := e.st.RAMFreeMiB
+	facts := map[string]any{"needMiB": need, "footprintMiB": m.VRAMMiB, "kvReserveMiB": m.KVReserveMiB,
+		"freeMiB": free, "residentKvReserveMiB": resident, "ramNeedMiB": ramNeed, "ramFreeMiB": ramFree}
 	if m.Kind == "engine" {
 		// A profile switch stops the resident engine first, so "room beside it" is not the question.
-		return true, map[string]any{"kind": "engine", "needMiB": need}, "a switch replaces the resident engine"
+		return true, facts, "a switch replaces the resident engine"
 	}
-	facts := map[string]any{"needMiB": need, "freeMiB": free, "ramNeedMiB": ramNeed, "ramFreeMiB": ramFree}
 	if need > free || ramNeed > ramFree {
 		return false, facts, "does not fit beside what is resident"
 	}
@@ -482,7 +491,15 @@ func checkVictimAvailable(e *eval, _ map[string]any) (bool, map[string]any, stri
 		if a.Leases > 0 {
 			continue // never evict work in progress
 		}
-		if m.VRAMMiB > e.st.VRAMFreeMiB+a.VRAMMiB {
+		// Evicting a model frees its footprint and its KV reserve, so the room an eviction makes is
+		// the sum of both. The resident set's other reserves stay where they are.
+		residentOthers := 0
+		for _, other := range e.active {
+			if other.Model != a.Model {
+				residentOthers += other.KVReserveMiB
+			}
+		}
+		if m.VRAMTotalMiB() > e.st.VRAMFreeMiB-residentOthers+a.VRAMTotalMiB() {
 			continue // evicting it still would not make room
 		}
 		am, known := e.p.Models[a.Model]
@@ -742,14 +759,14 @@ func (e *eval) resulting() Resulting {
 	sort.Strings(res.Models)
 	for _, a := range e.active {
 		if keep[a.Model] {
-			res.VRAMMiB += a.VRAMMiB
+			res.VRAMMiB += a.VRAMTotalMiB()
 			res.RAMMiB += a.RAMMiB
 			delete(keep, a.Model)
 		}
 	}
 	for id := range keep {
 		if m, ok := e.p.Models[id]; ok {
-			res.VRAMMiB += m.VRAMMiB
+			res.VRAMMiB += m.VRAMTotalMiB()
 			res.RAMMiB += m.RAMMiB
 		}
 	}

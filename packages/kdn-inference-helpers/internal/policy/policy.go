@@ -18,17 +18,27 @@ import (
 // guesswork, and `Measured`/`Source` are what stop a stale table from silently admitting the wrong
 // thing.
 type Facts struct {
-	VRAMMiB             int                `json:"vramMiB"`
-	RAMMiB              int                `json:"ramMiB"`
-	LoadBurstMiB        int                `json:"loadBurstMiB,omitempty"`
-	LoadSeconds         int                `json:"loadSeconds,omitempty"`
-	SwitchSeconds       int                `json:"switchSeconds,omitempty"`
+	VRAMMiB       int `json:"vramMiB"`
+	RAMMiB        int `json:"ramMiB"`
+	LoadBurstMiB  int `json:"loadBurstMiB,omitempty"`
+	LoadSeconds   int `json:"loadSeconds,omitempty"`
+	SwitchSeconds int `json:"switchSeconds,omitempty"`
+	// KVReserveMiB is the KV cache this model needs at the context it is served at, held beside the
+	// weights instead of being folded into `vramMiB`. A footprint measured at a short context, or a
+	// streaming window that was widened, understates the card; the reserve is the number that makes
+	// `fits-beside` account for it, and it is subtracted for every resident model as well as for the
+	// newcomer, so a card full of KV is never counted as free.
+	KVReserveMiB        int                `json:"kvReserveMiB,omitempty"`
 	DecodeTps           float64            `json:"decodeTps,omitempty"`
 	DecodeWithFrontier  map[string]float64 `json:"decodeWithFrontier,omitempty"`
 	MinResidencySeconds int                `json:"minResidencySeconds,omitempty"`
 	Measured            string             `json:"measured,omitempty"`
 	Source              string             `json:"source,omitempty"`
 }
+
+// VRAMTotalMiB is everything the model takes on the card: its measured footprint plus the KV it
+// holds at the context it serves.
+func (f Facts) VRAMTotalMiB() int { return f.VRAMMiB + f.KVReserveMiB }
 
 // Measured reports whether this model carries real numbers.
 func (f Facts) IsMeasured() bool { return f.VRAMMiB > 0 && f.Measured != "" }
@@ -53,12 +63,16 @@ type Active struct {
 	Tier           string     `json:"tier,omitempty"`
 	Profile        string     `json:"profile,omitempty"`
 	VRAMMiB        int        `json:"vramMiB,omitempty"`
+	KVReserveMiB   int        `json:"kvReserveMiB,omitempty"`
 	RAMMiB         int        `json:"ramMiB,omitempty"`
 	LoadingSince   *time.Time `json:"loadingSince,omitempty"`
 	LoadedAt       *time.Time `json:"loadedAt,omitempty"`
 	LastFinishedAt *time.Time `json:"lastFinishedAt,omitempty"`
 	Leases         int        `json:"leases,omitempty"`
 }
+
+// VRAMTotalMiB is what this resident model occupies: footprint plus the KV it holds.
+func (a Active) VRAMTotalMiB() int { return a.VRAMMiB + a.KVReserveMiB }
 
 // Request is the ask.
 type Request struct {
