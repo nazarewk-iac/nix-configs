@@ -607,7 +607,7 @@ func (m *Manager) handleAdmit(w http.ResponseWriter, r *http.Request) {
 			filtered = append(filtered, a)
 		}
 	}
-	res := m.Policy.Decide(req, filtered, m.policyState())
+	res := m.Policy.Decide(req, filtered, m.policyStateFor(filtered))
 	if res.Verdict != policyVerdictAdmit {
 		code := http.StatusConflict
 		if res.Refusal != nil && res.Refusal.Code != 0 {
@@ -756,12 +756,20 @@ func (m *Manager) profileNeutralEngine() string {
 }
 
 func (m *Manager) policyState() policy.State {
+	return m.policyStateFor(m.activeForPolicy(context.Background()))
+}
+
+// policyStateFor is the state for a caller that has already decided which models are resident.
+// `/admit` removes the model it is admitting from the active set — llama-swap lists an entry as
+// running before the call — and the free VRAM has to be computed from that same set, or the model
+// is counted twice and a companion that fits is refused as too large.
+func (m *Manager) policyStateFor(active []policy.Active) policy.State {
 	st := policy.State{
 		Profile:  m.CurrentProfile(),
 		Draining: m.Leases.Draining(),
 	}
 	used := 0
-	for _, a := range m.activeForPolicy(context.Background()) {
+	for _, a := range active {
 		used += a.VRAMMiB
 	}
 	st.VRAMFreeMiB = m.Policy.Budget.VRAMMiB - used

@@ -406,3 +406,27 @@ func TestAdmitAppliesAProfileSwitchWithoutDeadlocking(t *testing.T) {
 		t.Fatalf("profile = %q, want omni-fast", got)
 	}
 }
+
+// llama-swap lists an entry as running the moment it spawns it, which is *before* the entry's
+// `admit` call. `/admit` removes the model from the active set for the decision, so it must compute
+// the free VRAM from that same set: counting it twice halves the card and refuses a companion that
+// fits. Measured live 2026-11-21: qwen3-omni was refused at 21.3 GiB free because its own 20.7 GiB
+// was subtracted a second time.
+func TestAdmitDoesNotCountTheModelItIsAdmitting(t *testing.T) {
+	m, _, _ := coloManager(t)
+	// The engine is resident, and llama-swap already reports the newcomer as running.
+	m.Backend.(*recorder).loadedIDs = []string{"qwen3-omni"}
+	// This test is about the VRAM arithmetic; the RAM half reads the machine the tests run on, so
+	// the model's RAM need is dropped to something any test host can offer.
+	model := m.Policy.Models["qwen3-omni"]
+	model.RAMMiB = 1024
+	m.Policy.Models["qwen3-omni"] = model
+
+	code, body := call(t, m, "/admit", map[string]any{"model": "qwen3-omni"})
+	if code != http.StatusOK {
+		t.Fatalf("admit of a model llama-swap already lists = %d %v", code, body)
+	}
+	if plan, _ := body["plan"].(map[string]any); plan == nil {
+		t.Fatalf("no plan: %v", body)
+	}
+}
