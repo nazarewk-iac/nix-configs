@@ -254,6 +254,9 @@ key is root-only and the user's agent offers the user's certificate. The Nix dae
 uses the builder successfully. Use a real `nix build` as the health check, not the manual
 SSH.
 
+The manual on-anji build (copy the tree to the Mac and run `nix build` there) is a
+fallback/recovery step only; the normal route is the buildfarm.
+
 Follow-up: make the local evaluation source available automatically — realise the flake
 input before evaluation, or document the one-time copy — so a fresh client does not hit
 the evaluation error.

@@ -96,9 +96,12 @@ nix build --impure --no-link --print-out-paths --option builders "" \
   --expr 'let f = builtins.getFlake "path:'"$PWD"'"; in f.nixosConfigurations.<host>.config.system.build.toplevel'
 ```
 
-Use `darwinConfigurations.<host>` on `anji`. `--option builders ""` forces a local build; drop it only
-when the builder is known good. Builds are the expensive step: prefer a warm store, and do not build a
-host the change cannot reach.
+Use `darwinConfigurations.<host>` on `anji`. The darwin buildfarm is the normal route: plain
+`nix build .#darwinConfigurations.anji.system` dispatches to `buildfarm-darwin` without flags.
+`--option builders ""` forces a local build; use it only to test the fallback or when the
+buildfarm is known down. A manual build on the Mac is a recovery step, not the normal check.
+Builds are the expensive step: prefer a warm store, and do not build a host the change cannot
+reach.
 
 Activate only the hosts the change reaches, in the order the owner names. With no order given, use
 `moss`, `brys`, `etra`, `oams`, then `briv`, then `anji`.

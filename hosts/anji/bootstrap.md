@@ -317,7 +317,9 @@ first activation, and activate against that mount.
    `Nix Store Ext` UUID, `storeUnlockAnchorUuid` to the new `anji-ext-02` UUID, and the two
    UUIDs in `unlockVolumesScript` to the new `anji-ext-01` and `anji-ext-02` UUIDs. Commit.
 8. First activation: `nix run .#darwin-rebuild -- switch remote=anji`. This lands the bootstrap
-   binary, writes `/etc/kdn/nix-bootstrap/` as real files, and takes over the plists.
+   binary, writes `/etc/kdn/nix-bootstrap/` as real files, and takes over the plists. The normal
+   build is through the darwin buildfarm; a manual build on `anji` is a fallback/recovery step
+   only. See [README.md](README.md), "Build and activate".
 9. Grant Full Disk Access to `/usr/local/bin/kdn-nix-darwin-helper` (GUI, System Settings → Privacy &
    Security → Full Disk Access). Do this before any daemon touches the external volume.
 10. Seed the store volume. Unlock ext-02, mount `Nix Store Ext` at a scratch point, then

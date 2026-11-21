@@ -40,6 +40,34 @@ The NanoKVM at `kvm-2795` is the out-of-band console. Its MCP tools and failure 
 [docs/nanokvm.md](../../docs/nanokvm.md). The KVM has no ATX power header on this host: the power
 and reset GPIO pulses do nothing, so a power-cycle is a physical action.
 
+## Build and activate
+
+The normal route is from `oams`:
+
+```bash
+nix build .#darwinConfigurations.anji.system
+ssh anji 'sudo nix-env -p /nix/var/nix/profiles/system --set <store-path> \
+  && sudo <store-path>/activate'
+```
+
+The plain `nix build` uses the darwin buildfarm (`buildfarm-darwin`) automatically. No
+`--builders`, `--store` or `--max-jobs` flag is needed. The only local prerequisite is that the
+evaluation source (`devenv-nixpkgs-patched`) is in the local store; a cold store can fail before
+the build hook is consulted.
+
+A manual build on `anji` is a **fallback/recovery step only**. Use it when the buildfarm is
+unreachable or the local evaluation source is missing:
+
+```bash
+rsync -a --exclude='/.cache' --exclude='/.git' --exclude='/.flake.patches' \
+  ./ anji:/Users/kdn/nix-configs-src/
+ssh anji 'cd /Users/kdn/nix-configs-src \
+  && nix build --print-out-paths --no-link "path:$PWD#darwinConfigurations.anji.system"'
+```
+
+The current generation on 2026-11-21 is 105, built from
+`/nix/store/dazc1g2l2x5dpn40xzlk9cm8riy4jyhz-darwin-system-26.11.ff0e21a`.
+
 ## The stable helper
 
 The external store and the launchd daemons are reached through one fixed-path binary with one

@@ -31,7 +31,8 @@ let
   #   3. `legacyLinuxBuilder = false; rosettaBuilder = true;`  — stock builder off, Rosetta on.
   #      Switch. The Rosetta guest keeps its already-built image.
   #
-  # The owner runs every activation. The stock builder's working directory is
+  # The owner approves every activation; an agent may run it after that approval. The stock
+  # builder's working directory is
   # `/anji-ext-01/linux-builder`. This host unlocks and mounts both external volumes in
   # `preActivation` at boot, so the volume is ready before the builder's own `preActivation` block
   # runs. The full procedure, with the prerequisite and the verify commands, is in

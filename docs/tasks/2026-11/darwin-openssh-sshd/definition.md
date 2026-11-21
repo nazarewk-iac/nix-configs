@@ -124,9 +124,13 @@ Measured during the recovery:
   unknown or unsupported key type`, so the PQ host identity remains inert on this host. The task
   stay open for the nixpkgs-sshd replacement.
 
-The live launchd plists now use the new helper. The system build with `helperSwitch = true` is
-green at `/nix/store/gbblabbzj3k2s67z78939z68l1vsicxm-darwin-system-26.11.ff0e21a`; the
-activation is the owner's step.
+The live launchd plists use the new helper. The normal build is a plain
+`nix build .#darwinConfigurations.anji.system` on `oams`: the darwin buildfarm dispatches every
+`aarch64-darwin` derivation to `buildfarm-darwin` with no extra flag. A manual build on `anji`
+(copy the tree to the Mac and run `nix build` there) is a fallback/recovery step only, for when
+the buildfarm is unreachable or the local evaluation source is missing. The system was activated
+on 2026-11-21: generation 105,
+`/nix/store/dazc1g2l2x5dpn40xzlk9cm8riy4jyhz-darwin-system-26.11.ff0e21a`.
 
 ## Out of scope
 
