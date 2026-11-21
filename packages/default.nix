@@ -64,6 +64,7 @@ in
   opencode-compat-proxy = pkgs.callPackage ./opencode-compat-proxy { inherit __inputs__; };
   clank-talk = pkgs.callPackage ./clank-talk { };
   kdn-journal = pkgs.callPackage ./kdn-journal { };
+  kdn-knowledge = pkgs.callPackage ./kdn-knowledge { };
   # AUTO_PACKAGE_PLACEHOLDER #
   aws-sso = pkgs.callPackage ./aws-sso { };
   flake-lock-merge = pkgs.callPackage ./flake-lock-merge { };
