@@ -9,6 +9,10 @@
 #   * `mkCatalog` — the orchestrator's intent table for the system prompt.
 #   * `mkMemberView data host` — a fleet member's view: the endpoint and the alias-to-model map,
 #     with the serving plumbing physically absent.
+#   * `strata data host` — the Strata frontier: the deployment's `profiles`, `textProfiles`,
+#     `aliases`, `frontierIDs` and `coloProfiles`, plus the models themselves so the placement
+#     policy quotes their measured facts. Every one of those is derived from the per-model
+#     `hosts.<host>.serving` block.
 #
 # See docs/tasks/2026-11/fleet-llm-data-model/design.md for the shape.
 { lib }:
@@ -146,6 +150,19 @@ let
     name: _: builtins.match "[a-z]+-(dumb|quick|std|deep)-[a-z]+(-[a-z]+)*(-alt)?" name != null
   ) aliasToModel;
 
+  # The measured cold-load seconds of a model: what it declares on `capabilities`, or what its
+  # serving block measured (`hosts.<host>.serving.loadSeconds`). One number, not two — the frontier's
+  # `capabilities` no longer repeats the load time the placement policy quotes.
+  loadSecondsOf =
+    m:
+    let
+      declared = (m.capabilities or { }).loadSeconds or null;
+      measured = builtins.filter (x: x != null) (
+        lib.mapAttrsToList (_: h: (h.serving or { }).loadSeconds or null) (m.hosts or { })
+      );
+    in
+    if declared != null then declared else lib.head (measured ++ [ null ]);
+
   # The orchestrator's model catalog, as a compact aligned table for the system prompt.
   #
   # One row per PURPOSE ALIAS, not per model: the orchestrator picks an intent (`chat-std-fast`),
@@ -173,7 +190,11 @@ let
         map (alias: {
           inherit alias ctx name;
           op = caps.operation or "-";
-          load = if caps ? loadSeconds then toString caps.loadSeconds else "-";
+          load =
+            let
+              seconds = loadSecondsOf m;
+            in
+            if seconds != null then toString seconds else "-";
           vision = if m.vision or false then "yes" else "-";
         }) aliases
       ) (builtins.attrNames servedModels);
@@ -192,6 +213,71 @@ let
     in
     lib.concatStringsSep "\n" (map fmt ([ headerRow ] ++ table));
 
+  # ---------------------------------------------------------------- the Strata frontier
+  #
+  # The brys frontier is one engine with several operating points. Every knob of one point — the
+  # pack, the window, the slot count, the VRAM reserve, the resident K/V, the park pool and the
+  # n-gram backing store — is written on the model itself, in `hosts.<host>.serving`, and this
+  # projection is the only reader. It yields what each consumer needs:
+  #
+  #   profiles      the deployment's `profiles` map, keyed by profile name (config.json)
+  #   textProfiles  the chat points in `rank` order; the first one rests (config.json)
+  #   aliases       every name llama-swap answers to -> the point it forces (config.json)
+  #   frontierIDs   the same names, so a switch can tell a frontier entry from a companion
+  #   coloProfiles  the points that keep a reserve for a companion, in `rank` order
+  #   frontier      the models themselves, for the policy's measured-facts rows
+  #
+  # `ropeScale` is derived from the window, never written: the yarn factor is the served window
+  # over the model's native one. `qfn` is `profile = "auto"` — a name, not a point — so it reaches
+  # `aliases` and `frontierIDs` but no `profiles` row.
+  strata =
+    data: host:
+    let
+      frontier = lib.filterAttrs (
+        _: m: ((m.hosts or { }) ? ${host}) && ((m.hosts.${host}.serving or { }) ? profile)
+      ) data.models;
+      serving = name: frontier.${name}.hosts.${host}.serving;
+      # The yarn factor of one point: the window it serves over the window the model was trained on.
+      ropeScale = maxContext: maxContext / (data.servers.${host}.frontier.nativeContext * 1.0);
+      # The entries that materialise a shape. `qfn` is `auto`: a name, not an operating point.
+      points = lib.filterAttrs (name: _: (serving name).profile != "auto") frontier;
+      ranked = map (name: {
+        inherit name;
+        inherit (serving name) profile;
+        rank = (serving name).rank;
+        colo = (serving name).colo or false;
+      }) (lib.sort (a: b: (serving a).rank < (serving b).rank) (lib.attrNames points));
+      # Every name llama-swap answers to for one entry: its own id and the model's declared aliases.
+      namesOf = name: [ name ] ++ (frontier.${name}.aliases or [ ]);
+    in
+    {
+      inherit frontier;
+      profiles = lib.listToAttrs (
+        map (p: {
+          name = p.profile;
+          value = {
+            inherit (serving p.name)
+              base
+              maxContext
+              parallel
+              reserveMiB
+              kvResident
+              ;
+            inherit (serving p.name) conversationCacheMiB pleIO;
+            ropeScale = ropeScale (serving p.name).maxContext;
+          };
+        }) ranked
+      );
+      textProfiles = map (p: p.profile) ranked;
+      aliases = lib.listToAttrs (
+        lib.concatMap (name: map (alias: lib.nameValuePair alias (serving name).profile) (namesOf name)) (
+          lib.attrNames frontier
+        )
+      );
+      frontierIDs = lib.sort (a: b: a < b) (lib.concatMap namesOf (lib.attrNames frontier));
+      coloProfiles = map (p: p.profile) (lib.filter (p: p.colo) ranked);
+    };
+
   # ---------------------------------------------------------------- server projection
   #
   # The model set a host serves for a boot profile: every model whose `set` is one of the
@@ -202,8 +288,16 @@ let
     let
       h = m.hosts.${host};
       p = h.profiles.${profile} or { };
+      serving = h.serving or { };
     in
-    p.servedContext or h.servedContext or m.contextSize;
+    if p ? servedContext then
+      p.servedContext
+    else if serving ? maxContext then
+      # A Strata entry serves the window its own operating point declares, so there is no second
+      # `servedContext` to keep in step with it.
+      serving.maxContext
+    else
+      h.servedContext or m.contextSize;
 
   serverEntry =
     host: profile: m:
@@ -220,8 +314,10 @@ let
     in
     {
       aliases = m.aliases or [ ];
-      # A model that is not llama.cpp names a complete llama-swap command; the rest leave it null.
+      # A model that is not llama.cpp names either a complete llama-swap command or the Strata
+      # operating point its command is generated from.
       command = m.command or null;
+      strataProfile = (h.serving or { }).profile or null;
       # A command prefix for the generated invocation (the companion gate), and an idle ttl after
       # which llama-swap unloads the model by itself.
       wrapper = m.wrapper or null;
@@ -279,7 +375,12 @@ let
     };
 in
 {
-  inherit data aliasToModel purposeAliases;
+  inherit
+    data
+    aliasToModel
+    purposeAliases
+    strata
+    ;
   inherit
     mkPiModelsJson
     mkCatalog

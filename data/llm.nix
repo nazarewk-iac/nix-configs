@@ -12,6 +12,10 @@
 #                  from each model's identity (`contextSize`, `pi.*`, `capabilities`, `vision`).
 #   * the member   `lib/llm.nix`'s `mkMemberView data "<host>"` gives a host the endpoint and
 #                  the alias-to-model map, with no serving plumbing (no file, no perf, no port).
+#   * the frontier `lib/llm.nix`'s `strata data "<host>"` projects every `hosts.<host>.serving`
+#                  block into the Strata deployment: the manager's `config.json` profiles, the
+#                  `strata-select` command of each llama-swap entry, and the placement policy's
+#                  measured facts. See the frontier section of `models` below.
 #
 # See docs/tasks/2026-11/fleet-llm-data-model/design.md for the shape and the review record.
 #
@@ -29,6 +33,10 @@
 # `hosts.<host>.set` (the router), `hosts.<host>.servedContext` (the window this
 # host serves), `hosts.<host>.common` (file, download, mmproj, draft, perf), and an
 # optional `hosts.<host>.profiles.<profile>` delta (a boot profile that differs).
+#
+# A Strata operating point carries `hosts.<host>.serving` instead of a bare `command`: the
+# window it serves, the slot count and the rest of its shape live there, so the llama-swap
+# command, the manager's `config.json` and the policy facts are all derived from one block.
 #
 # ## Context values
 #
@@ -149,6 +157,14 @@ in
           modelsMax = 1;
           apiKeyDir = "/run/configs/llms/llama-server/api-keys";
         };
+      };
+
+      # The frontier model's own facts, shared by every operating point. `nativeContext` is the
+      # window Qwen3.8-Flash-Next was trained on: a point above it needs yarn scaling, and the
+      # factor is exactly the served window over this number, so no entry writes a rope value of
+      # its own and the two can never disagree. `lib/llm.nix` derives it into `ropeScale`.
+      frontier = {
+        nativeContext = 256 * K;
       };
 
       # Cross-model serving policy, the resolved value. `coResidentTiers` is the
@@ -306,22 +322,56 @@ in
       };
       contextSize = 1048576;
     };
-    # ------------------------------------------------------------------ Strata profiles
-    # Strata is not llama-server: each entry names a complete command instead of a generated
-    # llama-server invocation. `strata-serve` (hosts-den/brys/strata-serve.nix + .sh) materialises
-    # one profile config and runs `strata serve` in the foreground on the port llama-swap passes.
-    # The profiles are mutually exclusive (they share the `main` group) and a switch costs one
-    # engine reload, 50-70 s. Measured: docs/tasks/2026-11/brys-r9700-model-fit/measurements.md
+    # ------------------------------------------------------------------ the Strata frontier
     #
-    # Three names describe the frontier and that is the whole surface:
+    # Strata is not llama-server: `strata-serve` materialises one operating point and runs
+    # `strata serve` in the foreground on the port llama-swap passes. The points are mutually
+    # exclusive (they share the `main` group) and a switch costs one engine reload, 50-70 s.
     #
-    #   `qfn`        profile-neutral. It asks the manager for `auto`, which keeps whatever profile is
-    #                current, so a harness never reloads the engine by asking for it. A request that
-    #                is already in flight when somebody switches the profile is completed, not cut:
-    #                the manager drains the engine on a lease count (see strata-manager.py).
-    #   `qfn-max`    forces the `max` profile (UD-IQ4_XS on the whole card). Picking it reloads.
-    #   `qfn-colo`   forces the `omni-fast` profile (IQ2_XS + 21.5 GB reserve, the companion fits).
-    #                Picking it reloads. `omni-max` stays reachable through the manager API only.
+    # **This file is the only place a frontier serving knob is written.** Each entry carries its
+    # own operating point in `hosts.brys.serving`: the pack, the window, the slot count, the VRAM
+    # reserve, the resident K/V, the park pool and the n-gram backing store, and the measured facts
+    # the placement policy quotes. Every consumer derives from it (`lib/llm.nix` `strata`):
+    #
+    #   * the manager's `config.json` — `profiles`, `textProfiles`, `aliases`, `frontierIDs`;
+    #   * the llama-swap command of the entry — `strata-select <profile> --alias <entry>`;
+    #   * the policy's frontier rows, so `status --long` shows the measured numbers;
+    #   * `strata-serve.sh`, which reads the generated `config.json` with `jq` and nothing else.
+    #
+    # `ropeScale` is the yarn factor, the window over the model's native window, so no entry writes
+    # a rope value of its own. `rank` is the order of `textProfiles`; rank 0 is the resting profile.
+    #
+    # Measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
+    #
+    #   entry            rank  pack       ctx x slots  aggregate
+    #   qfn-max-multi     0    UD-IQ4_XS  512k x 5     31.9 t/s, 12.0 GiB free   the resting profile
+    #   qfn-max-swarm     1    UD-IQ4_XS  256k x 8     36.2 t/s, 18.4 GiB free
+    #   qfn-max-long      2    UD-IQ4_XS    1M x 2     29.7 t/s, 10.5 GiB free
+    #   qfn-max-single    3    UD-IQ4_XS    1M x 1     86.6 t/s single stream    one big job
+    #   qfn-fast-swarm    4    IQ2_XS     384k x 8     61.0 t/s, 31.4 GiB free
+    #   qfn-max-colo      5    UD-IQ4_XS    1M x 1     42.3 t/s + the companion beside it
+    #   qfn-fast-colo     6    IQ2_XS       1M x 2     71.6 t/s + the companion beside it
+    #
+    # Eight is the engine's own slot cap (SLOTS_MAX, and `vram_fit` prices min(slots, 8)), so no
+    # point asks for more. 512k stops at five because this host builds as well as serves: five
+    # leaves 12.0 GiB and decodes no faster than six (31.9 against 30.7 t/s saturated), because the
+    # expert cache shrinks as the slot sessions grow. Six held 6.6 GiB on a quiet host but fell to
+    # 2.9 GiB with two builds running, under the 4 GiB a build needs; seven measured 2.0 GiB and a
+    # 130 s load. 1M stops at two: a third fits arithmetically, but the window keeps a slot of
+    # headroom for the hard resets this host took under a long prefill.
+    #
+    # Two settings carry the fit. `--ple-io mmap`, not `ram`: locking the ~30 GiB n-gram table in
+    # RAM is what OOM-killed a second 1M slot (109.6 GiB RSS) and what pushed a 384k load to 126 s;
+    # in the page cache the same load takes 56 s and frees 22-25 GiB. `--conversation-cache-mib
+    # 2048`, not the engine's 8 GiB default: a swarm spends that RAM on live slots instead.
+    #
+    # The two `qfn-*-colo` points keep the engine's own park pool (`conversationCacheMiB = null`)
+    # and the n-gram table locked in RAM, which is what their 21.5 GiB reserve was measured with.
+    # They are the only points that leave room for a companion.
+    #
+    # `qfn` is profile-neutral: it asks the manager for `auto`, which keeps whatever point is
+    # current, so a harness never reloads the engine by naming it. `qfn-max` is the older name of
+    # the 1M two-slot point and keeps that meaning as an alias of `qfn-max-long`.
     "qfn" = {
       capabilities = {
         rates = {
@@ -329,135 +379,330 @@ in
           prefill = 1900.0;
           mode = "GPU";
         };
-        loadSeconds = 60;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 1048576;
 
-      # `auto`: keep the manager's current profile, so the model name cannot trigger a reload.
-      command = [
-        "/run/current-system/sw/bin/strata-select"
-        "auto"
-        "--alias"
-        "qfn"
-        "--port"
-        "\${PORT}"
-      ];
       hosts.brys = {
         set = "main";
-        servedContext = 1048576;
+        serving = {
+          # Not an operating point: the manager resolves `auto` to whatever profile is current.
+          profile = "auto";
+          # The engine quoted at the colo shape, which is the footprint of the frontier itself:
+          # 10957 MiB of weights and buffers plus the 32768-cell streaming window (~336 MiB). The
+          # measured facts live here with the rest of the model's data, so `status --long` and the
+          # policy read one row and not two.
+          vramMiB = 10957;
+          kvReserveMiB = 336;
+          ramMiB = 60000;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
+        };
         common = {
           enable = true;
           hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
           hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
           download.enable = false;
-          perf.contextSize = 1048576;
         };
       };
     };
-    "qfn-max" = {
-      aliases = [ ];
+    "qfn-max-multi" = {
       capabilities = {
+        # The saturated aggregate over the five slots, measured 2026-11-21. `prefill` is the
+        # pack-level estimate the other UD-IQ4_XS entries carry, not a per-point measurement.
         rates = {
-          decode = 42.3;
+          decode = 31.9;
           prefill = 1000.0;
           mode = "GPU";
         };
-        loadSeconds = 60;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 1048576;
 
-      # Forces the whole-card profile; a caller that asks for this name pays the reload.
-      command = [
-        "/run/current-system/sw/bin/strata-select"
-        "max"
-        "--alias"
-        "qfn-max"
-        "--port"
-        "\${PORT}"
-      ];
       hosts.brys = {
         set = "main";
-        servedContext = 1048576;
+        serving = {
+          profile = "max-multi";
+          rank = 0;
+          base = "unsloth-ud-iq4_xs";
+          maxContext = 512 * K;
+          parallel = 5;
+          reserveMiB = 1024;
+          kvResident = 32768;
+          conversationCacheMiB = 2048;
+          pleIO = "mmap";
+          # 31546 MiB measured on the card at six slots, of which 6 x 1300 MiB are the transmitted
+          # K/V; the weights and the compute buffers are the same at any slot count, so the
+          # five-slot total is 30246 MiB.
+          vramMiB = 23746;
+          kvReserveMiB = 6500;
+          # Non-reclaimable resident set: the experts' 55.4 GiB arena, the park pool and about
+          # 1.5 GiB of buffers. The n-gram table is page cache under `pleIO = mmap`, not this.
+          ramMiB = 60300;
+          loadSeconds = 58;
+          switchSeconds = 72;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, the 512k slot sweep: 5 slots x 512k, MemAvailable 12.0 GiB, 31.9 t/s saturated; six slots measured 6.6 GiB and 2.9 GiB with two builds running";
+        };
         common = {
           enable = true;
           hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
           hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
           download.enable = false;
-          perf.contextSize = 1048576;
         };
       };
     };
-    "qfn-max-colo" = {
-      aliases = [ ];
+    "qfn-max-swarm" = {
       capabilities = {
         rates = {
-          decode = 42.3;
+          decode = 36.2;
           prefill = 1000.0;
           mode = "GPU";
         };
-        loadSeconds = 60;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 1048576;
 
-      # The best pack WITH the reserve: qfn at 42 t/s at 1M, the companion at full speed beside it.
-      command = [
-        "/run/current-system/sw/bin/strata-select"
-        "omni-max"
-        "--alias"
-        "qfn-max-colo"
-        "--port"
-        "\${PORT}"
-      ];
       hosts.brys = {
         set = "main";
-        servedContext = 1048576;
+        serving = {
+          profile = "max-swarm";
+          rank = 1;
+          base = "unsloth-ud-iq4_xs";
+          maxContext = 256 * K;
+          parallel = 8;
+          reserveMiB = 1024;
+          kvResident = 32768;
+          conversationCacheMiB = 2048;
+          pleIO = "mmap";
+          vramMiB = 24501;
+          kvReserveMiB = 7048;
+          ramMiB = 60300;
+          loadSeconds = 54;
+          switchSeconds = 68;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 8 slots x 256k, MemAvailable 18.4 GiB, 36.2 t/s saturated";
+        };
         common = {
           enable = true;
           hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
           hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
           download.enable = false;
-          perf.contextSize = 1048576;
         };
       };
     };
-    "qfn-fast-colo" = {
-      aliases = [ ];
+    "qfn-max-long" = {
+      # The two-slot 1M point. `qfn-max` named this window before the swarm decision and keeps
+      # that meaning; llama-swap answers to both names with one entry, so asking for either costs a
+      # TCP proxy, not a reload.
+      aliases = [ "qfn-max" ];
       capabilities = {
         rates = {
-          decode = 71.6;
+          decode = 29.7;
+          prefill = 1000.0;
+          mode = "GPU";
+        };
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      hosts.brys = {
+        set = "main";
+        serving = {
+          profile = "max-long";
+          rank = 2;
+          base = "unsloth-ud-iq4_xs";
+          maxContext = K * K;
+          parallel = 2;
+          reserveMiB = 1024;
+          kvResident = 32768;
+          conversationCacheMiB = 1024;
+          pleIO = "mmap";
+          vramMiB = 27074;
+          kvReserveMiB = 4464;
+          ramMiB = 59400;
+          loadSeconds = 58;
+          switchSeconds = 72;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
+        };
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+        };
+      };
+    };
+    "qfn-max-single" = {
+      capabilities = {
+        # The fastest single stream this host serves. One slot, so the 1M K/V is 9.6 GiB of host
+        # RAM instead of 19.1.
+        rates = {
+          decode = 86.6;
+          prefill = 1000.0;
+          mode = "GPU";
+        };
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      hosts.brys = {
+        set = "main";
+        serving = {
+          profile = "max-single";
+          rank = 3;
+          base = "unsloth-ud-iq4_xs";
+          maxContext = K * K;
+          parallel = 1;
+          reserveMiB = 1024;
+          kvResident = 32768;
+          conversationCacheMiB = 1024;
+          pleIO = "mmap";
+          # The weights and buffers of the two-slot row, plus one 2232 MiB slot session.
+          vramMiB = 27074;
+          kvReserveMiB = 2232;
+          ramMiB = 59400;
+          loadSeconds = 58;
+          switchSeconds = 72;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The one-slot 1M profile: 86.6 t/s single stream, 58 s load, 9.6 GiB K/V";
+        };
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+        };
+      };
+    };
+    "qfn-fast-swarm" = {
+      capabilities = {
+        rates = {
+          decode = 61.0;
           prefill = 1300.0;
           mode = "GPU";
         };
-        loadSeconds = 60;
         operation = "gpu";
       };
       gpu = true;
       contextSize = 1048576;
 
-      # The fast pack WITH the reserve: qfn at 72 t/s at 1M, the companion at full speed beside it.
-      command = [
-        "/run/current-system/sw/bin/strata-select"
-        "omni-fast"
-        "--alias"
-        "qfn-fast-colo"
-        "--port"
-        "\${PORT}"
-      ];
       hosts.brys = {
         set = "main";
-        servedContext = 1048576;
+        serving = {
+          profile = "fast-swarm";
+          rank = 4;
+          base = "iq2_xs";
+          maxContext = 384 * K;
+          parallel = 8;
+          reserveMiB = 1024;
+          kvResident = 32768;
+          conversationCacheMiB = 2048;
+          pleIO = "mmap";
+          vramMiB = 22657;
+          kvReserveMiB = 8848;
+          ramMiB = 37400;
+          loadSeconds = 44;
+          switchSeconds = 58;
+          measured = "2026-11-21";
+          source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: IQ2_XS 8 slots x 384k, MemAvailable 31.4 GiB, 61.0 t/s saturated";
+        };
         common = {
           enable = true;
           hfFile = "IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf";
           hfRepo = "surveyed";
           download.enable = false;
-          perf.contextSize = 1048576;
+        };
+      };
+    };
+    "qfn-max-colo" = {
+      capabilities = {
+        # The best pack WITH the reserve: the frontier at 42 t/s, the companion beside it at full
+        # speed. The policy gates a companion on this point.
+        rates = {
+          decode = 42.3;
+          prefill = 1000.0;
+          mode = "GPU";
+        };
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      hosts.brys = {
+        set = "main";
+        serving = {
+          profile = "omni-max";
+          rank = 5;
+          colo = true;
+          base = "unsloth-ud-iq4_xs";
+          maxContext = K * K;
+          parallel = 1;
+          reserveMiB = 21500;
+          kvResident = 32768;
+          conversationCacheMiB = null;
+          pleIO = "ram";
+          # The frontier leaves the 21.5 GiB reserve to the companion; its own KV is the 32768-cell
+          # streaming window at ~336 MiB.
+          vramMiB = 10957;
+          kvReserveMiB = 336;
+          ramMiB = 60000;
+          switchSeconds = 55;
+          measured = "2026-11-20";
+          source = "docs/tasks/2026-11/image-video-editing-models/measurements.md and the brys sweep: the frontier at 42.3 t/s with qwen3-omni beside it";
+        };
+        common = {
+          enable = true;
+          hfFile = "UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf";
+          hfRepo = "unsloth/Qwen3.8-Flash-Next-GGUF";
+          download.enable = false;
+        };
+      };
+    };
+    "qfn-fast-colo" = {
+      capabilities = {
+        # The fast pack WITH the reserve: the frontier at 72 t/s at 1M, the companion beside it.
+        rates = {
+          decode = 71.6;
+          prefill = 1300.0;
+          mode = "GPU";
+        };
+        operation = "gpu";
+      };
+      gpu = true;
+      contextSize = 1048576;
+
+      hosts.brys = {
+        set = "main";
+        serving = {
+          profile = "omni-fast";
+          rank = 6;
+          colo = true;
+          base = "iq2_xs";
+          maxContext = K * K;
+          parallel = 2;
+          reserveMiB = 21500;
+          kvResident = 32768;
+          conversationCacheMiB = null;
+          pleIO = "ram";
+          vramMiB = 10957;
+          kvReserveMiB = 336;
+          ramMiB = 60000;
+          switchSeconds = 55;
+          measured = "2026-11-20";
+          source = "docs/tasks/2026-11/image-video-editing-models/measurements.md and the brys sweep: the frontier at 71.6 t/s with qwen3-omni beside it";
+        };
+        common = {
+          enable = true;
+          hfFile = "IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf";
+          hfRepo = "surveyed";
+          download.enable = false;
         };
       };
     };
@@ -610,9 +855,9 @@ in
       # leaves too little RAM for the KV cache plus a co-resident model, and it is a stale
       # upstream revision. The measured 32k tune does not transfer to another quant.
       # No aliases: this llama.cpp path is the fallback behind the Strata `qfn` entries, which own
-      # the frontier names now. Once those four names were collapsed to `qfn` / `qfn-max` /
-      # `qfn-colo` / `qwen3-omni`, keeping a second model on the same alias would make the gateway
-      # expose a name that resolves to whichever model folded last.
+      # the frontier names now. With eight frontier names (`qfn`, the five `qfn-*` points and the
+      # two colo ones), keeping a second model on one of them would make the gateway expose a name
+      # that resolves to whichever model folded last.
       aliases = [ ];
       capabilities = {
         # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 26`,

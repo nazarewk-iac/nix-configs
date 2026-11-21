@@ -13,6 +13,11 @@
 # brys sweep; `measured` is the date they were taken, so a stale table is visible.
 { lib }:
 let
+  # The one source of the frontier's serving data, and the projection that quotes it.
+  data = import ../../data/llm.nix;
+  llm = import ../../lib/llm.nix { inherit lib; };
+  strata = llm.strata data "brys";
+
   # A check node.
   check = verb: {
     type = "check";
@@ -48,12 +53,46 @@ let
   # the policy refuse it beside a profile that had room. Measured 2026-11-21: qwen3-omni held
   # 11.7 GiB of `RssFile` against 128 MiB of `RssAnon`.
   #
-  # The frontier: `--kv-resident 32768` keeps 32768 cells of each QSA layer in VRAM (it is a
-  # per-layer streaming window, not a per-slot allocation), and k8v4 costs ~10.5 KiB per token
-  # against int8's 13.7 KiB — 336 MiB. The omni profiles were measured with a 4096-cell window, so
-  # this is a real addition for them; `max` was measured with 32768 already, so its 336 MiB is a
-  # deliberate double count that errs in the safe direction.
-  frontierKvReserveMiB = 336;
+  # The frontier's measured facts are not written here. Each operating point declares them on the
+  # model itself (`data/llm.nix`, `hosts.brys.serving`), next to the window, the slot count and the
+  # reserve that produced them, and this projection turns them into policy rows. `profile` is the
+  # point the entry forces; `qfn` forces none (`auto`), so it is gated on every point instead.
+  #
+  # `--kv-resident 32768` keeps 32768 cells of each QSA layer in VRAM (a per-layer streaming window,
+  # not a per-slot allocation), and k8v4 costs ~10.5 KiB per token against int8's 13.7 KiB — 336 MiB.
+  # The colo points were measured with a 4096-cell window, so that 336 MiB is a real addition for
+  # them; it is carried on the model, in `kvReserveMiB`, beside the measurement it belongs to.
+  frontierFacts = lib.mapAttrs (
+    _: m:
+    let
+      s = m.hosts.brys.serving;
+    in
+    {
+      kind = "engine";
+      tier = "frontier";
+    }
+    // lib.optionalAttrs (s.profile != "auto") {
+      inherit (s) profile;
+    }
+    // {
+      persistent = true;
+    }
+    // lib.optionalAttrs (s.profile == "auto") {
+      requiresProfile = strata.textProfiles;
+    }
+    // {
+      inherit (s) vramMiB kvReserveMiB ramMiB;
+    }
+    // lib.optionalAttrs (s ? loadSeconds) {
+      inherit (s) loadSeconds;
+    }
+    // lib.optionalAttrs (s ? switchSeconds) {
+      inherit (s) switchSeconds;
+    }
+    // {
+      inherit (s) measured source;
+    }
+  ) strata.frontier;
   # The companions, at the 16384-token context they are served at: llama.cpp reported
   # `Vulkan0 KV buffer size = 1536.00 MiB` (qwen3-omni) and `896.00 MiB` (qwen2.5-vl-7b) at
   # n_ctx = 16384 in `companion.log` on 2026-11-21. Both footprints were measured with the cache
@@ -72,12 +111,10 @@ in
   };
 
   switchCooldownSeconds = 30;
-  # A capacity refusal on a model with no profile requirement offers these: they are the profiles
-  # that leave a reserve for a second model.
-  coloProfiles = [
-    "omni-max"
-    "omni-fast"
-  ];
+  # A capacity refusal on a model with no profile requirement offers these: the operating points
+  # that leave a reserve for a second model, in `rank` order — the ones that declare `colo = true`
+  # on the model in `data/llm.nix`.
+  coloProfiles = strata.coloProfiles;
   defaultDeadlineSeconds = 120;
   # Below this, a model beside the frontier is not worth serving: the measured companion beside the
   # whole-card profile ran at 6.1 t/s.
@@ -155,138 +192,8 @@ in
     ])
   ];
 
-  models = {
-    # ---------------------------------------------------------------- engines
-    # `qfn` is profile-neutral: it is served by whatever text profile is current, so the policy
-    # refuses it on an image profile instead of letting a chat request reach a diffusion server.
-    qfn = {
-      kind = "engine";
-      tier = "frontier";
-      persistent = true;
-      requiresProfile = [
-        "max-multi"
-        "max-swarm"
-        "max-long"
-        "max-single"
-        "fast-swarm"
-        "omni-max"
-        "omni-fast"
-      ];
-      vramMiB = 10957;
-      kvReserveMiB = frontierKvReserveMiB;
-      ramMiB = 60000;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
-    };
-    # The frontier profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit,
-    # "The swarm profiles"). `vramMiB` is the measured whole-card footprint minus
-    # the slot sessions, and `kvReserveMiB` is those sessions: the engine prices one at 1300 MiB
-    # per 512k slot, 1106 MiB per 384k slot, 881 MiB per 256k slot and 2232 MiB per 1M slot (its
-    # own `--batch N: N slot sessions on CUDA0` line). The sum is the measured total, so
-    # `fits-beside` sees the card as full — which it is.
-    #
-    # `ramMiB` is the non-reclaimable resident set: the experts' arena the engine names at load
-    # (55.4 GiB on UD-IQ4_XS, 33.0 GiB on IQ2_XS) plus the park pool plus about 1.5 GiB of buffers.
-    # The n-gram table is NOT in it: these profiles run `--ple-io mmap`, so its ~30 GiB are clean
-    # page cache, which the kernel reclaims instead of OOM-killing the engine (measured: mmap
-    # freed 22-25 GiB and was not slower than locking it).
-    "qfn-max-multi" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "max-multi";
-      persistent = true;
-      # 31546 MiB measured on the card at six slots, of which 5 slot sessions x 1300 MiB = 6500 MiB
-      # are the per-slot K/V; the weights and the compute buffers are the same at any slot count, so
-      # the five-slot total is 30246 MiB.
-      vramMiB = 23746;
-      kvReserveMiB = 6500;
-      ramMiB = 60300;
-      loadSeconds = 58;
-      switchSeconds = 72;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, the 512k slot sweep: 5 slots x 512k, MemAvailable 12.0 GiB, 31.9 t/s saturated; six slots measured 6.6 GiB and 2.9 GiB with two builds running";
-    };
-    "qfn-max-swarm" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "max-swarm";
-      persistent = true;
-      vramMiB = 24501;
-      kvReserveMiB = 7048;
-      ramMiB = 60300;
-      loadSeconds = 54;
-      switchSeconds = 68;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 8 slots x 256k, MemAvailable 18.4 GiB, 36.2 t/s saturated";
-    };
-    "qfn-max-long" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "max-long";
-      persistent = true;
-      vramMiB = 27074;
-      kvReserveMiB = 4464;
-      ramMiB = 59400;
-      loadSeconds = 58;
-      switchSeconds = 72;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
-    };
-    # The one-slot shape of the same 1M window. It shares the two-slot row's weights and buffers
-    # (27074 MiB) and holds one slot session instead of two, so its measured total is 29306 MiB of
-    # the card. It is the fastest single stream this host serves: 86.6 t/s, 58 s load, 9.6 GiB of
-    # K/V in host RAM.
-    "qfn-max-single" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "max-single";
-      persistent = true;
-      vramMiB = 27074;
-      kvReserveMiB = 2232;
-      ramMiB = 59400;
-      loadSeconds = 58;
-      switchSeconds = 72;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The one-slot 1M profile: 86.6 t/s single stream, 58 s load, 9.6 GiB K/V";
-    };
-    "qfn-fast-swarm" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "fast-swarm";
-      persistent = true;
-      vramMiB = 22657;
-      kvReserveMiB = 8848;
-      ramMiB = 37400;
-      loadSeconds = 44;
-      switchSeconds = 58;
-      measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: IQ2_XS 8 slots x 384k, MemAvailable 31.4 GiB, 61.0 t/s saturated";
-    };
-    "qfn-fast-colo" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "omni-fast";
-      persistent = true;
-      vramMiB = 10957;
-      kvReserveMiB = frontierKvReserveMiB;
-      ramMiB = 60000;
-      switchSeconds = 55;
-      measured = "2026-11-20";
-    };
-    # The better-pack colo profile. It was in `textProfiles` and `coloProfiles` from the start but
-    # had no row here, so `status` showed it without numbers. The footprint is the same reserve
-    # shape as `qfn-fast-colo`: the frontier keeps 10957 MiB and omni takes the 21.5 GiB reserve.
-    "qfn-max-colo" = {
-      kind = "engine";
-      tier = "frontier";
-      profile = "omni-max";
-      persistent = true;
-      vramMiB = 10957;
-      kvReserveMiB = frontierKvReserveMiB;
-      ramMiB = 60000;
-      switchSeconds = 55;
-      measured = "2026-11-20";
-    };
+  models = frontierFacts // {
+    # ---------------------------------------------------------------- image profiles
     "qwen-image-edit" = {
       kind = "engine";
       tier = "frontier";

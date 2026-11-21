@@ -476,6 +476,18 @@
           cmd =
             if m.command != null then
               lib.concatStringsSep " " m.command
+            else if m.strataProfile != null then
+              # A Strata operating point: the profile and the alias both come from the model's own
+              # serving block, so the name llama-swap publishes and the profile the manager is asked
+              # for cannot disagree. `--alias` is the entry name, which llama-swap does not pass on.
+              lib.concatStringsSep " " [
+                cfg.swap.strataSelect
+                m.strataProfile
+                "--alias"
+                name
+                "--port"
+                "\${PORT}"
+              ]
             else
               lib.concatStringsSep " " (
                 # The placement policy asks first. `admit` execs the argv after it, so llama-swap
@@ -953,6 +965,21 @@
             OpenAI-compatible API on the port llama-swap passes through its PORT placeholder.
             `perf.contextSize` still feeds `capabilities.context`, so a client reads
             the window from `/v1/models` without starting the model.
+          '';
+        };
+
+        options.strataProfile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "max-multi";
+          description = ''
+            The Strata operating point this entry serves, for a model that names no `command`.
+
+            The generated `cmd` is `strata-select <profile> --alias <model> --port` followed by the
+            `''${PORT}` macro, so the entry name and the profile come from the same declaration and
+            cannot disagree. The manager owns the engine: the profile is materialised from the
+            deployment file and served in the foreground by `strata-serve`, and a switch costs one
+            engine reload.
           '';
         };
 
@@ -1600,6 +1627,16 @@
           default = "/run/current-system/sw/bin/kdn-inference-helpers";
           description = "The runtime binary that implements `admit`.";
         };
+      };
+
+      options.kdn.llm.local.swap.strataSelect = lib.mkOption {
+        type = lib.types.str;
+        default = "/run/current-system/sw/bin/strata-select";
+        description = ''
+          The entry point a `strataProfile` model runs. It asks the manager for the profile, then
+          proxies the llama-swap port to the engine, so a switch happens once for every entry that
+          names the same profile.
+        '';
       };
 
       options.kdn.llm.local.swap.coResidentTiers = lib.mkOption {

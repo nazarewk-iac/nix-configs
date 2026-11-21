@@ -7,26 +7,28 @@
 # in) and execs `strata serve` on the port llama-swap hands over.
 #
 # **Every knob comes from the deployment file** (`/etc/kdn-inference-helpers/config.json`), which
-# `strata-profiles.nix` generates: the base pack config, the slot count, the context window, the
-# VRAM reserve, the resident K/V, the park pool and the n-gram table's backing store. This script
-# carries no profile table and no literal fallback — a missing key stops the entry with a message
-# that names the profile and the key. The drift that rule exists for: the slot count used to live
-# here (`parallel=6`), in `strata-profiles.nix` and in the Go adapter at the same time.
+# `data/llm.nix` fills through `lib/llm.nix` and `strata-profiles.nix`: the base pack config, the
+# slot count, the context window, the VRAM reserve, the resident K/V, the park pool and the n-gram
+# table's backing store. This script carries no profile table and no literal fallback — a missing key
+# stops the entry with a message that names the profile and the key. The drift that rule exists for:
+# the slot count used to live here (`parallel=6`), in the deployment file and in the Go adapter at
+# the same time, and the manager served the omni profiles with 8 slots while the deployment said 1
+# and 2.
 #
-# Profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
-#   max-multi   5 x 512k   31.9 t/s aggregate   the resting profile
-#   max-swarm   8 x 256k   36.2 t/s aggregate
-#   max-long    2 x 1M     29.7 t/s aggregate
-#   max-single  1 x 1M     86.6 t/s single stream, one big job
-#   fast-swarm  8 x 384k   61.0 t/s aggregate   IQ2_XS
-#   omni-max    1 x 1M     colo: 42.3 t/s frontier + omni beside it
-#   omni-fast   2 x 1M     colo: 71.6 t/s frontier + omni beside it
+# Profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md), with the
+# numbers themselves in `data/llm.nix`:
+#   max-multi   five 512k slots   the resting profile
+#   max-swarm   eight 256k slots
+#   max-long    two 1M slots
+#   max-single  one 1M slot       one big job, no concurrency
+#   fast-swarm  eight 384k slots  IQ2_XS
+#   omni-max    colo: the best pack with the reserve a companion needs
+#   omni-fast   colo: the fast pack with the same reserve
 #
 # Usage: strata-serve <profile> --port N [--print]
 #   `--print` resolves the profile and prints the plan as one JSON object (the final exec argv, the
-#   patched engine args and the slot count) instead of starting the engine. The single-source check
-#   (`checks/inference-helpers/profiles.nix`) reads it, so what it asserts is the argv this script
-#   would really build.
+#   patched engine args and the slot count) instead of starting the engine — the way to see what this
+#   script would really run without loading a model.
 set -uo pipefail
 
 CONFIG=${KDN_INFERENCE_HELPERS_CONFIG:-/etc/kdn-inference-helpers/config.json}
