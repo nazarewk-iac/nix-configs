@@ -227,6 +227,41 @@ Backup then has two halves and no third: the **data** (one directory per service
 **definition** (the image revision, already in the repo). A restore is `restore the directory` +
 `nixos-rebuild switch`.
 
+### State is a dataset, not a directory
+
+Where the host has ZFS (brys today), each service's state root is its **own dataset**, not a
+directory inside a shared one:
+
+```
+tank/kdn/services/<name>   mountpoint=/var/lib/kdn/<name>   refquota=20G   compression=zstd
+tank/kdn/models            mountpoint=/var/lib/kdn/models   ro in containers, not backed up
+```
+
+What that buys, all of it from the dataset boundary rather than from a backup script:
+
+- **Backup is `zfs snapshot` + `zfs send -R`** (or `syncoid` to another host): atomic, incremental,
+  and cheap because only the service's own state changes — the models dataset is shared read-only
+  and re-downloadable, so it is deliberately outside the backup set.
+- **Restore is `zfs receive` + `nixos-rebuild`**: the data back in place, the image revision from the
+  repo. No file-level copy, no ordering.
+- **Per-service accounting and quota** come free: `zfs list -o used` answers "what does this service
+  cost", and `refquota` stops one service from filling the pool.
+- **`zfs diff` answers "what changed since the last snapshot"**, which is the question a migration
+  actually asks.
+- **The container root stays disposable.** The writable layer holds nothing; a container that
+  writes outside its volume is a bug the contract already forbids, and the dataset makes it visible.
+
+Caveats that must be written per service:
+
+- a snapshot is **crash-consistent**, not application-consistent. SQLite and most file-based
+  services are fine; a database needs a dump or an `fsfreeze` in the snapshot hook, and that fact
+  belongs in the service's contract entry.
+- **Only ZFS hosts get this.** `etra` has no ZFS pool today, so its services use a plain directory
+  under the same path and `restic` until a pool exists; the contract (one state root) is unchanged,
+  which is why the switch is a mount, not a migration.
+- **The dataset mount is the volume.** The container definition does not learn about ZFS; it is
+  handed `/var/lib/kdn/<name>` and that is all.
+
 ### Risks
 
 - **Containers do not isolate RAM.** Measured 2026-11-21: a 16.4 GB mmap in a second process
