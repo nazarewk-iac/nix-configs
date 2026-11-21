@@ -337,10 +337,15 @@
       # targets and the devshell receive must carry the same set, or one package (nickel today) is
       # built twice with different inputs and the profile holds both derivations.
       flake.overlays.static = inputs.nixpkgs.lib.composeManyExtensions (
-        import ./modules/den-pkgs/overlays.nix {
+        # `pkgs.nix-snapshotter.buildImage` only works when the snapshotter's own overlay is applied
+        # to the pkgs a module sees: the nixpkgs passthru is a partial callPackage that aborts on
+        # `globset`. The flake exposes that overlay as a single function, while the den-pkgs module
+        # returns a list, so the function is wrapped before the concat.
+        [ inputs.nix-snapshotter.overlays.default ]
+        ++ (import ./modules/den-pkgs/overlays.nix {
           lib = inputs.nixpkgs.lib;
           inherit inputs;
-        }
+        })
       );
 
       flake.overlays.default = inputs.nixpkgs.lib.composeManyExtensions [
