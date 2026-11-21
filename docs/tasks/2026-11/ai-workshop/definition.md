@@ -1,12 +1,17 @@
 ---
 type: Task
 description: Umbrella task for the AI workshop — the engine/client split, the shared bench, the model catalogue, and the end-to-end PoCs that prove each capability before it is needed.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-21T08:00:00+01:00
 ---
 
 # AI workshop
+
+> ✅ **Done** — see the solution in [done.md](done.md). The bench is built, measured and proven
+> once; six of the eight PoCs stay blocked on inputs from outside the repository, and
+> [pocs.md](pocs.md) is the authority on each.
 
 ## Purpose
 
