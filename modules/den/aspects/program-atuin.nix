@@ -221,7 +221,14 @@ in
             environment.HOME = config.users.users.root.home;
             environment.ATUIN_LOG = "info";
             serviceConfig.ExecStart = "${lib.getExe pkgs.atuin} daemon start";
-            serviceConfig.ExecStartPre = "-${lib.getExe' pkgs.coreutils "rm"} ${config.users.users.root.home}/.local/share/atuin/atuin.sock";
+            serviceConfig.ExecStartPre = [
+              # `atuin account login` in `kdn-atuin-login-root` starts its own daemon to re-encrypt
+              # the store. That daemon keeps the pidfile, so this unit then failed with "daemon
+              # already running" and made every switch exit 4. Stop any daemon first; the `-`
+              # ignores the "no daemon is running" case.
+              "-${lib.getExe pkgs.atuin} daemon stop"
+              "-${lib.getExe' pkgs.coreutils "rm"} ${config.users.users.root.home}/.local/share/atuin/atuin.sock"
+            ];
           };
         })
 
@@ -262,6 +269,37 @@ in
                   }:$PATH"
                   set -eEuo pipefail
 
+                  # Root has no atuin config: its Home Manager file is gone, so no `[daemon]`
+                  # section exists and atuin cannot reach the root daemon. `store purge` and
+                  # `store pull` then finish their work but fail to rebuild the threads index
+                  # ("the records changed, but the threads index was not rebuilt"). That exit
+                  # failed this unit on every boot, which made every switch exit 4 fleet-wide.
+                  # Tolerate exactly that error until the deadline, then fail again, so the
+                  # missing root config cannot be forgotten.
+                  ATUIN_THREADS_GRACE_UNTIL="2026-11-28"
+
+                  atuin_threads_tolerated() {
+                    test "$(date -u +%Y%m%d)" -le "''${ATUIN_THREADS_GRACE_UNTIL//-/}"
+                  }
+
+                  run_atuin() {
+                    local output status=0
+                    output="$("$@" 2>&1)" || status=$?
+                    printf '%s\n' "$output"
+                    if test "$status" -ne 0 ; then
+                      case "$output" in
+                        *"threads index was not rebuilt"*|*"Threads need the daemon"*)
+                          if atuin_threads_tolerated ; then
+                            printf 'WARNING: ignoring the atuin threads-index error until %s: root has no atuin config, so it has no [daemon] section\n' "$ATUIN_THREADS_GRACE_UNTIL" >&2
+                            return 0
+                          fi
+                          printf 'ERROR: the atuin threads-index grace period ended on %s; give root an atuin config with a [daemon] section\n' "$ATUIN_THREADS_GRACE_UNTIL" >&2
+                          ;;
+                      esac
+                      return "$status"
+                    fi
+                  }
+
                   # A system unit that runs `User=<name>` has no `XDG_RUNTIME_DIR`, so atuin looked
                   # for the daemon socket outside `/run/user/<uid>` and failed with "a daemon still
                   # holds its pidfile ... after 4000ms". `%U` cannot help: in a system unit it
@@ -279,7 +317,7 @@ in
                   # `store purge` + login on every boot.
                   if [ "$(atuin key)" != "$(cat "$CREDS_DIR/key")" ] ; then
                     atuin logout || :
-                    atuin store purge
+                    run_atuin atuin store purge
                   elif atuin status | grep -v 'You are not logged in' || test -s "${
                     config.users.users.${username}.home
                   }/.local/share/atuin/session" ; then
@@ -287,13 +325,13 @@ in
                   fi
 
                   echo 'Logging in...'
-                  atuin account login \
+                  run_atuin atuin account login \
                       -u "$(cat "$CREDS_DIR/username")" \
                       -p "$(cat "$CREDS_DIR/password")" \
                       -k "$(cat "$CREDS_DIR/key")"
 
                   echo 'Syncing...'
-                  atuin store pull --page=5000 || :
+                  run_atuin atuin store pull --page=5000 || :
 
                   echo 'Finished.'
                 '';
