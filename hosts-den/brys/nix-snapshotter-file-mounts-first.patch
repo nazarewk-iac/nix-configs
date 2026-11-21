@@ -1,0 +1,39 @@
+--- a/pkg/nix/snapshotter.go
++++ b/pkg/nix/snapshotter.go
+@@ -396,5 +396,36 @@
+ 
+ 		currentKey = info.Parent
+ 	}
++
++	// The order of the nix bind mounts matters to two callers, and the closure order breaks both:
++	//
++	//   * containerd's `fsview` opens the source of the LAST mount with `os.OpenRoot`, which
++	//     accepts a directory only, and returns its ENOTDIR unchanged. A store path can be a plain
++	//     FILE (an image config json is one), so a file that sorts last in the closure makes
++	//     `nerdctl create` fail with "open <path>: not a directory".
++	//   * `nerdctl` mounts the entries into one temporary directory in order, and every bind mount
++	//     lands on a path that the snapshot root (mounts[0]) provides.
++	//
++	// So the root stays first and the rest is ranked: file store paths first, directory store
++	// paths last. The binds are otherwise order-independent.
++	if len(mounts) > 1 {
++		rest := mounts[1:]
++		sort.SliceStable(rest, func(i, j int) bool {
++			return mountRank(rest[i]) < mountRank(rest[j])
++		})
++	}
++
+ 	return mounts, nil
+ }
++
++// mountRank orders the bind mounts of one snapshot: a plain-file source first, a directory source
++// last. A non-bind mount is the snapshot root and keeps its place.
++func mountRank(m mount.Mount) int {
++	if m.Type != "bind" && m.Type != "rbind" {
++		return 0
++	}
++	if info, err := os.Stat(m.Source); err == nil && !info.IsDir() {
++		return 1
++	}
++	return 2
++}

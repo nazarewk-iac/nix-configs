@@ -652,6 +652,10 @@ in
         # libsensors labels. node_exporter picks them up through its `hwmon` collector.
         ./sensors.nix
 
+        # The container runner (containerd + nix-snapshotter) and the one proof container. The
+        # den aspect behind it has no registry entry, so the host imports it by path from there.
+        ./containers.nix
+
         # The LLM slot data, the host-side secrets/persistence, and the GPU runtime config. These are
         # plain modules, so they merge into this target exactly as they merged into the old host.
         llmHost.slot
