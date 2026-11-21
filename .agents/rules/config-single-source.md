@@ -32,9 +32,9 @@ park pool, its n-gram backing store, and the measured facts the placement policy
      entry writes a rope value of its own.
 3. **There is no guard check, because there is no second copy.** A validation test exists to catch
    two copies drifting apart. Here the numbers have one home and every consumer is an expression
-   over it, so `checks/inference-helpers/profiles.nix` was deleted on 2026-11-21: it asserted that
-   a file agreed with itself. If a consumer ever needs a value that is a _function_ of a knob, write
-   the function — not a copy.
+   over it, so the old profiles guard was deleted on 2026-11-21: it asserted that a file agreed
+   with itself. If a consumer ever needs a value that is a _function_ of a knob, write the
+   function — not a copy.
 
 Behaviour that must stay identical is proven by the artifacts, not by a check: `config.json` and
 `policy.json` diff clean against the previous deployment, `strata-serve <profile> --print` prints
