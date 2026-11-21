@@ -56,9 +56,9 @@ runs/<UTC timestamp>.log           stderr log of the run
   "directory": "/home/kdn/dev/github.com/nazarewk-iac/nix-configs",
   "started": "2026-11-21T20:00:00Z",
   "messages": [
-    {"role": "user", "text": "..."},
-    {"role": "assistant", "text": "..."},
-    {"role": "tool", "name": "bash", "text": "..."}
+    { "role": "user", "text": "..." },
+    { "role": "assistant", "text": "..." },
+    { "role": "tool", "name": "bash", "text": "..." }
   ],
   "hash": "sha256:..."
 }
@@ -164,16 +164,16 @@ This is the "local models only" guarantee. A test covers `api.openai.com` and a 
 
 ## Defaults
 
-| knob | default |
-| --- | --- |
-| endpoint | `https://llama-swap.brys.priv.nb.net.int.kdn.im/v1` |
-| api key file | `/run/configs/llms/llama-server/api-keys/default` |
-| extract model | `qfn` (the frontier engine, always loaded) |
-| merge model | `qfn` |
-| request timeout | 300 s per call |
-| retries | 1 repair attempt, then fail the session |
-| sessions db | `~/.local/share/opencode/opencode.db` |
-| project filter | the current directory |
+| knob            | default                                             |
+| --------------- | --------------------------------------------------- |
+| endpoint        | `https://llama-swap.brys.priv.nb.net.int.kdn.im/v1` |
+| api key file    | `/run/configs/llms/llama-server/api-keys/default`   |
+| extract model   | `qfn` (the frontier engine, always loaded)          |
+| merge model     | `qfn`                                               |
+| request timeout | 300 s per call                                      |
+| retries         | 1 repair attempt, then fail the session             |
+| sessions db     | `~/.local/share/opencode/opencode.db`               |
+| project filter  | the current directory                               |
 
 The defaults name base model ids, not purpose aliases: several aliases in `data/llm.nix` still
 point at models that were pruned from the catalogue, and a missing alias answers
@@ -203,11 +203,11 @@ POST http://brys:8181/decide  {"model":"qfn"}
 and prints the verdict and the refusing check. A `429 a switch just happened; retry shortly` is the
 30 s cooldown, not a capacity problem.
 
-| configuration | extract model | when |
-| --- | --- | --- |
-| resting profile, recommended | `qfn` | any time; the engine is already loaded |
-| colo profile | `gemma-4-e4b`, `lfm2.5-24b-a2b` | a long night run that must leave the frontier free |
-| no GPU | `gemma-4-e4b` on `omni-fast` | the user is not using the frontier |
+| configuration                | extract model                   | when                                               |
+| ---------------------------- | ------------------------------- | -------------------------------------------------- |
+| resting profile, recommended | `qfn`                           | any time; the engine is already loaded             |
+| colo profile                 | `gemma-4-e4b`, `lfm2.5-24b-a2b` | a long night run that must leave the frontier free |
+| no GPU                       | `gemma-4-e4b` on `omni-fast`    | the user is not using the frontier                 |
 
 The tool does not switch profiles by itself: a switch stops the engine and would cut somebody
 else's session.
@@ -227,3 +227,54 @@ else's session.
 - `dream` clustering with fixed items: two near-duplicates merge, one unrelated item does not.
 - `guardEndpoint` table test.
 - `state` resume: an unchanged hash skips, a changed hash re-extracts.
+
+## Implementation notes
+
+The build follows this design. The items below record the choices that the design left open, and
+the two places where the real fleet forced a change. The binary and the tests are the source of
+truth.
+
+1. **The prompt names the five kinds.** The fixed text did not list the vocabulary, so the model
+   labelled every item `fact` and a runbook cluster could never form. One line now reads
+   `"kind" is one of: decision, runbook, pitfall, preference, fact.` The rest of the wording is
+   unchanged. Measured effect on the same eight sessions: 5 decision, 12 pitfall, 7 runbook,
+   5 preference, 11 fact.
+2. **A title is a phrase.** The title is the first sentence, capped at 72 characters at the last
+   word boundary. Trailing `,;:` and an unmatched backtick are removed, and a trailing hyphenated
+   compound modifier is dropped (`… maintain a session-level` becomes `… must maintain`). A title
+   that the cap shortened ends with `…`, so a cut stays visible. The id comes from the first eight
+   significant words of that sentence, not from the title.
+3. **A skill is the repeated step.** Skill steps are the commands that at least two sessions of
+   the cluster ran, in first-seen order, capped at 12. The rule is lexical, not semantic: a later
+   pass can distil the steps with the model.
+4. **The candidate file is an envelope.** `candidates/<session>.json` is
+   `{"session","model","extracted_at","truncated","items"}`. The item shape is unchanged.
+5. **A tool message can carry its command.** A corpus message gains `command` for a tool part that
+   holds a shell command. Skill distillation reads it; the hash covers it.
+6. **A running session is not extracted.** OpenCode marks a finished session with `time_idle`.
+   `harvest` skips a session that has none, because its transcript still grows. `--include-live`
+   opts in.
+7. **Two sources.** `harvest --source all|opencode|pi` reads both stores; `--pi-root` defaults to
+   `~/.pi/agent/sessions`. A Pi session with no user or assistant text is skipped silently, and a
+   malformed line is counted and skipped. The project comes from the header `cwd`. `status`
+   prints the session count per source.
+8. **The manager check is opt-in.** `--manager` is empty by default: from a laptop the check only
+   spends the timeout. On `brys`, pass `--manager http://127.0.0.1:8181`. A `429` is the
+   post-switch cooldown, not a refusal. `extract` and `status` print `decide: skipped` when the
+   flag is absent.
+9. **`apply` uses the bundle writer.** When `okf-memory` is on `PATH`, `apply` calls
+   `okf-memory create|update` with `--status draft` and `--actor agent/kdn-knowledge`, so `log.md`
+   and the parent `index.md` stay correct, then gates the bundle with
+   `okflint validate --manifest <bundle>/okf-base.yaml <bundle>`. A validation error removes the
+   concepts just created and restores the bookkeeping files. Direct file writing is only the
+   fallback, and it warns that the log and index were not updated. Skill drafts are not concepts,
+   so `apply` leaves them in the proposal.
+10. **The estimate is measured, not guessed.** `extract` prints the running average and the
+    estimate for the sessions that remain. `status` prints the same estimate from the finished
+    sessions in `state.json` (the `seconds` field).
+11. **Chunking is off unless asked for.** `--chunk-chars N` splits on message boundaries with one
+    message of overlap. A transcript above 1.5 million characters fails fast with a message that
+    names the flag, instead of a server-side context error.
+12. **The endpoint contract.** Every request sends `Authorization: Bearer <key>` from
+    `--key-file` (default `/run/configs/llms/llama-server/api-keys/default`) and
+    `chat_template_kwargs: {"enable_thinking": false}`, `temperature: 0`, `max_tokens: 2048`.
