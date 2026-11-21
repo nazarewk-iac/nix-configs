@@ -92,8 +92,6 @@ let
   #   strata-select   the llama-swap entry: select the profile, then serve the proxy in-process
   #   strata-proxy    a bare proxy, kept for a hand run and for the fallback unit
   #
-  # The Python implementations stay in the tree for one release as the rollback path; deleting them
-  # is the last step of docs/tasks/2026-11/kdn-inference-helpers.
   # The image and video editors are profiles of the same manager: their argv, their readiness path
   # and the `sd-server` binary come from one file, and the card stays one card.
   imageModels = import ./image-models.nix { inherit pkgs lib; };
