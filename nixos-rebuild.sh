@@ -120,6 +120,44 @@ post_args+=(
   --flake ".#${name}"
 )
 
+# One deploy at a time, per target.
+#
+# `nixos-rebuild` activates through one fixed transient unit on the target,
+# `nixos-rebuild-switch-to-configuration`. A second activation that overlaps the first is refused
+# with "Unit ... was already loaded or has a fragment file", which `nixos-rebuild` reports as
+# "did you forget to use --ask-elevate-password?" -- a message about a collision, not about a
+# password. Two ways to collide: a second deploy starts before the first one finished, or the
+# client dies (closed terminal, killed tool call) while the target keeps activating. The lock
+# covers the first, the wait covers the second.
+remote_activation_state() {
+  ssh "${remote_host}" systemctl is-active nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
+}
+
+if test "${DRY_RUN:-0}" != 1; then
+  lock_file="${XDG_RUNTIME_DIR:-/tmp}/nixos-rebuild-${name}.lock"
+  exec 9>"${lock_file}"
+  if ! flock -n 9; then
+    warn "another nixos-rebuild for %s is running (holds %s), wait for it to finish" "${name}" "${lock_file}"
+    exit 1
+  fi
+  case "$cmd" in
+  switch | boot | test)
+    if test -n "${remote_host}"; then
+      waited=0
+      while [[ "$(remote_activation_state)" =~ ^(active|activating|reloading|deactivating)$ ]]; do
+        test "${waited}" != 0 || warn "an activation is still running on %s, waiting up to %ss" "${remote_host}" 600
+        if test "${waited}" -ge 600; then
+          warn "the activation on %s did not finish within %ss" "${remote_host}" 600
+          exit 1
+        fi
+        sleep 10
+        waited="$((waited + 10))"
+      done
+    fi
+    ;;
+  esac
+fi
+
 case "$cmd" in
 switch | boot | test)
   if test "${remote}" == ""; then
