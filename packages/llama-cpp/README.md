@@ -155,8 +155,8 @@ git ls-remote https://github.com/danielhanchen/llama.cpp refs/heads/qwen4exp/mtp
 ### The session build (`ggml-org/llama.cpp` + the #29738 patch)
 
 `llama-cpp-sessions` is upstream tag `b12608` plus the still-open PR #29738
-("session-keyed automatic slot save/restore"), carried as the local patch
-[29738-slot-save-sessions.patch](29738-slot-save-sessions.patch). The same
+("session-keyed automatic slot save/restore"), carried as the fork commit
+the fork commit `727cb0f63`. The same
 build serves Qwen3.8-Flash-Next and Inkling 2 Mini. Upstream #26004 (context
 checkpoint persistence) is already in the release, so #29738 is the only patch.
 
@@ -201,7 +201,7 @@ git checkout -B main <new-tag-commit> && git cherry-pick pr29738
 #    helper (fs_path_to_utf8 -> std::filesystem::path::string()).
 # 3. Regenerate the patch, then read the new rev and hash.
 git format-patch -1 --no-signature --stdout main | awk 'f || /^diff --git / { f=1; print }' \
-  > packages/llama-cpp/29738-slot-save-sessions.patch
+  > the fork `nazarewk-iac/llama.cpp` at `727cb0f63`
 nix flake prefetch --json 'github:ggml-org/llama.cpp/<rev>'
 ```
 
@@ -253,7 +253,7 @@ Open [default.nix](default.nix). For `llama-cpp-v0_6_0`, edit these fields:
 - `src.hash`
 
 For `llama-cpp-sessions`, edit the same fields, and regenerate
-[29738-slot-save-sessions.patch](29738-slot-save-sessions.patch) as the section
+the fork commit `727cb0f63` as the section
 above describes.
 
 For `llama-cpp-unsloth-mtp`, edit the same fields. Edit `pname` too, because the
