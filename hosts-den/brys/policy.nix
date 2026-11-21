@@ -178,10 +178,11 @@ in
       source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
     };
     # The four frontier profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit,
-    # "384k swarm"). `vramMiB` is the measured whole-card footprint minus the slot sessions, and
-    # `kvReserveMiB` is those sessions: the engine prices one at 1106 MiB per 384k slot, 881 MiB
-    # per 256k slot and 2232 MiB per 1M slot (its own `--batch N: N slot sessions on CUDA0` line).
-    # The sum is the measured total, so `fits-beside` sees the card as full — which it is.
+    # "The swarm profiles"). `vramMiB` is the measured whole-card footprint minus
+    # the slot sessions, and `kvReserveMiB` is those sessions: the engine prices one at 1300 MiB
+    # per 512k slot, 1106 MiB per 384k slot, 881 MiB per 256k slot and 2232 MiB per 1M slot (its
+    # own `--batch N: N slot sessions on CUDA0` line). The sum is the measured total, so
+    # `fits-beside` sees the card as full — which it is.
     #
     # `ramMiB` is the non-reclaimable resident set: the experts' arena the engine names at load
     # (55.4 GiB on UD-IQ4_XS, 33.0 GiB on IQ2_XS) plus the park pool plus about 1.5 GiB of buffers.
@@ -193,13 +194,14 @@ in
       tier = "frontier";
       profile = "max-multi";
       persistent = true;
-      vramMiB = 22694;
-      kvReserveMiB = 8848;
+      # 31546 MiB measured on the card, of which 6 slot sessions x 1300 MiB = 7800 MiB.
+      vramMiB = 23746;
+      kvReserveMiB = 7800;
       ramMiB = 60300;
-      loadSeconds = 60;
-      switchSeconds = 74;
+      loadSeconds = 62;
+      switchSeconds = 76;
       measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 8 slots x 384k, MemAvailable 8.1 GiB, 31.9 t/s saturated";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 6 slots x 512k, MemAvailable 6.6 GiB (2.9 GiB with two builds running), 30.7 t/s saturated";
     };
     "qfn-max-swarm" = {
       kind = "engine";
@@ -212,7 +214,7 @@ in
       loadSeconds = 54;
       switchSeconds = 68;
       measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 8 slots x 256k, MemAvailable 18.4 GiB, 36.2 t/s saturated";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 8 slots x 256k, MemAvailable 18.4 GiB, 36.2 t/s saturated";
     };
     "qfn-max-long" = {
       kind = "engine";
@@ -225,7 +227,7 @@ in
       loadSeconds = 58;
       switchSeconds = 72;
       measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
     };
     "qfn-fast-swarm" = {
       kind = "engine";
@@ -238,7 +240,7 @@ in
       loadSeconds = 44;
       switchSeconds = 58;
       measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: IQ2_XS 8 slots x 384k, MemAvailable 31.4 GiB, 61.0 t/s saturated";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: IQ2_XS 8 slots x 384k, MemAvailable 31.4 GiB, 61.0 t/s saturated";
     };
     "qfn-fast-colo" = {
       kind = "engine";

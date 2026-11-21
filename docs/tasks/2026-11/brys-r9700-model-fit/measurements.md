@@ -1215,6 +1215,28 @@ reservation is not a pool that eight requests share, it is eight pools. The `max
 (`UD-IQ4_XS`) reports the same `9.56 GiB of pinned RAM` for its one slot, so the carve is a
 property of the window and the KV format, not of the quant.
 
+### 512k at six slots: the resting profile moves again
+
+The owner moved `qfn-max-multi` from 384k × 8 to 512k on the same pack, to buy a longer window per
+slot for the same 28.7 GiB of pinned K/V. Three loads, `--ple-io mmap`, a 2 GiB park pool, one card:
+
+| slots | load s | `MemAvailable` after | min during requests | unit | 5-caller t/s | saturated t/s |
+| ----: | -----: | -------------------: | ------------------: | ---: | -----------: | ------------: |
+|     5 |   58.2 |             12.0 GiB |             10.3 GiB | 92.6 GiB |        30.78 |         31.92 |
+|     6 |   62.3 |          **6.6 GiB** |          **5.2 GiB** | 97.1 GiB |        28.70 |     **30.69** |
+|     6 |   62.3 |              2.9 GiB |              2.4 GiB | 96.9 GiB |        25.96 |         32.52 |
+|     7 |  130.5 |              2.0 GiB |              0.75 GiB | 97.4 GiB |        25.60 |         30.11 |
+
+The two six-slot rows are the same configuration on different host states: the second ran while two
+`rustc` builds held about 4 GiB, the first on a quiet host with 108.3 GiB available before the load.
+That difference is the whole margin, which is why the floor matters.
+
+Six is the choice: it is the largest count above the owner's ~6 GiB threshold (6.6 GiB), and seven
+is not close (2.0 GiB, a 0.75 GiB minimum, and a load that doubles to 130 s as the page cache
+thrashes against the pinned K/V). Five would leave 12.0 GiB and decodes no faster — 31.92 against
+30.69 t/s saturated — because the expert cache shrinks as the slot sessions grow, so the aggregate is
+flat from five to seven callers at this window. The slot count buys concurrency, not throughput.
+
 ### What this decides
 
 A single engine cannot be the orchestrator and the swarm at 1M. Eight slots at 1M need 76.5 GiB of
@@ -1255,12 +1277,12 @@ Two smaller findings from the same runs:
   resets are a hardware/power question to settle before anyone serves an orchestrator that reads a
   million-token prompt in one turn.
 
-> **Superseded later the same day by "384k swarm" below.** Two claims here are wrong in the light of
+> **Superseded later the same day by "The swarm profiles" below.** Two claims here are wrong in the light of
 > that run: 8 slots × 256k is not the best swarm (384k × 8 fits and gives a longer window per slot),
 > and 2 slots × 1M does fit — the earlier OOM was the n-gram table locked in RAM, not the K/V. The
 > per-slot K/V arithmetic in this section stands.
 
-## 384k swarm: the resting profile (2026-11-21)
+## The swarm profiles: 384k, 512k and 1M (2026-11-21)
 
 The owner's decision of 2026-11-21 moves the resting profile from one 1M session to a **swarm**,
 because an agent fleet asks for several short sessions far more often than for one million-token
@@ -1268,7 +1290,7 @@ one. Four profiles were measured for it, one load per configuration:
 
 | profile          | pack      | window | slots | role                        |
 | ---------------- | --------- | -----: | ----: | --------------------------- |
-| `qfn-max-multi`  | UD-IQ4_XS |  384k |     8 | **default resting**         |
+| `qfn-max-multi`  | UD-IQ4_XS |  512k |     6 | **default resting**         |
 | `qfn-max-swarm`  | UD-IQ4_XS |  256k |     8 | maximised slots on the pack |
 | `qfn-max-long`   | UD-IQ4_XS |    1M |     2 | explicit long sessions      |
 | `qfn-fast-swarm` | IQ2_XS    |  384k |     8 | concurrency over quality    |
@@ -1384,7 +1406,7 @@ The original selection metric, on the saturated batch:
 | `fast-swarm` (IQ2_XS 384k × 8)   | 28.7 GiB |         61.04 |   **2.13** |
 | `max-swarm` (UD-IQ4_XS 256k × 8) | 19.1 GiB |         36.19 |        1.89 |
 | `max-long` (UD-IQ4_XS 1M × 2)    | 19.1 GiB |         29.74 |        1.56 |
-| `max-multi` (UD-IQ4_XS 384k × 8) | 28.7 GiB |         31.91 |        1.11 |
+| `max-multi` (UD-IQ4_XS 512k × 6) | 28.7 GiB |         30.69 |        1.07 |
 
 `fast-swarm` wins the metric by 1.9x over `max-multi`: IQ2_XS is 22 GiB lighter in experts, so the
 same card holds a bigger share of them and the same eight requests decode twice as fast. The resting
@@ -1395,7 +1417,7 @@ that wants throughput asks for `qfn-fast-swarm` and pays a ~58 s switch.
 ### What this decides
 
 - **The resting profile is a swarm, not a single session.** `qfn` (`auto`) resolves to
-  `qfn-max-multi`: eight 384k slots on UD-IQ4_XS, 8.1 GiB of `MemAvailable`, 31.9 t/s aggregate.
+  `qfn-max-multi`: six 512k slots on UD-IQ4_XS, 6.6 GiB of `MemAvailable`, 30.7 t/s aggregate.
   1M moved to `qfn-max-long` and is now an explicit request. `qfn-max` keeps its old 1M meaning and
   resolves to `qfn-max-long`.
 - **Eight is the ceiling, and it is the engine's.** `SLOTS_MAX` is 8 without a layer split, and

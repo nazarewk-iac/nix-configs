@@ -49,7 +49,8 @@ type Profile struct {
 	BatchMTP bool
 }
 
-// defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit, "384k swarm").
+// defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit, "The swarm
+// profiles").
 // A deployment can retune a row through `config.Profiles` without a rebuild.
 //
 // `KVResident` is 32768 cells of each QSA layer for every frontier profile: it is a per-layer
@@ -66,7 +67,7 @@ type Profile struct {
 // plus a saturated batch of one request per slot:
 //
 //	profile      pack         ctx  slots  K/V total  MemAvailable  VRAM    aggregate t/s
-//	max-multi    UD-IQ4_XS    384k     8     28.7 GiB       8.1 GiB  30.8 GiB   31.9 saturated
+//	max-multi    UD-IQ4_XS    512k     6     28.7 GiB       6.6 GiB  30.8 GiB   30.7 saturated
 //	max-swarm    UD-IQ4_XS    256k     8     19.1 GiB      18.4 GiB  30.8 GiB   36.2 saturated
 //	max-long     UD-IQ4_XS     1M      2     19.1 GiB      10.5 GiB  30.8 GiB   29.7 saturated
 //	fast-swarm   IQ2_XS        384k     8     28.7 GiB      31.4 GiB  30.8 GiB   61.0 saturated
@@ -75,14 +76,20 @@ type Profile struct {
 // two slots is where the long profile stops — three would fit arithmetically but the host has
 // hard-reset twice under a long prefill, so the window keeps one slot of headroom for it.
 //
+// `max-multi` moved from 384k x 8 to 512k x 6 by the owner's decision of 2026-11-21: the same
+// 28.7 GiB of pinned K/V buys a longer window per slot, at 6.6 GiB of MemAvailable instead of 8.1
+// (and 2.9 GiB while two `rustc` builds run). Seven slots measured 2.0 GiB and a 130 s load, so the
+// count stops at six; five would leave 12.0 GiB and decodes no faster (31.9 against 30.7 t/s
+// saturated), because the expert cache shrinks as the slot sessions grow.
+//
 // `fast-swarm` carries the concurrency (IQ2_XS is 22 GiB of experts lighter, so 1.9x the aggregate
 // of the same shape on the better pack); `max-multi` rests because it is the better pack at the
 // same slot count, and the fleet can switch to `fast-swarm` when throughput matters more than the
 // 88.9% top-token agreement.
 var defaults = []Profile{
 	{
-		Name: "max-multi", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
-		MaxContext: 393216, RopeScale: 1.5, ConversationCacheMiB: 2048, PLEIO: "mmap",
+		Name: "max-multi", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 6,
+		MaxContext: 524288, RopeScale: 2, ConversationCacheMiB: 2048, PLEIO: "mmap",
 	},
 	{
 		Name: "max-swarm", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,

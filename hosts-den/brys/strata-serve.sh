@@ -7,7 +7,7 @@
 # in) and execs `strata serve` on the port llama-swap hands over.
 #
 # Profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
-#   max-multi   UD-IQ4_XS, whole card, 384k x 8    31.9 t/s aggregate, 8.3 GiB free
+#   max-multi   UD-IQ4_XS, whole card, 512k x 6    30.7 t/s aggregate, 6.6 GiB free
 #   max-swarm   UD-IQ4_XS, whole card, 256k x 8    36.2 t/s aggregate, 18.8 GiB free
 #   max-long    UD-IQ4_XS, whole card,   1M x 2    29.7 t/s aggregate, 10.8 GiB free
 #   fast-swarm  IQ2_XS,    whole card, 384k x 8    61.0 t/s aggregate, 32.1 GiB free
@@ -44,7 +44,7 @@ case "$profile" in
   # for a 256k slot, 3.59 GiB for a 384k slot and 9.56 GiB for a 1M slot. The host has 125 GiB and
   # no swap, so the wall is RAM. Measured 2026-11-21, one load per row:
   #
-  #   max-multi   8 x 384k   28.7 GiB K/V    8.3 GiB free   31.9 t/s   the resting profile
+  #   max-multi   6 x 512k   28.7 GiB K/V    6.6 GiB free   30.7 t/s   the resting profile
   #   max-swarm   8 x 256k   19.1 GiB K/V   18.8 GiB free   36.2 t/s   the same slots, more RAM
   #   max-long      2 x 1M   19.1 GiB K/V   10.8 GiB free   29.7 t/s   long sessions
   #   fast-swarm  8 x 384k   28.7 GiB K/V   32.1 GiB free   61.0 t/s   IQ2_XS, concurrency
@@ -60,7 +60,7 @@ case "$profile" in
   # three frontier profiles now agree on it: the omni profiles ran 4096 (512 cells per slot at 8
   # slots) and would have streamed almost every token of a slot's context from RAM. `strata serve`
   # lowers it further when the sessions do not leave room on the card.
-  max-multi)  base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=8; ctx=393216;  rope=1.5; cc=2048; ple=mmap ;;
+  max-multi)  base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=6; ctx=524288;  rope=2;   cc=2048; ple=mmap ;;
   max-swarm)  base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=8; ctx=262144;  rope=1;   cc=2048; ple=mmap ;;
   max-long)   base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=2; ctx=1048576; rope=4;   cc=1024; ple=mmap ;;
   fast-swarm) base=iq2_xs;            reserve=1024;  kvres=32768; parallel=8; ctx=393216;  rope=1.5; cc=2048; ple=mmap ;;

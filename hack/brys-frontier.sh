@@ -7,7 +7,7 @@
 # Measured on the R9700 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
 #
 #   profile      pack + reserve                aggregate t/s (8 short callers)   RAM left with it
-#   max-multi    UD-IQ4_XS, whole card, 384k    31.9 saturated                     8.1 GiB
+#   max-multi    UD-IQ4_XS, whole card, 512k    30.7 saturated (6 slots)           6.6 GiB
 #   max-swarm    UD-IQ4_XS, whole card, 256k    36.2 saturated                    18.4 GiB
 #   max-long     UD-IQ4_XS, whole card,   1M    29.7 saturated (2 slots)          10.5 GiB
 #   fast-swarm   IQ2_XS,    whole card, 384k    61.0 saturated                    31.4 GiB

@@ -87,8 +87,8 @@ func TestPatchConfigAppliesTheSwarmShape(t *testing.T) {
 	for flag, want := range map[string]string{
 		"--vram-reserve-mib":       "1024",
 		"--kv-resident":            "32768",
-		"--max-context":            "393216",
-		"--rope-scale":             "1.5",
+		"--max-context":            "524288",
+		"--rope-scale":             "2",
 		"--conversation-cache-mib": "2048",
 		"--ple-io":                 "mmap",
 	} {
@@ -108,7 +108,7 @@ func TestTheContextAndTheSlotCountTravelTogether(t *testing.T) {
 		rope    string
 		slots   int
 	}{
-		"max-multi":  {"393216", "1.5", 8},
+		"max-multi":  {"524288", "2", 6},
 		"max-swarm":  {"262144", "1", 8},
 		"max-long":   {"1048576", "4", 2},
 		"fast-swarm": {"393216", "1.5", 8},

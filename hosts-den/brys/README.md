@@ -61,11 +61,11 @@ asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`), **
 The card holds one engine at a time, and the VRAM reserve for the companion
 (`qwen3-omni-30b-a3b`, video and audio) is a start-up argument — so a profile change is a reload,
 not a slider. Measured 2026-11-21 (`docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`,
-"384k swarm"):
+"The swarm profiles"):
 
 | profile      | pack + reserve                | aggregate t/s (8 short callers) | omni              | RAM left     |
 | ------------ | ----------------------------- | ------------------------------: | ----------------- | ------------ |
-| `max-multi`  | UD-IQ4_XS, whole card, 384k×8 |                            31.9 | 6.1 t/s co-loaded | 8.1 GiB      |
+| `max-multi`  | UD-IQ4_XS, whole card, 512k×6 |                            30.7 | 6.1 t/s co-loaded | 6.6 GiB      |
 | `max-swarm`  | UD-IQ4_XS, whole card, 256k×8 |                            36.2 | 6.1 t/s co-loaded | 18.4 GiB     |
 | `max-long`   | UD-IQ4_XS, whole card, 1M×2   |                            29.7 | 6.1 t/s co-loaded | 10.5 GiB     |
 | `fast-swarm` | IQ2_XS, whole card, 384k×8    |                        **61.0** | 6.1 t/s co-loaded | **31.4 GiB** |
@@ -73,10 +73,10 @@ not a slider. Measured 2026-11-21 (`docs/tasks/2026-11/brys-r9700-model-fit/meas
 | `omni-fast`  | IQ2_XS + 21.5 GB reserve      |                   88 / 71.6 @1M | 98.8 t/s, ready   | 23-27 GiB    |
 
 **The resting profile is `max-multi`** (`defaultProfile` in `strata-profiles.nix`; decided
-2026-11-21, it was `omni-fast`): eight 384k slots on the best pack, 8.1 GiB of RAM left, 31.9 t/s
-across eight short callers. The colo profiles are the ones to borrow for a companion, and
-`fast-swarm` is the throughput alternative at the same slot count (IQ2_XS is 22 GiB lighter in
-experts, so the same card holds more of them):
+2026-11-21, it was `omni-fast`): six 512k slots on the best pack, 6.6 GiB of RAM left, 30.7 t/s
+across six short callers. The colo profiles are the ones to borrow for a companion, and
+`fast-swarm` is the throughput alternative (IQ2_XS is 22 GiB lighter in experts, so the same card
+holds more of them, and it decodes twice as fast):
 
 ```bash
 hack/brys-frontier.sh up --profile max-long --ttl 2h  # a long 1M session, then back
