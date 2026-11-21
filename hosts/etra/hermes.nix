@@ -84,6 +84,38 @@ let
       base_url: http://127.0.0.1:${toString relayPort}/v1
   '';
 
+  # Everything the container's `/bin` holds: the agent, the entrypoint, and the tools
+  # its shell tool and this script call. A nix-snapshotter image starts with an empty
+  # filesystem, so a command that is not linked here does not exist inside the
+  # container — the first failure was `install: command not found`.
+  #
+  # `buildEnv` merges every `bin/` into one `/bin`, and `env.PATH = "/bin"` makes that
+  # the whole PATH. Extend this list when a task needs another tool; keep it a list of
+  # packages, not a hand-written script.
+  runtimeTools = [
+    pkgs.bash
+    pkgs.coreutils
+    pkgs.findutils
+    pkgs.gawk
+    pkgs.gnugrep
+    pkgs.gnused
+    pkgs.gnutar
+    pkgs.gzip
+    pkgs.jq
+    pkgs.less
+    pkgs.procps
+    pkgs.which
+    pkgs.xz
+    # The agent's own tools: search, version control, remote workspaces, HTTP.
+    pkgs.git
+    pkgs.openssh
+    pkgs.ripgrep
+    pkgs.curl
+    # The same interpreter family the venv uses, so `python3 -c ...` in the agent's
+    # shell sees the same stdlib version.
+    pkgs.python3
+  ];
+
   # Runs inside the container as PID 1. Two jobs: seed a missing config, then decide
   # between the gateway and an idle container.
   #
@@ -93,6 +125,10 @@ let
   # runs `hermes gateway setup` and adds a token.
   entrypoint = pkgs.writeShellScriptBin "hermes-entrypoint" ''
     set -eu
+    # Belt and braces: `env.PATH` already points at the image's /bin, but a manual
+    # `nerdctl run` without it must still find `install` and `sleep`.
+    export PATH="/bin''${PATH:+:$PATH}"
+
     home="''${HERMES_HOME:-${containerHome}}"
     install -d -m 0700 "$home"
 
@@ -137,7 +173,8 @@ let
       paths = [
         entrypoint
         hermes
-      ];
+      ]
+      ++ runtimeTools;
     };
   };
 in
@@ -164,6 +201,8 @@ in
       # The gateway binds its control socket and writes logs under HERMES_HOME; the
       # rest of the container filesystem is throwaway.
       HOME = "/root";
+      # One merged `/bin` holds every tool (see `runtimeTools`); nothing else exists.
+      PATH = "/bin";
     };
     extraArgs = [
       # No CNI on this host (see the module header): share the host's network
