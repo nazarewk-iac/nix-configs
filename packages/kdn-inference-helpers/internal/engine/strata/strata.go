@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 
 	"kdn-inference-helpers/internal/config"
@@ -49,63 +50,16 @@ type Profile struct {
 	BatchMTP bool
 }
 
-// defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit, "The swarm
-// profiles").
-// A deployment can retune a row through `config.Profiles` without a rebuild.
+// There is deliberately no built-in table here. A profile's base config, window, slot count, VRAM
+// reserve, resident K/V, park pool, n-gram backing store and rope factor come from the deployment
+// file (`config.ProfileSpec`), which on brys is generated from `hosts-den/brys/strata-profiles.nix`
+// — the one place they are written. The drift this rule exists for was real: the slot count lived
+// here, in the Nix file and in `strata-serve.sh` at the same time, and this package served the two
+// omni profiles with 8 slots while the Nix file said 1 and 2.
 //
-// `KVResident` is 32768 cells of each QSA layer for every frontier profile: it is a per-layer
-// streaming window shared by the slots, not a per-slot allocation, so 32768 is what 8 slots x 4k
-// needs. The omni profiles used to run 4096, which at 8 slots is 512 cells per slot.
-//
-// The four `max-*`/`fast-swarm` rows are one decision, taken 2026-11-21: the resting profile is a
-// swarm, not the single 1M session it used to be. The reason is concurrency — an agent fleet asks
-// for several short sessions far more often than for one million-token one — and 1M is now an
-// explicit request (`max-long`) instead of the default. The older decision of the same day ("`max`
-// is the primary and resting profile") is overridden, not forgotten.
-//
-// Measured on the R9700, 125 GiB RAM, no swap, one load per row, five concurrent 64-token requests
-// plus a saturated batch of one request per slot:
-//
-//	profile      pack         ctx  slots  K/V total  MemAvailable  VRAM    aggregate t/s
-//	max-multi    UD-IQ4_XS    512k     6     28.7 GiB       6.6 GiB  30.8 GiB   30.7 saturated
-//	max-swarm    UD-IQ4_XS    256k     8     19.1 GiB      18.4 GiB  30.8 GiB   36.2 saturated
-//	max-long     UD-IQ4_XS     1M      2     19.1 GiB      10.5 GiB  30.8 GiB   29.7 saturated
-//	fast-swarm   IQ2_XS        384k     8     28.7 GiB      31.4 GiB  30.8 GiB   61.0 saturated
-//
-// Every row is the maximum slot count that fits: eight is the engine's cap (SLOTS_MAX), and 1M at
-// two slots is where the long profile stops — three would fit arithmetically but the host has
-// hard-reset twice under a long prefill, so the window keeps one slot of headroom for it.
-//
-// `max-multi` moved from 384k x 8 to 512k x 6 by the owner's decision of 2026-11-21: the same
-// 28.7 GiB of pinned K/V buys a longer window per slot, at 6.6 GiB of MemAvailable instead of 8.1
-// (and 2.9 GiB while two `rustc` builds run). Seven slots measured 2.0 GiB and a 130 s load, so the
-// count stops at six; five would leave 12.0 GiB and decodes no faster (31.9 against 30.7 t/s
-// saturated), because the expert cache shrinks as the slot sessions grow.
-//
-// `fast-swarm` carries the concurrency (IQ2_XS is 22 GiB of experts lighter, so 1.9x the aggregate
-// of the same shape on the better pack); `max-multi` rests because it is the better pack at the
-// same slot count, and the fleet can switch to `fast-swarm` when throughput matters more than the
-// 88.9% top-token agreement.
-var defaults = []Profile{
-	{
-		Name: "max-multi", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 6,
-		MaxContext: 524288, RopeScale: 2, ConversationCacheMiB: 2048, PLEIO: "mmap",
-	},
-	{
-		Name: "max-swarm", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
-		MaxContext: 262144, RopeScale: 1, ConversationCacheMiB: 2048, PLEIO: "mmap",
-	},
-	{
-		Name: "max-long", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 2,
-		MaxContext: 1048576, RopeScale: 4, ConversationCacheMiB: 1024, PLEIO: "mmap",
-	},
-	{
-		Name: "fast-swarm", Base: "iq2_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
-		MaxContext: 393216, RopeScale: 1.5, ConversationCacheMiB: 2048, PLEIO: "mmap",
-	},
-	{Name: "omni-fast", Base: "iq2_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
-	{Name: "omni-max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
-}
+// Explicit fallback for a bare binary: with no deployment file the adapter knows no profiles, so
+// `Profiles()` is empty and every `/select` is refused with `unknown profile`. That is intended —
+// a built-in copy of the numbers is the failure mode, not the safety net.
 
 // Adapter serves Strata profiles.
 type Adapter struct {
@@ -115,23 +69,42 @@ type Adapter struct {
 	order    []string
 }
 
-// New builds the adapter, applying the deployment's profile overrides.
-func New(bin, dataDir string, overrides map[string]config.ProfileOverride) *Adapter {
-	a := &Adapter{Bin: bin, DataDir: dataDir, profiles: map[string]Profile{}}
-	for _, p := range defaults {
-		if o, ok := overrides[p.Name]; ok {
-			if o.ReserveMiB != nil {
-				p.ReserveMiB = *o.ReserveMiB
-			}
-			if o.KVResident != nil {
-				p.KVResident = *o.KVResident
-			}
-			if o.Parallel != nil {
-				p.Parallel = *o.Parallel
-			}
+// New builds the adapter from the deployment's profile table. Every number it serves comes from
+// `specs`; there is no table to fall back to, and the order is sorted so it is deterministic (map
+// iteration is not).
+func New(bin, dataDir string, specs map[string]config.ProfileSpec) *Adapter {
+	a := &Adapter{Bin: bin, DataDir: dataDir, profiles: make(map[string]Profile, len(specs))}
+	names := make([]string, 0, len(specs))
+	for name := range specs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		s := specs[name]
+		p := Profile{Name: name, Base: s.Base, BatchMTP: s.BatchMTP}
+		if s.ReserveMiB != nil {
+			p.ReserveMiB = *s.ReserveMiB
 		}
-		a.profiles[p.Name] = p
-		a.order = append(a.order, p.Name)
+		if s.KVResident != nil {
+			p.KVResident = *s.KVResident
+		}
+		if s.Parallel != nil {
+			p.Parallel = *s.Parallel
+		}
+		if s.MaxContext != nil {
+			p.MaxContext = *s.MaxContext
+		}
+		if s.RopeScale != nil {
+			p.RopeScale = *s.RopeScale
+		}
+		if s.ConversationCacheMiB != nil {
+			p.ConversationCacheMiB = *s.ConversationCacheMiB
+		}
+		if s.PLEIO != nil {
+			p.PLEIO = *s.PLEIO
+		}
+		a.profiles[name] = p
+		a.order = append(a.order, name)
 	}
 	return a
 }

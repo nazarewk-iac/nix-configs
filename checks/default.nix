@@ -73,9 +73,17 @@ let
 
   # The inference runtime end to end (manager + proxy + companion gate + llama-swap) on a 1 MB model,
   # no GPU. Linux only: it binds loopback ports and starts processes.
+  #
+  # `inference-helpers-profiles` is the single-source guard for the brys frontier profiles: it
+  # imports the deployment file, reads the generated config.json and runs `strata-serve.sh --print`,
+  # and fails when the window, the slot count, the reserve or the resident K/V disagree. Linux only
+  # because the deployment it reads describes a Linux host.
   inferenceHelpersTests =
     if pkgs.stdenv.hostPlatform.isLinux then
-      { inference-helpers-integration = pkgs.callPackage ./inference-helpers { }; }
+      {
+        inference-helpers-integration = pkgs.callPackage ./inference-helpers { };
+        inference-helpers-profiles = pkgs.callPackage ./inference-helpers/profiles.nix { };
+      }
     else
       { };
 

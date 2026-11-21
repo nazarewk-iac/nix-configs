@@ -3,7 +3,9 @@
 //
 // The rule this package exists for: a new deployment is a JSON file, not a code change. The
 // defaults below describe brys exactly, so the binary works with no file at all; a second host or a
-// second engine overrides only what differs.
+// second engine overrides only what differs. The one exception is a profile's shape: `Profiles` is
+// the whole table and has no built-in fallback (see ProfileSpec), because those numbers must have
+// exactly one home.
 package config
 
 import (
@@ -11,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kdn-inference-helpers/internal/engine/command"
 )
@@ -47,8 +50,11 @@ type Config struct {
 	DrainTimeoutSeconds int `json:"drainTimeoutSeconds"`
 	// LeaseTTLSeconds drops leases from a proxy that died without releasing (SIGKILL).
 	LeaseTTLSeconds int `json:"leaseTTLSeconds"`
-	// Profiles optionally overrides the adapter's profile table.
-	Profiles map[string]ProfileOverride `json:"profiles"`
+	// Profiles is the deployment's profile table. It is the whole definition of each operating
+	// point, not a delta over a built-in table: the runtime carries no per-profile numbers for a
+	// deployment, so a consumer cannot disagree with the file. A bare binary therefore knows no
+	// profiles; see ProfileSpec.
+	Profiles map[string]ProfileSpec `json:"profiles"`
 	// Commands is the `command` adapter's profile table: profile name → argv, plus the two facts the
 	// runtime would otherwise guess (the readiness path and the port flag). It exists so the whole
 	// runtime can be exercised against a tiny model with no GPU, and so a second engine needs no
@@ -76,16 +82,71 @@ type GateSpec struct {
 	ConfirmField string `json:"confirmField"`
 }
 
-// ProfileOverride lets a deployment retune a profile without a rebuild: a different reserve on a
-// card with more VRAM, or a smaller resident K/V.
-type ProfileOverride struct {
-	ReserveMiB *int `json:"reserveMiB,omitempty"`
-	KVResident *int `json:"kvResident,omitempty"`
+// ProfileSpec is one operating point, declared by the deployment. It is the whole definition, not
+// an override: the runtime keeps no profile table of its own, so a missing knob is a config error
+// and not a quietly inherited default. The four numbers a profile cannot do without — the window,
+// the slot count, the VRAM reserve and the resident K/V — are pointers on purpose, so "absent" is
+// distinguishable from a real zero.
+type ProfileSpec struct {
+	// Base names the Terminal's per-model config the profile patches: `<dataDir>/strata/install/
+	// strata-<base>.json`.
+	Base string `json:"base"`
+	// MaxContext is the window every slot is carved at (`--max-context`).
+	MaxContext *int `json:"maxContext"`
 	// Parallel is the concurrent slot count `strata serve` is asked for (engine `--batch N`).
-	Parallel *int `json:"parallel,omitempty"`
+	Parallel *int `json:"parallel"`
+	// ReserveMiB is `--vram-reserve-mib`.
+	ReserveMiB *int `json:"reserveMiB"`
+	// KVResident is `--kv-resident`, the cells of each QSA layer kept in VRAM.
+	KVResident *int `json:"kvResident"`
+	// RopeScale is the yarn factor that reaches MaxContext. The deployment derives it from the
+	// window and the model's native window, so it is never a second knob.
+	RopeScale *float64 `json:"ropeScale"`
+	// ConversationCacheMiB is `--conversation-cache-mib`. Null keeps the base config's value.
+	ConversationCacheMiB *int `json:"conversationCacheMiB"`
+	// PLEIO is `--ple-io`. Null keeps the base config's value.
+	PLEIO *string `json:"pleIO"`
+	// BatchMTP asks the engine for one MTP proposal per slot per window.
+	BatchMTP bool `json:"batchMTP,omitempty"`
+}
+
+// validate names every knob a profile is missing. A deployment file is written by hand or by Nix
+// and a typo there is silent until the first request, so this is a load-time error.
+func (p ProfileSpec) validate(name string) error {
+	var missing []string
+	if p.Base == "" {
+		missing = append(missing, "base")
+	}
+	if p.MaxContext == nil {
+		missing = append(missing, "maxContext")
+	}
+	if p.Parallel == nil {
+		missing = append(missing, "parallel")
+	}
+	if p.ReserveMiB == nil {
+		missing = append(missing, "reserveMiB")
+	}
+	if p.KVResident == nil {
+		missing = append(missing, "kvResident")
+	}
+	if p.RopeScale == nil {
+		missing = append(missing, "ropeScale")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf(
+			"profile %q is missing %s: the deployment file is the only source of a profile's knobs",
+			name, strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 // Defaults is brys. Values are measured, not guessed; see docs/tasks/2026-11/brys-r9700-model-fit.
+//
+// There is deliberately no profile table here: a profile's window, slot count, reserve and resident
+// K/V live in `hosts-den/brys/strata-profiles.nix` only, and reach this package through the
+// deployment file. A binary run with no file at all therefore knows no profiles and refuses every
+// `/select` — the explicit fallback, because the alternative is a second copy of the numbers that
+// silently disagrees with the host.
 func Defaults() *Config {
 	return &Config{
 		Engine:      "strata",
@@ -100,16 +161,22 @@ func Defaults() *Config {
 			"qfn-max-multi":  "max-multi",
 			"qfn-max-swarm":  "max-swarm",
 			"qfn-max-long":   "max-long",
+			"qfn-max-single": "max-single",
 			"qfn-fast-swarm": "fast-swarm",
 			"qfn-max-colo":   "omni-max",
 			"qfn-fast-colo":  "omni-fast",
 		},
-		FrontierIDs: []string{"qfn", "qfn-max", "qfn-max-multi", "qfn-max-swarm", "qfn-max-long",
-			"qfn-fast-swarm", "qfn-max-colo", "qfn-fast-colo"},
-		TextProfiles:     []string{"max-multi", "max-swarm", "max-long", "fast-swarm", "omni-max", "omni-fast"},
+		FrontierIDs: []string{
+			"qfn", "qfn-max", "qfn-max-multi", "qfn-max-swarm", "qfn-max-long",
+			"qfn-max-single", "qfn-fast-swarm", "qfn-max-colo", "qfn-fast-colo",
+		},
+		TextProfiles: []string{
+			"max-multi", "max-swarm", "max-long", "max-single", "fast-swarm",
+			"omni-max", "omni-fast",
+		},
 		PolicyPath:       "/etc/kdn-inference-helpers/policy.json",
 		CacheDropCommand: []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
-		Profiles:         map[string]ProfileOverride{},
+		Profiles:         map[string]ProfileSpec{},
 		Gates:            map[string]GateSpec{},
 		// 1200 s, not 300: a Wan VACE edit measured 1039 s, and a drain shorter than the longest
 		// request is a data-loss path — the switch proceeds, the proxy leaves, the edit is cut.
@@ -221,6 +288,11 @@ func (c *Config) Validate() error {
 	for alias, profile := range c.Aliases {
 		if alias == "" || profile == "" {
 			return fmt.Errorf("alias %q -> %q is incomplete", alias, profile)
+		}
+	}
+	for name, spec := range c.Profiles {
+		if err := spec.validate(name); err != nil {
+			return err
 		}
 	}
 	if c.DrainTimeoutSeconds <= 0 {

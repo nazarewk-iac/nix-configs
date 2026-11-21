@@ -166,7 +166,7 @@ func role(name string, colo []string) string {
 			return "colo"
 		}
 	}
-	for _, word := range []string{"colo", "omni", "long", "swarm", "multi"} {
+	for _, word := range []string{"colo", "omni", "long", "single", "swarm", "multi"} {
 		if strings.Contains(name, word) {
 			if word == "colo" || word == "omni" {
 				return "colo"

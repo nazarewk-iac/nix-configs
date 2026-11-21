@@ -117,6 +117,7 @@ in
     "kdn-jj-meta-attribute"
     "kdn-slug-pytest"
     "zellij-llm-pytest"
+    "inference-helpers-profiles"
   ];
   # The OKF toolchain on the memory bundle: the browser, the memory validator, AI-XF, the Rust
   # toolkit, the profile linter, the graph and the content scanner. One command for a change to

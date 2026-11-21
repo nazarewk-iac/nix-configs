@@ -100,11 +100,11 @@ let
 
   # The llm-swap entry point: materialises a profile and serves it in the foreground. It needs `jq`
   # on PATH because the deployment file is the only source of a profile's knobs; a missing key stops
-  # the entry instead of falling back to a literal.
+  # the entry instead of falling back to a literal. Python is no longer needed: the argv patch is one
+  # `jq` filter.
   strataServe = pkgs.writeShellScriptBin "strata-serve" ''
     export PATH=${
       pkgs.lib.makeBinPath [
-        pkgs.python3
         pkgs.jq
         pkgs.coreutils
       ]

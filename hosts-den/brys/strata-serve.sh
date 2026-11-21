@@ -6,19 +6,32 @@
 # config (the per-model config that `strata launch` wrote, with the profile's engine args patched
 # in) and execs `strata serve` on the port llama-swap hands over.
 #
-# Profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
-#   max-multi   UD-IQ4_XS, whole card, 512k x 5    31.9 t/s aggregate, 12.0 GiB free
-#   max-swarm   UD-IQ4_XS, whole card, 256k x 8    36.2 t/s aggregate, 18.8 GiB free
-#   max-long    UD-IQ4_XS, whole card,   1M x 2    29.7 t/s aggregate, 10.8 GiB free
-#   fast-swarm  IQ2_XS,    whole card, 384k x 8    61.0 t/s aggregate, 32.1 GiB free
-#   omni-max    UD-IQ4_XS, 21.5 GB reserve, 1M     42.3 t/s + omni at 101 t/s (16k)
-#   omni-fast   IQ2_XS,    21.5 GB reserve, 1M     71.6 t/s + omni at 101 t/s (16k)
+# **Every knob comes from the deployment file** (`/etc/kdn-inference-helpers/config.json`), which
+# `strata-profiles.nix` generates: the base pack config, the slot count, the context window, the
+# VRAM reserve, the resident K/V, the park pool and the n-gram table's backing store. This script
+# carries no profile table and no literal fallback — a missing key stops the entry with a message
+# that names the profile and the key. The drift that rule exists for: the slot count used to live
+# here (`parallel=6`), in `strata-profiles.nix` and in the Go adapter at the same time.
 #
-# Usage: strata-serve <max-multi|max-swarm|max-long|fast-swarm|omni-max|omni-fast> --port N
+# Profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
+#   max-multi   5 x 512k   31.9 t/s aggregate   the resting profile
+#   max-swarm   8 x 256k   36.2 t/s aggregate
+#   max-long    2 x 1M     29.7 t/s aggregate
+#   max-single  1 x 1M     86.6 t/s single stream, one big job
+#   fast-swarm  8 x 384k   61.0 t/s aggregate   IQ2_XS
+#   omni-max    1 x 1M     colo: 42.3 t/s frontier + omni beside it
+#   omni-fast   2 x 1M     colo: 71.6 t/s frontier + omni beside it
+#
+# Usage: strata-serve <profile> --port N [--print]
+#   `--print` resolves the profile and prints the plan as one JSON object (the final exec argv, the
+#   patched engine args and the slot count) instead of starting the engine. The single-source check
+#   (`checks/inference-helpers/profiles.nix`) reads it, so what it asserts is the argv this script
+#   would really build.
 set -uo pipefail
 
-# Strata's data folder on brys, NOT the caller's generic XDG_DATA_HOME (which a login
-# shell sets to ~/.local/share and which holds no Terminal).
+CONFIG=${KDN_INFERENCE_HELPERS_CONFIG:-/etc/kdn-inference-helpers/config.json}
+# Strata's data folder on brys, NOT the caller's generic XDG_DATA_HOME (which a login shell sets to
+# ~/.local/share and which holds no Terminal).
 DATA=${STRATA_DATA_HOME:-/var/lib/kdn/llms/models/.bench/xdg}
 INSTALL="$DATA/strata/install"
 PROFILES="$DATA/strata/profiles"
@@ -28,49 +41,98 @@ SHIM=${ROCM_SHIM:-/var/lib/kdn/llms/models/.bench/rocm-skip.so}
 export HOME="${HOME:-${RUNTIME_DIRECTORY:-/tmp}}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-/var/lib/kdn/llms/models/.bench/xdg}"
 
-profile=${1:-max}; shift || true
+if [ $# -lt 1 ]; then
+  echo "strata-serve: usage: strata-serve <profile> --port N [--print]" >&2
+  exit 2
+fi
+profile=$1
+shift
+
 port=8080
+print=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --port) port=$2; shift 2 ;;
-    *) shift ;;
+  --port)
+    port=$2
+    shift 2
+    ;;
+  --print)
+    print=1
+    shift
+    ;;
+  *) shift ;;
   esac
 done
 
-case "$profile" in
-  # `parallel` is `strata serve`'s slot count; it reaches the engine as `--batch N` (verified with
-  # `strata serve --plan`: `--parallel 8` appends `--batch 8` to the engine argv). Each slot carves
-  # its own K/V for the whole `--max-context` at start-up: 9.56 KiB per cell with k8v4, so 2.39 GiB
-  # for a 256k slot, 3.59 GiB for a 384k slot and 9.56 GiB for a 1M slot. The host has 125 GiB and
-  # no swap, so the wall is RAM. Measured 2026-11-21, one load per row:
-  #
-  #   max-multi   5 x 512k   23.9 GiB K/V   12.0 GiB free   31.9 t/s   the resting profile
-  #   max-swarm   8 x 256k   19.1 GiB K/V   18.8 GiB free   36.2 t/s   the same slots, more RAM
-  #   max-long      2 x 1M   19.1 GiB K/V   10.8 GiB free   29.7 t/s   long sessions
-  #   fast-swarm  8 x 384k   28.7 GiB K/V   32.1 GiB free   61.0 t/s   IQ2_XS, concurrency
-  #
-  # Eight is the engine's cap (SLOTS_MAX). Two settings make the fit, both measured: `--ple-io mmap`
-  # keeps the ~30 GiB n-gram table in the page cache instead of locking it (locking it is what made
-  # a second 1M slot OOM and a 384k load take 126 s), and a 2 GiB park pool spends RAM on live slots
-  # rather than parked conversations. The manager's profile table (`internal/engine/strata`) and
-  # `config.json` carry the same numbers; this script is the manual `strata-frontier` fallback.
-  #
-  # `kvres` is `--kv-resident`: cells of each QSA layer kept in VRAM, a per-layer streaming window
-  # shared by the slots, not a per-slot allocation. 32768 cells is 8 slots x 4k, which is why the
-  # three frontier profiles now agree on it: the omni profiles ran 4096 (512 cells per slot at 8
-  # slots) and would have streamed almost every token of a slot's context from RAM. `strata serve`
-  # lowers it further when the sessions do not leave room on the card.
-  max-multi)  base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=5; ctx=524288;  rope=2;   cc=2048; ple=mmap ;;
-  max-swarm)  base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=8; ctx=262144;  rope=1;   cc=2048; ple=mmap ;;
-  max-long)   base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=2; ctx=1048576; rope=4;   cc=1024; ple=mmap ;;
-  fast-swarm) base=iq2_xs;            reserve=1024;  kvres=32768; parallel=8; ctx=393216;  rope=1.5; cc=2048; ple=mmap ;;
-  omni-max)   base=unsloth-ud-iq4_xs; reserve=21500; kvres=32768; parallel=1; ctx=;       rope=;   cc=;    ple= ;;
-  omni-fast)  base=iq2_xs;            reserve=21500; kvres=32768; parallel=2; ctx=;       rope=;   cc=;    ple= ;;
-  *) echo "strata-serve: unknown profile '$profile'" >&2; exit 2 ;;
+if ! command -v jq >/dev/null 2>&1; then
+  echo "strata-serve: jq is not on PATH, so $CONFIG cannot be read" >&2
+  exit 1
+fi
+if [ ! -r "$CONFIG" ]; then
+  echo "strata-serve: no deployment config at $CONFIG; the profiles are generated by strata-profiles.nix" >&2
+  exit 1
+fi
+
+profile_json=$(jq -c --arg p "$profile" '.profiles[$p]' "$CONFIG") || {
+  echo "strata-serve: $CONFIG is not readable as JSON" >&2
+  exit 1
+}
+if [ -z "$profile_json" ] || [ "$profile_json" = "null" ]; then
+  echo "strata-serve: profile '$profile' is not in $CONFIG (it is the only source of a profile's knobs)" >&2
+  exit 2
+fi
+
+# A required key, or a loud failure. There is no default: a copy of one of these numbers in this
+# script is exactly the drift the deployment file exists to prevent.
+required() {
+  local value
+  value=$(jq -r --arg k "$1" \
+    'if has($k) and (.[$k] != null) then (.[$k] | tostring) else empty end' <<<"$profile_json")
+  if [ -z "$value" ]; then
+    echo "strata-serve: profile '$profile' has no '$1' in $CONFIG" >&2
+    exit 1
+  fi
+  printf '%s' "$value"
+}
+
+# An optional key. `null` means "keep the base config's own value"; the key itself must exist, so a
+# renamed or dropped field is an error and not a silent inheritance.
+optional() {
+  jq -r --arg k "$1" \
+    'if has($k) then (if .[$k] == null then "" else (.[$k] | tostring) end) else error("missing key: " + $k) end' \
+    <<<"$profile_json"
+}
+
+base=$(required base) || exit 1
+parallel=$(required parallel) || exit 1
+max_context=$(required maxContext) || exit 1
+rope_scale=$(required ropeScale) || exit 1
+# The engine parses a float, and a bare `2` is what its own help prints: `2.0` and `4.0` reach it as
+# the same number, so normalise an integral factor to the way the manager writes it.
+rope_scale=$(jq -rn --arg v "$rope_scale" '$v | tonumber | (if . == floor then floor else . end) | tostring')
+reserve=$(required reserveMiB) || exit 1
+kvres=$(required kvResident) || exit 1
+cc=$(optional conversationCacheMiB) || {
+  echo "strata-serve: profile '$profile' has no 'conversationCacheMiB' in $CONFIG" >&2
+  exit 1
+}
+ple=$(optional pleIO) || {
+  echo "strata-serve: profile '$profile' has no 'pleIO' in $CONFIG" >&2
+  exit 1
+}
+
+case "$parallel" in
+'' | *[!0-9]*)
+  echo "strata-serve: profile '$profile' has a non-numeric parallel '$parallel'" >&2
+  exit 1
+  ;;
 esac
 
 src="$INSTALL/strata-$base.json"
-[ -r "$src" ] || { echo "strata-serve: no config at $src; run 'strata launch --model $base' once" >&2; exit 1; }
+[ -r "$src" ] || {
+  echo "strata-serve: no config at $src; run 'strata launch --model $base' once" >&2
+  exit 1
+}
 # llama-swap runs this under a sandboxed DynamicUser: the dataset is read-only there, so the
 # materialised config goes to the unit's runtime directory (or /tmp) when PROFILES is not writable.
 out_dir=$PROFILES
@@ -79,33 +141,48 @@ if ! mkdir -p "$out_dir" 2>/dev/null || [ ! -w "$out_dir" ]; then
 fi
 dst="$out_dir/strata-$profile.json"
 
-python3 - "$src" "$dst" "$reserve" "$kvres" "$ctx" "$rope" "$cc" "$ple" <<'PY'
-import json, sys
-src, dst, reserve, kvres, ctx, rope, cc, ple = sys.argv[1:9]
-cfg = json.load(open(src))
-args = list(cfg.get("args") or [])
-def set_arg(flag, value):
-    if flag in args:
-        args[args.index(flag) + 1] = value
-    else:
-        args.extend([flag, value])
-set_arg("--vram-reserve-mib", reserve)
-set_arg("--kv-resident", kvres)
-# Empty means "keep the base config's value": the omni profiles still serve the 1M window with the
-# n-gram table locked in RAM, which is what their 21.5 GiB reserve was measured with.
-if ctx:
-    set_arg("--max-context", ctx)
-if rope:
-    set_arg("--rope-scale", rope)
-if cc:
-    set_arg("--conversation-cache-mib", cc)
-if ple:
-    set_arg("--ple-io", ple)
-cfg["args"] = args
-json.dump(cfg, open(dst, "w"), indent=1)
-PY
+# The profile flags are the only arguments this script changes; every other argument of the base
+# config is preserved verbatim, which is what keeps the tuned flags (dflash2, k8v4, rope, MTP)
+# identical across profiles. An empty `cc` or `ple` keeps the base config's value.
+jq \
+  --arg reserve "$reserve" \
+  --arg kvres "$kvres" \
+  --arg ctx "$max_context" \
+  --arg rope "$rope_scale" \
+  --arg cc "$cc" \
+  --arg ple "$ple" '
+  def setarg($flag; $value):
+    . as $args
+    | ($args | index($flag)) as $i
+    | if $i == null then $args + [$flag, $value] else $args | .[$i + 1] = $value end;
+  .args |= setarg("--vram-reserve-mib"; $reserve)
+  | .args |= setarg("--kv-resident"; $kvres)
+  | .args |= setarg("--max-context"; $ctx)
+  | .args |= setarg("--rope-scale"; $rope)
+  | (if $cc != "" then .args |= setarg("--conversation-cache-mib"; $cc) else . end)
+  | (if $ple != "" then .args |= setarg("--ple-io"; $ple) else . end)
+' "$src" >"$dst" || {
+  echo "strata-serve: could not materialise $dst from $src" >&2
+  exit 1
+}
+
+# `--parallel` is `strata serve`'s slot count; it reaches the engine as `--batch N`. Zero would mean
+# "leave the engine's default alone", so the flag is omitted rather than passed.
+argv=(serve --profile "$dst" --host 127.0.0.1 --port "$port")
+if [ "$parallel" -gt 0 ]; then
+  argv+=(--parallel "$parallel")
+fi
+
+if [ "$print" = 1 ]; then
+  jq -n \
+    --arg profile "$profile" \
+    --arg parallel "$parallel" \
+    --argjson argv "$(printf '%s\n' "${argv[@]}" | jq -R -s 'split("\n")[:-1]')" \
+    --argjson engineArgs "$(jq -c '.args' "$dst")" \
+    '{profile: $profile, parallel: $parallel, argv: $argv, engineArgs: $engineArgs}'
+  exit 0
+fi
 
 # The Terminal's own launcher, run through nix-ld. The `pkgs.kdn.strata` FHS wrapper cannot be used
 # here: llama-swap's sandbox forbids the user namespace bubblewrap needs.
-exec "${STRATA_BIN:-/var/lib/kdn/llms/models/.bench/bin/strata}" serve --profile "$dst" \
-  --host 127.0.0.1 --port "$port" --parallel "$parallel"
+exec "${STRATA_BIN:-/var/lib/kdn/llms/models/.bench/bin/strata}" "${argv[@]}"
