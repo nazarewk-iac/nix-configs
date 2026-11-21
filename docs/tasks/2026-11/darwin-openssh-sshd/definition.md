@@ -134,10 +134,11 @@ The live launchd plists use the new helper. The normal build is a plain
 `aarch64-darwin` derivation to `buildfarm-darwin` with no extra flag. A manual build on `anji`
 (copy the tree to the Mac and run `nix build` there) is a fallback/recovery step only, for when
 the buildfarm is unreachable or the local evaluation source is missing. The system was activated
-on 2026-11-21: generation 105,
-`/nix/store/dazc1g2l2x5dpn40xzlk9cm8riy4jyhz-darwin-system-26.11.ff0e21a`.
+on 2026-11-21: generation 107,
+`/nix/store/axf4jnrx3xmdk30ghhqyjw61500gvq1w-darwin-system-26.11.ff0e21a`. The delivered solution
+is in [done.md](done.md).
 
-## Current state 2026-11-21
+## State before the solution (2026-11-21)
 
 - Apple's `sshd` 10.3p1 is still the daemon (`/usr/libexec/sshd-keygen-wrapper`); Remote Login
   is On.

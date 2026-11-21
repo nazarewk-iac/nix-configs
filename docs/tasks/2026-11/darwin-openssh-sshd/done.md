@@ -90,6 +90,7 @@ the boot order adds the rule before the job starts.
 - The fleet sshd on 2222 answered 10 s later. The helper log shows
   `store volume A8D810B7-5177-4930-890A-10CD1BF7AC96 mounted at /nix` and
   `nixpkgs-sshd spawned pid 691`.
+- The booted generation is `system-107-link`.
 - `ssh anji` → `… 192.168.73.85 2222`; `ssh anji+apple` → `… 192.168.73.85 22`.
 - The PQ certificate still negotiates; Remote Login is On; the firewall entry for the nixpkgs
   `sshd` persists; Apple's sshd is the recovery daemon.
