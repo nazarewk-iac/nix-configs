@@ -99,9 +99,14 @@ System:
 User message: the session title, its date, and the transcript with `user:` / `assistant:` /
 `tool(name):` prefixes.
 
-Chunking: a session longer than 24000 characters is split on message boundaries into chunks of at
-most 24000 characters with one message of overlap. Each chunk is one call. Items from all chunks
-are concatenated and deduplicated by statement similarity before they are written.
+Chunking: **off by default**. The default model is the frontier engine (`qfn`) with a 512k window, so a
+whole session fits. Chunking is opt-in (`--chunk-chars 24000`) for a smaller model: it splits on
+message boundaries with one message of overlap, and items from all chunks are concatenated and
+deduplicated before they are written.
+
+The frontier is a reasoning model. Every request carries
+`chat_template_kwargs: {"enable_thinking": false}`; without it the reply puts everything in
+`reasoning_content` and `content` is empty.
 
 ## Dream
 
@@ -162,8 +167,9 @@ This is the "local models only" guarantee. A test covers `api.openai.com` and a 
 | knob | default |
 | --- | --- |
 | endpoint | `https://llama-swap.brys.priv.nb.net.int.kdn.im/v1` |
-| extract model | `lfm2.5-24b-a2b` |
-| merge model | `nemotron-3-nano-30b-a3b` |
+| api key file | `/run/configs/llms/llama-server/api-keys/default` |
+| extract model | `qfn` (the frontier engine, always loaded) |
+| merge model | `qfn` |
 | request timeout | 300 s per call |
 | retries | 1 repair attempt, then fail the session |
 | sessions db | `~/.local/share/opencode/opencode.db` |
@@ -172,27 +178,36 @@ This is the "local models only" guarantee. A test covers `api.openai.com` and a 
 The defaults name base model ids, not purpose aliases: several aliases in `data/llm.nix` still
 point at models that were pruned from the catalogue, and a missing alias answers
 `no router for requested model`. `status` prints the resolved model and endpoint so a stale
-default is visible.
+default is visible. Every request sends `Authorization: Bearer <key>` and
+`chat_template_kwargs: {"enable_thinking": false}`.
 
 ## Serving reality
 
-The frontier rests on `max-multi` (512k × 5), which leaves about 8 GiB of VRAM. A 24B extractor may
-not fit beside it. `status` therefore asks the manager:
+The frontier rests on `max-multi` (512k × 5) and **answers every request**: it never unloads, so it
+is the default extractor. The endpoint needs a bearer key, read from
+`/run/configs/llms/llama-server/api-keys/default` (world-readable on oams and on brys; a symlink
+into `/run/secrets`).
+
+A llama.cpp grunt model is **not** an option on the resting profile. `gemma-4-e4b` and
+`ministral-3-3b-reasoning` both fail to start beside `max-multi`: `admit` refuses them, and
+llama-swap answers `upstream command exited prematurely`. They work on a colo profile
+(`omni-fast`, `omni-max`), which costs a 58–74 s switch and takes the card from every other
+session.
+
+`status` therefore asks the manager:
 
 ```
-POST http://<host>:8181/decide  {"model":"lfm2.5-24b-a2b","resident":[]}
+POST http://brys:8181/decide  {"model":"qfn"}
 ```
 
-and prints the verdict, the refusing check and the alternatives. `extract` prints the same verdict
-once before the first call, so a run that cannot load its model fails at the start and not after
-two hundred sessions.
-
-Two configurations are supported:
+and prints the verdict and the refusing check. A `429 a switch just happened; retry shortly` is the
+30 s cooldown, not a capacity problem.
 
 | configuration | extract model | when |
 | --- | --- | --- |
-| beside the resting frontier | `gemma-4-e4b` or `ministral-3-3b-reasoning` | a normal evening run |
-| colo profile | `lfm2.5-24b-a2b` | a long night run; switch with `strata-select --profile qfn-max-colo` first |
+| resting profile, recommended | `qfn` | any time; the engine is already loaded |
+| colo profile | `gemma-4-e4b`, `lfm2.5-24b-a2b` | a long night run that must leave the frontier free |
+| no GPU | `gemma-4-e4b` on `omni-fast` | the user is not using the frontier |
 
 The tool does not switch profiles by itself: a switch stops the engine and would cut somebody
 else's session.

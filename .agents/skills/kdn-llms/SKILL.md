@@ -55,77 +55,96 @@ Full design:
 
 ## Which alias to use (decide from what is live)
 
-Pick the alias by intent, not by model. Current assignments:
+Pick the alias by intent, not by model. Current assignments, read from the deployed
+llama-swap config on 2026-11-21:
 
-| alias               | use it for                           | live model                    | speed |
-| ------------------- | ------------------------------------ | ----------------------------- | ----- |
-| `chat-dumb-fast`    | rewrite/classify/extract, simple Q&A | qwen3.5-4b                    | 61    |
-| `chat-std-fast`     | normal chat/assistant                | lfm2.5-24b-a2b                | 23    |
-| `chat-std-mid`      | normal chat, more quality            | qwen3.5-35b-a3b               | 23    |
-| `chat-std-mid-long` | long-context chat                    | nemotron-3-nano-30b-a3b       | 12    |
-| `code-quick-fast`   | tiny code edits                      | qwen3.5-4b                    | 61    |
-| `code-std-fast`     | normal coding                        | qwen3.5-4b                    | 61    |
-| `vision-std-fast`   | images, general                      | qwen3-vl-30b-a3b              | 15.7  |
-| `vision-deep-slow`  | hard image tasks / dense text        | ornith-1.5-35b-a3b            | 8.8   |
-| `audio-std-mid`     | speech in (audio+vision+text)        | qwen3-omni-30b-a3b            | 8.8   |
-| `reason-quick-fast` | cheap step-by-step                   | mellum-2.1-12b-a2.5b-thinking | 14.8  |
-| `reason-std-fast`   | reasoning, long context              | nemotron-3-nano-30b-a3b       | 12.1  |
-| `tools-dumb-fast`   | mechanical tool calls                | granite-4.2-3b                | 85    |
-| `tools-std-fast`    | agent tools, RAG, terminal           | lfm2.5-24b-a2b                | 23    |
-| `embed-std-fast`    | embeddings (RAG)                     | qwen3-embedding-4b            | —     |
-| `rank-std-fast`     | reranking (RAG)                      | qwen3-reranker-4b             | —     |
-| `tiny-dumb-fast`    | routing/classification               | qwen3.5-0.8b                  | 208   |
-| `tiny-quick-fast`   | fastest general                      | qwen3.5-4b                    | 61    |
+| alias                                   | use it for                    | live model                    | ctx   | speed |
+| --------------------------------------- | ----------------------------- | ----------------------------- | ----- | ----- |
+| `chat-std-fast`                         | normal chat/assistant         | lfm2.5-24b-a2b                | 32768 | 23    |
+| `tools-std-fast`                        | agent tools, RAG, terminal    | lfm2.5-24b-a2b                | 32768 | 23    |
+| `chat-std-mid`                          | normal chat, more quality     | qwen3.5-35b-a3b               | 262144| 23    |
+| `chat-std-mid-long`                     | long-context chat             | nemotron-3-nano-30b-a3b       | 32768 | 12    |
+| `reason-std-fast`                       | reasoning, long context       | nemotron-3-nano-30b-a3b       | 32768 | 12    |
+| `reason-quick-fast`                     | cheap step-by-step            | mellum-2.1-12b-a2.5b-thinking | 32768 | 14.8  |
+| `reason-quick-fast-alt`                 | the same, smaller              | ministral-3-3b-reasoning      | 16384 | —     |
+| `code-std-fast-alt`                     | code, non-thinking            | mellum-2.1-12b-a2.5b-thinking | 32768 | 14.8  |
+| `vision-std-fast`                       | images, general               | qwen3-vl-30b-a3b              | 32768 | 15.7  |
+| `vision-std-fast-alt`                   | images, dense text            | ornith-1.5-35b-a3b            | 32768 | 8.8   |
+| `vision-deep-slow`                      | hard image tasks              | ornith-1.5-35b-a3b            | 32768 | 8.8   |
+| `embed-std-fast`                        | embeddings (RAG)              | qwen3-embedding-4b            | 8192  | —     |
+| `rank-std-fast`                         | reranking (RAG)               | qwen3-reranker-4b             | 8192  | —     |
 
-Each slot also has an `-alt` id where one exists (`tiny-dumb-fast-alt`,
-`chat-dumb-fast-alt`, `tools-std-fast-alt`, `vision-std-fast-alt`,
-`code-std-fast-alt`, `reason-quick-fast-alt`). Use `-alt` when the primary is
-busy or you want a different trade.
+Everything else is reachable by its base id and has no alias: `gemma-4-e4b`,
+`qwen2.5-vl-7b`, `qwen3-omni`, `longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`, and the
+frontier names below.
+
+**Several aliases are dead.** `chat-dumb-fast`, `chat-dumb-fast-alt`, `code-quick-fast`,
+`tiny-dumb-fast`, `tiny-quick-fast`, `tools-dumb-fast`, `vision-std-fast-moe` and `audio-std-mid`
+still appear in `data/llm.nix`, but their models were pruned on 2026-11-21, so a request to one
+answers `{"error":{"message":"no router for requested model"}}`. Check before you rely on one:
+
+```bash
+curl -s https://llama-swap.brys.priv.nb.net.int.kdn.im/v1/models | jq -r '.data[].id' | sort
+```
+
+**Base ids are the safe choice for scripted work.** An alias can be re-pointed or orphaned; a base
+id answers as long as its GGUF is on disk.
 
 Rules of thumb:
 
-- **Start with `chat-std-fast` or `tiny-quick-fast`.** Only step up to `std`/`deep`
-  when the task is genuinely harder, because the `deep` models are ~10-25x slower.
-- **Never use a `dumb` slot for anything open-ended.** `dumb` models obey tight
-  instructions and fail (confidently) on ambiguity.
-- **`embed-*` and `rank-*` are not chat models.** They use `/v1/embeddings` and
-  `/v1/rerank`.
-- **No frontier model runs on brys** (retired 2026-11-13). Every alias maps to
-  a grunt/surveyed model, and every model runs `--parallel 1`, so concurrent
-  calls to one alias queue. Fan a fleet out across _different_ aliases, not
-  many calls to one. Hard plan/review depth runs on the Requesty SaaS models
-  (Frontier below), not on the local fleet.
-- **Some aliases share one process.** `chat-dumb-fast`, `code-quick-fast`,
-  `tiny-quick-fast` and `grunt` are all `qwen3.5-4b` on the W6600 GPU: one
-  process, one queue, no CPU-bandwidth cost. Treat them as a single worker.
+- **Start with `chat-std-fast`.** Only step up to `chat-std-mid` when the task is genuinely harder,
+  because the bigger models are slower and cost VRAM the frontier wants.
+- **`embed-*` and `rank-*` are not chat models.** They use `/v1/embeddings` and `/v1/rerank`.
+- **No purpose alias points at a frontier model.** Every alias maps to a grunt model, and every
+  model runs `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
+  _different_ aliases, not many calls to one. The frontier is QFN on the Strata engine, below.
+- **Some aliases share one process.** `chat-std-fast` and `tools-std-fast` are both
+  `lfm2.5-24b-a2b`; `reason-std-fast` and `chat-std-mid-long` are both `nemotron-3-nano-30b-a3b`;
+  `reason-quick-fast` and `code-std-fast-alt` are both `mellum-2.1-12b-a2.5b-thinking`. Treat each
+  pair as one worker with one queue.
 
 ## What is registered (short summary)
 
 Everything below is served; most carry no alias and are reachable by their base
 id. Speeds are measured decode tok/s on brys.
 
-- **Frontier / orchestrate**: none on brys since 2026-11-13 (retired on
-  electricity grounds: 2.36 tok/s decode is below the 10 tok/s floor). The deep
-  tier runs on Requesty SaaS through the etra gateway:
-  `requesty/deepinfra/deepseek-v4.1-flash-1017` (the pi harness default and the
-  primary, 1M ctx), plus the two qwen auxiliaries the pi `planner`, `reviewer`
-  and `consultant` sub-agents use: `requesty/alibaba/qwen3.8-flash` (1M ctx,
-  128K out, vision — planning) and `requesty/tensorx/qwen3.8-flash-next`
-  (256K/256K — review and brainstorming). All three take a top-level
-  `reasoning_effort`, not `chat_template_kwargs`.
-- **Fast 24-35B MoE (20-23 t/s)**: `qwen3.5-35b-a3b`, `qwen3.6-35b-a3b`, `glm-4.7-flash`, `nemotron-3.5-lightning-30b`, `lfm2.5-24b-a2b`.
-- **Quality 27-36B dense (1.7-2.3 t/s)**: this whole class was dropped on 2026-11-04 — `qwen3.8-27b`, `qwen3.6-27b` (1.8), `granite-4.2-30b` (2.1), `gemma-4-31b` (1.7), `olmo-3.1-32b` (2.3), `seed-oss-36b` (2.0). All are dense, CPU-only, and slower than the 1M-context flash-next (2.36), which also has a far larger window. For that tier use the Requesty SaaS frontier (above).
-- **Multimodal**: `qwen3-vl-30b-a3b` (fast workhorse, 15.7), `ornith-1.5-35b-a3b` (**best at dense terminal text**, 8.8), `qwen3-omni-30b-a3b` (audio+vision), `gemma-4-12b/26b-a4b/e2b/e4b` (image+audio). `qwen3.8-flash-next` has vision DISABLED (2026-11-04): the projector cost ~0.8 GB and its CPU prefill made a 256px icon take 259 s and a 2560px screenshot exceed 900 s. `vision-quick-fast` and `qwen3-vl-8b-instruct` are retired.
-- **Reasoning**: `mellum-2.1-12b-a2.5b-thinking`, `nemotron-3-nano-30b-a3b`, `ministral-3-3b-reasoning`.
-- **Tools**: `granite-4.2-3b`, `granite-4.2-8b`.
-- **Retrieval**: `qwen3-embedding-4b`, `qwen3-reranker-4b`.
-- **Small GPU grunts (35-208 t/s)**: `qwen3.5-0.8b/2b/4b`, `tmax-2b/9b`, `granite-4.2-3b/8b`, `ministral-3-3b/8b-*`, `mimo-v2.6-qwen-9b`, `olmo-3-7b-instruct`, `gemma-4-e2b/e4b`.
-- **CPU variants**: `qwen3.5-0.8b-cpu`, `qwen3.5-2b-cpu`, `tmax-2b-cpu`.
+- **Frontier**: QFN on the Strata engine, seven profiles, listed in the next section. It is not a
+  llama-swap model in the usual sense: the `qfn*` entries are `strata-select` proxies.
+- **Deep tier**: Requesty SaaS through the etra gateway, not on brys.
+- **Live catalogue on brys (2026-11-21)**: 23 models plus the frontier names. The GGUF list is
+  the truth; this is the shape of it.
 
-Measured but **not** registered: `muse-glimmer-30b`, `minicpm-v-4.7-*` (projector
-unsupported), `hy-memory-30b-a3b`, `qwq-32b`, `jirackultra-1b`,
-`jirackdeltanet-27b`, `swift-1.5`, `gemma-4-12b-qat`. Broken on this build:
-`ternary-bonsai-2-27b` (invalid ggml type), parakeet ASR (unknown architecture).
+| model                         | ctx    | role                                             |
+| ----------------------------- | ------ | ------------------------------------------------ |
+| `qwen3.5-35b-a3b`             | 262144 | biggest local chat model, MoE, 23 t/s            |
+| `lfm2.5-24b-a2b`              | 32768  | chat and tools workhorse, 23 t/s                 |
+| `nemotron-3-nano-30b-a3b`     | 32768  | reasoning and long chat, 12 t/s                  |
+| `mellum-2.1-12b-a2.5b-thinking` | 32768 | cheap reasoning and code, 14.8 t/s               |
+| `ministral-3-3b-reasoning`    | 16384  | smallest reasoning model                         |
+| `gemma-4-e4b`                 | 32768  | small general model, no alias                    |
+| `ornith-1.5-35b-a3b`          | 32768  | best at dense terminal text, 8.8 t/s             |
+| `qwen3-vl-30b-a3b`            | 32768  | vision workhorse, 15.7 t/s                       |
+| `qwen2.5-vl-7b`               | 16384  | small vision model                               |
+| `qwen3-omni`                  | 16384  | audio + vision + text companion                  |
+| `qwen3-embedding-4b`          | 8192   | embeddings                                       |
+| `qwen3-reranker-4b`           | 8192   | reranking                                        |
+| `longcat-image-edit`          | 4096   | image edit                                       |
+| `qwen-image-edit`             | 4096   | image edit                                       |
+| `wan-vace-14b`                | 4096   | video edit                                       |
+
+The smaller grunts (`qwen3.5-0.8b/2b/4b`, `granite-4.2-3b/8b`, `tmax-*`, `gemma-4-e2b`, the CPU
+variants) and every dense 27-36B model were retired on 2026-11-21 to free disk and VRAM. Their
+aliases still exist in `data/llm.nix`, which is why a dead alias answers "no router".
+
+The deep tier runs on Requesty SaaS through the etra gateway:
+`requesty/deepinfra/deepseek-v4.1-flash-1017` (the pi harness default and the primary, 1M ctx),
+plus the two qwen auxiliaries the pi `planner`, `reviewer` and `consultant` sub-agents use:
+`requesty/alibaba/qwen3.8-flash` (1M ctx, 128K out, vision — planning) and
+`requesty/tensorx/qwen3.8-flash-next` (256K/256K — review and brainstorming). All three take a
+top-level `reasoning_effort`, not `chat_template_kwargs`.
+
+Known broken on this build: `ternary-bonsai-2-27b` (invalid ggml type), parakeet ASR (unknown
+architecture), `minicpm-v-4.7-*` (projector unsupported).
 
 ## Working with the fleet in practice
 
@@ -205,33 +224,42 @@ Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#observability-and-
 
 ## The engine profile: one card, one engine, and what a switch costs
 
-On brys the frontier is **not** a llama.cpp model any more. One Strata engine serves QFN at 1M,
-and a **profile manager** on `:8181` owns it. The profile is a start-up argument, so changing it is
-a **reload**, not a slider:
+On brys the frontier is **not** a llama.cpp model. One Strata engine serves QFN, and a **profile
+manager** on `:8181` owns it. The profile is a start-up argument, so changing it is a **reload**,
+not a slider. Seven profiles, measured 2026-11-21:
 
-| profile     | what it is                         | frontier   | companion (omni)          | RAM left  |
-| ----------- | ---------------------------------- | ---------- | ------------------------- | --------- |
-| `max`       | UD-IQ4_XS pack, whole card         | 73 t/s @1M | 6 t/s co-loaded (useless) | 2-3 GiB   |
-| `omni-max`  | UD-IQ4_XS + 21.5 GB reserve        | 42 t/s @1M | 97 t/s, always ready      | 3-5 GiB   |
-| `omni-fast` | IQ2_XS + 21.5 GB reserve (resting) | 72 t/s @1M | 99 t/s, always ready      | 23-27 GiB |
+| profile      | pack      | window × slots | single stream | aggregate | note                    |
+| ------------ | --------- | -------------- | ------------: | --------: | ----------------------- |
+| `max-multi`  | UD-IQ4_XS | 512k × 5       | 54–76 t/s      | 31.9 t/s  | **resting**             |
+| `max-swarm`  | UD-IQ4_XS | 256k × 8       | —              | 36.2 t/s  | most concurrent slots   |
+| `max-long`   | UD-IQ4_XS | 1M × 2         | —              | 29.7 t/s  | two long sessions       |
+| `max-single` | UD-IQ4_XS | 1M × 1         | 61–86 t/s      | —         | one big job, no sharing |
+| `fast-swarm` | IQ2_XS    | 384k × 8       | —              | 61.0 t/s  | lowest quality, fastest |
+| `omni-max`   | UD-IQ4_XS | 1M × 1         | —              | —         | keeps a 21.5 GB reserve |
+| `omni-fast`  | IQ2_XS    | 1M × 2         | —              | —         | keeps the reserve, fast |
 
-Measured 2026-11-19. The resting profile is **`omni-fast`**: it is the only one that leaves RAM to
-spare, both models are reachable without a switch, and the frontier loses about 2 % at 1M.
+The resting profile is **`max-multi`**: it holds 23.9 GiB of K/V, leaves the RAM floor that a build
+needs, and gives five concurrent sessions a fair share. One job does **not** spread over five
+slots; a slot is a concurrent request. A single stream gets the single-stream rate.
 
-There are exactly **four** names for the frontier and its companion:
+Every profile is also a llama-swap name. The alias map comes from `data/llm.nix`:
 
-| name            | what it is                                                         | a request to it             |
-| --------------- | ------------------------------------------------------------------ | --------------------------- |
-| `qfn`           | the frontier, whatever profile is current (`auto`)                 | never switches              |
-| `qfn-max`       | the frontier on the whole card (UD-IQ4_XS)                         | switches to `max`           |
-| `qfn-max-colo`  | the frontier plus the 21.5 GB reserve, best pack (UD-IQ4_XS)       | switches to `omni-max`      |
-| `qfn-fast-colo` | the frontier plus the 21.5 GB reserve the companion needs (IQ2_XS) | switches to `omni-fast`     |
-| `qwen3-omni`    | the video/audio companion, loaded on demand                        | no switch, fits the reserve |
+| name             | profile        |
+| ---------------- | -------------- |
+| `qfn`            | current (`auto`, never switches) |
+| `qfn-max-multi`  | `max-multi`    |
+| `qfn-max-swarm`  | `max-swarm`    |
+| `qfn-max`        | `max-long`     |
+| `qfn-max-long`   | `max-long`     |
+| `qfn-max-single` | `max-single`   |
+| `qfn-fast-swarm` | `fast-swarm`   |
+| `qfn-max-colo`   | `omni-max`     |
+| `qfn-fast-colo`  | `omni-fast`    |
+| `qwen3-omni`     | the companion, no switch, fits the reserve |
 
 **`qfn` is the name to use.** It never switches, and a switch that somebody else starts does not cut
-your request: in-flight work is drained first (the switch waits for it) and a request that arrives
-mid-switch is delayed until the new engine answers. `qfn-max` and `qfn-fast-colo` do force a profile, so
-a caller of those may be interrupted when the other one is selected.
+your request: in-flight work is drained first and a request that arrives mid-switch waits. The
+other names force a profile, so a caller of one may be interrupted when somebody selects another.
 
 ### Reading and steering it
 
@@ -239,8 +267,10 @@ a caller of those may be interrupted when the other one is selected.
 curl -s http://brys:8181/status          # profile, last switch, loaded companions
 curl -s http://brys:8181/stats           # measured medians per event and per transition
 curl -s -X POST http://brys:8181/select \
-  -H 'Content-Type: application/json' -d '{"profile":"max","dry_run":true}'   # what it would cost
+  -H 'Content-Type: application/json' -d '{"profile":"max-single","dry_run":true}'   # what it would cost
 ```
+
+`brys:8181` is reachable from brys itself. From another host use `ssh brys -L 8181:127.0.0.1:8181`.
 
 Rules that keep a session alive:
 
@@ -250,10 +280,10 @@ Rules that keep a session alive:
 - **Prefer loading the companion over switching the engine.** Inside a reserve, omni loads beside
   the running engine (+90 s once, observed) and the frontier is untouched. `POST /unload` frees its
   VRAM again with no engine reload.
-- **Do not ask for `max` to gain 2 %.** At 1M the difference to `omni-fast` is 71.6 vs 73.1 t/s,
-  while the switch costs 50-70 s plus a re-prefill.
-- **A media task inside a `max` session** is the one case where a switch pays: `max` leaves no
-  reserve, so `qwen3-omni` would run at 6 t/s.
+- **Do not switch for a few percent.** The switch costs 58–74 s plus a re-prefill, and a switch into
+  `max-single` frees 14 GiB of K/V at the cost of every other session's slot.
+- **A media task inside `max-multi`** needs a colo profile: `max-multi` leaves about 8 GiB, so
+  `qwen3-omni` would load slowly or be refused. Select `qfn-fast-colo` between turns.
 
 ### Two harness facts (measured 2026-11-20)
 
@@ -263,8 +293,8 @@ Rules that keep a session alive:
   environment and works.
 - **A discovery-only provider is listed but not runnable.** `opencode models` shows what the
   discovery plugin fetched, while `opencode run --model <provider>/<id>` validates the id against
-  the static catalog and answers "Model unavailable". The four names above are declared statically
-  in the client config for that reason.
+  the static catalog and answers "Model unavailable". The `qfn*` names above are declared
+  statically in the client config for that reason.
 
 ### The scenario this was built for
 
