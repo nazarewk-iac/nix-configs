@@ -1,21 +1,21 @@
 # Updating the llama.cpp builds
 
 This directory holds llama.cpp builds from source, for the Qwen3.8-Flash-Next
-(`qwen4exp`) work on brys:
+(`qwen4exp`) work and for Inkling 2 Mini on brys:
 
-| Attribute                                 | Source                                                                     | Version                   | Build | Commit      | Backend               |
-| ----------------------------------------- | -------------------------------------------------------------------------- | ------------------------- | ----- | ----------- | --------------------- |
-| `llama-cpp-v0_6_0`                        | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU                   |
-| `llama-cpp-v0_6_0-vulkan`                 | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan          |
-| `llama-cpp-v0_6_0-vulkan-noblas`          | `ggml-org/llama.cpp`                                                       | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan, no BLAS |
-| `llama-cpp-master-vulkan`                 | `ggml-org/llama.cpp` master                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
-| `llama-cpp-master-noprefetch-vulkan`      | the same master + PR #29250                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
-| `llama-cpp-master-moe-stream-vulkan`      | the same master + PR #25294                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
-| `llama-cpp-master-pin-hot-experts-vulkan` | the same master + PR #26414                                                | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
-| `llama-cpp-unsloth-mtp`                   | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp`                           | 0.4.1                     | 11098 | `6fcaa16`   | CPU                   |
-| `llama-cpp-sessions`                      | `nazarewk-iac/llama.cpp`, branch `main` (master + #26004 + rebased #29738) | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU                   |
-| `llama-cpp-sessions-vulkan`               | the same fork source                                                       | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan          |
-| `llama-cpp-sessions-vulkan-noblas`        | the same fork source                                                       | 0.6.0-unstable-2026-10-09 | 11539 | `6beadd4d6` | CPU + Vulkan, no BLAS |
+| Attribute                                 | Source                                           | Version                   | Build | Commit      | Backend               |
+| ----------------------------------------- | ------------------------------------------------ | ------------------------- | ----- | ----------- | --------------------- |
+| `llama-cpp-v0_6_0`                        | `ggml-org/llama.cpp`                             | 0.6.0                     | 11429 | `d812350`   | CPU                   |
+| `llama-cpp-v0_6_0-vulkan`                 | `ggml-org/llama.cpp`                             | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan          |
+| `llama-cpp-v0_6_0-vulkan-noblas`          | `ggml-org/llama.cpp`                             | 0.6.0                     | 11429 | `d812350`   | CPU + Vulkan, no BLAS |
+| `llama-cpp-master-vulkan`                 | `ggml-org/llama.cpp` master                      | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-noprefetch-vulkan`      | the same master + PR #29250                      | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-moe-stream-vulkan`      | the same master + PR #25294                      | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-master-pin-hot-experts-vulkan` | the same master + PR #26414                      | 0.6.0-unstable-2026-10-08 | 11490 | `9c2e0e4`   | CPU + Vulkan          |
+| `llama-cpp-unsloth-mtp`                   | `danielhanchen/llama.cpp`, branch `qwen4exp/mtp` | 0.4.1                     | 11098 | `6fcaa16`   | CPU                   |
+| `llama-cpp-sessions`                      | `ggml-org/llama.cpp` b12608 + the #29738 patch   | 1.0.0-unstable-2026-11-21 | 12609 | `93cb37ea7` | CPU                   |
+| `llama-cpp-sessions-vulkan`               | the same source                                  | 1.0.0-unstable-2026-11-21 | 12609 | `93cb37ea7` | CPU + Vulkan          |
+| `llama-cpp-sessions-vulkan-noblas`        | the same source                                  | 1.0.0-unstable-2026-11-21 | 12609 | `93cb37ea7` | CPU + Vulkan, no BLAS |
 
 The `master` rows are experiments, not served builds. The `master-vulkan` and
 `master-noprefetch-vulkan` rows test whether a
@@ -152,39 +152,76 @@ Read the branch head. The output gives the commit:
 git ls-remote https://github.com/danielhanchen/llama.cpp refs/heads/qwen4exp/mtp
 ```
 
-### The session build (`nazarewk-iac/llama.cpp`)
+### The session build (`ggml-org/llama.cpp` + the #29738 patch)
 
-`llama-cpp-sessions` is the fork `nazarewk-iac/llama.cpp`, branch `main`. The
-branch is upstream master plus one cherry-picked commit: PR #29738
-("session-keyed automatic slot save/restore"), rebased so its factored save
-path also appends the #26004 context-checkpoint appendix. Upstream #26004 is
-already in master; the fork exists only because #29738 is still open and does
-not compile against current master (it used the removed `fs_list` helper).
+`llama-cpp-sessions` is upstream tag `b12608` plus the still-open PR #29738
+("session-keyed automatic slot save/restore"), carried as the local patch
+[29738-slot-save-sessions.patch](29738-slot-save-sessions.patch). The same
+build serves Qwen3.8-Flash-Next and Inkling 2 Mini. Upstream #26004 (context
+checkpoint persistence) is already in the release, so #29738 is the only patch.
 
-To update it when upstream master moves:
+The tag must be `b12600` or newer. Inkling 2 Mini is a looped transformer and
+its GGUF declares `general.architecture = inkling2_loop`. The earlier "add
+Inkling 2 support" release (`b12406`, PR #32217) only knows the `inkling2`
+architecture, so it cannot load the published GGUF. The `inkling2_loop` model
+arrives with "model : Inkling 2 Mini" (PR #32694), which is exactly tag
+`b12600`. Verify a build with the architecture string in the shared library,
+not in `bin/llama-server`: the build uses `BUILD_SHARED_LIBS`, so the model
+code lives in `lib/libllama.so` and the server binary holds none of it.
+
+The patch is a rebase of the PR onto `b12608`. It also folds the #26004
+checkpoint appendix and the live draft state into the same session file, so the
+factored `slot_save_to_file` / `slot_restore_from_file` helpers serve the manual
+endpoints and the session path alike. The patch replaces the `fs_path_to_utf8`
+helper that upstream removed, with `std::filesystem::path::string()`.
+
+Slot selection moved to `server_slot_sched` in `server-slot-sched.h` between
+`b12406` and `b12600`, so the rebase carries the session path as
+`select_session_slot()`: it reuses the slot that already holds the session, or
+takes the free slot that loses the least (`slot_sched.get_free_slots`), evicts
+its session, restores the session file and stamps the slot. The prompt cache is
+bypassed for a session-tagged request, exactly as before.
+
+The fork `nazarewk-iac/llama.cpp` branch `main` used to carry that commit. The
+rebased commit is `727cb0f63` on top of `93cb37ea7`; it exists locally only
+until it is pushed. To go back to the fork route, push it, then set `owner` and
+`repo` in [default.nix](default.nix) to `nazarewk-iac` / `llama.cpp`, drop
+`patches`, and read the new hash with `nix-prefetch-github`.
+
+To rebase the patch onto a newer release:
 
 ```bash
-# 1. Rebase the PR onto the new master in a local clone of the fork.
-git fetch upstream master && git fetch upstream pull/29738/head:pr29738
-git checkout -B main upstream/master && git cherry-pick pr29738
-# 2. Resolve the server-context.cpp conflicts: keep both the #26004 checkpoint
-#    appendix and the #29738 session path. Rewrite any removed helper
-#    (fs_list -> std::filesystem::directory_iterator).
-# 3. Push to the fork's main, then read the new rev and hash.
-git push --force origin main
-nix run nixpkgs#nix-prefetch-github -- nazarewk-iac llama.cpp --rev <rev>
+# 1. Rebase the PR onto the new tag in a local clone of the fork.
+git fetch upstream <new-tag> && git fetch upstream pull/29738/head:pr29738
+git checkout -B main <new-tag-commit> && git cherry-pick pr29738
+# 2. Resolve the server-context.cpp conflicts: keep the checkpoint appendix and
+#    the draft state inside slot_save_to_file / slot_restore_from_file, keep the
+#    session path on those helpers, route a session-tagged task through
+#    select_session_slot() instead of slot_sched.select(), and rewrite a removed
+#    helper (fs_path_to_utf8 -> std::filesystem::path::string()).
+# 3. Regenerate the patch, then read the new rev and hash.
+git format-patch -1 --no-signature --stdout main | awk 'f || /^diff --git / { f=1; print }' \
+  > packages/llama-cpp/29738-slot-save-sessions.patch
+nix flake prefetch --json 'github:ggml-org/llama.cpp/<rev>'
 ```
 
 Update `src.rev`, `src.hash`, `buildCommit` and `buildNumber` in
 [default.nix](default.nix). The build number is the upstream tag plus the
-commit count (`git describe --tags`).
+commit count (`git describe --tags`), so a tag plus this one patch is the tag
+number plus one.
 
-When #29738 merges upstream, delete the fork build and pin upstream master.
+When #29738 merges upstream, delete the patch and pin the upstream release.
 
 ## Get the source hash
 
-Run `nix-prefetch-github`. The `hash` field in the JSON output is the SRI hash
-that `default.nix` needs:
+`fetchFromGitHub` wants the hash of the unpacked tree, which `nix flake
+prefetch` prints as `hash` in its JSON output:
+
+```bash
+nix flake prefetch --json 'github:ggml-org/llama.cpp/<rev>'
+```
+
+`nix-prefetch-github` gives the same value:
 
 ```bash
 nix-prefetch-github ggml-org llama.cpp --rev <rev>
@@ -199,7 +236,7 @@ nix run nixpkgs#nix-prefetch-github -- ggml-org llama.cpp --rev <rev>
 For the fork, change the owner and the repo:
 
 ```bash
-nix run nixpkgs#nix-prefetch-github -- danielhanchen llama.cpp --rev <rev>
+nix run nixpkgs#nix-prefetch-github -- nazarewk-iac llama.cpp --rev <rev>
 ```
 
 Alternative: run `nix build` with the old hash. The build fails and prints the
@@ -214,6 +251,10 @@ Open [default.nix](default.nix). For `llama-cpp-v0_6_0`, edit these fields:
 - `buildCommit`
 - `src.rev`
 - `src.hash`
+
+For `llama-cpp-sessions`, edit the same fields, and regenerate
+[29738-slot-save-sessions.patch](29738-slot-save-sessions.patch) as the section
+above describes.
 
 For `llama-cpp-unsloth-mtp`, edit the same fields. Edit `pname` too, because the
 fork keeps its own attribute name.

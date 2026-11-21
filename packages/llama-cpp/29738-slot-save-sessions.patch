@@ -1,0 +1,1268 @@
+diff --git a/common/arg.cpp b/common/arg.cpp
+index a63823767..c4c035465 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -3673,6 +3673,29 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             }
+         }
+     ).set_examples({LLAMA_EXAMPLE_SERVER}).set_env("LLAMA_ARG_SLOT_SAVE_PATH"));
++    add_opt(common_arg(
++        {"--slot-save-sessions"}, "HEADERS",
++        "enable session-keyed save/restore; comma-separated HTTP headers in priority order from which the session id can be read, "
++        "the body field session_id is always accepted and takes priority, an empty value means body field only (default: disabled)",
++        [](common_params & params, const std::string & value) {
++            params.session_id_enabled = true;
++            for (const auto & h : string_split(value, ",")) {
++                if (!h.empty()) {
++                    params.session_id_headers.push_back(h);
++                }
++            }
++        }
++    ).set_examples({LLAMA_EXAMPLE_SERVER}));
++    add_opt(common_arg(
++        {"--slot-save-sessions-max"}, "N",
++        string_format("maximum number of session save files to keep (default: %d)", params.session_max_sessions),
++        [](common_params & params, int value) {
++            if (value <= 0) {
++                throw std::invalid_argument("must be a positive integer: " + std::to_string(value));
++            }
++            params.session_max_sessions = value;
++        }
++    ).set_examples({LLAMA_EXAMPLE_SERVER}));
+     add_opt(common_arg(
+         {"--media-path"}, "PATH",
+         "directory for loading local media files; files can be accessed via file:// URLs using relative paths (default: disabled)",
+diff --git a/common/common.h b/common/common.h
+index a8e89ed2d..7d5fda22f 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -730,6 +730,9 @@ struct common_params {
+     bool log_json = false;
+ 
+     std::string slot_save_path;
++    bool session_id_enabled = false;          // session-keyed save/restore is enabled
++    std::vector<std::string> session_id_headers; // headers (in priority order) that may carry the session id
++    int session_max_sessions = 128;          // maximum number of session save files to keep
+     std::string media_path; // path to directory for loading media files
+     bool media_allow_private_urls = false; // allow http(s) media URLs on local or private addresses
+ 
+diff --git a/tools/server/README.md b/tools/server/README.md
+index 1f6553389..9cfcab4dd 100644
+--- a/tools/server/README.md
++++ b/tools/server/README.md
+@@ -229,6 +229,8 @@ For the full list of features, please refer to [server's changelog](https://gith
+ | `--props` | enable changing global properties via POST /props (default: disabled)<br/>(env: LLAMA_ARG_ENDPOINT_PROPS) |
+ | `--slots, --no-slots` | expose slots monitoring endpoint (default: enabled)<br/>(env: LLAMA_ARG_ENDPOINT_SLOTS) |
+ | `--slot-save-path PATH` | path to save slot kv cache (default: disabled)<br/>(env: LLAMA_ARG_SLOT_SAVE_PATH) |
++| `--slot-save-sessions HEADERS` | enable session-keyed save/restore; comma-separated HTTP headers in priority order from which the session id can be read, the body field session_id is always accepted and takes priority, an empty value means body field only (default: disabled) |
++| `--slot-save-sessions-max N` | maximum number of session save files to keep (default: 128) |
+ | `--media-path PATH` | directory for loading local media files; files can be accessed via file:// URLs using relative paths (default: disabled) |
+ | `--media-allow-private-urls` | allow http(s) media URLs (e.g. image_url) that point to local or private addresses (default: disabled, only public addresses)<br/>(env: LLAMA_ARG_MEDIA_ALLOW_PRIVATE_URLS) |
+ | `--models-dir PATH` | directory containing models for the router server (default: disabled)<br/>(env: LLAMA_ARG_MODELS_DIR) |
+@@ -600,6 +602,8 @@ These words will not be included in the completion, so make sure to add them to
+ 
+ `id_slot`: Assign the completion task to an specific slot. If is -1 the task will be assigned to a Idle slot.  Default: `-1`
+ 
++`session_id`: Optional session identifier for the conversation. Only read when the server is started with `--slot-save-sessions`; without that flag the field and the session headers are ignored. When set, the server keeps track of the slot that holds the session's KV state. If that slot is taken by another request, the session's state is automatically saved to `--slot-save-path` (as `llama-session-<id>.bin`), and the next request with the same session id restores it from disk. The id can also be provided via the headers named by `--slot-save-sessions` (case-insensitive, checked in the listed priority order); if both the body field and a header are present they must be equal. The id must be a valid file name, otherwise the request is rejected. Requires `--slot-save-path` for the disk save/restore to happen; without it the session id only pins the slot in memory. Saved files persist across restarts; at startup the server indexes them and deletes the oldest ones beyond the `--slot-save-sessions-max` cap. On shutdown (and on sleep or model reload) the sessions still held in slot memory are flushed to disk, so a conversation resumes from its latest state, not from its last eviction. Default: not set
++
+ `cache_prompt`: Re-use KV cache from a previous request if possible. This way the common prefix does not have to be re-processed, only the suffix that differs between the requests. Because (depending on the backend) the logits are **not** guaranteed to be bit-for-bit identical for different batch sizes (prompt processing vs. token generation) enabling this option can cause nondeterministic results. Default: `true`
+ 
+ `return_tokens`: Return the raw generated token ids in the `tokens` field. Otherwise `tokens` remains empty. Default: `false`
+@@ -1096,6 +1100,8 @@ Same as the `/v1/embeddings` endpoint.
+ 
+ This endpoint is enabled by default and can be disabled with `--no-slots`. It can be used to query various per-slot metrics, such as speed, processed tokens, sampling parameters, etc.
+ 
++The `session_id` field of each slot reports the session (see `session_id` in the `/completion` options) whose KV state the slot currently holds, empty if none.
++
+ If query param `?fail_on_no_slot=1` is set, this endpoint will respond with status code 503 if there is no available slots.
+ 
+ **Response format**
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index bfade25d7..453f6be3d 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -44,6 +44,8 @@
+ #include <windows.h>
+ #endif
+ 
++namespace fs = std::filesystem;
++
+ constexpr int HTTP_POLLING_SECONDS = 1;
+ 
+ static common_speculative_output_limits server_output_limits(const common_params & params) {
+@@ -93,6 +95,37 @@ static std::vector<llama_token> server_accept_replay(
+     return result;
+ }
+ 
++// case-insensitive scan for the session affinity headers
++// clients such as the pi coding agent send the conversation id in these headers
++// case-insensitive scan of the headers named by --slot-save-sessions, in the given priority order
++static std::string session_id_from_headers(const std::map<std::string, std::string> & headers, const std::vector<std::string> & names) {
++    for (const auto & target : names) {
++        for (const auto & [hk, hv] : headers) {
++            if (hk.size() != target.size()) {
++                continue;
++            }
++
++            bool match = true;
++            for (size_t i = 0; i < target.size(); i++) {
++                char c = hk[i];
++                if (c >= 'A' && c <= 'Z') {
++                    c = char(c + 32);
++                }
++                if (c != target[i]) {
++                    match = false;
++                    break;
++                }
++            }
++
++            if (match) {
++                return hv;
++            }
++        }
++    }
++
++    return "";
++}
++
+ // synthetic draft verification for benchmarking - accept draft tokens at random instead of by match with the target
+ // on replay the draft was already accepted before a context checkpoint restore, so repeat the same decisions
+ static std::vector<llama_token> server_sample_and_accept_synth(
+@@ -348,6 +381,9 @@ struct server_slot {
+ 
+     server_prompt prompt;
+ 
++    // session held by this slot's KV state, empty if none
++    std::string session_id;
++
+     bool prompt_save(server_prompt_cache & prompt_cache) const {
+         if (prompt.tokens.size() == 0) {
+             return false;
+@@ -396,6 +432,7 @@ struct server_slot {
+         mem.seq_rm(id, -1, -1);
+ 
+         prompt.clear();
++        session_id.clear();
+     }
+ 
+     std::vector<common_adapter_lora_info> lora;
+@@ -834,6 +871,8 @@ struct server_slot {
+             {"is_processing", is_processing()},
+         };
+ 
++        res["session_id"] = session_id;
++
+         const auto & ptask = task ? task : task_prev;
+ 
+         if (ptask) {
+@@ -1145,6 +1184,14 @@ private:
+ 
+     server_slot_sched slot_sched;
+ 
++    // sessions: session id -> where its KV state lives
++    // accessed only on the task-queue thread, same as the slots
++    struct session_entry {
++        int slot = -1; // -1 if the state is only on disk
++        int64_t t_last = 0;
++    };
++    std::map<std::string, session_entry> sessions;
++
+     std::string model_name; // name of the loaded model, to be used by API
+     std::set<std::string> model_aliases; // additional names for the model
+     std::set<std::string> model_tags;    // informational tags
+@@ -1154,6 +1201,8 @@ private:
+     int64_t t_last_load_progress_ms = 0;
+ 
+     void destroy() {
++        flush_sessions_to_disk();
++
+         spec.reset();
+         spec_init.reset();
+ 
+@@ -1233,6 +1282,9 @@ private:
+         params_base.n_outputs_max = output_limits.total;
+         params_base.n_outputs_max_per_seq = output_limits.per_seq;
+ 
++        // persist the sessions held in RAM before the old context is replaced below
++        flush_sessions_to_disk();
++
+         const bool has_mmproj = !params.mmproj.path.empty();
+         const bool has_draft = params.speculative.has_dft();
+         const bool spec_mtp = std::find(params_base.speculative.types.begin(),
+@@ -1494,6 +1546,61 @@ private:
+         }
+ 
+         slots.clear();
++        sessions.clear();
++
++        // index the session files saved by previous runs so they can be restored,
++        // dropping the oldest ones beyond the cap and registering the survivors
++        if (params_base.session_id_enabled && !params_base.slot_save_path.empty()) {
++            std::map<std::string, int64_t> ondisk; // session id -> last modification time
++            std::map<std::string, std::vector<std::string>> paths;
++            {
++                std::error_code ec_dir;
++                for (const auto & entry : fs::directory_iterator(params_base.slot_save_path, ec_dir)) {
++                    std::error_code ec;
++                    if (!entry.is_regular_file(ec)) {
++                        continue;
++                    }
++                    const std::string name = entry.path().filename().string();
++                    if (name.size() <= 18 || name.substr(0, 14) != "llama-session-") {
++                        continue;
++                    }
++                    if (name.substr(name.size() - 4) != ".bin") {
++                        continue;
++                    }
++                    const std::string sid = name.substr(14, name.size() - 18);
++                    const auto mtime = fs::last_write_time(entry.path(), ec);
++                    const int64_t t = ec ? int64_t(0) : mtime.time_since_epoch().count();
++                    ondisk[sid] = std::max(ondisk[sid], t);
++                    paths[sid].push_back(entry.path().string());
++                }
++            }
++
++            std::vector<std::string> order;
++            order.reserve(ondisk.size());
++            for (const auto & kv : ondisk) {
++                order.push_back(kv.first);
++            }
++            std::sort(order.begin(), order.end(), [&](const std::string & a, const std::string & b) {
++                return ondisk[a] > ondisk[b]; // newest first
++            });
++
++            const size_t n_keep = std::min<size_t>(order.size(), (size_t) params_base.session_max_sessions);
++            for (size_t i = n_keep; i < order.size(); ++i) {
++                for (const auto & path : paths[order[i]]) {
++                    std::error_code ec;
++                    fs::remove(path, ec);
++                }
++                std::error_code ec;
++                fs::remove(legacy_session_dft_filepath(order[i]), ec);
++                ondisk.erase(order[i]);
++                paths.erase(order[i]);
++            }
++
++            // register the surviving sessions so they count against the cap
++            for (const auto & kv : ondisk) {
++                sessions[kv.first].t_last = kv.second;
++            }
++        }
+ 
+         ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt);
+         if (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_NO) {
+@@ -1833,6 +1940,274 @@ private:
+         return res;
+     }
+ 
++    // file name of the session save file inside slot_save_path
++    // the client-supplied id must pass fs_validate_filename, checked when the request is parsed
++    std::string session_filepath(const std::string & session_id) const {
++        return params_base.slot_save_path + "llama-session-" + session_id + ".bin";
++    }
++
++    // companion file an older build wrote beside the session file to hold the draft
++    // context state; the draft state now lives in the session file itself, so this
++    // path is only used to clean the stale companions up
++    std::string legacy_session_dft_filepath(const std::string & session_id) const {
++        return params_base.slot_save_path + "llama-session-" + session_id + ".dft";
++    }
++
++    // serialize the prompt and KV state of the slot to a file
++    // returns the number of bytes written, 0 on failure (the reason goes to err_msg if set)
++    size_t slot_save_to_file(server_slot & slot, const std::string & filepath, double & t_ms, std::string * err_msg) {
++        const int64_t t_start = ggml_time_us();
++
++        std::vector<char> packed;
++        try {
++            packed = slot.prompt.tokens.serialize();
++        } catch (const std::exception & err) {
++            if (err_msg) {
++                *err_msg = err.what();
++            }
++            SLT_ERR(slot, "failed to serialize prompt: %s\n", err.what());
++            t_ms = 0.0;
++            return 0;
++        }
++
++        GGML_ASSERT(packed.size() % sizeof(llama_token) == 0);
++        size_t nwrite = llama_state_seq_save_file(
++            ctx_tgt, filepath.c_str(), slot.id,
++            reinterpret_cast<const llama_token *>(packed.data()), packed.size() / sizeof(llama_token));
++
++        if (nwrite != 0) {
++            // append the context checkpoints (#26004) so a restored slot keeps its rewind points
++            size_t nwrite_ckpt = 0;
++            if (!save_slot_checkpoints(filepath, slot, nwrite_ckpt)) {
++                if (err_msg) {
++                    *err_msg = "Unable to save slot: incomplete context checkpoints";
++                }
++                t_ms = (ggml_time_us() - t_start) / 1000.0;
++                return 0;
++            }
++            nwrite += nwrite_ckpt;
++
++            // append the live draft state so a speculative slot restores its draft context too
++            size_t nwrite_dft = 0;
++            if (!save_slot_draft(filepath, slot, nwrite_dft)) {
++                if (err_msg) {
++                    *err_msg = "Unable to save slot: incomplete draft state";
++                }
++                t_ms = (ggml_time_us() - t_start) / 1000.0;
++                return 0;
++            }
++            nwrite += nwrite_dft;
++        }
++
++        t_ms = (ggml_time_us() - t_start) / 1000.0;
++
++        return nwrite;
++    }
++
++    // load the prompt and KV state of the slot from a file
++    // returns the number of bytes read, 0 on failure (the slot is cleared on failure, the reason goes to err_msg if set)
++    size_t slot_restore_from_file(server_slot & slot, const std::string & filepath, double & t_ms, std::string * err_msg) {
++        const int64_t t_start = ggml_time_us();
++
++        size_t nread = 0;
++        try {
++            size_t n_packed = 0;
++            llama_tokens packed;
++            nread = llama_state_seq_load_file(ctx_tgt, filepath.c_str(), slot.id, nullptr, 0, &n_packed);
++            if (nread != 0) {
++                packed.resize(std::max<size_t>(1, n_packed));
++                nread = llama_state_seq_load_file(ctx_tgt, filepath.c_str(), slot.id, packed.data(), packed.size(), &n_packed);
++            }
++            if (nread == 0) {
++                throw std::runtime_error("No available space in KV cache or invalid slot save file");
++            }
++            packed.resize(n_packed);
++
++            server_tokens restored = server_tokens::deserialize(packed, mctx != nullptr);
++
++            if (restored.size() > (size_t) slot.n_ctx) {
++                throw std::runtime_error("Restored prompt does not fit in the slot context");
++            }
++
++            if (!restored.validate(ctx_tgt)) {
++                throw std::runtime_error("Invalid tokens in slot save file");
++            }
++
++            slot.prompt.clear();
++            slot.prompt.tokens = std::move(restored);
++        } catch (const std::exception & err) {
++            slot.prompt_clear();
++            if (err_msg) {
++                *err_msg = err.what();
++            }
++            SLT_ERR(slot, "failed to restore from %s: %s\n", filepath.c_str(), err.what());
++            nread = 0;
++        }
++
++        // nread is the end offset of the llama state payload within the file
++        size_t nread_ckpt = 0;
++        size_t nread_dft  = 0;
++        if (nread > 0) {
++            nread_ckpt = load_slot_checkpoints(filepath, nread, slot);
++            nread_dft  = load_slot_draft(filepath, nread + nread_ckpt, slot);
++        }
++
++        t_ms = (ggml_time_us() - t_start) / 1000.0;
++
++        return nread + nread_ckpt + nread_dft;
++    }
++
++    // persist the session held by the slot to disk and clear the stamp
++    // called before the slot's KV state is replaced or cleared
++    void evict_slot_session(server_slot & slot) {
++        if (slot.session_id.empty()) {
++            return;
++        }
++
++        const std::string sid = slot.session_id;
++
++        if (!params_base.slot_save_path.empty()) {
++            const std::string filepath = session_filepath(sid);
++
++            double t_ms = 0.0;
++            std::string err_msg;
++            const size_t n_bytes = slot_save_to_file(slot, filepath, t_ms, &err_msg);
++            if (n_bytes == 0) {
++                SLT_WRN(slot, "failed to save session %s to %s, continuing without persistence\n", sid.c_str(), filepath.c_str());
++            } else {
++                SLT_DBG(slot, "saved session %s to %s (%.2f ms, %zu bytes)\n", sid.c_str(), filepath.c_str(), t_ms, n_bytes);
++            }
++        }
++
++        auto it = sessions.find(sid);
++        if (it != sessions.end() && it->second.slot == slot.id) {
++            it->second.slot = -1;
++        }
++
++        slot.session_id.clear();
++    }
++
++    // mark the slot as holding the session and track it in the registry
++    // when the registry is full, the oldest entry that is not in a busy slot is dropped
++    // (its idle slot is cleared, its save file is removed)
++    void stamp_slot_session(server_slot & slot, const std::string & sid) {
++        slot.session_id = sid;
++
++        if (sessions.find(sid) == sessions.end() && sessions.size() >= (size_t) params_base.session_max_sessions) {
++            auto victim = sessions.end();
++            for (auto it = sessions.begin(); it != sessions.end(); ++it) {
++                if (it->second.slot >= 0) {
++                    server_slot * s = get_slot_by_id(it->second.slot);
++                    if (s && s->is_processing()) {
++                        continue; // cannot drop a session in a busy slot
++                    }
++                }
++                if (victim == sessions.end() || it->second.t_last < victim->second.t_last) {
++                    victim = it;
++                }
++            }
++
++            if (victim != sessions.end()) {
++                if (victim->second.slot >= 0) {
++                    server_slot * s = get_slot_by_id(victim->second.slot);
++                    if (s) {
++                        s->prompt_clear();
++                    }
++                }
++                if (!params_base.slot_save_path.empty()) {
++                    std::error_code ec;
++                    fs::remove(session_filepath(victim->first), ec);
++                    fs::remove(legacy_session_dft_filepath(victim->first), ec);
++                }
++                sessions.erase(victim);
++            }
++        }
++
++        auto & entry = sessions[sid];
++        entry.slot = slot.id;
++        entry.t_last = ggml_time_us();
++    }
++
++    // persist all sessions held in RAM before the context is destroyed or replaced
++    // a session that was never evicted has no file yet, it would be lost otherwise
++    void flush_sessions_to_disk() {
++        if (ctx_tgt == nullptr) {
++            return;
++        }
++
++        for (auto & slot : slots) {
++            evict_slot_session(slot);
++        }
++    }
++
++    // the slot for a session-tagged task: the slot already holding the session, else an idle
++    // slot with the session state restored from disk; -1 when no slot is free
++    // the prompt cache is bypassed, the session file carries the state
++    int select_session_slot(const server_task & task) {
++        const std::string & session_id = task.session_id;
++
++        // reuse the slot already holding this session
++        for (auto & slot : slots) {
++            if (slot.is_processing()) {
++                continue;
++            }
++            if (slot.session_id != session_id) {
++                continue;
++            }
++            if (task.id_slot != -1 && slot.id != task.id_slot) {
++                continue; // explicit pin takes priority
++            }
++
++            auto it = sessions.find(session_id);
++            if (it != sessions.end()) {
++                it->second.t_last = ggml_time_us();
++            }
++
++            SLT_INF(slot, "selected slot by session id (%s)\n", session_id.c_str());
++            return slot.id;
++        }
++
++        // no in-memory match, take an idle victim and restore the session if possible
++        server_slot * victim = nullptr;
++
++        if (task.id_slot != -1) {
++            server_slot * requested = get_slot_by_id(task.id_slot);
++            if (requested != nullptr && !requested->is_processing()) {
++                victim = requested;
++            }
++        } else {
++            // the slot that loses the least by being reused: empty first, then the least recently used
++            const std::vector<int> free_slots = slot_sched.get_free_slots(get_slot_infos(), 1, -1);
++            if (!free_slots.empty()) {
++                victim = get_slot_by_id(free_slots.front());
++            }
++        }
++
++        if (victim == nullptr) {
++            return -1; // no idle slot, the task is deferred
++        }
++
++        evict_slot_session(*victim);
++
++        const std::string filepath = params_base.slot_save_path.empty()
++            ? std::string()
++            : session_filepath(session_id);
++
++        if (!filepath.empty() && fs::exists(filepath)) {
++            double t_ms = 0.0;
++            std::string err_msg;
++            if (slot_restore_from_file(*victim, filepath, t_ms, &err_msg) > 0) {
++                SLT_INF(*victim, "restored session %s from %s (%.2f ms)\n", session_id.c_str(), filepath.c_str(), t_ms);
++            } else {
++                SLT_WRN(*victim, "failed to restore session %s from %s, starting fresh\n", session_id.c_str(), filepath.c_str());
++            }
++        }
++
++        stamp_slot_session(*victim, session_id);
++
++        return victim->id;
++    }
++
+     // call only when the task is sure to launch on the slot
+     void update_prompt_cache(server_slot & slot, const server_task & task) {
+         SRV_TRC("%s", "updating prompt cache\n");
+@@ -1870,6 +2245,7 @@ private:
+             if (slot.prompt.n_tokens() > 0) {
+                 SRV_WRN("purging slot %d with %zu tokens\n", slot.id, slot.prompt.tokens.size());
+ 
++                evict_slot_session(slot);
+                 slot.prompt_clear();
+ 
+                 res = true;
+@@ -2359,8 +2735,9 @@ private:
+     void send_final_response(server_slot & slot) {
+         auto res = std::make_unique<server_task_result_cmpl_final>();
+ 
+-        res->id      = slot.task->id;
+-        res->id_slot = slot.id;
++        res->id         = slot.task->id;
++        res->id_slot    = slot.id;
++        res->session_id = slot.session_id;
+ 
+         res->index = slot.task->index;
+ 
+@@ -2982,7 +3359,16 @@ private:
+ 
+                     const int id_task = task.id;
+ 
+-                    const auto plan = slot_sched.select(get_slot_infos(), task, get_task_lora(task));
++                    server_slot_plan plan;
++
++                    if (!task.session_id.empty() &&
++                            (task.type == SERVER_TASK_TYPE_COMPLETION || task.type == SERVER_TASK_TYPE_INFILL)) {
++                        // session-tagged requests: the slot is chosen by session identity, not by prompt similarity
++                        plan.id_slot      = select_session_slot(task);
++                        plan.update_cache = false;
++                    } else {
++                        plan = slot_sched.select(get_slot_infos(), task, get_task_lora(task));
++                    }
+ 
+                     server_slot * slot = plan.id_slot == -1 ? nullptr : get_slot_by_id(plan.id_slot);
+ 
+@@ -3043,6 +3429,7 @@ private:
+ 
+                                 if (params_base.kv_unified) {
+                                     // [TAG_IDLE_SLOT_CLEAR]
++                                    evict_slot_session(slot);
+                                     slot.prompt_clear();
+                                 }
+                             }
+@@ -3189,50 +3576,24 @@ private:
+                         break;
+                     }
+ 
+-                    const int64_t t_start = ggml_time_us();
+-
+                     std::string filename = task.slot_action.filename;
+-                    std::string filepath = task.slot_action.filepath;
++                    const std::string & filepath = task.slot_action.filepath;
+ 
+-                    std::vector<char> packed;
+-                    try {
+-                        packed = slot->prompt.tokens.serialize();
+-                    } catch (const std::exception & err) {
+-                        send_error(task, err.what(), ERROR_TYPE_NOT_SUPPORTED);
+-                        break;
+-                    }
+-
+-                    GGML_ASSERT(packed.size() % sizeof(llama_token) == 0);
+-                    const size_t nwrite = llama_state_seq_save_file(
+-                        ctx_tgt, filepath.c_str(), slot->id,
+-                        reinterpret_cast<const llama_token *>(packed.data()), packed.size() / sizeof(llama_token));
++                    double t_save_ms = 0.0;
++                    std::string err_msg;
++                    const size_t nwrite = slot_save_to_file(*slot, filepath, t_save_ms, &err_msg);
+                     if (nwrite == 0) {
+-                        send_error(task, "Unable to save slot", ERROR_TYPE_SERVER);
++                        send_error(task, err_msg.empty() ? "Unable to save slot" : err_msg, ERROR_TYPE_SERVER);
+                         break;
+                     }
+ 
+-                    size_t nwrite_ckpt = 0;
+-                    if (!save_slot_checkpoints(filepath, *slot, nwrite_ckpt)) {
+-                        send_error(task, "Unable to save slot: incomplete context checkpoints", ERROR_TYPE_SERVER);
+-                        break;
+-                    }
+-
+-                    size_t nwrite_dft = 0;
+-                    if (!save_slot_draft(filepath, *slot, nwrite_dft)) {
+-                        send_error(task, "Unable to save slot: incomplete draft state", ERROR_TYPE_SERVER);
+-                        break;
+-                    }
+-
+-                    const int64_t t_end = ggml_time_us();
+-                    const double t_save_ms = (t_end - t_start) / 1000.0;
+-
+                     auto res = std::make_unique<server_task_result_slot_save_load>();
+                     res->id       = task.id;
+                     res->id_slot  = id_slot;
+                     res->filename = filename;
+                     res->is_save  = true;
+                     res->n_tokens = slot->prompt.tokens.size();
+-                    res->n_bytes  = nwrite + nwrite_ckpt + nwrite_dft;
++                    res->n_bytes  = nwrite;
+                     res->t_ms     = t_save_ms;
+                     queue_results.send(std::move(res));
+                 } break;
+@@ -3251,57 +3612,24 @@ private:
+                         break;
+                     }
+ 
+-                    const int64_t t_start = ggml_time_us();
+-
+                     std::string filename = task.slot_action.filename;
+-                    std::string filepath = task.slot_action.filepath;
+-
+-                    size_t nread = 0;
+-                    try {
+-                        size_t n_packed = 0;
+-                        llama_tokens packed;
+-                        nread = llama_state_seq_load_file(ctx_tgt, filepath.c_str(), slot->id, nullptr, 0, &n_packed);
+-                        if (nread != 0) {
+-                            packed.resize(std::max<size_t>(1, n_packed));
+-                            nread = llama_state_seq_load_file(ctx_tgt, filepath.c_str(), slot->id, packed.data(), packed.size(), &n_packed);
+-                        }
+-                        if (nread == 0) {
+-                            throw std::runtime_error("No available space in KV cache or invalid slot save file");
+-                        }
+-                        packed.resize(n_packed);
+-
+-                        server_tokens restored = server_tokens::deserialize(packed, mctx != nullptr);
++                    const std::string & filepath = task.slot_action.filepath;
+ 
+-                        if (restored.size() > (size_t) slot->n_ctx) {
+-                            throw std::runtime_error("Restored prompt does not fit in the slot context");
+-                        }
+-
+-                        if (!restored.validate(ctx_tgt)) {
+-                            throw std::runtime_error("Invalid tokens in slot save file");
+-                        }
+-
+-                        slot->prompt.clear();
+-                        slot->prompt.tokens = std::move(restored);
+-                    } catch (const std::exception & err) {
+-                        slot->prompt_clear();
+-                        send_error(task, std::string("Unable to restore slot: ") + err.what(), ERROR_TYPE_INVALID_REQUEST);
++                    double t_restore_ms = 0.0;
++                    std::string err_msg;
++                    const size_t nread = slot_restore_from_file(*slot, filepath, t_restore_ms, &err_msg);
++                    if (nread == 0) {
++                        send_error(task, std::string("Unable to restore slot: ") + err_msg, ERROR_TYPE_INVALID_REQUEST);
+                         break;
+                     }
+ 
+-                    // nread is the end offset of the llama state payload within the file
+-                    const size_t nread_ckpt = load_slot_checkpoints(filepath, nread, *slot);
+-                    const size_t nread_dft  = load_slot_draft(filepath, nread + nread_ckpt, *slot);
+-
+-                    const int64_t t_end = ggml_time_us();
+-                    const double t_restore_ms = (t_end - t_start) / 1000.0;
+-
+                     auto res = std::make_unique<server_task_result_slot_save_load>();
+                     res->id       = task.id;
+                     res->id_slot  = id_slot;
+                     res->filename = filename;
+                     res->is_save  = false;
+                     res->n_tokens = slot->prompt.tokens.size();
+-                    res->n_bytes  = nread + nread_ckpt + nread_dft;
++                    res->n_bytes  = nread;
+                     res->t_ms     = t_restore_ms;
+                     queue_results.send(std::move(res));
+                 } break;
+@@ -5342,6 +5670,22 @@ std::unique_ptr<server_res_generator> server_routes::handle_completions_impl(
+             task.id_slot = json_value(data, "id_slot", -1);
+             sse_ping_interval = task.params.sse_ping_interval;
+ 
++            // session id: body field and/or the headers named by --slot-save-sessions, they must agree if both are present
++            // without the flag the session id is not read at all
++            if (params.session_id_enabled) {
++                std::string session_id = json_value(data, "session_id", std::string());
++                const std::string session_header = session_id_from_headers(req.headers, params.session_id_headers);
++                if (!session_header.empty() && !session_id.empty() && session_id != session_header) {
++                    throw std::runtime_error("session_id in the request body and in the headers do not match");
++                }
++                task.session_id = session_id.empty() ? session_header : session_id;
++
++                // the id becomes part of the save file name, it must be a valid filename
++                if (!task.session_id.empty() && !fs_validate_filename("llama-session-" + task.session_id + ".bin")) {
++                    throw std::runtime_error("session_id contains characters invalid in the save file name");
++                }
++            }
++
+             // OAI-compat
+             task.params.res_type          = res_type;
+             task.params.oaicompat_cmpl_id = completion_id;
+diff --git a/tools/server/server-task.cpp b/tools/server/server-task.cpp
+index 595e57ffb..79330ecab 100644
+--- a/tools/server/server-task.cpp
++++ b/tools/server/server-task.cpp
+@@ -335,6 +335,7 @@ json server_task_result_cmpl_final::to_json_non_oaicompat() {
+         {"content",             content.text},
+         {"tokens",              tokens},
+         {"id_slot",             id_slot},
++        {"session_id",          session_id},
+         {"stop",                true},
+         {"model",               oaicompat_model},
+         {"tokens_predicted",    n_decoded},
+diff --git a/tools/server/server-task.h b/tools/server/server-task.h
+index 234cd36e1..96378e875 100644
+--- a/tools/server/server-task.h
++++ b/tools/server/server-task.h
+@@ -173,6 +173,9 @@ struct server_task {
+     int id_target = -1;
+     int id_slot   = -1;
+ 
++    // client-provided session id, used to persist and restore the slot state
++    std::string session_id;
++
+     // used by parallel sampling (multiple completions from same prompt)
+     int id_parent  = -1;
+     // temporary store of child tasks for scheduling
+@@ -412,6 +415,7 @@ struct completion_token_output {
+ struct server_task_result_cmpl_final : server_task_result {
+     common_chat_input content;
+     llama_tokens tokens;
++    std::string session_id;
+ 
+     bool stream;
+     bool include_usage;
+diff --git a/tools/server/tests/unit/test_slot_save.py b/tools/server/tests/unit/test_slot_save.py
+index 70d06c2a9..5de0dcf2c 100644
+--- a/tools/server/tests/unit/test_slot_save.py
++++ b/tools/server/tests/unit/test_slot_save.py
+@@ -9,12 +9,20 @@ STATE_FILE_HEADER_SIZE = 12
+ 
+ server = ServerPreset.tinyllama2()
+ 
++# the same preset without --slot-save-sessions, for the tests that check the flag gating
++server_noflag = ServerPreset.tinyllama2()
++
+ @pytest.fixture(autouse=True)
+ def create_server(tmp_path):
+-    global server
++    global server, server_noflag
+     server = ServerPreset.tinyllama2()
+     server.slot_save_path = str(tmp_path)
+     server.temperature = 0.0
++    # session-keyed save/restore is opt-in, every test that tags a request needs the flag
++    server.session_id_headers = "x-session-id,session_id"
++    server_noflag = ServerPreset.tinyllama2()
++    server_noflag.slot_save_path = str(tmp_path)
++    server_noflag.temperature = 0.0
+ 
+ 
+ def test_slot_save_restore():
+@@ -924,3 +932,464 @@ def test_prompt_cache_swa_window(swa_window_server):
+ 
+     assert cached["cache_n"]  == direct["cache_n"]
+     assert cached["prompt_n"] == direct["prompt_n"]
++
++# Session-keyed automatic save/restore.
++#
++# A session id in the request (body field or affinity headers) makes the server
++# persist the evicted session's KV state to slot_save_path and restore it on the
++# next request for the same session, without explicit save/restore calls.
++#
++
++
++def test_session_autosave_restore():
++    global server
++    server.server_slots = True
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    # session a, fresh slot
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["session_id"] == "a"
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    assert prompt_n_a > 0
++    slot_id_a = res.body["id_slot"]
++
++    # session c pinned to the same slot evicts session a to disk
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "session_id": "c",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # session a again: its state must be restored from disk, full reuse
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["session_id"] == "a"
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++    # the evicted session file is on disk, named from the session id
++    files = [f for f in os.listdir(server.slot_save_path) if f.endswith(".bin")]
++    assert files == ["llama-session-a.bin"]
++
++    # the sessions are visible per slot
++    res = server.make_request("GET", "/slots")
++    assert res.status_code == 200
++    sessions = {s["session_id"] for s in res.body}
++    assert "a" in sessions and "c" in sessions
++
++
++def test_session_autosave_restore_headers():
++    global server
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    # session id delivered via the affinity headers instead of the body
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "cache_prompt": True,
++    }, headers={"x-session-id": "a"})
++    assert res.status_code == 200
++    assert res.body["session_id"] == "a"
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    slot_id_a = res.body["id_slot"]
++
++    # another session evicts it to disk
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    }, headers={"x-session-id": "c"})
++    assert res.status_code == 200
++
++    # the session is restored from disk on the next request
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "cache_prompt": True,
++    }, headers={"session_id": "a"})
++    assert res.status_code == 200
++    assert res.body["session_id"] == "a"
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++
++def test_session_id_conflict():
++    global server
++    server.start()
++
++    # body and header disagree: the request must be rejected
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of France?",
++        "session_id": "a",
++    }, headers={"x-session-id": "b"})
++    assert res.status_code == 400
++    assert "do not match" in res.body["error"]["message"]
++
++
++def test_session_id_invalid_chars():
++    global server
++    server.start()
++
++    # a session id that is invalid as a file name must be rejected
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of France?",
++        "session_id": "a/b",
++    })
++    assert res.status_code == 400
++    assert "session_id" in res.body["error"]["message"]
++
++
++def test_session_autosave_across_restart():
++    global server
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    slot_id_a = res.body["id_slot"]
++
++    # evict session a to disk
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "session_id": "c",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # the file must survive the restart and restore in the new process
++    server.stop()
++    server.start()
++
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++
++@pytest.mark.skipif(sys.platform == "win32", reason="TerminateProcess does not run the shutdown path on Windows")
++def test_session_autosave_on_shutdown():
++    global server
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    # session a is never evicted, so it has no file on disk yet
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    assert not any(f.endswith(".bin") for f in os.listdir(server.slot_save_path))
++
++    # on shutdown the in-memory session state must be flushed to disk
++    server.stop()
++    files = [f for f in os.listdir(server.slot_save_path) if f.endswith(".bin")]
++    assert files == ["llama-session-a.bin"]
++
++    # in the new process the session must restore from that file
++    server.start()
++
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++
++def test_session_autosave_on_sleep():
++    global server
++    server.sleep_idle_seconds = 1
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    # session a is never evicted, so it has no file on disk yet
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    assert not any(f.endswith(".bin") for f in os.listdir(server.slot_save_path))
++
++    # after the idle timeout the server sleeps, which must flush the session to disk
++    # do not send requests while waiting, they reset the idle timer
++    deadline = time.time() + 15.0
++    while time.time() < deadline:
++        time.sleep(2.0)
++        res = server.make_request("GET", "/props")
++        if res.body.get("is_sleeping"):
++            break
++    else:
++        pytest.fail("server did not go to sleep")
++
++    files = [f for f in os.listdir(server.slot_save_path) if f.endswith(".bin")]
++    assert files == ["llama-session-a.bin"]
++
++    # in the new process the session must restore from that file
++    server.stop()
++    server.start()
++
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++
++def test_session_without_save_path():
++    global server
++
++    # a server with sessions enabled but no slot_save_path: session ids still
++    # pin slots in memory, but evicted sessions cannot be restored
++    srv = ServerPreset.tinyllama2()
++    srv.temperature = 0.0
++    srv.session_id_headers = "x-session-id,session_id"
++    srv.start()
++    server = srv
++
++    prompt_a = "What is the capital of France?"
++
++    res = srv.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    slot_id_a = res.body["id_slot"]
++
++    res = srv.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "session_id": "c",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # no save path means no restore: full re-prefill
++    res = srv.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["timings"]["cache_n"] == 0
++    assert res.body["timings"]["prompt_n"] == prompt_n_a
++
++
++def test_session_id_ignored_without_flag():
++    global server_noflag
++    server_noflag.start()
++
++    prompt_a = "What is the capital of France?"
++
++    # without --slot-save-sessions the session id is ignored, in the body and in the headers
++    res = server_noflag.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    }, headers={"x-session-id": "a"})
++    assert res.status_code == 200
++    assert res.body["session_id"] == ""
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    slot_id_a = res.body["id_slot"]
++
++    # force the slot to be taken by another session
++    res = server_noflag.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # no file was written
++    server_noflag.stop()
++    files = [f for f in os.listdir(server_noflag.slot_save_path) if f.endswith(".bin")]
++    assert files == []
++
++MODEL_DRAFT_FILE_URL = "https://huggingface.co/ggml-org/tiny-llamas/resolve/main/stories15M-q4_0.gguf"
++
++
++def test_session_max_sessions():
++    global server
++    server.n_slots = 1
++    server.session_max_sessions = 2
++    server.start()
++
++    prompts = [
++        "What is the capital of France?",
++        "What is the capital of Germany?",
++        "What is the capital of Italy?",
++    ]
++    for sid, prompt in zip(["a", "b", "c"], prompts):
++        res = server.make_request("POST", "/completion", data={
++            "prompt": prompt,
++            "session_id": sid,
++            "cache_prompt": True,
++        })
++        assert res.status_code == 200
++
++    # c holds the slot, b is on disk, the oldest (a) was pruned by the cap
++    files = set(os.listdir(server.slot_save_path))
++    assert files == {"llama-session-b.bin"}
++
++    # request a new session: c is evicted to disk, b is pruned
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Spain?",
++        "session_id": "d",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    files = set(os.listdir(server.slot_save_path))
++    assert files == {"llama-session-c.bin"}
++
++
++def test_session_sweep_counts_disk_files():
++    global server
++    server.session_max_sessions = 1
++
++    # a session file left by a previous run, older than anything created now
++    fake = os.path.join(server.slot_save_path, "llama-session-z.bin")
++    with open(fake, "wb") as f:
++        f.write(b"")
++    past = time.time() - 86400
++    os.utime(fake, (past, past))
++
++    server.start()
++
++    # the file must be registered at startup and count against the cap
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of France?",
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # the pre-existing file was the oldest, so it was pruned
++    assert not os.path.exists(fake)
++
++
++def test_session_sweep_gated_by_flag():
++    global server_noflag
++
++    # without the flag, leftover session files are not indexed or pruned
++    fake = os.path.join(server_noflag.slot_save_path, "llama-session-z.bin")
++    with open(fake, "wb") as f:
++        f.write(b"")
++
++    server_noflag.start()
++    assert os.path.exists(fake)
++    server_noflag.stop()
++    assert os.path.exists(fake)
++
++
++def test_session_autosave_draft_state(tmp_path):
++    # speculative server: the draft state travels inside the session file
++    server = ServerPreset.stories15m_moe()
++    server.slot_save_path = str(tmp_path)
++    server.temperature = 0.0
++    server.session_id_headers = "x-session-id,session_id"
++    server.model_draft = download_file(MODEL_DRAFT_FILE_URL)
++    server.spec_type = "draft-simple"
++    server.spec_draft_n_min = 1
++    server.spec_draft_n_max = 2
++    server.start()
++
++    prompt_a = "What is the capital of France?"
++
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    prompt_n_a = res.body["timings"]["prompt_n"]
++    slot_id_a = res.body["id_slot"]
++
++    # evict session a to disk
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Germany?",
++        "session_id": "c",
++        "id_slot": slot_id_a,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++
++    # one session file carries the target state, the checkpoints and the draft state
++    files = set(os.listdir(server.slot_save_path))
++    assert files == {"llama-session-a.bin"}
++
++    # restart: the session restores with the draft state included
++    server.stop()
++    server.start()
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_a,
++        "session_id": "a",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["session_id"] == "a"
++    assert res.body["timings"]["prompt_n"] == 1
++    assert res.body["timings"]["cache_n"] == prompt_n_a - 1
++
++    # with a cap of one session, exactly one session file survives the startup sweep
++    server.session_max_sessions = 1
++    server.stop()
++    server.start()
++    files = set(os.listdir(server.slot_save_path))
++    assert len(files) == 1
++    sid = next(f[len("llama-session-"):-4] for f in files if f.endswith(".bin"))
++
++    # the surviving session restores from its file
++    prompt_map = {"a": prompt_a, "c": "What is the capital of Germany?"}
++    res = server.make_request("POST", "/completion", data={
++        "prompt": prompt_map[sid],
++        "session_id": sid,
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    assert res.body["timings"]["prompt_n"] == 1
++
++    # a new session evicts the survivor and prunes its file
++    res = server.make_request("POST", "/completion", data={
++        "prompt": "What is the capital of Spain?",
++        "session_id": "d",
++        "cache_prompt": True,
++    })
++    assert res.status_code == 200
++    files = set(os.listdir(server.slot_save_path))
++    assert files == set()
+diff --git a/tools/server/tests/utils.py b/tools/server/tests/utils.py
+index 6dbd540b9..951ad4cbe 100644
+--- a/tools/server/tests/utils.py
++++ b/tools/server/tests/utils.py
+@@ -84,6 +84,8 @@ class ServerProcess:
+     reverse_prompt: str | None = None
+     n_prompts: int | None = 0
+     slot_save_path: str | None = None
++    session_id_headers: str | None = None
++    session_max_sessions: int | None = None
+     id_slot: int | None = None
+     cache_prompt: bool | None = None
+     n_slots: int | None = None
+@@ -255,6 +257,10 @@ class ServerProcess:
+             server_args.extend(["--reverse-prompt", self.reverse_prompt])
+         if self.slot_save_path:
+             server_args.extend(["--slot-save-path", self.slot_save_path])
++        if self.session_id_headers is not None:
++            server_args.extend(["--slot-save-sessions", self.session_id_headers])
++        if self.session_max_sessions is not None:
++            server_args.extend(["--slot-save-sessions-max", str(self.session_max_sessions)])
+         if self.n_ga:
+             server_args.extend(["--grp-attn-n", self.n_ga])
+         if self.n_ga_w:
