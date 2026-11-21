@@ -120,23 +120,35 @@ conv VAE are unverified in sd.cpp, and Hermes Agent has no Nix packaging yet.
 5. **PoCs in order**: VHS archive → VHS restore → documents → albums → spam → voice → UI → LTX.
 6. **crew** — only when a PoC has shown that one agent is not enough.
 
-## Services are containers
+## Services are containers, Nix-native first
 
-A service that might move must not depend on the host it was built for. The rule:
+A service that might move must not depend on the host it was built for. Three tiers, in preference
+order:
 
-- **Packaging**: `pkgs.dockerTools.buildImage` (or the project's own image), built by the flake, so
-  the image is reproducible and versioned with the repo.
-- **Running**: `virtualisation.oci-containers.containers.<name>` in the host module, with `volumes`
-  for state, `extraOptions` for devices (`/dev/dri` for Vulkan, `/dev/kfd` for ROCm), and
-  `environment` for the fleet's endpoint and key.
-- **The unit of migration is image + volume.** Moving Hermes Agent from etra to a new box is a
-  ten-line module and an rsync of `~/.hermes`.
-- **CPU-only hosts run the same image.** Kokoro, DeepFilterNet and whisper-turbo have no device
-  requirement, so the identical image runs on a 4-core box with no GPU.
-- **The bench stays host-native** — it is a shell of `ffmpeg` calls and file targets, not a service.
-  The tools it calls are Nix packages or containers, never a hand-installed binary.
-- **GPU containers do not get to bypass the policy**: a container that starts a model server is
-  registered as an engine profile like any other, and `admit` still decides.
+1. **NixOS container (`containers.<name>`, systemd-nspawn)** — the default for our own services
+   (Hermes Agent, Kokoro, DeepFilterNet, dots.ocr). The container _is_ a NixOS module: no image is
+   built, `/nix/store` is shared, and the whole definition is a few lines in the host module.
+   Devices are bind-mounted (`/dev/dri` for Vulkan, `/dev/kfd` for ROCm) and the container's
+   `hardware.graphics` settings match the host, so the driver libraries are the host's own store
+   paths. **Migration unit: the module plus its bind mount.**
+2. **OCI from the store, no registry** — `virtualisation.oci-containers.containers.<name>` with
+   `imageFile = pkgs.dockerTools.buildImage { ... }` and the podman backend. The image tarball lives
+   in the store, so nothing is pulled and nothing is pushed. Use it only when the thing really is an
+   OCI image (a third-party Dockerfile, ComfyUI). **Migration unit: the image derivation plus the
+   volume.**
+3. **nix-snapshotter** — containerd-only (the author confirms it does not work with docker-ce or
+   podman), and the Podman/CRI-O equivalent (`bitbloxhub/nix-storage-plugin`, Apr 2026) needs an
+   overlay patch and is experimental. Neither is a dependency. Revisit if we ever run containerd or
+   k3s; until then tier 2 already gives store-native images without a registry.
+
+Rules that hold for all three:
+
+- **CPU-only hosts run the same definition.** Kokoro, DeepFilterNet and whisper-turbo have no device
+  requirement, so the identical container runs on a 4-core box with no GPU.
+- **The bench stays host-native** — a shell of `ffmpeg` calls and file targets, not a service. The
+  tools it calls are Nix packages or containers, never a hand-installed binary.
+- **A container does not bypass the policy**: if it starts a model server it is an engine profile
+  like any other, and `admit` still decides.
 
 ## Non-goals
 
