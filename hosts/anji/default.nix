@@ -74,7 +74,7 @@ let
   bootstrapPath = if helperSwitch then helperPath else legacyBootstrapPath;
 
   # The fleet sshd on anji. Apple's sshd keeps 22 for the FileVault pre-boot unlock
-  # and the `anji+apple` recovery alias; this nixpkgs daemon serves the fleet on 2222
+  # and the `anji+apple` / `anji+recovery` recovery aliases; this nixpkgs daemon serves the fleet on 2222
   # with the post-quantum host identity. The helper wraps it, so the store is mounted
   # and the TCC grant covers the daemon tree.
   nixpkgsSshdPort = 2222;
@@ -666,7 +666,7 @@ in
           };
           # The fleet sshd on 2222. The map above also names this job; this entry replaces that
           # value with the payload and the full service config. Apple's sshd keeps 22 and Remote
-          # Login, so the FileVault pre-boot unlock and the `anji+apple` recovery alias are
+          # Login, so the FileVault pre-boot unlock and the `anji+apple` / `anji+recovery` aliases are
           # untouched.
           nixpkgs-sshd = {
             command = "${pkgs.openssh}/bin/sshd -D -f /etc/ssh/sshd_nixpkgs_config";

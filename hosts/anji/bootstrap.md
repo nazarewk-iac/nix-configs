@@ -127,9 +127,9 @@ across `/etc/ssh/sshd_config.d/`:
 
 The fleet sshd is nixpkgs OpenSSH 10.6p1 on **2222** (`org.nixos.nixpkgs-sshd`), wrapped by
 `kdn-nix-darwin-helper`. Apple's sshd keeps 22 and Remote Login for the pre-boot FileVault unlock
-and the `anji+apple` recovery alias. The nixpkgs config includes only the fleet fragments; it must
-not include `100-macos.conf` (the Darwin build has no PAM). See [README.md](README.md),
-"SSH daemons".
+and the `anji+apple` / `anji+recovery` aliases. The nixpkgs config includes only the fleet
+fragments; it must not include `100-macos.conf` (the Darwin build has no PAM). See
+[README.md](README.md), "SSH daemons".
 
 The host keys live in `/etc/ssh/ssh_host_*_key`. They are **not** managed by nix-darwin and survive
 a rebuild only if the disk survives. On a fresh disk, regenerate them:

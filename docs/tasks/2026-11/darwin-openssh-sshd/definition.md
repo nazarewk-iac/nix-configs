@@ -10,8 +10,8 @@ timestamp: 2026-11-12T00:00:00+01:00
 # Run nixpkgs OpenSSH as the sshd on anji
 
 **Solution:** [done.md](done.md). The delivered route is the alternate port: nixpkgs OpenSSH on
-2222, Apple's sshd on 22, `ssh anji` and its FQDNs default to 2222, and `anji+apple` is the
-recovery alias on 22.
+2222, Apple's sshd on 22, `ssh anji` and its FQDNs default to 2222, and `anji+apple` /
+`anji+recovery` are the recovery aliases on 22.
 
 ## Context
 
@@ -149,7 +149,7 @@ is in [done.md](done.md).
   `no matching host key type found`; the server offers ed25519 only.
 - The port-22 replacement is still blocked by the FileVault pre-boot SSH unlock.
 - Decision: **delivered** as nixpkgs sshd on 2222 (approach 1); Apple's sshd keeps 22 for the
-  pre-boot unlock and the `anji+apple` recovery alias. See [done.md](done.md).
+  pre-boot unlock and the `anji+apple` / `anji+recovery` recovery aliases. See [done.md](done.md).
 
 ## Out of scope
 

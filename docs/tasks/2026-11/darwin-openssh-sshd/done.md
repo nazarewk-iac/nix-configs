@@ -1,6 +1,6 @@
 ---
 type: Solution
-description: nixpkgs OpenSSH 10.6p1 serves anji on 2222 with the post-quantum host identity; `ssh anji` and its FQDNs default to it, while `anji+apple` keeps Apple's sshd on 22 for recovery.
+description: nixpkgs OpenSSH 10.6p1 serves anji on 2222 with the post-quantum host identity; `ssh anji` and its FQDNs default to it, while `anji+apple` / `anji+recovery` keep Apple's sshd on 22 for recovery.
 task: definition.md
 authored_by: agent
 timestamp: 2026-11-21T19:00:00+01:00
@@ -18,9 +18,10 @@ timestamp: 2026-11-21T19:00:00+01:00
 - `data/slots/slots-ssh-access.nix`: `anji` carries its public names and `port = 2222`, the LAN and
   etra edges use 2222, and the etra NetBird edge (`anji.priv…`) is the reliable relay fallback.
 - `packages/kdn-ssh-access`: the host `names` and `port` options emit a plain `Host` block for the
-  short name and every FQDN; the `+apple` tag forces the final target to port 22. Tests cover the
-  tag and the port override.
-- `packages/kdn-ssh-access/README.md`: the `+apple` tag and the `names`/`port` host options.
+  short name and every FQDN; the `+apple` / `+recovery` tags force the final target to port 22.
+  Tests cover both tags and the port override.
+- `packages/kdn-ssh-access/README.md`: the `+apple` / `+recovery` tags and the `names`/`port` host
+  options.
 
 ## The explicit include list
 
@@ -49,7 +50,7 @@ the boot order adds the rule before the job starts.
 ## Measurements (2026-11-21)
 
 - `ssh anji 'echo $SSH_CONNECTION'` → `192.168.73.49 … 192.168.73.85 2222`.
-- `ssh anji+apple 'echo $SSH_CONNECTION'` → `192.168.73.49 … 192.168.73.85 22`.
+- `ssh anji+apple` and `ssh anji+recovery` → `192.168.73.49 … 192.168.73.85 22`.
 - `ssh -o ControlPath=none -o ControlMaster=no -o HostKeyAlgorithms=ssh-mldsa44-ed25519-cert anji true`
   → `kex: host key algorithm: ssh-mldsa44-ed25519-cert`; server certificate ID `anji`, CA
   `SHA256:hgSW/M0XhoBrKLTZ8h47k3qEV5ADoRTFfwWD22zJkP0`, valid to 2027-02-10.
@@ -57,14 +58,17 @@ the boot order adds the rule before the job starts.
   `mldsa44-ed25519` host keys/certs, and the CA trust.
 - `ssh anji.lan.etra.net.int.kdn.im`, the trailing-dot form, and the short `anji` all pass a
   strict connection; the CA verifies the host certificate.
-- `ssh anji+apple` and `ssh -p 22 anji` still reach Apple's sshd; Remote Login is On.
+- `ssh anji+apple`, `ssh anji+recovery`, and `ssh -p 22 anji` still reach Apple's sshd; Remote
+  Login is On.
 - The `kdn-ssh-access` plain `Host` block is in `~/.ssh/config.d/40-kdn-ssh-access.config` on
-  `oams`; `ssh -G anji` shows `port 2222`, `ssh -G anji+apple` shows `port 22`.
+  `oams`; `ssh -G anji` shows `port 2222`; `ssh -G anji+apple` and `ssh -G anji+recovery` show
+  `port 22`.
 
 ## Revert
 
 - Client: revert `data/slots/slots-ssh-access.nix` (or remove `anji.names`, `anji.port`, the edge
-  ports and the `+apple` block) and rebuild the client. `ssh anji` returns to the old route.
+  ports and the `+apple` / `+recovery` block) and rebuild the client. `ssh anji` returns to the
+  old route.
 - Host: remove the `nixpkgs-sshd` job and the `sshd_nixpkgs_config` block from
   `hosts/anji/default.nix`, then activate. To stop only the fleet daemon now:
   `sudo launchctl bootout system/org.nixos.nixpkgs-sshd`. Apple's sshd on 22 and Remote Login are
@@ -77,7 +81,7 @@ the boot order adds the rule before the job starts.
 - `launchctl print system/org.nixos.nixpkgs-sshd` shows the helper as the top-level process and
   the running `sshd` child; `lsof -iTCP:2222` listens on IPv4 and IPv6.
 - Remote Login is On; the pre-boot FileVault SSH unlock is untouched.
-- `ssh anji` and its FQDNs use 2222; `anji+apple` uses 22.
+- `ssh anji` and its FQDNs use 2222; `anji+apple` / `anji+recovery` use 22.
 - The PQ certificate negotiates; the strict connection from `oams` passes; the CA verifies the
   host certificate.
 - Boot proof: passed on 2026-11-21; see below.
@@ -91,6 +95,7 @@ the boot order adds the rule before the job starts.
   `store volume A8D810B7-5177-4930-890A-10CD1BF7AC96 mounted at /nix` and
   `nixpkgs-sshd spawned pid 691`.
 - The booted generation is `system-107-link`.
-- `ssh anji` → `… 192.168.73.85 2222`; `ssh anji+apple` → `… 192.168.73.85 22`.
+- `ssh anji` → `… 192.168.73.85 2222`; `ssh anji+apple` / `ssh anji+recovery` →
+  `… 192.168.73.85 22`.
 - The PQ certificate still negotiates; Remote Login is On; the firewall entry for the nixpkgs
   `sshd` persists; Apple's sshd is the recovery daemon.

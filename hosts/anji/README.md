@@ -42,7 +42,8 @@ used `pass show hosts/anji/users/kdn/password`; it did not change the password.
 - Apple's sshd on **22** and Remote Login stay on. This is the FileVault pre-boot unlock path and
   the recovery daemon.
 - `ssh anji` and its FQDNs default to 2222 through the `kdn-ssh-access` plain `Host` block.
-  `ssh anji+apple` (or `ssh kdn-anji+apple`) uses Apple's daemon on 22.
+  `ssh anji+apple` and `ssh anji+recovery` (or `ssh kdn-anji+apple` / `kdn-anji+recovery`) use
+  Apple's daemon on 22.
 - The nixpkgs Darwin build has no PAM. The nixpkgs config includes only the fleet fragments, not
   `100-macos.conf`; do not add `UsePAM` to it.
 - The application firewall allows the nixpkgs `sshd` binary separately from Apple's. The
@@ -50,8 +51,9 @@ used `pass show hosts/anji/users/kdn/password`; it did not change the password.
   `sudo launchctl kickstart -k system/org.nixos.nixpkgs-sshd`.
 
 ```bash
-ssh anji          # fleet sshd, 2222, PQ host identity
-ssh anji+apple    # Apple's sshd, 22, recovery
+ssh anji             # fleet sshd, 2222, PQ host identity
+ssh anji+apple       # Apple's sshd, 22, recovery
+ssh anji+recovery    # the same recovery path, easier to discover
 ```
 
 ## Recovery console

@@ -505,9 +505,10 @@ type spec struct {
 	onlyRemote bool
 	via        string
 	family     string
-	// apple forces the final target to port 22. It is the recovery tag for a host
-	// that serves the fleet sshd on an alternate port and keeps Apple's sshd on 22.
-	apple bool
+	// recovery forces the final target to port 22. `+apple` and `+recovery` are
+	// aliases for the daemon that stays on the default port while the fleet sshd
+	// runs on an alternate port.
+	recovery bool
 }
 
 func parseSpec(sshHost string) spec {
@@ -520,8 +521,8 @@ func parseSpec(sshHost string) spec {
 			s.onlyDirect = true
 		case t == "remote":
 			s.onlyRemote = true
-		case t == "apple":
-			s.apple = true
+		case t == "apple" || t == "recovery":
+			s.recovery = true
 		case t == "4" || t == "6":
 			s.family = t
 		case strings.HasPrefix(t, "via="):
@@ -642,10 +643,10 @@ func edgePort(e Edge) int {
 	return e.Port
 }
 
-// targetPort is the port the final target listens on. The `+apple` tag forces the
-// recovery daemon on 22; every other tag keeps the edge port.
+// targetPort is the port the final target listens on. The `+apple` and `+recovery`
+// tags force the recovery daemon on 22; every other tag keeps the edge port.
 func targetPort(e Edge, s spec) int {
-	if s.apple {
+	if s.recovery {
 		return 22
 	}
 	return edgePort(e)
@@ -819,9 +820,9 @@ func emitSSHConfig(cfg *Config, self, cfgPath string) string {
 		b.WriteString("\n")
 	}
 	// A host that names its public names gets a plain Host block too, so `ssh <name>`
-	// and every FQDN use the same dispatcher and the same default port. The `+apple`
-	// block is the recovery path for a host that serves the fleet sshd on an alternate
-	// port and keeps Apple's daemon on 22.
+	// and every FQDN use the same dispatcher and the same default port. The
+	// `+apple` / `+recovery` block is the recovery path for a host that serves the
+	// fleet sshd on an alternate port and keeps the default daemon on 22.
 	for _, n := range names {
 		h := cfg.Hosts[n]
 		if len(h.Names) == 0 {
@@ -852,7 +853,7 @@ func emitSSHConfig(cfg *Config, self, cfgPath string) string {
 		if port == 22 {
 			continue
 		}
-		fmt.Fprintf(&b, "Host %s+apple\n", n)
+		fmt.Fprintf(&b, "Host %s+apple %s+recovery\n", n, n)
 		fmt.Fprintf(&b, "    HostName %s\n", n)
 		b.WriteString("    Port 22\n")
 		if user != "" {
@@ -865,7 +866,9 @@ func emitSSHConfig(cfg *Config, self, cfgPath string) string {
 		if cfg.Defaults.IdentityFile != "" {
 			fmt.Fprintf(&b, "    IdentityFile %s\n", cfg.Defaults.IdentityFile)
 		}
-		fmt.Fprintf(&b, "    ProxyCommand %s proxy --config %s %s+apple %%p\n\n", self, cfgPath, n)
+		// %n keeps the alias the user typed, so the dispatcher sees either the
+		// `apple` or the `recovery` tag and both force port 22.
+		fmt.Fprintf(&b, "    ProxyCommand %s proxy --config %s %%n %%p\n\n", self, cfgPath)
 	}
 	b.WriteString("Host kdn-*\n")
 	b.WriteString("    IdentityAgent SSH_AUTH_SOCK\n")
