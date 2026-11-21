@@ -41,6 +41,13 @@ let
   # free. A model with no reserve set keeps its KV inside `vramMiB`, which is what a footprint
   # measured at the served context already contains.
   #
+  # `ramMiB` is the NON-RECLAIMABLE resident set: anonymous RSS plus shmem, the pages the kernel
+  # cannot drop under pressure. It is deliberately NOT `VmRSS`. A llama.cpp server with
+  # `--load-mode mmap` maps its weights, so RSS counts tens of GiB of clean, file-backed pages that
+  # the kernel reclaims for free; reading RSS made a 30B companion look like 21 GiB of RAM and made
+  # the policy refuse it beside a profile that had room. Measured 2026-11-21: qwen3-omni held
+  # 11.7 GiB of `RssFile` against 128 MiB of `RssAnon`.
+  #
   # The frontier: `--kv-resident 32768` keeps 32768 cells of each QSA layer in VRAM (it is a
   # per-layer streaming window, not a per-slot allocation), and k8v4 costs ~10.5 KiB per token
   # against int8's 13.7 KiB — 336 MiB. The omni profiles were measured with a 4096-cell window, so
@@ -233,15 +240,19 @@ in
       # so the policy can hold the cache back on the card without counting it twice.
       vramMiB = 19149;
       kvReserveMiB = 1536;
-      ramMiB = 21000;
+      # Non-reclaimable RAM: `RssAnon` 131,480 KiB plus `RssShmem` 0 in llama-server, beside
+      # `omni-fast` at 2 slots, 2026-11-21. The 11.7 GiB of `RssFile` is the GGUF mmap (clean,
+      # reclaimable), and the 15.9 GiB `VmHWM` is the load burst, which `budget.loadBurstRAMMiB`
+      # already covers. Rounded up to the next MiB.
+      ramMiB = 129;
       minResidencySeconds = 60;
       # Measured: 98.8 t/s beside omni-fast, 6.1 t/s beside max. The floor is what stops the second.
       decodeWithFrontier = {
         omni-fast = 98.8;
         max = 6.1;
       };
-      measured = "2026-11-20";
-      source = "hack/measure-footprint.py; KV from companion.log at n_ctx 16384 (2026-11-21)";
+      measured = "2026-11-21";
+      source = "llama-server /proc/<pid>/status: RssAnon+RssShmem (the non-reclaimable part), sampled 10 s after readiness, n_ctx 16384 beside omni-fast, 2026-11-21; vramMiB from hack/measure-footprint.py 2026-11-20; KV from companion.log at n_ctx 16384";
     };
     "qwen2.5-vl-7b" = {
       kind = "companion";
@@ -253,13 +264,15 @@ in
       # 12595 MiB measured, of which 896 MiB is the KV cache at n_ctx 16384.
       vramMiB = 11699;
       kvReserveMiB = 896;
-      ramMiB = 11000;
+      # Non-reclaimable RAM: `RssAnon` 74,132 KiB plus `RssShmem` 0, same method as qwen3-omni
+      # (2026-11-21). The 565 MiB of `RssFile` is the GGUF mmap, and `VmHWM` peaked at 7.8 GiB.
+      ramMiB = 73;
       minResidencySeconds = 60;
       decodeWithFrontier = {
         omni-fast = 40.0;
       };
-      measured = "2026-11-20";
-      source = "hack/measure-footprint.py; KV from companion.log at n_ctx 16384 (2026-11-21)";
+      measured = "2026-11-21";
+      source = "llama-server /proc/<pid>/status: RssAnon+RssShmem (the non-reclaimable part), sampled 10 s after readiness, n_ctx 16384 beside omni-fast, 2026-11-21; vramMiB from hack/measure-footprint.py 2026-11-20; KV from companion.log at n_ctx 16384";
     };
 
     "gemma-4-e4b" = {
