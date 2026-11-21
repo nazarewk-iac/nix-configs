@@ -194,14 +194,16 @@ in
       tier = "frontier";
       profile = "max-multi";
       persistent = true;
-      # 31546 MiB measured on the card, of which 6 slot sessions x 1300 MiB = 7800 MiB.
+      # 31546 MiB measured on the card at six slots, of which 5 slot sessions x 1300 MiB = 6500 MiB
+      # are the per-slot K/V; the weights and the compute buffers are the same at any slot count, so
+      # the five-slot total is 30246 MiB.
       vramMiB = 23746;
-      kvReserveMiB = 7800;
+      kvReserveMiB = 6500;
       ramMiB = 60300;
-      loadSeconds = 62;
-      switchSeconds = 76;
+      loadSeconds = 58;
+      switchSeconds = 72;
       measured = "2026-11-21";
-      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 6 slots x 512k, MemAvailable 6.6 GiB (2.9 GiB with two builds running), 30.7 t/s saturated";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, the 512k slot sweep: 5 slots x 512k, MemAvailable 12.0 GiB, 31.9 t/s saturated; six slots measured 6.6 GiB and 2.9 GiB with two builds running";
     };
     "qfn-max-swarm" = {
       kind = "engine";

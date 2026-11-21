@@ -4,15 +4,18 @@
 # its own files"), so it must run as the owner of its data tree. It also must not run as a human
 # account: the engine pins tens of GB and holds the GPU.
 #
-# `max-multi` is the primary and resting profile, by decision of 2026-11-21: a swarm of six 512k
+# `max-multi` is the primary and resting profile, by decision of 2026-11-21: a swarm of five 512k
 # slots on the best pack (UD-IQ4_XS). It overrides the earlier decision of the same day ("`max`, one
 # 1M session, is the primary"), because an agent fleet asks for several short sessions far more
 # often than for one million-token one; 1M is now an explicit request (`max-long`). Measured
-# 2026-11-21: 6 slots x 512k, 28.7 GiB of pinned K/V, 6.6 GiB of MemAvailable, 30.7 t/s aggregate.
+# 2026-11-21: 5 slots x 512k, 23.9 GiB of pinned K/V, 12.0 GiB of MemAvailable, 31.9 t/s aggregate.
+# Five rather than six, because this host also builds: a six-slot load holds 6.6 GiB on a quiet host
+# and fell to 2.9 GiB with two builds running, while five decodes no slower (31.9 against 30.7 t/s
+# saturated) because the expert cache shrinks as the slot sessions grow.
 #
 # The three siblings exist because the card cannot be everything at once:
 #
-#   max-multi    UD-IQ4_XS, 512k x 6   6.6 GiB free  30.7 t/s  the resting profile
+#   max-multi    UD-IQ4_XS, 512k x 5  12.0 GiB free  31.9 t/s  the resting profile
 #   max-swarm    UD-IQ4_XS, 256k x 8  18.4 GiB free  36.2 t/s  the same slots with RAM to spare
 #   max-long     UD-IQ4_XS,   1M x 2  10.5 GiB free  29.7 t/s  one or two long sessions
 #   fast-swarm   IQ2_XS,    384k x 8  31.4 GiB free  61.0 t/s  concurrency over pack quality
@@ -172,7 +175,7 @@ in
     # host RAM, not the card:
     #
     #   profile      slots x ctx   K/V total  MemAvailable  measured
-    #   max-multi      6 x 512k     28.7 GiB      6.6 GiB   30.7 t/s aggregate, load 62 s
+    #   max-multi      5 x 512k     23.9 GiB     12.0 GiB   31.9 t/s aggregate, load 58 s
     #   max-swarm      8 x 256k     19.1 GiB     18.4 GiB   36.2 t/s aggregate, load 54 s
     #   max-long       2 x 1M       19.1 GiB     10.5 GiB   29.7 t/s aggregate, load 58 s
     #   fast-swarm     8 x 384k     28.7 GiB     31.4 GiB   61.0 t/s aggregate, load 44 s
@@ -181,9 +184,12 @@ in
     # for more. 1M stops at two slots: a third would fit arithmetically, but this host has hard-reset
     # twice under a long prefill and the window keeps a slot of headroom for it.
     #
-    # 512k stops at six: seven measured 2.0 GiB of `MemAvailable` and a 130 s load (the page cache
-    # thrashes as the pinned K/V grows), and five would leave 12.0 GiB and decode no faster (31.9
-    # against 30.7 t/s saturated) because the expert cache shrinks as the slot sessions grow.
+    # 512k stops at five, because this host builds as well as serves. Five leaves 12.0 GiB and
+    # decodes no faster than six (31.9 against 30.7 t/s saturated): the expert cache shrinks as the
+    # slot sessions grow, so the aggregate is flat from five callers to seven at this window and the
+    # slot count buys concurrency, not throughput. Six holds 6.6 GiB on a quiet host but fell to
+    # 2.9 GiB with two builds running — under the 4 GiB of headroom a build needs — and seven
+    # measured 2.0 GiB and a 130 s load as the page cache thrashed against the pinned K/V.
     #
     # Two settings carry the fit, both measured 2026-11-21:
     #
@@ -198,7 +204,7 @@ in
     # (61.0 -> 54.0 t/s) and it costs about 3 GiB of RAM, so it stays off.
     profiles = {
       max-multi = {
-        parallel = 6;
+        parallel = 5;
       };
       max-swarm = {
         parallel = 8;

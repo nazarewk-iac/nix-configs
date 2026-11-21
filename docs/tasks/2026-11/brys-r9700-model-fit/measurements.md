@@ -1237,6 +1237,11 @@ thrashes against the pinned K/V). Five would leave 12.0 GiB and decodes no faste
 30.69 t/s saturated — because the expert cache shrinks as the slot sessions grow, so the aggregate is
 flat from five to seven callers at this window. The slot count buys concurrency, not throughput.
 
+**The resting count moved again, to five.** `qfn-max-multi` is 512k × 5 from 2026-11-21, because
+this host also builds: the six-slot load fell to 2.9 GiB of `MemAvailable` with two builds running,
+which is under the 4 GiB a build needs, while the five-slot row above keeps 12.0 GiB and decodes no
+slower at 31.92 t/s.
+
 ### What this decides
 
 A single engine cannot be the orchestrator and the swarm at 1M. Eight slots at 1M need 76.5 GiB of
@@ -1290,7 +1295,7 @@ one. Four profiles were measured for it, one load per configuration:
 
 | profile          | pack      | window | slots | role                        |
 | ---------------- | --------- | -----: | ----: | --------------------------- |
-| `qfn-max-multi`  | UD-IQ4_XS |  512k |     6 | **default resting**         |
+| `qfn-max-multi`  | UD-IQ4_XS |  512k |     5 | **default resting**         |
 | `qfn-max-swarm`  | UD-IQ4_XS |  256k |     8 | maximised slots on the pack |
 | `qfn-max-long`   | UD-IQ4_XS |    1M |     2 | explicit long sessions      |
 | `qfn-fast-swarm` | IQ2_XS    |  384k |     8 | concurrency over quality    |
@@ -1417,7 +1422,7 @@ that wants throughput asks for `qfn-fast-swarm` and pays a ~58 s switch.
 ### What this decides
 
 - **The resting profile is a swarm, not a single session.** `qfn` (`auto`) resolves to
-  `qfn-max-multi`: six 512k slots on UD-IQ4_XS, 6.6 GiB of `MemAvailable`, 30.7 t/s aggregate.
+  `qfn-max-multi`: five 512k slots on UD-IQ4_XS, 12.0 GiB of `MemAvailable`, 31.9 t/s aggregate.
   1M moved to `qfn-max-long` and is now an explicit request. `qfn-max` keeps its old 1M meaning and
   resolves to `qfn-max-long`.
 - **Eight is the ceiling, and it is the engine's.** `SLOTS_MAX` is 8 without a layer split, and
