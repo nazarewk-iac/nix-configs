@@ -73,15 +73,23 @@ let
 
   # The agent's config. Seeded into the state directory once (see the entrypoint);
   # after that the operator owns it.
+  #
+  # A NAMED provider (`providers.<name>` + `model.provider: <name>`) is the shape
+  # Hermes documents for a custom OpenAI-compatible endpoint that needs a credential:
+  # a bare `provider: custom` resolves through a fallback rung that never reads
+  # `CUSTOM_API_KEY`, which is a 401 in disguise (measured 2026-11-21).
   configFile = pkgs.writeText "hermes-config.yaml" ''
     # Written by hosts/etra/hermes.nix when the state directory had no config.yaml.
     # This file is the operator's after that: `hermes config set <key> <value>` or a
     # plain edit both survive a rebuild.
+    providers:
+      litellm:
+        base_url: http://127.0.0.1:${toString relayPort}/v1
+        # The variable `hermes-env.service` writes into litellm.env.
+        key_env: CUSTOM_API_KEY
     model:
-      # A plain OpenAI-compatible endpoint: `custom` plus a base_url.
-      provider: custom
+      provider: litellm
       default: ${defaultModel}
-      base_url: http://127.0.0.1:${toString relayPort}/v1
   '';
 
   # Everything the container's `/bin` holds: the agent, the entrypoint, and the tools

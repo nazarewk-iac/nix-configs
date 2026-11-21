@@ -125,54 +125,52 @@ let
   # (`run_agent`, `hermes_state`, `toolsets`, ...) and guards the wheel build, so the
   # two `env` entries below are required, not cosmetic.
   pythonSet = python.override {
-    packageOverrides =
-      final: _prev:
-      {
-        hermes-agent = final.buildPythonPackage {
-          pname = "hermes-agent";
-          inherit version src;
-          pyproject = true;
+    packageOverrides = final: _prev: {
+      hermes-agent = final.buildPythonPackage {
+        pname = "hermes-agent";
+        inherit version src;
+        pyproject = true;
 
-          # The guard in setup.py.
-          env.HERMES_NIX_BUILD = "1";
+        # The guard in setup.py.
+        env.HERMES_NIX_BUILD = "1";
 
-          # `[build-system].requires` pins setuptools and wheel to exact versions as
-          # part of the project's PyPI supply-chain policy. The build runs with
-          # `--no-isolation` against nixpkgs' own setuptools/wheel, and `build` refuses
-          # any version difference, so the pins have to go. Only the build backend is
-          # affected; the runtime pins stay declared in `dependencies`.
-          postPatch = ''
-            substituteInPlace pyproject.toml \
-              --replace-fail 'setuptools==84.1.0' 'setuptools' \
-              --replace-fail 'wheel==0.48.0' 'wheel'
-          '';
+        # `[build-system].requires` pins setuptools and wheel to exact versions as
+        # part of the project's PyPI supply-chain policy. The build runs with
+        # `--no-isolation` against nixpkgs' own setuptools/wheel, and `build` refuses
+        # any version difference, so the pins have to go. Only the build backend is
+        # affected; the runtime pins stay declared in `dependencies`.
+        postPatch = ''
+          substituteInPlace pyproject.toml \
+            --replace-fail 'setuptools==84.1.0' 'setuptools' \
+            --replace-fail 'wheel==0.48.0' 'wheel'
+        '';
 
-          build-system = [
-            final.setuptools
-            final.wheel
-          ];
-          dependencies = coreDeps final ++ messagingDeps final;
+        build-system = [
+          final.setuptools
+          final.wheel
+        ];
+        dependencies = coreDeps final ++ messagingDeps final;
 
-          # No test suite run: upstream's is thousands of tests against live
-          # providers, and it is not what this package has to prove. The container
-          # smoke test in hosts/etra/hermes.nix is.
-          doCheck = false;
-          # nixpkgs ships newer/older versions than the exact `==` pins in
-          # pyproject.toml (openai 3.x against a 2.54 pin, for example). The runtime
-          # check refuses any difference; the pins are a PyPI supply-chain measure,
-          # not an API contract this build can honour.
-          dontCheckRuntimeDeps = true;
-          # Nothing imports the project at build time; skip the import probe.
-          pythonImportsCheck = [ ];
+        # No test suite run: upstream's is thousands of tests against live
+        # providers, and it is not what this package has to prove. The container
+        # smoke test in hosts/etra/hermes.nix is.
+        doCheck = false;
+        # nixpkgs ships newer/older versions than the exact `==` pins in
+        # pyproject.toml (openai 3.x against a 2.54 pin, for example). The runtime
+        # check refuses any difference; the pins are a PyPI supply-chain measure,
+        # not an API contract this build can honour.
+        dontCheckRuntimeDeps = true;
+        # Nothing imports the project at build time; skip the import probe.
+        pythonImportsCheck = [ ];
 
-          meta = {
-            description = "Self-improving AI agent with a messaging gateway";
-            homepage = "https://github.com/NousResearch/hermes-agent";
-            license = lib.licenses.mit;
-            mainProgram = "hermes";
-          };
+        meta = {
+          description = "Self-improving AI agent with a messaging gateway";
+          homepage = "https://github.com/NousResearch/hermes-agent";
+          license = lib.licenses.mit;
+          mainProgram = "hermes";
         };
       };
+    };
   };
 
   # Interpreter plus the project: `/bin/hermes`, `/bin/hermes-agent`, `/bin/hermes-acp`.
