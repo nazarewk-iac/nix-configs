@@ -98,14 +98,17 @@ type Node struct {
 
 // Policy is the deployment's placement policy: the tree plus the facts it decides over.
 type Policy struct {
-	SchemaVersion         int              `json:"schemaVersion"`
-	Budget                Budget           `json:"budget"`
-	SwitchCooldownSeconds int              `json:"switchCooldownSeconds,omitempty"`
-	DefaultDeadline       int              `json:"defaultDeadlineSeconds,omitempty"`
-	MinDecodeTps          float64          `json:"minDecodeTps,omitempty"`
-	AllowUnmeasured       bool             `json:"allowUnmeasured,omitempty"`
-	Tree                  Node             `json:"tree"`
-	Models                map[string]Model `json:"models"`
+	SchemaVersion         int     `json:"schemaVersion"`
+	Budget                Budget  `json:"budget"`
+	SwitchCooldownSeconds int     `json:"switchCooldownSeconds,omitempty"`
+	DefaultDeadline       int     `json:"defaultDeadlineSeconds,omitempty"`
+	MinDecodeTps          float64 `json:"minDecodeTps,omitempty"`
+	AllowUnmeasured       bool    `json:"allowUnmeasured,omitempty"`
+	// ColoProfiles are the profiles that keep a reserve for a second model. A capacity refusal on a
+	// model with no profile requirement offers these, so the caller has something to ask for.
+	ColoProfiles []string         `json:"coloProfiles,omitempty"`
+	Tree         Node             `json:"tree"`
+	Models       map[string]Model `json:"models"`
 }
 
 // Defaults are the values a deployment may omit.

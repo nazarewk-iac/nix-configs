@@ -687,9 +687,16 @@ func actionRefuse(e *eval, args map[string]any) (bool, string) {
 		reason = "the placement policy refused this request"
 	}
 	ref := &Refusal{Code: code, Reason: reason}
-	if m, ok := e.p.Models[e.req.Model]; ok && len(m.RequiresProfile) > 0 {
-		ref.Alternatives = m.RequiresProfile
-		ref.ConfirmField = "kdn_switch_to"
+	if m, ok := e.p.Models[e.req.Model]; ok {
+		switch {
+		case len(m.RequiresProfile) > 0:
+			ref.Alternatives = m.RequiresProfile
+			ref.ConfirmField = "kdn_switch_to"
+		case len(e.p.ColoProfiles) > 0 && m.Kind != "engine":
+			// No profile requirement, but it needs room that only a reserve profile leaves.
+			ref.Alternatives = e.p.ColoProfiles
+			ref.ConfirmField = "kdn_switch_to"
+		}
 	}
 	e.refusal = ref
 	e.verdict = verdictRefuse

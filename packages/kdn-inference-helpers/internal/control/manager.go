@@ -368,6 +368,7 @@ func (m *Manager) Handler() http.Handler {
 	mux.HandleFunc("/release", m.handleRelease)
 	mux.HandleFunc("/unload", m.handleUnload)
 	mux.HandleFunc("/decide", m.handleDecide)
+	mux.HandleFunc("/admit", m.handleAdmit)
 	return mux
 }
 
@@ -472,6 +473,87 @@ func (m *Manager) handleDecide(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m.Policy.Decide(req, m.activeForPolicy(r.Context()), m.policyState()))
 }
 
+// handleAdmit is `/decide` plus the act: it re-decides under the switch lock, applies the plan and
+// answers 200 so the caller may start its server. A refusal is returned verbatim, body and all, so
+// the wrapper can print it and llama-swap logs the reason instead of a bare exit code.
+func (m *Manager) handleAdmit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST only"})
+		return
+	}
+	if m.Policy == nil {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{"error": "this deployment has no placement policy"})
+		return
+	}
+	var req policy.Request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "body must be JSON"})
+		return
+	}
+	if req.Model == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "request.model is required"})
+		return
+	}
+	req.Model = m.Cfg.Normalise(req.Model)
+	if req.Model == "auto" {
+		req.Model = m.profileNeutralEngine()
+	}
+	if req.Model == "" || req.Model == "none" {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": "no profile is selected"})
+		return
+	}
+
+	// The decision is taken under the same lock the switch takes: two admissions that both read
+	// "10 GiB free" and both say yes is exactly the race this endpoint exists to stop.
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// llama-swap lists an entry as running the moment it spawns it, which is *before* this call:
+	// counting the model we are about to start as already resident makes every admission a no-op.
+	active := m.activeForPolicy(r.Context())
+	filtered := active[:0]
+	for _, a := range active {
+		if a.Model != req.Model {
+			filtered = append(filtered, a)
+		}
+	}
+	res := m.Policy.Decide(req, filtered, m.policyState())
+	if res.Verdict != policyVerdictAdmit {
+		code := http.StatusConflict
+		if res.Refusal != nil && res.Refusal.Code != 0 {
+			code = res.Refusal.Code
+		}
+		writeJSON(w, code, res)
+		return
+	}
+
+	if res.Plan.Profile != "" && res.Plan.Profile != m.CurrentProfile() {
+		body := m.SelectKeeping(r.Context(), res.Plan.Profile, false, false)
+		if e, ok := body["error"]; ok {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": e, "plan": res.Plan, "why": res.Why})
+			return
+		}
+	} else if len(res.Plan.Evict) > 0 {
+		if _, err := m.Backend.UnloadCompanions(r.Context()); err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+			return
+		}
+	}
+	_ = m.Journal.Append(map[string]any{"event": "admit", "model": req.Model,
+		"profile": m.CurrentProfile(), "plan": res.Plan, "vram_mib": res.Resulting.VRAMMiB})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"verdict": "admit",
+		"model":   req.Model,
+		"profile": m.CurrentProfile(),
+		"port":    m.Backend.CurrentPort(),
+		"plan":    res.Plan,
+		"why":     res.Why,
+	})
+}
+
+// policyVerdictAdmit is the tree's word for "start it".
+const policyVerdictAdmit = "admit"
+
 // activeForPolicy is the resident set as the policy sees it: the engine that serves the current
 // profile plus every model llama-swap reports running.
 func (m *Manager) activeForPolicy(ctx context.Context) []policy.Active {
@@ -533,9 +615,18 @@ func (m *Manager) policyState() policy.State {
 		used += a.VRAMMiB
 	}
 	st.VRAMFreeMiB = m.Policy.Budget.VRAMMiB - used
+	if st.Profile == "" || st.Profile == "none" {
+		// An unknown engine state means an unknown card: refuse rather than admit against a number
+		// nobody measured. Measured 2026-11-21: a 35B slipped in while the profile was briefly
+		// empty after a restart, and the card ended at 30.7 GiB with two large models on it.
+		st.VRAMFreeMiB = 0
+	}
 	if st.VRAMFreeMiB < 0 {
 		st.VRAMFreeMiB = 0
 	}
+	// RAM is a real constraint here: the host has no swap and a Strata load takes a ~95 GiB burst.
+	// `MemAvailable` is the number the kernel would hand out, which is what an admission needs.
+	st.RAMFreeMiB = memAvailableMiB()
 	if last, ok := m.Journal.LastSwitch(); ok {
 		if ts, ok := last["ts"].(float64); ok {
 			t := time.Unix(0, int64(ts*1e9))
@@ -543,6 +634,30 @@ func (m *Manager) policyState() policy.State {
 		}
 	}
 	return st
+}
+
+// memAvailableMiB reads /proc/meminfo. A missing file leaves the value at zero, and a zero RAM
+// budget makes the policy refuse rather than admit blind — the failure is in the safe direction.
+func memAvailableMiB() int {
+	body, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(body), "\n") {
+		if !strings.HasPrefix(line, "MemAvailable:") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			return 0
+		}
+		kib, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return 0
+		}
+		return kib / 1024
+	}
+	return 0
 }
 
 func containsString(list []string, want string) bool {

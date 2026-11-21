@@ -59,6 +59,8 @@ func main() {
 		err = runServe(ctx, os.Args[2:])
 	case "gate":
 		err = runGate(ctx, os.Args[2:])
+	case "admit":
+		err = runAdmit(ctx, os.Args[2:])
 	case "ctl":
 		err = runCtl(ctx, os.Args[2:])
 	case "version":
@@ -82,6 +84,7 @@ func usage() {
   select   select a profile, then serve the proxy
   serve    materialise a profile and exec the engine
   gate     guard a model behind a profile requirement (the collocated companion)
+  admit    ask the placement policy, then exec the model server
   ctl      up, down, status, stats, unload`)
 	os.Exit(2)
 }
@@ -294,7 +297,10 @@ func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, ma
 		_ = srv.Shutdown(shutdownCtx)
 	}()
 	if watch != "" {
-		go watchProfile(runCtx, stop, managerURL, watch)
+		// Leave when the profile moves on, but never mid-response: a 1039 s edit is not a lease
+		// the listener may drop because the manager moved on. A stale binary (a deploy) is the
+		// same rule: leave once nothing is in flight, so the next request spawns the new build.
+		go watchProfile(runCtx, stop, managerURL, watch, handler.InFlight, staleBinary())
 	}
 	log.Printf("kdn-inference-helpers proxy :%d -> %s", port, targetURL)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -309,9 +315,12 @@ func serveProxy(ctx context.Context, cfg *config.Config, port int, targetURL, ma
 // a proxy that never exits makes that wait last until llama-swap's 15-minute kill timeout, and the
 // next model never starts. Leaving on our own is also the correct behaviour: the listener belongs
 // to a profile, and the profile is gone.
-func watchProfile(ctx context.Context, stop context.CancelFunc, managerURL, want string) {
+func watchProfile(ctx context.Context, stop context.CancelFunc, managerURL, want string, inFlight func() int64, stale func() bool) {
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
+	// A listener that has been asked to leave keeps waiting for its own request, bounded: a wedged
+	// request must not pin a stale listener for ever.
+	deadline := time.Time{}
 	for {
 		select {
 		case <-ctx.Done():
@@ -324,12 +333,38 @@ func watchProfile(ctx context.Context, stop context.CancelFunc, managerURL, want
 		if err := getJSON(ctx, managerURL+"/status", &status); err != nil {
 			continue
 		}
-		if status.Profile == "" || status.Profile == want {
+		leave := (status.Profile != "" && status.Profile != want) || stale()
+		if !leave {
 			continue
+		}
+		if deadline.IsZero() {
+			deadline = time.Now().Add(20 * time.Minute)
+		}
+		if inFlight() > 0 && time.Now().Before(deadline) {
+			continue // let the response finish; a switch is not a reason to cut a 15-minute edit
 		}
 		log.Printf("profile is %q, this listener served %q: leaving", status.Profile, want)
 		stop()
 		return
+	}
+}
+
+// staleBinary reports whether this process runs a build the system no longer points at. A deploy
+// replaces the helper; the listener exits once idle and llama-swap spawns the new one, which is
+// safer than restarting llama-swap (that would cut every running request).
+func staleBinary() func() bool {
+	self, err := os.Executable()
+	if err != nil {
+		return func() bool { return false }
+	}
+	self, _ = filepath.EvalSymlinks(self)
+	const current = "/run/current-system/sw/bin/kdn-inference-helpers"
+	return func() bool {
+		want, err := filepath.EvalSymlinks(current)
+		if err != nil || want == "" {
+			return false
+		}
+		return self != want
 	}
 }
 
@@ -454,6 +489,52 @@ func parsePositionalThenFlags(args []string, known map[string]bool) (string, map
 // The policy is the deployment's: `--name` selects a gate spec from the config, which says which
 // profiles satisfy the model, which targets a caller may ask for, and which body field carries the
 // request. Nothing about a particular model is compiled in.
+// runAdmit is the door every llama-swap entry goes through: it asks the manager's placement tree,
+// prints the refusal verbatim when the answer is no, and execs the model server when it is yes.
+//
+// It replaces llama-swap's own eviction matrix as the decision point. A refusal must be readable in
+// llama-swap's log, which is why the body is printed rather than turned into an exit code alone.
+func runAdmit(ctx context.Context, args []string) error {
+	configPath, rest := extractConfigFlag(args)
+	// Stop at `--`: the server argv after it has its own `--model` (the GGUF path), and reading that
+	// as the entry name asks the policy about a file path.
+	model := ""
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == "--" {
+			break
+		}
+		if rest[i] == "--model" && i+1 < len(rest) {
+			model = rest[i+1]
+			i++
+		}
+	}
+	if model == "" {
+		return fmt.Errorf("admit needs --model <name>")
+	}
+	argv := companion.ResolveArgv(rest)
+	if len(argv) == 0 {
+		return fmt.Errorf("admit needs `-- <model server argv>`")
+	}
+	cfg, _, err := loadConfig(configPath)
+	if err != nil {
+		return err
+	}
+	managerURL := fmt.Sprintf("http://127.0.0.1:%d", cfg.ManagerPort)
+	var reply map[string]any
+	if err := postJSON(ctx, managerURL+"/admit", map[string]any{"model": model}, &reply); err != nil {
+		// The manager's refusal carries the reason and the way out; print it so llama-swap's log
+		// shows why the entry did not start.
+		fmt.Fprintf(os.Stderr, "admit %s: %v\n", model, err)
+		return err
+	}
+	if e, ok := reply["error"]; ok {
+		return fmt.Errorf("admit %s: %v", model, e)
+	}
+	log.Printf("admit %s -> %v", model, reply)
+	// exec, not spawn: the server replaces this process, so llama-swap's stop signal reaches it.
+	return syscall.Exec(argv[0], argv, os.Environ())
+}
+
 func runGate(ctx context.Context, args []string) error {
 	configPath, rest := extractConfigFlag(args)
 	name := ""

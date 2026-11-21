@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync/atomic"
 	"time"
 )
 
@@ -44,6 +45,8 @@ type Handler struct {
 	Profile func(ctx context.Context) string
 
 	proxy *httputil.ReverseProxy
+	// inFlight counts requests between the lease and the response.
+	inFlight atomic.Int64
 }
 
 // New builds the handler. It is a constructor rather than a literal so the reverse proxy is always
@@ -115,6 +118,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.inFlight.Add(1)
+	defer h.inFlight.Add(-1)
 	lease, ok := h.acquire(r.Context())
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -128,6 +133,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.proxy.ServeHTTP(w, r)
 }
+
+// InFlight is how many requests this listener is serving right now. A listener that leaves with a
+// lease cuts the response it was started for, so the watcher waits for this to reach zero.
+func (h *Handler) InFlight() int64 { return h.inFlight.Load() }
 
 // acquire retries until a lease is granted, the wait times out, or the client goes away. An
 // unreachable manager is not an error: the caller's Leaser decides that, and a manager restart is

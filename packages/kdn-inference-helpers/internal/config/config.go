@@ -104,7 +104,9 @@ func Defaults() *Config {
 		CacheDropCommand:    []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
 		Profiles:            map[string]ProfileOverride{},
 		Gates:               map[string]GateSpec{},
-		DrainTimeoutSeconds: 300,
+		// 1200 s, not 300: a Wan VACE edit measured 1039 s, and a drain shorter than the longest
+		// request is a data-loss path — the switch proceeds, the proxy leaves, the edit is cut.
+		DrainTimeoutSeconds: 1200,
 		LeaseTTLSeconds:     1800,
 	}
 }

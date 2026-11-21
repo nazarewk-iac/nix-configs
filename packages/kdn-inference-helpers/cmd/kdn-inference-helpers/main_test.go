@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -75,7 +76,7 @@ func TestTheProxyLeavesWhenTheProfileChanges(t *testing.T) {
 	stopped := make(chan struct{})
 	done := make(chan struct{})
 	go func() {
-		watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen")
+		watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen", func() int64 { return 0 }, func() bool { return false })
 		close(done)
 	}()
 	select {
@@ -86,6 +87,53 @@ func TestTheProxyLeavesWhenTheProfileChanges(t *testing.T) {
 	<-done
 }
 
+// A listener that still holds a request must not leave: the switch waits for it, the response
+// finishes, and only then does the listener go.
+func TestTheProxyWaitsForItsRequestBeforeLeaving(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"profile":"none"}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var inFlight atomic.Int64
+	inFlight.Store(1)
+	stopped := make(chan struct{})
+	go watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen", inFlight.Load, func() bool { return false })
+
+	select {
+	case <-stopped:
+		t.Fatal("the listener left while it still held a request")
+	case <-time.After(4 * time.Second):
+	}
+	inFlight.Store(0)
+	select {
+	case <-stopped:
+	case <-time.After(6 * time.Second):
+		t.Fatal("the listener never left after its request finished")
+	}
+}
+
+// A deploy replaces the binary; the listener leaves once idle so the next request spawns the new
+// build. Restarting llama-swap instead would cut every running request.
+func TestTheProxyLeavesWhenItsBinaryIsStale(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"profile":"image-qwen"}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := make(chan struct{})
+	go watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen", func() int64 { return 0 }, func() bool { return true })
+	select {
+	case <-stopped:
+	case <-time.After(6 * time.Second):
+		t.Fatal("a stale listener stayed")
+	}
+}
+
 func TestTheProxyStaysWhileItsProfileIsCurrent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"profile":"image-qwen","draining":false}`))
@@ -94,7 +142,7 @@ func TestTheProxyStaysWhileItsProfileIsCurrent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	stopped := make(chan struct{})
-	go watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen")
+	go watchProfile(ctx, func() { close(stopped) }, srv.URL, "image-qwen", func() int64 { return 0 }, func() bool { return false })
 	select {
 	case <-stopped:
 		t.Fatal("the proxy left while its profile was still current")
