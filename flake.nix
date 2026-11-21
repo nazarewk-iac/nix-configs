@@ -54,6 +54,11 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.hardware-report.url = "github:sfcompute/hardware_report";
   inputs.haumea.url = "github:nix-community/haumea";
+  # Hermes Agent (the workshop's agent container on etra, hosts/etra/hermes.nix). Upstream
+  # ships a uv2nix package plus prebuilt TUI/webapp frontends; the pin is the commit whose
+  # hand-packaged derivation this replaces. It is a flake with a `packages.<system>` output,
+  # so the host takes the package from the input instead of `packages/hermes-agent/`.
+  inputs.hermes-agent.url = "github:NousResearch/hermes-agent/52b5271";
   inputs.home-manager.url = "github:nix-community/home-manager";
   inputs.infuse.flake = false;
   inputs.infuse.url = "git+https://codeberg.org/amjoseph/infuse.nix.git";
@@ -160,6 +165,15 @@
   inputs.hardware-report.inputs.rust-overlay.follows = "rust-overlay";
   inputs.helix-editor.inputs.nixpkgs.follows = "nixpkgs";
   inputs.helix-editor.inputs.rust-overlay.follows = "rust-overlay";
+  # Every input hermes-agent declares is one this repo already pins (`nixpkgs`, `flake-parts`,
+  # the pyproject-nix trio and `home-manager`), so it reuses them instead of dragging a second
+  # lock of each. Without the `nixpkgs` line its own nixpkgs would be a duplicate download.
+  inputs.hermes-agent.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hermes-agent.inputs.flake-parts.follows = "flake-parts";
+  inputs.hermes-agent.inputs.pyproject-nix.follows = "pyproject-nix";
+  inputs.hermes-agent.inputs.pyproject-build-systems.follows = "pyproject-build-systems";
+  inputs.hermes-agent.inputs.uv2nix.follows = "uv2nix";
+  inputs.hermes-agent.inputs.home-manager.follows = "home-manager";
   inputs.home-manager.inputs.nixpkgs.follows = "nixpkgs";
   inputs.lanzaboote.inputs.crane.follows = "crane";
   inputs.lanzaboote.inputs.nixpkgs.follows = "nixpkgs";

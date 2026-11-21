@@ -1,6 +1,22 @@
 # Hermes Agent on etra: one nix-snapshotter container, its state in a declared directory.
 #
-# Task: docs/tasks/2026-11/ai-workshop/. Package: packages/hermes-agent/.
+# Task: docs/tasks/2026-11/ai-workshop/. Package: the upstream flake, `inputs.hermes-agent`.
+#
+# ## Where the package comes from
+#
+# `inputs.hermes-agent` is `NousResearch/hermes-agent` pinned to one commit. Upstream ships a
+# complete Nix integration at that commit (uv2nix for the Python venv, pnpm for the TUI and the
+# webapp, bundled skills/plugins/locales), so this file takes its package instead of carrying a
+# hand-written derivation. The output is the flake's `packages.<system>.default` — the `full`
+# variant, which is what upstream builds and tests and what its own overlay aliases as
+# `pkgs.hermes-agent`. The overlay is deliberately NOT used: applying it would mean touching the
+# repo-wide nixpkgs overlay list for one host-local container, and a bare `let` binding keeps
+# this file readable.
+#
+# What that buys over a hand package: no second packaging system to track, the pinned versions
+# upstream actually tests (its uv lock also carries `nemo-relay`, which nixpkgs does not have),
+# and a webapp bundle built into the store — `hermes webapp` then serves it and never runs a
+# pnpm build at runtime.
 #
 # ## What it is
 #
@@ -14,8 +30,8 @@
 #
 # etra has no CNI configuration, so the container cannot join a nerdctl bridge (the
 # proof container in ./containers.nix uses `--net=none` for the same reason). It runs
-# on the host network namespace instead, and the ONE endpoint it needs is a loopback
-# relay this file declares:
+# on the host network namespace instead, and the one outbound endpoint it needs is a
+# loopback relay this file declares:
 #
 #   hermes container -- 127.0.0.1:9530 --> litellm guest 10.233.100.2:4000
 #
@@ -46,10 +62,38 @@
 # and hide it.
 {
   pkgs,
+  lib,
+  kdnConfig,
   ...
 }:
 let
-  hermes = pkgs.callPackage ../../packages/hermes-agent { };
+  # The upstream flake's own package (see the header). `stdenv.hostPlatform.system` rather than a
+  # literal so the file keeps working on an aarch64 host; the flake declares x86_64-linux and
+  # aarch64-linux.
+  upstreamHermes = kdnConfig.inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
+  # ONE adaptation, and the only place this file reaches into their tree.
+  #
+  # Their `nix/pm-packages.nix` builds the prebuilt node/ripgrep/ffmpeg/pnpm binaries and appends a
+  # patch for NixOS/patchelf#674 to whatever `patchelf` it is handed. That bug corrupts executables
+  # whose ELF headers move, and it exists only in patchelf >= 0.19. Our nixpkgs pin ships
+  # patchelf 0.15.2 (`pkgs/development/tools/misc/patchelf/default.nix`), where the patch does not
+  # apply — the build dies with "4 out of 6 hunks FAILED" — and the bug cannot happen either.
+  #
+  # `pmPackages` is a parameter of their package, so the adaptation belongs here and their source
+  # stays untouched: hand `pm-packages.nix` a patchelf whose `overrideAttrs` is the identity, which
+  # makes their `patchelf.overrideAttrs (old: old.patches ++ [ … ])` return 0.15.2 unchanged.
+  patchelfUnpatched = pkgs.patchelf // {
+    overrideAttrs = _: pkgs.patchelf;
+  };
+
+  pmPackages = lib.filterAttrs (_: lib.isDerivation) (
+    pkgs.callPackage "${kdnConfig.inputs.hermes-agent}/nix/pm-packages.nix" {
+      patchelf = patchelfUnpatched;
+    }
+  );
+
+  hermes = upstreamHermes.override { inherit pmPackages; };
 
   stateDir = "/var/lib/kdn/hermes";
   # The app's own home. It is the container's `stateDir` (the module mounts that host
@@ -92,14 +136,18 @@ let
       default: ${defaultModel}
   '';
 
-  # Everything the container's `/bin` holds: the agent, the entrypoint, and the tools
-  # its shell tool and this script call. A nix-snapshotter image starts with an empty
-  # filesystem, so a command that is not linked here does not exist inside the
+  # Everything the container's `/bin` holds besides the agent itself: the entrypoint, and the tools
+  # this script and an interactive `nerdctl exec hermes …` call. A nix-snapshotter image starts
+  # with an empty filesystem, so a command that is not linked here does not exist inside the
   # container — the first failure was `install: command not found`.
   #
-  # `buildEnv` merges every `bin/` into one `/bin`, and `env.PATH = "/bin"` makes that
-  # the whole PATH. Extend this list when a task needs another tool; keep it a list of
-  # packages, not a hand-written script.
+  # `buildEnv` merges every `bin/` into one `/bin`, and `env.PATH = "/bin"` makes that the whole
+  # PATH. Extend this list when a task needs another tool; keep it a list of packages, not a
+  # hand-written script.
+  #
+  # The agent's own processes see MORE than this: the upstream `hermes` wrapper appends its own
+  # runtime PATH (node, ripgrep, ffmpeg, git, openssh, wl-clipboard, xclip — pinned by its
+  # `pm/lock.json`). The entries below are what an interactive shell in the container gets.
   runtimeTools = [
     pkgs.bash
     pkgs.coreutils

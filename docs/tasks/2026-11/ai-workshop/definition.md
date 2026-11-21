@@ -332,13 +332,50 @@ door: a Python CLI agent with a tool shell, plus a messaging gateway that keeps 
 memory in one directory. It runs as the nix-snapshotter container `hermes` on `etra`
 — the **client** side of the split: no GPU, no cluster, no model of its own.
 
-| what        | where                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------- |
-| package     | `packages/hermes-agent/default.nix` — `fetchFromGitHub` at a pinned commit + `python314.withPackages`      |
-| container   | `hosts/etra/hermes.nix` → `kdn.containers.containers.hermes`, unit `container-hermes`                      |
-| state root  | `/var/lib/kdn/hermes` — the container's `stateDir`, `HERMES_HOME` and `KDN_STATE_DIR`                      |
-| model       | `http://127.0.0.1:9530/v1` — a loopback relay to the LiteLLM guest (`10.233.100.2:4000`)                   |
-| credentials | `CUSTOM_API_KEY` in `/var/lib/kdn/hermes/litellm.env`, rendered at boot from the sops `litellm/client-key` |
+| what        | where                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| package     | `inputs.hermes-agent` — `github:NousResearch/hermes-agent/52b5271`, output `packages.x86_64-linux.default` (the `full` variant) |
+| container   | `hosts/etra/hermes.nix` → `kdn.containers.containers.hermes`, unit `container-hermes`                                           |
+| state root  | `/var/lib/kdn/hermes` — the container's `stateDir`, `HERMES_HOME` and `KDN_STATE_DIR`                                           |
+| model       | `http://127.0.0.1:9530/v1` — a loopback relay to the LiteLLM guest (`10.233.100.2:4000`)                                        |
+| credentials | `CUSTOM_API_KEY` in `/var/lib/kdn/hermes/litellm.env`, rendered at boot from the sops `litellm/client-key`                      |
+
+### The package is the upstream flake
+
+Until 2026-11-21 the container ran a hand-written derivation, `packages/hermes-agent/default.nix`:
+`fetchFromGitHub` at one commit plus `python314.withPackages`, with three workarounds. Upstream ships a
+complete Nix integration at that same commit — `flake.nix`, `nix/packages.nix`, `nix/overlays.nix`,
+the two module sets, `nix/webapp.nix`, `nix/tui.nix`, `nix/npm-pinned.nix`, `nix/pnpm-deps-hash` and
+`nix/pythonLock.nix` — so the package now comes from the flake input and the hand derivation is
+deleted.
+
+The output is the flake's `packages.<system>.default`, which is its `full` variant: the Python venv
+plus every portable optional integration group (`anthropic`, `bedrock`, `messaging`, `matrix` on
+Linux, `voice`, `tts-premium`, `vercel`, …). That is what upstream builds, tests and aliases as
+`pkgs.hermes-agent` in its own overlay. The overlay is **not** used here: applying it would mean
+editing the repo-wide nixpkgs overlay list for one host-local container, while a single `let` binding
+in `hosts/etra/hermes.nix` keeps the host file readable.
+
+What the input gives, and nothing in this repo maintains any more:
+
+- the Python environment from upstream's `uv.lock` through uv2nix, at the versions upstream pins. It
+  carries `nemo-relay` 0.11.0 and `browser-harness` 0.1.13, which the hand package could not ship
+  (nixpkgs has neither at a usable version), plus `discord.py`, `python-telegram-bot`, `slack-sdk`,
+  `boto3`, `onnxruntime` — 490 site-packages entries, all built from one lock.
+- the frontends: `hermes --tui`, `hermes web` and `hermes webapp`, built by pnpm against a
+  fixed-output dependency store. They are store paths, so nothing is built at runtime.
+- the bundled skills, optional skills, plugins, locales and MCP catalog, linked into the store and
+  named by the `HERMES_BUNDLED_*` variables (the hand package set those by hand).
+- the runtime tools its `pm/lock.json` pins — node, ripgrep, ffmpeg, pnpm — appended to the `hermes`
+  wrapper's own `PATH`, so the agent's shell sees them regardless of the image's `/bin`.
+- the version stamp: `hermes --version` now reports `upstream 52b52719` and `Install method: nix`.
+
+One adaptation lives in `hosts/etra/hermes.nix`, and their source stays untouched. Their
+`nix/pm-packages.nix` appends a patch for NixOS/patchelf#674 to whatever `patchelf` it is handed; that
+bug corrupts executables whose ELF headers move and exists only in patchelf ≥ 0.19, while our nixpkgs
+pin ships 0.15.2, where the patch does not apply (4 of 6 hunks fail) and the bug cannot happen.
+`pmPackages` is a parameter of their package, so the host file hands `pm-packages.nix` a `patchelf`
+whose `overrideAttrs` is the identity.
 
 ### Log in and use it
 
@@ -449,20 +486,20 @@ container definition does not change: it is handed the path either way.
 
 ### What the package does not ship
 
-- **`browser-harness`** — not in nixpkgs at all. It is the engine of the
-  `browser_exec` tool, whose own `check_fn` hides the tool when the import fails
-  (`check_fn browser_exec_available returned False` in the container log), so only
-  that tool is unavailable.
-- **`nemo-relay`** — nixpkgs has 0.7.3, the project pins `>=0.11,<0.12`, and 0.7.3
-  does not build here (`aws-lc-sys` asks for a system AWS-LC that the crate override
-  does not supply). The runtime treats a missing module as a supported platform
-  condition, so only Relay telemetry is off.
-- **the npm frontends** (`--tui`, `hermes web`, `hermes webapp`) — they need a pnpm
-  build of `ui-tui/`, `web/` and `webapp/`. The classic REPL and every headless path
-  (`-z`, `gateway run`) are Python-only and work.
-- **`hermes pm …`** — it installs Python packages into a writable tree, which a
-  read-only store cannot provide. The `[messaging]` extra is baked in instead, so the
-  Telegram/Discord/Slack adapters work without a lazy install.
+The upstream package covers what the hand derivation had to leave out — `browser-harness`,
+`nemo-relay` and all three frontends are in it. Two limits remain, both from the read-only store:
+
+- **`hermes pm install …`** — it installs packages into a writable tree, which `/nix/store` cannot
+  provide. The pinned node, ripgrep and ffmpeg come from the package's own `pm/lock.json` and are on
+  the wrapper's `PATH`, so the tools the agent calls work; `hermes doctor` still prints
+  `Node.js not found (optional; run: hermes pm install node)` because it checks the `pm` store, not
+  the `PATH`.
+- **`hermes update`** — the install stamp says `updateMechanism: external`; a new version is a bump of
+  the `hermes-agent` input in `flake.nix` and a rebuild.
+
+`browser_exec` is available as a tool but needs a browser binary of its own: `hermes doctor` reports
+`✓ browser`, `✓ browser-use` and `⚠ Chromium not installed (browser_exec cannot start a local
+browser)`. Supplying a browser is the browser task, not this one.
 
 ### Container shape
 
@@ -478,7 +515,8 @@ container definition does not change: it is handed the path either way.
   bash, coreutils, git, ripgrep, curl, jq, python3 and friends. A nix-snapshotter
   image starts empty, so a tool that is not in that list does not exist inside the
   container — the first version of the entrypoint died on `install: command not
-found`.
+found`. The agent's own processes see more: the `hermes` wrapper appends the runtime
+  `PATH` the package pins.
 - `config.yaml` names a **named** provider (`providers.litellm` +
   `model.provider: litellm`). A bare `provider: custom` resolves through a fallback
   rung that never reads `CUSTOM_API_KEY`, which surfaces as a plain `HTTP 401:

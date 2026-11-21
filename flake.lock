@@ -909,6 +909,42 @@
         "type": "github"
       }
     },
+    "hermes-agent": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "pyproject-build-systems": [
+          "pyproject-build-systems"
+        ],
+        "pyproject-nix": [
+          "pyproject-nix"
+        ],
+        "uv2nix": [
+          "uv2nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795266880,
+        "narHash": "sha256-hlgrJcVQre3uIeDnVrJwRT6tDf5TCi07bT2LdONKDC4=",
+        "owner": "NousResearch",
+        "repo": "hermes-agent",
+        "rev": "52b527194b364ba073c85f0b1cd8c63bc9264cac",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NousResearch",
+        "ref": "52b5271",
+        "repo": "hermes-agent",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -1811,6 +1847,7 @@
         "hardware-report": "hardware-report",
         "haumea": "haumea",
         "helix-editor": "helix-editor",
+        "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
         "infuse": "infuse",
         "lanzaboote": "lanzaboote",
