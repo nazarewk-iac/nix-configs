@@ -593,44 +593,76 @@ Invalid API key` (measured 2026-11-21).
 
 **The intent is not N equal sessions.** It is **one orchestrator at up to 1M context** plus a
 **swarm of agents at 64-256k**. The 2026-11-21 test measured eight _full-context_ slots, which
-nobody asked for, and its OOM therefore answers the wrong question.
+nobody asked for, and its OOM therefore answers the wrong question. The measurement below replaces
+it (full numbers: `docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`, section "K/V is carved
+per slot, not per request").
 
 ### The question
 
-Does strata size K/V **per request**, or preallocate it per slot at `--max-context`? The one data
-point so far — auto-fit answering `--kv-resident 4096` for a requested 32768 at two slots — says
-per request. The arithmetic if it does:
+Does strata size K/V **per request**, or preallocate it per slot at `--max-context`?
 
-| workload               | K/V      | + pack (55 GiB) | fits 125 GiB           |
-| ---------------------- | -------- | --------------- | ---------------------- |
-| 8 × 1M (measured, OOM) | ~126 GiB | 181 GiB         | no                     |
-| **1 × 1M + 7 × 64k**   | ~23 GiB  | **78 GiB**      | **yes, ~45 GiB spare** |
-| 1 × 1M + 7 × 256k      | ~44 GiB  | 99 GiB          | yes, ~25 GiB spare     |
+### The measured answer: per slot, at start-up
 
-### The test
+Strata carves the K/V **per slot at `--max-context`, before any request exists**. The engine
+reports `9.56 GiB of pinned RAM` for a 1M window and `2.39 GiB` for a 256k window — 9.56 KiB per
+cell in both cases, linear in the window — and then multiplies by the slot count: "`--batch 8`: a
+slot's K/V takes 9.56 GiB of pinned RAM ... **All 8 are carved as asked**". `--batch 8` at 1M
+therefore died at load with **zero requests sent**, at a systemd memory peak of 112.4 G. `--kv-grow`,
+the only per-request allocation switch, is refused in this configuration and leaves the carve
+unchanged.
 
-1. `--parallel 8` on `qfn-fast-colo`, `--max-context 1048576` (unchanged).
-2. One request at 1M context, seven concurrent at 64k.
-3. Record: `MemAvailable` during the run, VRAM, per-request t/s, aggregate t/s, and whether all
-   eight complete.
-4. Repeat with the swarm at 256k.
-5. Same two runs on `qfn-max` (55 GiB pack) if the colo profile passes — that is where the margin
-   is thin.
+| shape      | slots × context × 10.5 KiB | reported by the engine | fits 125 GiB beside a 33 GiB pack |
+| ---------- | -------------------------: | ---------------------: | --------------------------------- |
+| 1 × 1M     |                   10.5 GiB |           **9.56 GiB** | yes                               |
+| 2 × 1M     |                   21.0 GiB |           **19.1 GiB** | yes, 8.8 GiB left                 |
+| 8 × 256k   |                   21.0 GiB |           **19.1 GiB** | yes, 15.7 GiB left                |
+| **8 × 1M** |                 **84 GiB** |           **76.5 GiB** | **no — OOM at load**              |
 
-### The two outcomes, and what each decides
+The old arithmetic in this section ("1 × 1M + 7 × 64k = ~23 GiB") was the per-request hope. It is
+not reachable: those eight sessions are eight 1M windows, 76.5 GiB of pinned K/V, because a slot is
+sized by the profile's window and not by what a request happens to use.
 
-- **K/V is per request** → one profile with 8 slots is correct; set `--parallel 8` and keep
-  `--kv-resident` as the shared window. The policy's `kvReserveMiB` becomes a per-role number
-  (orchestrator vs agent) rather than one upper bound.
-- **K/V is preallocated per slot at max context** → two profiles, two roles:
-  `qfn` at 1M with one slot (orchestrator) and `qfn-fast-colo` at 256k with eight slots (swarm).
-  That is also the shape the placement tree already understands: a profile is a placement decision.
+### What was run
+
+`strata serve` by hand on the IQ2_XS pack, page cache dropped, `llm-server` with
+`LimitMEMLOCK=infinity`; the manager's engine stopped and restored afterwards.
+
+1. 8 slots at 1M, no request: OOM-killed at load, 62 s.
+2. 8 slots at 256k, whole card (`--vram-reserve-mib 1024`): loads, 19.1 GiB of K/V, 15.7 GiB
+   available. Then 1 × 250k + 7 × 64k concurrent: **all eight completed**, wall 161 s, 1.59 t/s of
+   completion aggregate, per-request decode 0.6-29 t/s (the 4406 t/s prompt figure of that run is
+   inflated: six of the seven short prompts were identical, so the prompt cache served them).
+3. 2 slots at 1M with 1 × 1M + 1 × 64k: loads (19.1 GiB of K/V, 8.8 GiB available) but the
+   **host hard-reset about 11 min into the 1M prefill**. A second reset hit the 8-slot 256k run's
+   re-run. No OOM, no panic, no thermal trip — a hardware/power question, recorded in the
+   measurements file.
+
+### The shape this supports: two profiles, two roles
+
+A single engine cannot be the orchestrator and the swarm at 1M — eight 1M slots need 76.5 GiB of
+pinned K/V alone, and the load reaches 145 GiB on a 125 GiB host. The measurement therefore
+supports **two profiles with two roles**:
+
+| role         | profile                              | slots |      K/V | measured                                      |
+| ------------ | ------------------------------------ | ----: | -------: | --------------------------------------------- |
+| orchestrator | `max` (UD-IQ4_XS) at 1M              |     1 | 9.56 GiB | 86.6 t/s short context, 73.1 t/s at 1M        |
+| swarm        | a 256k profile on IQ2_XS, whole card |     8 | 19.1 GiB | all 8 complete; 1.59 t/s completion aggregate |
+
+Two consequences for the host files:
+
+- **A swarm profile needs `--max-context 262144`, not 1048576.** The window is what buys the slots:
+  eight 256k slots cost the same RAM as one 1M slot. `--parallel 8` at 1M is not a tuning question.
+- **The colo reserve and the swarm are exclusive.** At 8 slots × 256k only 15.7 GiB is available
+  and `qwen3-omni` needs about 21 GiB, so `/admit` refuses it; the 21500 MiB reserve also shrinks
+  the expert cache to 1.12 GiB and drops decode to 6-32 t/s. Eight slots is a whole-card setting.
 
 ### Acceptance
 
 Numbers recorded in `docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`; the profile table and
-`hosts-den/brys/policy.nix` updated to whichever shape the measurement supports; and the earlier
-"8 slots impossible" line in the policy task corrected to "8 slots **at 1M context**".
+`hosts-den/brys/policy.nix` updated to the two-role shape; and the earlier claim corrected: **8
+slots are impossible at 1M context**, not impossible as such — at 256k the same eight slots cost
+19.1 GiB and the load fits with 15.7 GiB to spare. The policy's `kvReserveMiB` becomes a per-role
+number (orchestrator vs agent) rather than one upper bound.
 
 ## Non-goals
 

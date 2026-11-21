@@ -1129,3 +1129,128 @@ reload.
   gateway upstream (`discovery.enable = false`), and OpenCode reaches them without the plugin.
 - **Pi works with the name directly** (`pi --model litellm/qfn`); it forwards an id its catalog does
   not know and the gateway accepts it.
+
+## K/V is carved per slot, not per request (2026-11-21)
+
+The question from the workshop task: does Strata size the K/V **per request**, or preallocate it
+**per slot** at `--max-context`? The intent is one orchestrator at up to 1M plus a swarm of agents
+at 64-256k, not eight full-context sessions. The earlier 8 × 1M test answered the wrong question,
+because nobody asks for eight 1M sessions.
+
+### Method
+
+- `strata serve` was started by hand, not through the manager: a profile config materialised from
+  the installed `strata-iq2_xs.json` (or `strata-unsloth-ud-iq4_xs.json`), with
+  `--max-context`, `--kv-resident` and `--vram-reserve-mib` patched, and `--parallel N` on the
+  `serve` command line (it reaches the engine as `--batch N`).
+- The unit ran as `llm-server` with `LimitMEMLOCK=infinity`, the manager's `HOME`,
+  `XDG_DATA_HOME`, `STRATA_DATA_HOME` and ROCm shim, on port 8090. The manager's engine was
+  stopped first (`ctl down`) and restored afterwards (`ctl up --profile max`).
+- The page cache was dropped before every load (`sync; echo 3 > /proc/sys/vm/drop_caches`), as the
+  manager does. A cold load then takes 47-57 s.
+- Requests went to `/v1/chat/completions` with a filler prompt (` the` repeated, 1 token per
+  repetition, 52-token chat wrapper) and `max_tokens 32`. Each request carries the engine's own
+  `timings` block, so prefill and decode are read per request and not inferred from the wall clock.
+- `MemAvailable` and `mem_info_vram_used` were sampled every 2 s during a run.
+
+### The runs
+
+| # | workload                                    | pack / ctx / slots / reserve    | K/V reported by the engine           | MemAvailable                      | t/s                                                | outcome                                           |
+| - | ------------------------------------------- | ------------------------------- | ------------------------------------ | --------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
+| 1 | no request, load only                       | IQ2_XS / 1M / **8** / 21500 MiB | **9.56 GiB per slot, 8 carved**      | 65.6 GiB at the carve             | —                                                  | **OOM-killed at load, 62 s** (systemd peak 112.4 G) |
+| 2 | 8k + 2 × 4k, 16 tokens each                 | IQ2_XS / 256k / 8 / 21500 MiB   | 2.39 GiB per slot, 19.1 GiB total    | 15.7 GiB after load               | 32.1 / 6.1 / 6.6 decode                            | loads and serves; expert cache 1.12 GiB (823 slots) |
+| 3 | **1 × 250k + 7 × 64k**, 32 tokens each      | IQ2_XS / 256k / 8 / 1024 MiB    | 2.39 GiB per slot, 19.1 GiB total    | 15.7 after load, **9.6** minimum  | prompt 4406 (cache-inflated), completion 1.59      | **all 8 completed**, wall 161 s                   |
+| 4 | 1 × 1M + 1 × 64k                           | IQ2_XS / 1M / **2** / 1024 MiB  | 9.56 GiB per slot, 19.1 GiB total    | 8.8 GiB after load                | —                                                  | **host hard-reset** ~11 min into the prefill      |
+| 5 | load only, `--kv-grow` added                | IQ2_XS / 1M / 2 / 1024 MiB      | 9.56 GiB per slot, unchanged         | 68.9 GiB at the carve             | —                                                  | `--kv-grow` refused                               |
+| 6 | 1 × 58-token prompt (restored `max` profile) | UD-IQ4_XS / 1M / 1 / 1024 MiB  | 9.56 GiB for the one slot            | 4.3 GiB while serving             | **86.6** decode, 11 of 12 drafts accepted          | the orchestrator shape, served as `qfn`           |
+
+Run 3 per request: the 250k request decoded at 7.3 t/s and the seven 64k requests at 0.6-29 t/s.
+The spread is not noise: the engine reads one prompt at a time on the control lines, so a slot's
+own decode waits while another slot's prompt is being read. Run 3's first attempt reused the prompt
+cache for six of the seven short prompts (they were the same string), which inflated the aggregate
+to 4406 t/s; the second attempt used distinct prompts and was cut short by the reset in run 4.
+
+The engine's own startup lines, verbatim:
+
+```
+strata generate: KV streaming: 4096 of 1048576 cells per QSA layer in VRAM, the K/V in 9.56 GiB of pinned RAM
+strata generate: WARNING: --batch 8: a slot's K/V takes 9.56 GiB of pinned RAM, 65.6 GiB are available and
+  the engine still loads 33.0 GiB (the experts' arena, the conversation cache's --conversation-cache-mib):
+  only 2 slots would keep 8 GiB free, and the system may end the engine when memory runs out.
+  All 8 are carved as asked; a smaller --max-context makes a slot smaller, and
+  STRATA_SLOT_RAM_RESERVE_GIB=<GiB> carves only the slots that leave that much free
+```
+
+```
+strata generate: KV streaming: 32768 of 262144 cells per QSA layer in VRAM, the K/V in 2.39 GiB of pinned RAM
+strata generate: --batch 8: the slots' K/V takes 2.39 GiB of pinned RAM each; 76.4 GiB are available, of which
+  the engine still loads 33.0 GiB
+strata generate: --batch: 8 slot sessions on CUDA0 (0.60 GiB each); 23.68 GiB free
+strata generate: --batch 8: the slot sessions take 4.78 GiB of VRAM on CUDA0 that the expert cache would
+  otherwise hold
+```
+
+### The answer
+
+**Strata carves the K/V per slot at `--max-context`, at start-up, before any request exists.** The
+engine says it in three ways. One: the reservation is `9.56 GiB` for a 1M window and `2.39 GiB` for
+a 256k window, which is 9.56 KiB per cell in both cases and therefore linear in `--max-context`.
+Two: the batch line multiplies it — "a slot's K/V takes 9.56 GiB of pinned RAM ... **All 8 are
+carved as asked**" — and `--batch 8` at 1M died at load with zero requests sent, at a systemd
+memory peak of 112.4 G and a `shmem-rss` of 84.8 GiB at the kill. Three: `--kv-grow`, the only
+per-request allocation switch in the engine, is refused in this configuration
+(`--kv-grow is off (one GPU, a profile, the whole K/V in VRAM, every expert in RAM, ...)`) and the
+carve stays at 9.56 GiB per slot. The arithmetic the task asked for:
+
+| shape            | formula: slots × context × 10.5 KiB | reported by the engine | fits 125 GiB beside a 33 GiB pack? |
+| ---------------- | ----------------------------------: | ---------------------: | ---------------------------------- |
+| 1 slot × 1M      |                            10.5 GiB |          **9.56 GiB** | yes                                |
+| 2 slots × 1M     |                            21.0 GiB |         **19.1 GiB** | yes, 8.8 GiB left                  |
+| 8 slots × 256k   |                            21.0 GiB |         **19.1 GiB** | yes, 15.7 GiB left                 |
+| **8 slots × 1M** |                            **84 GiB** |        **76.5 GiB** | **no — OOM at load**               |
+
+The measured figure is 9 % below the formula because `k8v4` costs 9.56 KiB per token and the
+formula uses the policy's 10.5 KiB. Both scale with the slot count, which is the whole point: the
+reservation is not a pool that eight requests share, it is eight pools. The `max` pack
+(`UD-IQ4_XS`) reports the same `9.56 GiB of pinned RAM` for its one slot, so the carve is a
+property of the window and the KV format, not of the quant.
+
+### What this decides
+
+A single engine cannot be the orchestrator and the swarm at 1M. Eight slots at 1M need 76.5 GiB of
+pinned K/V alone; add the 33 GiB IQ2_XS pack, the 26.8 GiB PLE table and the 8 GiB conversation
+cache and the load is 145 GiB on a 125 GiB host. The `max` pack is worse (55 GiB of experts). At
+256k the same eight slots need 19.1 GiB and the load fits with 15.7 GiB to spare.
+
+So the shape the measurement supports is **two profiles with two roles**, not one profile with
+eight slots:
+
+| role         | profile                                          | slots | K/V      | measured                                      |
+| ------------ | ------------------------------------------------ | ----: | -------: | --------------------------------------------- |
+| orchestrator | `max` (UD-IQ4_XS), 1M                            |     1 | 9.56 GiB | 86.6 t/s short context; 73.1 t/s at 1M (sweep) |
+| swarm        | a 256k profile on IQ2_XS, whole card             |     8 | 19.1 GiB | all 8 complete; 1.59 t/s completion aggregate  |
+
+Two consequences for the host files, both owned elsewhere:
+
+- **A swarm profile needs `--max-context 262144`, not 1048576.** The window is what buys the slots:
+  eight 256k slots cost the same RAM as one 1M slot. `--parallel 8` at 1M is not a tuning question,
+  it is a 145 GiB load on a 125 GiB host.
+- **The colo reserve and the swarm are exclusive.** At 8 slots × 256k the host has 15.7 GiB
+  available, and `qwen3-omni` needs about 21 GiB, so `/admit` refuses it. Eight slots is a
+  whole-card setting (`--vram-reserve-mib 1024`); with the 21500 MiB reserve the expert cache
+  shrinks to 1.12 GiB and decode drops to 6-32 t/s for no benefit.
+
+Two smaller findings from the same runs:
+
+- **`--batch` turns drafting off unless `--batch-mtp` is added.** Every batched request reported
+  `draft_n: 0`, while the single-slot `max` request reported 11 of 12 drafts accepted. The engine's
+  help says so: `--batch-mtp` is the opt-in that gives each slot one MTP proposal per window, at
+  VRAM cost per slot. A swarm profile that wants the +27 % must set it.
+- **Long-prompt prefill is what this host cannot survive today.** The 250k + 7 × 64k run completed
+  once, then the same shape with distinct prompts hard-reset the host 13 s in, and the 1M prompt
+  hard-reset it again after about 11 minutes, near the end of a prefill that the measured rate
+  puts at 10-12 minutes. There was no kernel message before either cut: no OOM, no panic, no
+  thermal trip, `MemAvailable` at 15.7 and 8.8 GiB. The 1M numbers in the tables above were all
+  measured with 10.5k prompts, so a 1M-token prompt has never completed on this host, and the two
+  resets are a hardware/power question to settle before anyone serves an orchestrator that reads a
+  million-token prompt in one turn.
