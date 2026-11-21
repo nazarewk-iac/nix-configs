@@ -176,6 +176,8 @@ func RenderReport(plan *dream.Plan, now time.Time) []byte {
 	fmt.Fprintf(&builder, "- items extracted: %d\n", plan.Items)
 	fmt.Fprintf(&builder, "- clusters: %d (merged: %d, dropped as low confidence: %d)\n",
 		plan.Clusters, plan.Merged, plan.Dropped)
+	fmt.Fprintf(&builder, "- proposed: %d of %d clusters (over the cap: %d)\n",
+		plan.Proposed, plan.Clusters, len(plan.NotProposed))
 	if len(plan.Truncated) > 0 {
 		fmt.Fprintf(&builder, "- sessions whose transcript was capped: %d (%s)\n",
 			len(plan.Truncated), strings.Join(plan.Truncated, ", "))
@@ -200,6 +202,16 @@ func RenderReport(plan *dream.Plan, now time.Time) []byte {
 		for _, skill := range plan.Skills {
 			fmt.Fprintf(&builder, "- `%s` — %s (%d sessions, %d commands)\n",
 				skill.ID, skill.Title, len(skill.Sessions), len(skill.Commands))
+		}
+	}
+
+	if len(plan.NotProposed) > 0 {
+		builder.WriteString("\n## Not proposed (over the cap)\n\n")
+		builder.WriteString("These clusters were read and merged, but the review budget left them out. " +
+			"Nothing here is lost: raise `--max-concepts` to propose them.\n\n")
+		for _, entry := range plan.NotProposed {
+			fmt.Fprintf(&builder, "- **%s** %s — %d sessions, %d items\n",
+				entry.Kind, entry.Statement, entry.Sessions, entry.Items)
 		}
 	}
 

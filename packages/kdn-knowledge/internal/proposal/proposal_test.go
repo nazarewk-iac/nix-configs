@@ -16,6 +16,11 @@ var fixedNow = time.Date(2026, 11, 22, 0, 5, 0, 0, time.UTC)
 
 func testPlan(t *testing.T) *dream.Plan {
 	t.Helper()
+	return buildPlan(t, 60)
+}
+
+func buildPlan(t *testing.T, maxConcepts int) *dream.Plan {
+	t.Helper()
 	items := []extract.Item{
 		{Session: "ses_1", Kind: "decision", Statement: "Never push; the user reviews every change.", Tags: []string{"jj"}, Confidence: "high", Evidence: []string{"2026-11-21T10:00:00Z"}},
 		{Session: "ses_2", Kind: "runbook", Statement: "Rebuild the host with nixos-rebuild switch.", Tags: []string{"nix"}, Confidence: "high", Evidence: []string{"2026-11-21T11:00:00Z"}},
@@ -29,7 +34,7 @@ func testPlan(t *testing.T) *dream.Plan {
 	}
 	plan, err := dream.Build(t.Context(), dream.Input{Items: items, Commands: commands, Failures: []dream.Failure{
 		{ID: "ses_bad", Reason: "the model endpoint answered 500", Attempts: 2},
-	}}, dream.Options{Now: func() time.Time { return fixedNow }, Model: "qfn", MinSessions: 3})
+	}}, dream.Options{Now: func() time.Time { return fixedNow }, Model: "qfn", MinSessions: 3, MaxConcepts: maxConcepts})
 	if err != nil {
 		t.Fatalf("dream.Build: %v", err)
 	}
@@ -172,5 +177,37 @@ func TestWriteIsIdempotentPerTimestamp(t *testing.T) {
 	}
 	if !strings.HasSuffix(second.Dir, "-2") {
 		t.Fatalf("second dir = %s, want a -2 suffix", second.Dir)
+	}
+}
+
+func TestReportListsTheOverCapClusters(t *testing.T) {
+	t.Parallel()
+
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	// Four clusters, one proposed: the runbook cluster of three sessions ranks first.
+	plan := buildPlan(t, 1)
+	if plan.Proposed != 1 || len(plan.NotProposed) != 1 {
+		t.Fatalf("proposed %d, over cap %d, want 1 and 1", plan.Proposed, len(plan.NotProposed))
+	}
+	written, err := Write(st, plan, fixedNow)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	report, err := os.ReadFile(written.ReportPath)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	text := string(report)
+	if !strings.Contains(text, "## Not proposed (over the cap)") {
+		t.Fatalf("the report has no over-cap section:\n%s", text)
+	}
+	if !strings.Contains(text, plan.NotProposed[0].Statement) {
+		t.Fatalf("the over-cap statement is missing from the report:\n%s", text)
+	}
+	if !strings.Contains(text, "- proposed: 1 of 2 clusters (over the cap: 1)") {
+		t.Fatalf("the report does not state the cap:\n%s", text)
 	}
 }

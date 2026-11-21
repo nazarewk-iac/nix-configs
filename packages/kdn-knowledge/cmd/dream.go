@@ -19,6 +19,7 @@ import (
 type dreamOptions struct {
 	Threshold   float64
 	MinSessions int
+	MaxConcepts int
 }
 
 type dreamSummary struct {
@@ -27,8 +28,10 @@ type dreamSummary struct {
 	Sessions int     `json:"sessions"`
 	Items    int     `json:"items"`
 	Clusters int     `json:"clusters"`
+	Proposed int     `json:"proposed"`
 	Merged   int     `json:"merged"`
 	Dropped  int     `json:"dropped"`
+	OverCap  int     `json:"over_cap"`
 	New      int     `json:"new"`
 	Update   int     `json:"update"`
 	Conflict int     `json:"conflict"`
@@ -47,6 +50,7 @@ func (a *App) runDream(args []string) error {
 	var opts dreamOptions
 	fs.Float64Var(&opts.Threshold, "threshold", dream.DefaultThreshold, "similarity at which two items join a cluster")
 	fs.IntVar(&opts.MinSessions, "min-sessions", dream.DefaultMinSessions, "distinct sessions that a runbook needs to become a skill")
+	fs.IntVar(&opts.MaxConcepts, "max-concepts", dream.DefaultMaxConcepts, "cap the proposal; the rest goes to the report (0 means no cap)")
 	if err := a.parse(fs, args); err != nil {
 		return err
 	}
@@ -69,8 +73,9 @@ func (a *App) runDream(args []string) error {
 	if err != nil {
 		return err
 	}
-	line := fmt.Sprintf("dream: %d clusters, %d new, %d update, %d conflict, %d skills -> %s",
-		summary.Clusters, summary.New, summary.Update, summary.Conflict, summary.Skills, summary.Dir)
+	line := fmt.Sprintf("dream: proposed %d of %d, %d merged, %d new, %d update, %d conflict, %d skills -> %s",
+		summary.Proposed, summary.Clusters, summary.Merged, summary.New, summary.Update,
+		summary.Conflict, summary.Skills, summary.Dir)
 	return a.emit("dream", line, summary)
 }
 
@@ -112,6 +117,7 @@ func (a *App) doDream(ctx context.Context, cfg *config, opts dreamOptions) (*dre
 	plan, err := dream.Build(ctx, input, dream.Options{
 		Threshold:   opts.Threshold,
 		MinSessions: opts.MinSessions,
+		MaxConcepts: opts.MaxConcepts,
 		Merger:      judge,
 		Now:         a.Now,
 		Model:       cfg.MergeModel,
@@ -131,8 +137,10 @@ func (a *App) doDream(ctx context.Context, cfg *config, opts dreamOptions) (*dre
 		Sessions: len(plan.Sessions),
 		Items:    plan.Items,
 		Clusters: plan.Clusters,
+		Proposed: plan.Proposed,
 		Merged:   plan.Merged,
 		Dropped:  plan.Dropped,
+		OverCap:  len(plan.NotProposed),
 		Failures: len(plan.Failures),
 		Report:   written.ReportPath,
 		Plan:     written.PlanPath,
@@ -149,8 +157,9 @@ func (a *App) doDream(ctx context.Context, cfg *config, opts dreamOptions) (*dre
 		}
 	}
 	summary.Skills = len(plan.Skills)
-	a.progressf("dream: %d candidate sessions, %d items, %d clusters (%d merged, %d dropped)",
-		summary.Sessions, summary.Items, summary.Clusters, summary.Merged, summary.Dropped)
+	a.progressf("dream: %d candidate sessions, %d items, %d clusters (%d merged, %d dropped), proposed %d of %d",
+		summary.Sessions, summary.Items, summary.Clusters, summary.Merged, summary.Dropped,
+		summary.Proposed, summary.Clusters)
 	a.progressf("dream: proposal written to %s", written.Dir)
 	return summary, nil
 }

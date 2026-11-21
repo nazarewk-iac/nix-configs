@@ -18,7 +18,7 @@ SQLite through the `sqlite3` CLI (stdlib has no driver) and speaks JSON over HTT
 ```
 kdn-knowledge harvest [--db PATH] [--since DATE] [--project DIR] [--limit N]
 kdn-knowledge extract [--model ID] [--limit N] [--force] [--dry-run]
-kdn-knowledge dream   [--threshold F] [--min-sessions N]
+kdn-knowledge dream   [--threshold F] [--min-sessions N] [--max-concepts N]
 kdn-knowledge apply   [--proposal DIR] [--yes]
 kdn-knowledge run     [--limit N] [--model ID]
 kdn-knowledge status
@@ -113,7 +113,12 @@ The frontier is a reasoning model. Every request carries
 1. Load every `candidates/*.json`.
 2. Group by `kind`.
 3. Similarity: Jaccard over the set of lowercased word trigrams of `statement`, plus 0.1 when the
-   tags intersect. Two items join a cluster when similarity ≥ `--threshold` (default 0.45).
+   tags intersect. Two items join a cluster when similarity ≥ `--threshold` (default **0.35**).
+   Two items of one `kind` that share at least two tags also join when their trigram similarity is
+   ≥ **0.22**: a paraphrase keeps the topic tags and rewrites most of the words. That weaker score
+   is measured on the whole statement or on its first sentence, because a long statement carries
+   its detail into the trigram union and dilutes a shared phrase, while the first sentence is the
+   part that states the fact.
 4. A cluster with one item and `confidence: low` is dropped.
 5. A cluster with two or more items gets one model call: merge into one statement of at most two
    sentences that keeps every distinct fact, and return `{"statement": "...", "tags": [...]}`.
@@ -125,6 +130,10 @@ The frontier is a reasoning model. Every request carries
    (similarity ≥ 0.7 but the model answers "contradicts" when asked to compare the two statements).
 8. **Skill distillation**: a cluster with `kind: runbook`, at least `--min-sessions` distinct
    sessions and at least three ordered command-like lines in its evidence becomes a skill draft.
+9. **Review budget**: keep the top `--max-concepts` clusters (default **60**, `0` means no cap),
+   ranked by distinct sessions, then items, then kind priority (runbook, pitfall, decision,
+   preference, fact). The rest goes to `report.md` under `## Not proposed (over the cap)`, one
+   line each, so nothing is lost and nothing lands unreviewed.
 
 ## Proposal and apply
 
@@ -278,3 +287,11 @@ truth.
 12. **The endpoint contract.** Every request sends `Authorization: Bearer <key>` from
     `--key-file` (default `/run/configs/llms/llama-server/api-keys/default`) and
     `chat_template_kwargs: {"enable_thinking": false}`, `temperature: 0`, `max_tokens: 2048`.
+
+13. **The cap and the merge rule, measured.** On the 15-session corpus (76 items), the statement
+    score of the best pair that shares two tags is 0.098, and the best pair of any kind is 0.198:
+    a long statement carries its detail into the trigram union, which dilutes a shared six-word
+    phrase. The first-sentence score of the same pairs is 0.478 (the deploy paraphrase) and 0.265
+    (the `data/llm.nix` paraphrase), so the tag rule measures the statement or its first sentence
+    and merges two pairs: 76 clusters become 74, 2 of them merged. The review budget then proposes
+    60 of 74 and lists 14 under `## Not proposed (over the cap)`.

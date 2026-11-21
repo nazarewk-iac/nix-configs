@@ -38,8 +38,9 @@ func (a *App) runAll(args []string) error {
 	fs.BoolVar(&force, "force", false, "re-extract sessions that are already done")
 	fs.IntVar(&chunkChars, "chunk-chars", 0, "split a transcript at this many characters")
 	fs.IntVar(&maxChunks, "max-chunks", 0, "cap the calls per session when chunking")
-	fs.Float64Var(&opts.Threshold, "threshold", 0.45, "similarity at which two items join a cluster")
+	fs.Float64Var(&opts.Threshold, "threshold", 0.35, "similarity at which two items join a cluster")
 	fs.IntVar(&opts.MinSessions, "min-sessions", 3, "distinct sessions that a runbook needs to become a skill")
+	fs.IntVar(&opts.MaxConcepts, "max-concepts", 60, "cap the proposal; the rest goes to the report (0 means no cap)")
 	if err := a.parse(fs, args); err != nil {
 		return err
 	}

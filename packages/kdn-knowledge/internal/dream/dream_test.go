@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"kdn-knowledge/internal/textsim"
+
 	"kdn-knowledge/internal/bundle"
 	"kdn-knowledge/internal/extract"
 )
@@ -414,5 +416,137 @@ func TestSkillKeepsTheSharedStepsFirst(t *testing.T) {
 	want := []string{"nix build .#host", "nixos-rebuild switch", "systemctl status"}
 	if !reflect.DeepEqual(steps[:3], want) {
 		t.Fatalf("the shared steps do not lead: %v", steps)
+	}
+}
+
+func TestJoinPairTagRule(t *testing.T) {
+	t.Parallel()
+
+	// a and b share two of nine trigrams: raw Jaccard 0.222, between the tag pair threshold
+	// (0.22) and the default threshold (0.35).
+	a := map[string]struct{}{"a": {}, "b": {}, "c": {}, "d": {}}
+	b := map[string]struct{}{"a": {}, "b": {}, "e": {}, "f": {}, "g": {}, "h": {}, "i": {}}
+	if got := textsim.Jaccard(a, b); got < TagPairThreshold || got >= DefaultThreshold {
+		t.Fatalf("the fixture scores %f, outside [%f, %f)", got, TagPairThreshold, DefaultThreshold)
+	}
+	leadA, leadB := a, b
+
+	tests := []struct {
+		name         string
+		tagsA, tagsB []string
+		want         bool
+	}{
+		{name: "two shared tags join", tagsA: []string{"nix", "brys"}, tagsB: []string{"brys", "nix"}, want: true},
+		{name: "one shared tag does not", tagsA: []string{"nix"}, tagsB: []string{"nix"}, want: false},
+		{name: "no shared tag does not", tagsA: []string{"nix"}, tagsB: []string{"brys"}, want: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := joinPair(a, leadA, b, leadB, test.tagsA, test.tagsB, DefaultThreshold); got != test.want {
+				t.Fatalf("joinPair = %v, want %v", got, test.want)
+			}
+		})
+	}
+
+	// A raw score under 0.22 is too weak even with two shared tags.
+	weakA := map[string]struct{}{"a": {}, "b": {}, "c": {}, "d": {}}
+	weakB := map[string]struct{}{"a": {}, "e": {}, "f": {}, "g": {}, "h": {}, "i": {}, "j": {}, "k": {}, "l": {}}
+	if raw := textsim.Jaccard(weakA, weakB); raw >= TagPairThreshold {
+		t.Fatalf("the weak fixture scores %f, want under %f", raw, TagPairThreshold)
+	}
+	if joinPair(weakA, weakA, weakB, weakB, []string{"nix", "brys"}, []string{"nix", "brys"}, DefaultThreshold) {
+		t.Fatal("joinPair joined a pair below the tag pair threshold")
+	}
+
+	// A long trailing detail can dilute the statement score; the lead sentence still joins.
+	longA := map[string]struct{}{"lead1": {}, "lead2": {}, "lead3": {}, "det1": {}, "det2": {}, "det3": {}, "det4": {}, "det5": {}, "det6": {}, "det7": {}, "det8": {}, "det9": {}}
+	longB := map[string]struct{}{"lead1": {}, "lead2": {}, "lead3": {}, "other1": {}, "other2": {}, "other3": {}, "other4": {}, "other5": {}, "other6": {}, "other7": {}, "other8": {}, "other9": {}}
+	if raw := textsim.Jaccard(longA, longB); raw >= TagPairThreshold {
+		t.Fatalf("the long fixture scores %f, want under %f", raw, TagPairThreshold)
+	}
+	if !joinPair(longA, map[string]struct{}{"lead1": {}, "lead2": {}, "lead3": {}},
+		longB, map[string]struct{}{"lead1": {}, "lead2": {}, "lead3": {}},
+		[]string{"nix", "brys"}, []string{"nix", "brys"}, DefaultThreshold) {
+		t.Fatal("joinPair ignored two shared tags and a matching lead sentence")
+	}
+}
+
+func TestBuildTagAwareMerge(t *testing.T) {
+	t.Parallel()
+
+	pair := func(tagsA, tagsB []string) []extract.Item {
+		return []extract.Item{
+			{Session: "ses_a", Kind: "preference", Statement: "Scope jj commands to the paths the session owns, always.", Tags: tagsA, Confidence: "high", Evidence: []string{"2026-11-21"}},
+			{Session: "ses_b", Kind: "preference", Statement: "Scope jj commands to the paths that a session owns.", Tags: tagsB, Confidence: "high", Evidence: []string{"2026-11-22"}},
+		}
+	}
+	raw := textsim.Similarity("Scope jj commands to the paths the session owns, always.",
+		"Scope jj commands to the paths that a session owns.")
+	if raw >= DefaultThreshold {
+		t.Fatalf("the fixture scores %f, want under the default threshold", raw)
+	}
+
+	tagged, err := Build(context.Background(), Input{Items: pair([]string{"jj", "paths"}, []string{"jj", "paths"})},
+		Options{Now: fixedNow})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if tagged.Clusters != 1 {
+		t.Fatalf("clusters = %d, want 1 with two shared tags (raw %f)", tagged.Clusters, raw)
+	}
+
+	// The same text with disjoint tags keeps the plain threshold, which this pair misses.
+	untagged, err := Build(context.Background(), Input{Items: pair([]string{"jj"}, []string{"paths"})},
+		Options{Now: fixedNow})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if untagged.Clusters != 2 {
+		t.Fatalf("clusters = %d, want 2 without a shared tag (raw %f)", untagged.Clusters, raw)
+	}
+}
+
+func TestBuildCapsTheProposal(t *testing.T) {
+	t.Parallel()
+
+	items := []extract.Item{
+		// Runbook pair across two sessions: rank 1.
+		{Session: "ses_1", Kind: "runbook", Statement: "Deploy the host with the release script.", Tags: []string{"nix"}, Confidence: "high", Evidence: []string{"2026-11-21T10:00:00Z"}},
+		{Session: "ses_2", Kind: "runbook", Statement: "Deploy the host with the release script.", Tags: []string{"nix"}, Confidence: "high", Evidence: []string{"2026-11-21T11:00:00Z"}},
+		// One session, three items: rank 2.
+		{Session: "ses_3", Kind: "fact", Statement: "The sqlite3 CLI carries no driver.", Tags: []string{"sqlite"}, Confidence: "high", Evidence: []string{"2026-11-21T12:00:00Z"}},
+		{Session: "ses_3", Kind: "fact", Statement: "The sqlite3 CLI carries no driver.", Tags: []string{"sqlite"}, Confidence: "high", Evidence: []string{"2026-11-21T12:00:00Z"}},
+		{Session: "ses_3", Kind: "fact", Statement: "The sqlite3 CLI carries no driver.", Tags: []string{"sqlite"}, Confidence: "high", Evidence: []string{"2026-11-21T12:00:00Z"}},
+		// Singletons, one session each: kind priority decides between them.
+		{Session: "ses_4", Kind: "decision", Statement: "Prefer explicit paths over prefixes.", Tags: []string{"jj"}, Confidence: "high", Evidence: []string{"2026-11-21T13:00:00Z"}},
+		{Session: "ses_4", Kind: "pitfall", Statement: "Never run a bare nix flake check.", Tags: []string{"nix"}, Confidence: "high", Evidence: []string{"2026-11-21T14:00:00Z"}},
+	}
+
+	plan, err := Build(context.Background(), Input{Items: items}, Options{Now: fixedNow, MaxConcepts: 2})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if plan.Clusters != 4 || plan.Proposed != 2 || len(plan.Actions) != 2 {
+		t.Fatalf("clusters %d, proposed %d, actions %d; want 4, 2, 2", plan.Clusters, plan.Proposed, len(plan.Actions))
+	}
+	if len(plan.NotProposed) != 2 {
+		t.Fatalf("not proposed = %d, want 2", len(plan.NotProposed))
+	}
+	if plan.Actions[0].Kind != "fact" || plan.Actions[1].Kind != "runbook" {
+		t.Fatalf("proposed kinds = %s, %s, want the widest and largest clusters",
+			plan.Actions[0].Kind, plan.Actions[1].Kind)
+	}
+	if plan.NotProposed[0].Kind != "pitfall" || plan.NotProposed[1].Kind != "decision" {
+		t.Fatalf("over-cap order = %s, %s, want pitfall before decision",
+			plan.NotProposed[0].Kind, plan.NotProposed[1].Kind)
+	}
+
+	uncapped, err := Build(context.Background(), Input{Items: items}, Options{Now: fixedNow, MaxConcepts: 0})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if uncapped.Proposed != 4 || len(uncapped.NotProposed) != 0 {
+		t.Fatalf("uncapped proposed %d, not proposed %d, want 4 and 0", uncapped.Proposed, len(uncapped.NotProposed))
 	}
 }

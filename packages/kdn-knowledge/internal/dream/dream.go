@@ -21,7 +21,7 @@ import (
 // Constants of the design.
 const (
 	// DefaultThreshold is the similarity at which two items join a cluster.
-	DefaultThreshold = 0.45
+	DefaultThreshold = 0.35
 	// DefaultMinSessions is the number of sessions that makes a runbook a skill.
 	DefaultMinSessions = 3
 	// UpdateThreshold is the similarity at which an item updates an existing concept.
@@ -30,7 +30,23 @@ const (
 	MinCommands = 3
 	// MaxSteps caps a skill draft, so a long session cannot turn it into a transcript.
 	MaxSteps = 12
+	// DefaultMaxConcepts caps a proposal. Zero means no cap.
+	DefaultMaxConcepts = 60
+	// SharedTagsForMerge is the number of shared tags that lets two items of one kind join on
+	// weaker trigram evidence.
+	SharedTagsForMerge = 2
+	// TagPairThreshold is that weaker trigram similarity.
+	TagPairThreshold = 0.22
 )
+
+// kindPriority ranks the kinds when clusters tie on sessions and items.
+var kindPriority = map[string]int{
+	"runbook":    1,
+	"pitfall":    2,
+	"decision":   3,
+	"preference": 4,
+	"fact":       5,
+}
 
 // Merger collapses a cluster and answers the contradiction question. A nil merger keeps the
 // representative statement and never reports a conflict.
@@ -58,6 +74,8 @@ type Input struct {
 type Options struct {
 	Threshold   float64
 	MinSessions int
+	// MaxConcepts caps the proposal. Zero means no cap; the rest goes to the report.
+	MaxConcepts int
 	Merger      Merger
 	Now         func() time.Time
 	Model       string
@@ -119,8 +137,10 @@ type Plan struct {
 	Items       int              `json:"items"`
 	Sessions    []string         `json:"sessions"`
 	Clusters    int              `json:"clusters"`
+	Proposed    int              `json:"proposed"`
 	Merged      int              `json:"merged"`
 	Dropped     int              `json:"dropped"`
+	NotProposed []ClusterSummary `json:"not_proposed"`
 	Truncated   []string         `json:"truncated_sessions,omitempty"`
 	Actions     []Action         `json:"actions"`
 	Skills      []SkillDraft     `json:"skills"`
@@ -180,8 +200,29 @@ func Build(ctx context.Context, input Input, opts Options) (*Plan, error) {
 		}
 		kept = append(kept, candidate)
 	}
+	rankClusters(kept)
 
-	for _, candidate := range kept {
+	proposed := kept
+	over := []*cluster{}
+	if opts.MaxConcepts > 0 && len(kept) > opts.MaxConcepts {
+		proposed = kept[:opts.MaxConcepts]
+		over = kept[opts.MaxConcepts:]
+	}
+	plan.Proposed = len(proposed)
+	for _, candidate := range over {
+		plane := ClusterSummary{
+			Kind:      candidate.kind,
+			Statement: candidate.statement,
+			Items:     len(candidate.items),
+			Evidence:  len(candidate.evidence),
+			Sessions:  len(candidate.sessions),
+		}
+		plan.NotProposed = append(plan.NotProposed, plane)
+	}
+
+	// Merge only what the proposal keeps: the cap is a review budget, and a model call for a
+	// cluster that no human will see is wasted.
+	for _, candidate := range proposed {
 		if len(candidate.items) > 1 {
 			plan.Merged++
 		}
@@ -195,7 +236,7 @@ func Build(ctx context.Context, input Input, opts Options) (*Plan, error) {
 	}
 
 	used := map[string]bool{}
-	for _, candidate := range kept {
+	for _, candidate := range proposed {
 		action := propose(ctx, candidate, input.Concepts, opts, used)
 		plan.Actions = append(plan.Actions, action)
 		if skill, ok := draftSkill(candidate, input.Commands, opts.MinSessions, used); ok {
@@ -259,8 +300,10 @@ func clusterItems(items []extract.Item, threshold float64) []*cluster {
 	for _, kind := range kinds {
 		group := byKind[kind]
 		grams := make([]map[string]struct{}, len(group))
+		leads := make([]map[string]struct{}, len(group))
 		for i, item := range group {
 			grams[i] = textsim.Trigrams(item.Statement)
+			leads[i] = textsim.Trigrams(FirstSentence(item.Statement))
 		}
 		parent := make([]int, len(group))
 		for i := range parent {
@@ -282,7 +325,7 @@ func clusterItems(items []extract.Item, threshold float64) []*cluster {
 		}
 		for i := 0; i < len(group); i++ {
 			for j := i + 1; j < len(group); j++ {
-				if similarity(grams[i], grams[j], group[i].Tags, group[j].Tags, threshold) >= threshold {
+				if joinPair(grams[i], leads[i], grams[j], leads[j], group[i].Tags, group[j].Tags, threshold) {
 					union(i, j)
 				}
 			}
@@ -323,27 +366,73 @@ func clusterItems(items []extract.Item, threshold float64) []*cluster {
 	return clusters
 }
 
-// similarity applies the size guard, so a long statement cannot compare against every short one.
-func similarity(a, b map[string]struct{}, tagsA, tagsB []string, threshold float64) float64 {
-	small, large := len(a), len(b)
-	if small > large {
-		small, large = large, small
+// joinPair reports whether two items of one kind belong to one cluster.
+//
+// The trigram score gets the tag bonus first. A weaker score is enough when the two items share
+// at least two tags: a paraphrase of one fact usually keeps the topic tags but changes many
+// words, and that is how a flood of near-identical facts becomes one concept.
+//
+// The weaker score is measured on the whole statement or on its first sentence. A long statement
+// carries its detail into the trigram union and dilutes a shared phrase; the first sentence is
+// the part that states the fact.
+func joinPair(a, leadA, b, leadB map[string]struct{}, tagsA, tagsB []string, threshold float64) bool {
+	raw := textsim.Jaccard(a, b)
+	if raw == 0 && len(leadA) == 0 {
+		return false
 	}
-	if large == 0 {
-		return 0
-	}
-	ceiling := float64(small)/float64(large) + textsim.TagBonus
-	if ceiling < threshold {
-		return 0
-	}
-	score := textsim.Jaccard(a, b)
+	score := raw
 	if textsim.TagsIntersect(tagsA, tagsB) {
 		score += textsim.TagBonus
+		if score > 1 {
+			score = 1
+		}
 	}
-	if score > 1 {
-		score = 1
+	if score >= threshold {
+		return true
 	}
-	return score
+	if sharedTagCount(tagsA, tagsB) < SharedTagsForMerge {
+		return false
+	}
+	if raw >= TagPairThreshold {
+		return true
+	}
+	return textsim.Jaccard(leadA, leadB) >= TagPairThreshold
+}
+
+// sharedTagCount counts the lowercased tags that two lists share.
+func sharedTagCount(a, b []string) int {
+	seen := make(map[string]struct{}, len(a))
+	for _, tag := range a {
+		seen[strings.ToLower(strings.TrimSpace(tag))] = struct{}{}
+	}
+	count := 0
+	for _, tag := range b {
+		if _, ok := seen[strings.ToLower(strings.TrimSpace(tag))]; ok {
+			count++
+		}
+	}
+	return count
+}
+
+// rankClusters orders the clusters that a proposal would keep: the widest evidence first, then
+// the largest cluster, then the kind that a human should read first.
+func rankClusters(clusters []*cluster) {
+	sort.SliceStable(clusters, func(i, j int) bool {
+		a, b := clusters[i], clusters[j]
+		if len(a.sessions) != len(b.sessions) {
+			return len(a.sessions) > len(b.sessions)
+		}
+		if len(a.items) != len(b.items) {
+			return len(a.items) > len(b.items)
+		}
+		if kindPriority[a.kind] != kindPriority[b.kind] {
+			return kindPriority[a.kind] < kindPriority[b.kind]
+		}
+		if a.kind != b.kind {
+			return a.kind < b.kind
+		}
+		return a.statement < b.statement
+	})
 }
 
 func mergeCluster(ctx context.Context, candidate *cluster, merger Merger) error {
