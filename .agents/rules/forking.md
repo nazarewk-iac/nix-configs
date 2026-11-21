@@ -31,3 +31,24 @@ Pi extensions add three steps (full list in the Pi doc):
   confirm Pi loads with no `Failed to load extension`.
 - Sync the copies: `checks/pi-harness/extensions/` and `~/.pi/agent/agents/` (a copy, not a link).
 - A colon in an unquoted frontmatter value is invalid YAML and breaks the load. Quote it.
+
+## A fork pin is a normal dependency
+
+Pushing a commit to a fork and bumping the pin in the consumer is **ordinary operations**, not an
+exception: it is the same act as committing to a non-forked repository and bumping the input. Treat
+it that way — a fork used as a flake input is a dependency like any other, and its `main` is a
+branch like any other.
+
+Rules that follow from that:
+
+- **Pin by commit SHA, never by branch.** A pin is immutable; a branch is not. The hash is part of
+  the pin: `nix flake prefetch <url>` or `nix-prefetch-url --unpack` on the exact revision.
+- **Rebasing or force-pushing your own fork does not break existing pins.** The old objects stay
+  reachable from the pinned commit, so every consumer keeps building. The only cost is that
+  `nix flake update <input>` cannot fast-forward across the rewrite — bump `rev` by hand.
+- **A local patch file beside a package is a temporary state.** It is allowed only while the fork
+  cannot be pushed. As soon as the commit is on the fork, switch the input to the fork revision and
+  delete the patch: two copies of the same change drift, and the patch rots silently against
+  upstream.
+- **A pushed fork commit is reviewable like any other commit.** The consumer's diff names the rev;
+  the fork's history explains it. No separate ceremony is needed.

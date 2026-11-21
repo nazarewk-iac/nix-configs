@@ -188,3 +188,14 @@ PUT command in the table above.
 - `--default-branch-only` drops upstream branches and tags from the fork.
 - `gh repo fork` has no `--disable-*` flags. The CLI rejects them.
 - The Actions disable call needs admin on the fork. The upstream repository returns HTTP 403.
+
+## Pinning the fork as a flake input
+
+A fork that feeds a flake is a dependency, not an incident. Pushing to it and bumping the pin is the
+same operation as a commit in a non-forked repository.
+
+- Pin the **commit SHA** and its hash; a branch name is not a pin.
+- A rebase or force-push to your own fork leaves old pins valid — the objects stay reachable — but
+  `nix flake update` cannot fast-forward across it, so bump `rev` by hand.
+- Prefer the fork revision over a local `.patch` file next to the package. The patch is a stopgap
+  for "the fork cannot be pushed yet"; keeping both is how they drift.
