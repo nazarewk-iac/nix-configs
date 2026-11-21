@@ -57,14 +57,38 @@ journalctl --user -u kdn-knowledge -f
 Resume after a stop is the same command: a session whose content hash is unchanged is skipped.
 `--force` re-extracts everything.
 
+### Very long sessions
+
+A session over the model window fails with a clear reason instead of being truncated:
+
+```
+the transcript of ses_... is 2021338 characters, over the model window; pass --chunk-chars 24000
+```
+
+Retry those with chunking; `extract` retries `failed` sessions on its own, so nothing is lost:
+
+```bash
+kdn-knowledge extract --chunk-chars 24000 --max-chunks 12
+```
+
+A reply that is not valid JSON after one repair is the other failure mode; it is recorded with the
+parser error and does not stop the run.
+
 ## What it costs
 
 `extract` prints a running average and the estimate for the sessions that remain; `status` prints
 the same estimate from the sessions that are already finished. On 2026-11-21 the runs measured
 54.3 s per session ("~2.9 h for 192 remaining"), then 64.6 s ("~3.6 h for 200 remaining"), and by
-23:54 the average over the 15 finished sessions was 73.1 s ("~4.1 h for 200 sessions"). A long
-session costs more than a short one, so the average moves as the corpus fills: read the line the
-tool prints, not this paragraph.
+00:40 the average over 73 finished sessions had settled at **45.0 s** ("~2.5 h for 200 sessions").
+A long session costs more than a short one, so the average moves as the corpus fills: read the line
+the tool prints, not this paragraph.
+
+Those 73 sessions produced **254 items**, and a spot check says they are distinct: a `pkgs.buildEnv`
+file-vs-directory pitfall, `microvm.nix` VFIO passthrough, an IFB device for ingress shaping, the
+llama-swap metrics ring traps, the VHS never-upscale rule. Repetition does exist and merges — the
+"deploy `brys` with `./nixos-rebuild.sh switch remote=brys`" pair and the "`data/llm.nix` is the
+single source" pair each became one concept — but most items are genuinely new, so the proposal cap
+(`--max-concepts`, default 60) is the review lever, not the merge threshold.
 
 Nothing switches, nothing unloads, and no second model competes for the card, because every call
 goes to the frontier that is already loaded on the resting profile.
