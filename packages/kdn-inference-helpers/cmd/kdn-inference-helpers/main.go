@@ -8,6 +8,7 @@
 //	select   ask the manager for a profile, then serve the proxy in this process
 //	serve    materialise a profile and exec the engine (the unit fallback)
 //	ctl      human CLI: up, down, status, stats, unload
+//	status   what this host can serve, and what is serving right now
 package main
 
 import (
@@ -63,6 +64,8 @@ func main() {
 		err = runAdmit(ctx, os.Args[2:])
 	case "ctl":
 		err = runCtl(ctx, os.Args[2:])
+	case "status":
+		err = runStatus(ctx, os.Args[2:])
 	case "version":
 		fmt.Println("kdn-inference-helpers 0.1.0")
 	case "-h", "--help", "help":
@@ -77,7 +80,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `usage: kdn-inference-helpers <manager|proxy|select|serve|ctl|version> [flags]
+	fmt.Fprintln(os.Stderr, `usage: kdn-inference-helpers <manager|proxy|select|serve|status|ctl|version> [flags]
 
   manager  the profile manager and its HTTP API
   proxy    forward one llama-swap entry port to the engine
@@ -85,6 +88,7 @@ func usage() {
   serve    materialise a profile and exec the engine
   gate     guard a model behind a profile requirement (the collocated companion)
   admit    ask the placement policy, then exec the model server
+  status   what this host can serve, and what is serving right now
   ctl      up, down, status, stats, unload`)
 	os.Exit(2)
 }
