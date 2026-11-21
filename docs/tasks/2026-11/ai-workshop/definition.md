@@ -191,6 +191,61 @@ Image path when the cluster arrives:
 That moves nix-snapshotter from "not a dependency" to "the cluster's image path", but it stays out
 of today's path: tier 1 and tier 2 cover everything until the cluster exists.
 
+## Migration to snapshotter containers
+
+Once the path is proven (it is, on `etra`: one image, one `nerdctl` unit, `Hello, world!` in the
+journal), move as much as possible into it. Two reasons, in this order: **segregation** — a service
+owns its state and nothing else — and **backup** — a service is one directory plus a pinned image
+revision.
+
+### What moves, and what does not
+
+| moves                                  | why                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| Kokoro, whisper, DeepFilterNet, Demucs | CPU-only, no devices, tiny state; the natural first four               |
+| `dots.ocr`, Real-ESRGAN/RIFE, LTX-2.3  | GPU but via a device bind, state is a models directory                 |
+| Hermes Agent, ComfyUI (if adopted)     | long-running services with their own state                             |
+| the media bench                        | _no_ — it is a shell of `ffmpeg` calls and file targets, not a service |
+
+| stays native                     | why                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **strata** (the frontier engine) | a HIP engine tuned to this card, with the ROCm shim; containerising it would cost the tuning and gain nothing |
+| **llama-swap**                   | the front door and process owner; it is what starts the containers' siblings                                  |
+| **the manager / placement tree** | it schedules the card; it must outlive everything it schedules                                                |
+
+### The contract a migrated service must satisfy
+
+1. **One state root**, declared in the contract, under `/var/lib/kdn/<service>/` — bind-mounted now,
+   a PVC later. No state anywhere else: not in the image, not in `$HOME`, not in `/tmp`.
+2. **Config through env and files**, so a ConfigMap and a Secret can replace them.
+3. **No host path inside the service** except the state root and declared devices.
+4. **A health command**, so the unit, `nerdctl`, and a later `readinessProbe` share one definition.
+5. **A backup drill**: stop the unit, copy the state root, restore it into a fresh container, and the
+   service comes back. A service that fails the drill is not migrated.
+
+Backup then has two halves and no third: the **data** (one directory per service) and the
+**definition** (the image revision, already in the repo). A restore is `restore the directory` +
+`nixos-rebuild switch`.
+
+### Risks
+
+- **Containers do not isolate RAM.** Measured 2026-11-21: a 16.4 GB mmap in a second process
+  OOM-killed the frontier on a 125 GiB host. A container changes nothing about that; the placement
+  tree's RAM check is the only defence, and it must count mapped file size, not RSS.
+- **GPU containers need explicit device binds** (`/dev/dri`, `/dev/kfd`) and the host's driver
+  libraries from the shared store; a container that forgets them fails at the first tensor.
+- **No CNI on a GPU-less host yet**, so `etra`'s containers run `--net=none`; anything with a port
+  needs a network decision before it moves.
+- **The policy still decides.** A container that starts a model server is an engine profile; `admit`
+  is unchanged by the migration.
+
+### Order
+
+1. Audio (four services, CPU, smallest state) — proves the contract and the backup drill.
+2. OCR and restoration (GPU, device binds) — proves a GPU container.
+3. Hermes gateway and ComfyUI — proves a long-running service with real state.
+4. Only then consider the media pipelines, which are a runner problem, not a container problem.
+
 ## Non-goals
 
 ComfyUI is not adopted until a PoC needs a tensor graph sd.cpp cannot express; etra never runs
