@@ -136,6 +136,17 @@ let
           # The guard in setup.py.
           env.HERMES_NIX_BUILD = "1";
 
+          # `[build-system].requires` pins setuptools and wheel to exact versions as
+          # part of the project's PyPI supply-chain policy. The build runs with
+          # `--no-isolation` against nixpkgs' own setuptools/wheel, and `build` refuses
+          # any version difference, so the pins have to go. Only the build backend is
+          # affected; the runtime pins stay declared in `dependencies`.
+          postPatch = ''
+            substituteInPlace pyproject.toml \
+              --replace-fail 'setuptools==84.1.0' 'setuptools' \
+              --replace-fail 'wheel==0.48.0' 'wheel'
+          '';
+
           build-system = [
             final.setuptools
             final.wheel
