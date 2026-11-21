@@ -35,6 +35,7 @@ MANAGER=${STRATA_MANAGER:-127.0.0.1:8181}
 RESTING=${STRATA_RESTING_PROFILE:-max-multi}
 PORT=${STRATA_PORT:-8080}
 VRAM=/sys/class/drm/card1/device/mem_info_vram_used
+CONFIG=${STRATA_CONFIG:-/etc/kdn-inference-helpers/config.json}
 
 profile=
 ttl=
@@ -70,6 +71,36 @@ done
 select_profile() {
   curl -sS -m 1000 -X POST "http://$MANAGER/select" \
     -H 'Content-Type: application/json' -d "{\"profile\":\"$1\"}"
+}
+
+# The profile names are not written here. The generated deployment file is their only home (it maps
+# `data/llm.nix` through `lib/llm.nix` `strata`), so the usage text reads it instead of carrying a
+# second list that drifts: this one said `fast-swarm` but not `max-single`. A machine with no
+# deployment file (a laptop pointing $STRATA_MANAGER at brys) is told where to look.
+profile_names() {
+  python3 - "$CONFIG" <<'PY' 2>/dev/null
+import json, sys
+try:
+    with open(sys.argv[1]) as fh:
+        profiles = sorted((json.load(fh).get("profiles") or {}).keys())
+except (OSError, ValueError):
+    sys.exit(1)
+if not profiles:
+    sys.exit(1)
+print(" ".join(profiles + ["none"]))
+PY
+}
+
+usage() {
+  local names
+  names=$(profile_names) || names=
+  echo "usage: $0 {up|down|status} [--profile <profile>|none] [--ttl 30m] [--resting <profile>]" >&2
+  if [ -n "$names" ]; then
+    echo "profiles: $names (derived from $CONFIG)" >&2
+  else
+    echo "profiles: see \`kdn-inference-helpers status\` (no deployment file at $CONFIG)" >&2
+  fi
+  exit 2
 }
 
 status() {
@@ -137,7 +168,6 @@ status)
   status
   ;;
 *)
-  echo "usage: $0 {up|down|status} [--profile max-multi|max-swarm|max-long|fast-swarm|omni-max|omni-fast|none] [--ttl 30m] [--resting <profile>]" >&2
-  exit 2
+  usage
   ;;
 esac

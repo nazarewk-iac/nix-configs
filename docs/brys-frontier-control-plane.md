@@ -29,7 +29,7 @@ the agent-facing rules in [.agents/skills/kdn-llms/SKILL.md](../.agents/skills/k
         |
         |  spawns the entry's command
         v
- strata-select.sh  <profile> --port N
+ strata-select  <profile> --alias <name> --port N
         |      asks POST /select, then execs
         v
  strata-proxy.py :N  .................  one lease per request; waits while draining
@@ -52,13 +52,14 @@ harness is.
 | name            | entry command             | what happens                                               |
 | --------------- | ------------------------- | ---------------------------------------------------------- |
 | `qfn`           | `strata-select auto`      | keeps the current profile; **no reload**                   |
-| `qfn-max`       | `strata-select max`       | selects `max` (UD-IQ4_XS, whole card, 73 t/s @1M)          |
+| `qfn-max`       | `strata-select max-long`  | selects `max-long` (UD-IQ4_XS, 1M × 2 slots, 29.7 t/s)     |
 | `qfn-fast-colo` | `strata-select omni-fast` | selects `omni-fast` (IQ2_XS + 21.5 GB reserve, 72 t/s @1M) |
 | `qwen3-omni`    | plain llama.cpp model     | loads inside the reserve, beside the engine                |
 
-The manager accepts the same words as profile names (`qfn` → `auto`, `qfn-max` → `max`, `qfn-fast-colo`
-→ `omni-fast`), so a person and a harness share one vocabulary. `omni-max` (UD-IQ4_XS with the
-reserve, 42 t/s) exists only through the API.
+The manager accepts the same words as profile names (`qfn` → `auto`, `qfn-max` → `max-long`,
+`qfn-fast-colo` → `omni-fast`), so a person and a harness share one vocabulary; the alias map is
+derived from `data/llm.nix`, so a profile name is never typed twice. `omni-max` (UD-IQ4_XS with the
+reserve, 42 t/s) answers to `qfn-max-colo`.
 
 `qfn` is the name a harness should use. A profile change is a full engine reload — 50–70 s, and it
 destroys the engine's KV cache — so the design moves the decision out of the model name and into a
@@ -141,13 +142,14 @@ guess, and that a regression shows up as a drifting median.
 
 ## Code map
 
-| file                                 | role                                                                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `hosts-den/brys/strata-manager.py`   | the control plane: `/select`, `/status`, `/stats`, `/events`, `/lease`, `/release`, `/unload`; owns the engine child; journals |
-| `hosts-den/brys/strata-proxy.py`     | one lease per request, drain-aware, dual-stack, local `/health` during a drain                                                 |
-| `hosts-den/brys/strata-select.sh`    | the llama-swap entry point: ask the manager, then proxy                                                                        |
-| `hosts-den/brys/strata-serve.sh`     | materialises a profile config and execs `strata serve` (used by the unit fallback)                                             |
-| `hosts-den/brys/strata-profiles.nix` | the account, the units, the sudoers line, the cache-drop oneshot                                                               |
-| `data/llm.nix`                       | the four model names and their commands                                                                                        |
-| `hack/brys-frontier.sh`              | the human entry point: `up`, `up --profile X --ttl 2h`, `down`, `status`                                                       |
-| `hack/probe-drain*.py`               | the proofs: in-flight at the proxy, through the gateway, under a harness                                                       |
+| file                                 | role                                                                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hosts-den/brys/strata-manager.py`   | the control plane: `/select`, `/status`, `/stats`, `/events`, `/lease`, `/release`, `/unload`; owns the engine child; journals                                |
+| `hosts-den/brys/strata-proxy.py`     | one lease per request, drain-aware, dual-stack, local `/health` during a drain                                                                                |
+| `hosts-den/brys/strata-select.sh`    | the llama-swap entry point: ask the manager, then proxy                                                                                                       |
+| `hosts-den/brys/strata-serve.sh`     | materialises a profile config and execs `strata serve` (used by the unit fallback)                                                                            |
+| `hosts-den/brys/strata-profiles.nix` | the account, the units, the sudoers line, the cache-drop oneshot — and the writer of the derived `config.json`, never a profile table                         |
+| `data/llm.nix`                       | the fleet catalogue; each frontier model's `hosts.<host>.serving` block is the one place its profile knobs and measured facts are written                     |
+| `lib/llm.nix`                        | `strata`: the projection that derives the manager's `config.json`, the llama-swap entry command, the policy's fact rows and the engine argv from those blocks |
+| `hack/brys-frontier.sh`              | the human entry point: `up`, `up --profile X --ttl 2h`, `down`, `status`                                                                                      |
+| `hack/probe-drain*.py`               | the proofs: in-flight at the proxy, through the gateway, under a harness                                                                                      |
