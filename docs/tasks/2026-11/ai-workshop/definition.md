@@ -150,6 +150,36 @@ Rules that hold for all three:
 - **A container does not bypass the policy**: if it starts a model server it is an engine profile
   like any other, and `admit` still decides.
 
+## Kubernetes later (k3s or plain NixOS kubernetes)
+
+The cluster is a deployment target, not a redesign. Four rules make every service cluster-ready
+today, while it still runs as a NixOS container:
+
+1. **One contract per service**: name, entrypoint, environment, ports, health path, volumes,
+   devices. Declared once, consumed by whichever runner — nspawn now, a Pod later.
+2. **State is a volume**, never the container filesystem: a bind mount now, a PVC later.
+3. **Config through environment and files**, never baked into the image: a ConfigMap and a Secret
+   later.
+4. **No host path inside the service**, only through the contract, so a PVC can replace a bind
+   mount without touching the service.
+
+The scheduler rule does not change: **kubernetes schedules containers, the placement tree schedules
+the card.** A Pod that starts a model server still calls `admit`, and GPU work is pinned to the
+engine node with a label (`kdn.io/engine=r9700`) plus `/dev/dri` and `/dev/kfd` as hostPaths. One
+authority for the card, across nspawn, podman and k8s.
+
+Image path when the cluster arrives:
+
+- **k3s** with the embedded containerd and nix-snapshotter (`services.k3s.setEmbeddedContainerd`,
+  `virtualisation.containerd.nixSnapshotterIntegration`); k3s support landed in the March 2026
+  release cycle.
+- Images are `pkgs.nix-snapshotter.buildImage`, the Pod spec names `nix:0${image}`, and nothing is
+  pulled from a registry.
+- **Plain NixOS kubernetes** uses the same snapshotter and the same images.
+
+That moves nix-snapshotter from "not a dependency" to "the cluster's image path", but it stays out
+of today's path: tier 1 and tier 2 cover everything until the cluster exists.
+
 ## Non-goals
 
 ComfyUI is not adopted until a PoC needs a tensor graph sd.cpp cannot express; etra never runs
