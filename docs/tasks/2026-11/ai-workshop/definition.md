@@ -38,7 +38,7 @@ without redesign.
 | `bench`     | `hack/media/` DAG runner, asset layout, ntfy, resumable stages                                                                                                | **this task**               |
 | `catalogue` | 10 models with fast/quality variants, all measured                                                                                                            | 23 registered, 15 estimated |
 | `services`  | every long-running service as an OCI image built by Nix, run by `virtualisation.oci-containers`: devices, volumes and environment declared in the host module | **rule**                    |
-| `gateway`   | Hermes Agent (MIT, self-hosted) as the phone/cron/browser front door                                                                                          | missing                     |
+| `gateway`   | Hermes Agent (MIT, self-hosted) as the phone/cron/browser front door                                                                                          | live on `etra`              |
 | `crew`      | multi-agent orchestration: LangGraph _or_ Hermes sub-agents, one only                                                                                         | missing                     |
 | `spam`      | agent-driven development loop for a mail classifier                                                                                                           | missing                     |
 | `policy`    | the tree extended with the new kinds (audio, OCR, restoration, LTX)                                                                                           | live, facts incomplete      |
@@ -108,7 +108,8 @@ LTX models have no numbers at all.
 **Convergence.** R1–R4 found real gaps (GPU admission for bench steps, atomic outputs, the asset
 share, the disk budget, measured facts). R5 found two (call budget, sealed split). A sixth pass with
 the same lens found no new class, so the loop stops. Residual, not defects: LTX-2.5's encoder and
-conv VAE are unverified in sd.cpp, and Hermes Agent has no Nix packaging yet.
+conv VAE are unverified in sd.cpp. (Hermes Agent's missing Nix packaging is closed — see
+[Hermes Agent on `etra`](#hermes-agent-on-etra-live).)
 
 ## Order of work
 
@@ -116,7 +117,8 @@ conv VAE are unverified in sd.cpp, and Hermes Agent has no Nix packaging yet.
 2. **audio** — Kokoro, whisper-turbo, DeepFilterNet, Demucs; they unlock the VHS audio half and the
    voice loop, and most run on a GPU-less host.
 3. **catalogue prune + stage-0 measurements** — the tree stops guessing.
-4. **gateway** — Hermes Agent on etra, wired to the fleet, with the VHS watcher as its first cron.
+4. **gateway** — _done_: Hermes Agent on etra, wired to the fleet, with the VHS watcher as its
+   first cron (the watcher is still open).
 5. **PoCs in order**: VHS archive → VHS restore → documents → albums → spam → voice → UI → LTX.
 6. **crew** — only when a PoC has shown that one agent is not enough.
 
@@ -310,8 +312,9 @@ needs a persisted parent, and a dataset is the better answer wherever a pool exi
   tree's RAM check is the only defence, and it must count mapped file size, not RSS.
 - **GPU containers need explicit device binds** (`/dev/dri`, `/dev/kfd`) and the host's driver
   libraries from the shared store; a container that forgets them fails at the first tensor.
-- **No CNI on a GPU-less host yet**, so `etra`'s containers run `--net=none`; anything with a port
-  needs a network decision before it moves.
+- **No CNI on a GPU-less host yet**, so `etra`'s containers run `--net=none` or `--net=host`; a
+  container that needs one narrow endpoint gets a loopback relay instead of a bridge (`hermes` is
+  the first: `127.0.0.1:9530` → the LiteLLM guest).
 - **The policy still decides.** A container that starts a model server is an engine profile; `admit`
   is unchanged by the migration.
 
@@ -321,6 +324,165 @@ needs a persisted parent, and a dataset is the better answer wherever a pool exi
 2. OCR and restoration (GPU, device binds) — proves a GPU container.
 3. Hermes gateway and ComfyUI — proves a long-running service with real state.
 4. Only then consider the media pipelines, which are a runner problem, not a container problem.
+
+## Hermes Agent on `etra` (live)
+
+Hermes Agent (MIT, `NousResearch/hermes-agent`) is the workshop's phone/cron front
+door: a Python CLI agent with a tool shell, plus a messaging gateway that keeps its
+memory in one directory. It runs as the nix-snapshotter container `hermes` on `etra`
+— the **client** side of the split: no GPU, no cluster, no model of its own.
+
+| what        | where                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------- |
+| package     | `packages/hermes-agent/default.nix` — `fetchFromGitHub` at a pinned commit + `python314.withPackages`      |
+| container   | `hosts/etra/hermes.nix` → `kdn.containers.containers.hermes`, unit `container-hermes`                      |
+| state root  | `/var/lib/kdn/hermes` — the container's `stateDir`, `HERMES_HOME` and `KDN_STATE_DIR`                      |
+| model       | `http://127.0.0.1:9530/v1` — a loopback relay to the LiteLLM guest (`10.233.100.2:4000`)                   |
+| credentials | `CUSTOM_API_KEY` in `/var/lib/kdn/hermes/litellm.env`, rendered at boot from the sops `litellm/client-key` |
+
+### Log in and use it
+
+```sh
+sudo nerdctl exec -it hermes hermes                          # interactive CLI
+sudo nerdctl exec hermes hermes -z "reply with one word"     # one-shot: only the answer on stdout
+sudo nerdctl exec hermes hermes --version
+```
+
+`-z` / `--oneshot` is the scriptable mode: no banner, no spinner, no session line.
+`-p` is **not** a prompt flag — it is `--profile`. Verified on `etra` 2026-11-21:
+
+```
+$ sudo nerdctl exec hermes hermes -z "reply with one word"
+Okay
+```
+
+The gateway log names the route it took, which is the check that the wiring is real:
+
+```
+run_agent: OpenAI client created (agent_init, shared=True) … provider=custom base_url=http://127.0.0.1:9530/v1 model=qfn
+agent.conversation_loop: API call #1: model=qfn provider=custom in=8521 out=31 total=8552 latency=9.2s
+```
+
+`-z` does not run the agent in its own process: it starts (or attaches to) the
+gateway and sends the prompt through it as the `local` platform, so one gateway
+serves every caller. On a container that is idling (see the next section) it starts
+a gateway for the run and that gateway exits after 600 s with no clients.
+
+The default model is `qfn` — the fleet frontier on `brys`, 393k context, and
+profile-neutral (it asks the engine manager for `auto`, so it never forces a reload).
+Switch for one call (flags go **before** `-z`, which takes the prompt as its value)
+or persistently:
+
+```sh
+sudo nerdctl exec hermes hermes -m qfn-max -z "reply with one word"
+sudo nerdctl exec -it hermes hermes config set model.default chat-std-mid
+```
+
+**Only models above 64k context work.** Hermes refuses anything smaller
+(`Model X has a context window of 32,768 tokens, which is below the minimum
+64,000`), which rules out the 32k "fast" pool (`chat-fast`, `code-std-fast`, …). The
+usable names today are `qfn`, `qfn-max`, `qfn-colo`, `qfn-fast-colo` (393k) and
+`chat-std-mid` (262k), plus the `requesty/*` ids.
+
+A `429 … Limit resets at HH:MM` reply is the fleet, not the wiring: a model group
+with one deployment goes into a 30 s cooldown after two failed requests
+(`allowed_fails`/`cooldown_time` in `hosts/etra/litellm.nix`), and the frontier is
+unavailable whenever the engine on `brys` is restarting.
+
+### The messaging gateway
+
+The gateway is the container's long-lived process. With **no** platform token the
+entrypoint prints how to configure one and sleeps, so nothing polls anything. Add a
+token and the entrypoint runs `hermes gateway run` instead:
+
+```sh
+sudo nerdctl exec -it hermes hermes gateway setup   # wizard: Telegram / Discord / Slack / …
+sudo systemctl restart container-hermes
+sudo journalctl -u container-hermes -f
+```
+
+The wizard writes the token to the profile's `.env`, **`/var/lib/kdn/hermes/.env`**:
+`TELEGRAM_BOT_TOKEN`, `DISCORD_BOT_TOKEN` or `SLACK_BOT_TOKEN`. That file is the
+token file and the only place a token lives. The entrypoint looks for exactly those
+three names (in `.env` or in the container environment) to decide gateway-or-sleep.
+Nix never writes `.env`, so the wizard's edits and any hand-added variable survive a
+rebuild.
+
+### State and backup
+
+Everything the agent must keep is in one directory, `/var/lib/kdn/hermes`:
+
+```
+config.yaml    model/provider selection; seeded once from the store, then yours
+.env           platform tokens (written by `hermes gateway setup`)
+litellm.env    CUSTOM_API_KEY (managed: re-rendered on every boot)
+sessions/  state.db  memories/  skills/  kanban.db  projects.db  …   memory and history
+```
+
+The directory is declared in `kdn.disks.persist."sys/state"`, so on `etra` it lives
+inside the ZFS dataset `etra-main/etra/impermanence/sys/state` and is bind-mounted
+over the tmpfs root — it already survives a reboot.
+
+Backup today, the directory:
+
+```sh
+sudo systemctl stop container-hermes
+sudo zfs snapshot etra-main/etra/impermanence/sys/state@hermes-$(date +%F)
+sudo systemctl start container-hermes
+```
+
+A file-level copy of that one directory works too
+(`sudo tar -C /var/lib -caf … kdn/hermes`). Stop the unit first: a snapshot of a
+running SQLite database is only crash-consistent, and stopping costs nothing.
+
+Restore: stop `container-hermes`, put the directory back (`zfs rollback` or the
+tar), start the unit. The image comes from the repo, so a restore is the directory
+plus `nixos-rebuild switch`.
+
+Later, as its own dataset: set `stateDataset` on the container **and** drop the
+`kdn.disks.persist` entry — both are documented at the top of
+`hosts/etra/hermes.nix`. The module then creates
+`etra-main/etra/kdn/services/hermes` with `mountpoint=/var/lib/kdn/hermes` and
+mounts it before the container starts. Backup becomes `zfs snapshot` + `zfs send -R`
+of that dataset, restore becomes `zfs receive` plus `nixos-rebuild switch`, and the
+container definition does not change: it is handed the path either way.
+
+### What the package does not ship
+
+- **`browser-harness`** — not in nixpkgs at all. It is the engine of the
+  `browser_exec` tool, whose own `check_fn` hides the tool when the import fails
+  (`check_fn browser_exec_available returned False` in the container log), so only
+  that tool is unavailable.
+- **`nemo-relay`** — nixpkgs has 0.7.3, the project pins `>=0.11,<0.12`, and 0.7.3
+  does not build here (`aws-lc-sys` asks for a system AWS-LC that the crate override
+  does not supply). The runtime treats a missing module as a supported platform
+  condition, so only Relay telemetry is off.
+- **the npm frontends** (`--tui`, `hermes web`, `hermes webapp`) — they need a pnpm
+  build of `ui-tui/`, `web/` and `webapp/`. The classic REPL and every headless path
+  (`-z`, `gateway run`) are Python-only and work.
+- **`hermes pm …`** — it installs Python packages into a writable tree, which a
+  read-only store cannot provide. The `[messaging]` extra is baked in instead, so the
+  Telegram/Discord/Slack adapters work without a lazy install.
+
+### Container shape
+
+- `--net=host`: `etra` has no CNI, so a nerdctl bridge is unavailable (the same
+  reason `workshop-hello` runs `--net=none`). The agent's only endpoint is the
+  loopback relay, so host networking adds no reachable surface beyond the host's own.
+- `hermes-litellm-relay.service` — socat on `127.0.0.1:9530` → `10.233.100.2:4000`,
+  bound to loopback so nothing off-host reaches the gateway through it.
+- `hermes-env.service` — renders `litellm.env` from
+  `/run/configs/llms/litellm/client-key` (sops) before the container starts, so no
+  secret is in the repository, the store or the unit file.
+- The image links one merged `/bin` (`runtimeTools` in `hosts/etra/hermes.nix`):
+  bash, coreutils, git, ripgrep, curl, jq, python3 and friends. A nix-snapshotter
+  image starts empty, so a tool that is not in that list does not exist inside the
+  container — the first version of the entrypoint died on `install: command not
+found`.
+- `config.yaml` names a **named** provider (`providers.litellm` +
+  `model.provider: litellm`). A bare `provider: custom` resolves through a fallback
+  rung that never reads `CUSTOM_API_KEY`, which surfaces as a plain `HTTP 401:
+Invalid API key` (measured 2026-11-21).
 
 ## Non-goals
 
