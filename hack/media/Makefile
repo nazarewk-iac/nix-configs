@@ -20,6 +20,9 @@ FFMPEG ?= ffmpeg
 FFPROBE ?= ffprobe
 ADMIT ?= kdn-inference-helpers admit
 NTFY ?= $(HOME)/.config/ntfy/topic
+WHISPER ?= whisper-cli
+WHISPER_MODEL ?= /var/lib/kdn/llms/models/whisper/ggml-base.en.bin
+WHISPER_LANG ?= auto
 
 ifeq ($(strip $(SRC)),)
 $(error set SRC=<capture file>)
@@ -34,10 +37,11 @@ DEINT := $(OUT)/deinterlaced.mkv
 VDN := $(OUT)/video-denoised.mkv
 WAV := $(OUT)/audio.wav
 ACLEAN := $(OUT)/audio-clean.wav
+TRANSCRIPT := $(OUT)/transcript.txt
 MASTER := $(OUT)/master.mkv
 PROXY := $(OUT)/proxy.mp4
 
-.PHONY: all clean notify probe-print cut deint denoise audio master proxy encode
+.PHONY: all clean notify probe-print cut deint denoise audio transcribe master proxy encode
 all: $(MASTER) $(PROXY)
 
 # Named aliases: a person types `make cut`, not `make /data/tape.work/cut.mkv`.
@@ -45,6 +49,7 @@ cut: $(CUT)
 deint: $(DEINT)
 denoise: $(VDN)
 audio: $(ACLEAN)
+transcribe: $(TRANSCRIPT)
 master: $(MASTER)
 proxy: $(PROXY)
 encode: $(MASTER) $(PROXY)
@@ -90,17 +95,30 @@ $(WAV): $(CUT)
 	  : > "$@"; \
 	fi
 
-# DeepFilterNet if it is installed; the copy otherwise, so the chain never breaks on a missing tool.
+# Tape hiss is broadband and sits above speech: a high-pass, a spectral gate and a gentle low-pass
+# remove most of it without the artefacts a neural denoiser leaves on music. `deepFilter` is used
+# when its CLI is installed, because it is better on speech and worse on music.
 $(ACLEAN): $(WAV)
 	@if [ ! -s "$<" ]; then : > "$@"; exit 0; fi
 	@if command -v deepFilter >/dev/null 2>&1; then \
 	  deepFilter --input "$<" --output "$(OUT)/audio-clean" && \
 	  mv "$(OUT)/audio-clean/"*.wav "$(basename $@).tmp$(suffix $@)"; \
 	else \
-	  echo "deepFilter not installed; keeping the source audio" >&2; \
-	  cp "$<" "$(basename $@).tmp$(suffix $@)"; \
+	  $(FFMPEG) -hide_banner -loglevel error -y -i "$<" \
+	    -af "highpass=f=70,afftdn=nf=-25:tn=1,lowpass=f=12000" \
+	    -c:a pcm_s16le "$(basename $@).tmp$(suffix $@)"; \
 	fi
 	mv "$(basename $@).tmp$(suffix $@)" "$@"
+
+# Speech to text: the archive index, and "is this tape worth keeping" without watching it.
+$(TRANSCRIPT): $(ACLEAN)
+	@if [ ! -s "$<" ]; then echo "no audio to transcribe" >&2; : > "$@"; exit 0; fi
+	@if [ ! -r "$(WHISPER_MODEL)" ]; then \
+	  echo "no whisper model at $(WHISPER_MODEL); skipping the transcript" >&2; : > "$@"; exit 0; \
+	fi
+	$(WHISPER) -m "$(WHISPER_MODEL)" -f "$<" -l $(WHISPER_LANG) -otxt \
+	  -of "$(basename $@).tmp" -np >/dev/null 2>&1
+	mv "$(basename $@).tmp.txt" "$@"
 
 # ---------------------------------------------------------------- master
 # SVT-AV1 at CRF 28, 10-bit: the archive format. `make vmaf` gates it.

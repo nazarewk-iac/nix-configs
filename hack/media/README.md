@@ -32,6 +32,16 @@ make -f hack/media/Makefile vmaf   SRC=/data/vhs/tape-07.mkv OUT=/data/vhs/tape-
 - **Masters stay on the engine host**, `proxy.mp4` is the only file meant to be copied to a weaker
   client.
 
+## What is packaged today
+
+| need             | tool                           | licence  | note                                                                                      |
+| ---------------- | ------------------------------ | -------- | ----------------------------------------------------------------------------------------- |
+| speech to text   | `whisper-cpp` (`whisper-cli`)  | MIT      | CPU, offline; `parakeet-cli` ships in the same package                                    |
+| text to speech   | `piper`                        | MIT      | CPU; the stand-in for Kokoro, which is not in nixpkgs                                     |
+| denoise (speech) | `deepfilternet` LADSPA plugin  | MIT      | for EasyEffects; the CLI (`deepFilter`) is not packaged, so the bench uses ffmpeg filters |
+| denoise (tape)   | `ffmpeg` `afftdn` + `highpass` | LGPL/GPL | no model, no download                                                                     |
+| separation       | Demucs                         | MIT      | **not packaged** — needs a container or a Python env                                      |
+
 ## Where it runs
 
 The runner is host-native (it is a shell of `ffmpeg` calls). Anything it invokes that needs a model
