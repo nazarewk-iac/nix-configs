@@ -52,9 +52,11 @@ Operational notes:
 
 The fleet's llama-swap runs on `127.0.0.1:39700` as `llm-server`. The frontier
 (`Qwen3.8-Flash-Next` QFN at 1M) is not a llama.cpp model any more: it is a **Strata** engine on
-`:8080`, owned by `strata-manager` (`:8181`). Four llama-swap entries call `strata-select`, which
-asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`), **`qfn-max`** (forces
-`max`), **`qfn-fast-colo`** (forces `omni-fast`) and **`qwen3-omni`** (the companion, no profile at all).
+`:8080`, owned by `strata-manager` (`:8181`). Each frontier profile is a llama-swap entry that calls
+`strata-select`, which asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`),
+**`qfn-max-multi`**, **`qfn-max-swarm`**, **`qfn-max`** and **`qfn-max-long`**, **`qfn-max-single`**,
+**`qfn-fast-swarm`**, **`qfn-max-colo`**, **`qfn-fast-colo`**; **`qwen3-omni`** is the companion and
+asks for no profile at all.
 
 ### Operating points and the resting profile
 
@@ -63,20 +65,21 @@ The card holds one engine at a time, and the VRAM reserve for the companion
 not a slider. Measured 2026-11-21 (`docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`,
 "The swarm profiles"):
 
-| profile      | pack + reserve                | aggregate t/s (8 short callers) | omni              | RAM left     |
-| ------------ | ----------------------------- | ------------------------------: | ----------------- | ------------ |
-| `max-multi`  | UD-IQ4_XS, whole card, 512k×6 |                            30.7 | 6.1 t/s co-loaded | 6.6 GiB      |
-| `max-swarm`  | UD-IQ4_XS, whole card, 256k×8 |                            36.2 | 6.1 t/s co-loaded | 18.4 GiB     |
-| `max-long`   | UD-IQ4_XS, whole card, 1M×2   |                            29.7 | 6.1 t/s co-loaded | 10.5 GiB     |
-| `fast-swarm` | IQ2_XS, whole card, 384k×8    |                        **61.0** | 6.1 t/s co-loaded | **31.4 GiB** |
-| `omni-max`   | UD-IQ4_XS + 21.5 GB reserve   |                  59-62 / 42 @1M | 96.9 t/s, ready   | 3-5 GiB      |
-| `omni-fast`  | IQ2_XS + 21.5 GB reserve      |                   88 / 71.6 @1M | 98.8 t/s, ready   | 23-27 GiB    |
+| profile      | pack + reserve                | aggregate t/s (concurrent callers) | omni              | RAM left     |
+| ------------ | ----------------------------- | ---------------------------------: | ----------------- | ------------ |
+| `max-multi`  | UD-IQ4_XS, whole card, 512k×5 |                               31.9 | 6.1 t/s co-loaded | 7-8 GiB      |
+| `max-swarm`  | UD-IQ4_XS, whole card, 256k×8 |                               36.2 | 6.1 t/s co-loaded | 18.4 GiB     |
+| `max-long`   | UD-IQ4_XS, whole card, 1M×2   |                               29.7 | 6.1 t/s co-loaded | 10.5 GiB     |
+| `max-single` | UD-IQ4_XS, whole card, 1M×1   |                                  — | 6.1 t/s co-loaded | —            |
+| `fast-swarm` | IQ2_XS, whole card, 384k×8    |                           **61.0** | 6.1 t/s co-loaded | **31.4 GiB** |
+| `omni-max`   | UD-IQ4_XS + 21.5 GB reserve   |                     59-62 / 42 @1M | 96.9 t/s, ready   | 3-5 GiB      |
+| `omni-fast`  | IQ2_XS + 21.5 GB reserve      |                      88 / 71.6 @1M | 98.8 t/s, ready   | 23-27 GiB    |
 
-**The resting profile is `max-multi`** (`defaultProfile` in `strata-profiles.nix`; decided
-2026-11-21, it was `omni-fast`): six 512k slots on the best pack, 6.6 GiB of RAM left, 30.7 t/s
-across six short callers. The colo profiles are the ones to borrow for a companion, and
-`fast-swarm` is the throughput alternative (IQ2_XS is 22 GiB lighter in experts, so the same card
-holds more of them, and it decodes twice as fast):
+**The resting profile is `max-multi`** (rank 0 in `data/llm.nix`; decided 2026-11-21, it was
+`omni-fast`): five 512k slots on the best pack, enough RAM left for a build, 31.9 t/s across five
+concurrent callers. The colo profiles are the ones to borrow for a companion, and `fast-swarm` is the
+throughput alternative (IQ2_XS is 22 GiB lighter in experts, so the same card holds more of them, and
+it decodes twice as fast):
 
 ```bash
 hack/brys-frontier.sh up --profile max-long --ttl 2h  # a long 1M session, then back
@@ -92,19 +95,19 @@ beside any whole-card profile: it gets about 1 GiB of VRAM and runs at 6.1 t/s.
 ### The API an agent (or a person) steers it with
 
 `strata-manager` on `:8181` is the control plane, and it is the only thing that changes the
-profile. Picking a model in a harness never does: the `qfn` entry (the four `*-deep-slow` aliases)
-asks for `auto`, which keeps whatever profile is current.
+profile. Picking a model in a harness never does: the `qfn` entry asks for `auto`, which keeps
+whatever profile is current.
 
 | call                                           | what it does                                             |
 | ---------------------------------------------- | -------------------------------------------------------- |
 | `GET /status`                                  | profile, last switch, loaded companions                  |
 | `GET /stats`                                   | measured medians per event and per transition            |
 | `GET /events?limit=N`                          | the raw timed records                                    |
-| `POST /select {"profile": X}`                  | switch (`max`, `omni-max`, `omni-fast`, `none`)          |
+| `POST /select {"profile": X}`                  | switch (any profile, `auto`, `none`)                     |
 | `POST /select {"profile": X, "dry_run": true}` | what that switch would cost, without touching the engine |
 | `POST /select {"profile": "auto"}`             | keep the current profile (what a harness alias sends)    |
 | `POST /unload`                                 | unload the loaded companions; the engine is untouched    |
-| `POST /unload {"model": "audio-std-mid"}`      | unload one companion                                     |
+| `POST /unload {"model": "qwen3-omni"}`         | unload one companion                                     |
 
 ### The scenario it was built for
 
@@ -116,7 +119,7 @@ A coding session is running and a screenshot of a BIOS/boot error arrives:
    conversation cache.
 3. `POST /unload` when the question is answered. The VRAM comes back, the engine is untouched, and
    coding continues on the same process.
-4. Return to `qfn-max` only when the work needs the better pack, and do it between turns.
+4. Return to `max-multi` when the work needs the whole card again, and do it between turns.
 
 **A `qfn` request is never cut by a switch.** The manager drains first: it stops accepting new work,
 waits for the leases the proxy holds to be released, and only then stops the engine. A request that

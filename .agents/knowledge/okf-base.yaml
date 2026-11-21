@@ -22,3 +22,21 @@ profile:
       required: [type, title, description, status, generated]
       optional: [id, links, tags, verified, stale_after, sources]
       status_values: [draft, stable, deprecated]
+    # The four other kinds the session pipeline extracts. They carry the same required set, so one
+    # template and one gate cover every concept, and `kind` in the pipeline maps 1:1 to `type`.
+    Runbook:
+      required: [type, title, description, status, generated]
+      optional: [id, links, tags, verified, stale_after, sources]
+      status_values: [draft, stable, deprecated]
+    Pitfall:
+      required: [type, title, description, status, generated]
+      optional: [id, links, tags, verified, stale_after, sources]
+      status_values: [draft, stable, deprecated]
+    Preference:
+      required: [type, title, description, status, generated]
+      optional: [id, links, tags, verified, stale_after, sources]
+      status_values: [draft, stable, deprecated]
+    Fact:
+      required: [type, title, description, status, generated]
+      optional: [id, links, tags, verified, stale_after, sources]
+      status_values: [draft, stable, deprecated]
