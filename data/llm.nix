@@ -167,18 +167,14 @@ in
         # flash-next holds ~21 GiB of VRAM at `nCpuMoe = 24` and the biggest member here is
         # 2.6 GB, so the pair fits the 32 GB card (measured 24.2 GiB total).
         #
-        # `qwen3.5-35b-a3b` is deliberately NOT a tier any more. It needs 20.5 GB of VRAM on its
-        # own, which no longer fits beside a 21 GiB frontier on the 32 GB card. It stays served on
-        # its router and evicts the frontier when it loads.
+        # Only models whose `hosts.brys.set` is served may be named here: llama-swap refuses the
+        # whole config when a set names a model it does not spawn (`unknown var or model`), and a
+        # retired model is exactly that. mtqzurnp retired five of the seven that used to be here;
+        # the two survivors are the ones with a `surveyed` set.
         coResidentTiers = [
           [
             "gemma-4-e4b"
-            "granite-4.2-3b"
-            "granite-4.2-8b"
             "ministral-3-3b-reasoning"
-            "qwen3.5-0.8b"
-            "qwen3.5-2b"
-            "qwen3.5-4b"
           ]
         ];
         vulkanDeviceSelect = "1002:7551!";
