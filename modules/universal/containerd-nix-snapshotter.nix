@@ -14,7 +14,12 @@
 #     cmd = [ "whisper-server" "--port" "8089" ];
 #     ports = [ "127.0.0.1:8089:8089" ];
 #   };
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.kdn.containers;
 
@@ -62,28 +67,63 @@ let
     };
   };
 
-  runArgs = name: c: lib.concatStringsSep " " (
-    [ "${pkgs.nerdctl}/bin/nerdctl" "run" "--name" name "--snapshotter" "nix" ]
-    ++ map (p: "-p ${p}") c.ports
-    ++ map (d: "--device ${d}") c.devices
-    ++ lib.mapAttrsToList (k: v: "-e ${k}=${v}") c.env
-    ++ lib.mapAttrsToList (h: v: "-v ${h}:${v}") c.volumes
-    ++ c.extraArgs
-    ++ [ "nix:0${c.image}" ]
-    ++ c.cmd
-    ++ c.args
-  );
+  # containerd spells a platform the Go way (`os/arch`), so the CPU name needs the Go spelling.
+  # The transfer service matches on the OS alone unless `check_platform_supported` is set, so an
+  # unmapped CPU only loses precision, not the match.
+  goArchNames = {
+    x86_64 = "amd64";
+    aarch64 = "arm64";
+  };
+  goArch =
+    goArchNames.${pkgs.stdenv.hostPlatform.parsed.cpu.name} or pkgs.stdenv.hostPlatform.parsed.cpu.name;
+  goPlatform = "linux/${goArch}";
+
+  # A nix-snapshotter image is a tar in the Nix store, referenced as `nix:0<tar>`: no registry
+  # serves that name, so containerd has to be told about the image before `nerdctl run` resolves
+  # it. `copyToContainerd` is the image's own `nix2container load` script, and the load also
+  # unpacks the image with the `nix` snapshotter.
+  loadImage = c: "${c.image.copyToContainerd { }}/bin/copy-to-containerd";
+
+  runArgs =
+    name: c:
+    lib.concatStringsSep " " (
+      [
+        "${pkgs.nerdctl}/bin/nerdctl"
+        "run"
+        "--name"
+        name
+        "--snapshotter"
+        "nix"
+      ]
+      ++ map (p: "-p ${p}") c.ports
+      ++ map (d: "--device ${d}") c.devices
+      ++ lib.mapAttrsToList (k: v: "-e ${k}=${v}") c.env
+      ++ lib.mapAttrsToList (h: v: "-v ${h}:${v}") c.volumes
+      ++ c.extraArgs
+      ++ [ "nix:0${c.image}" ]
+      ++ c.cmd
+      ++ c.args
+    );
 
   containerUnit = name: c: {
     description = "container ${name}";
     wantedBy = [ "multi-user.target" ];
-    after = [ "containerd.service" "nix-snapshotter.service" ];
-    requires = [ "containerd.service" ];
+    after = [
+      "containerd.service"
+      "nix-snapshotter.service"
+    ];
+    requires = [
+      "containerd.service"
+      "nix-snapshotter.service"
+    ];
     path = [ pkgs.nerdctl ];
     serviceConfig = {
       Type = "simple";
       Restart = "always";
       RestartSec = "5";
+      # Reloading an image containerd already holds is a no-op, so this stays safe across
+      # restarts and across a containerd restart.
+      ExecStartPre = loadImage c;
       ExecStart = runArgs name c;
       ExecStop = "${pkgs.nerdctl}/bin/nerdctl stop ${name}";
       ExecStopPost = "${pkgs.nerdctl}/bin/nerdctl rm -f ${name}";
@@ -103,9 +143,30 @@ in
   config = lib.mkIf cfg.enable {
     virtualisation.containerd = {
       enable = true;
-      settings.proxy_plugins.nix = {
-        type = "snapshot";
-        address = "/run/nix-snapshotter/nix-snapshotter.sock";
+      settings = {
+        proxy_plugins.nix = {
+          type = "snapshot";
+          address = "/run/nix-snapshotter/nix-snapshotter.sock";
+        };
+
+        # The transfer service unpacks an imported image only for a `(platform, snapshotter)`
+        # pair listed here, and its built-in default lists `overlayfs` alone. Without a `nix`
+        # entry, `nix2container load` and `ctr images import --snapshotter nix` fail with
+        # "unable to initialize unpacker: no unpack platforms defined" (containerd issue
+        # #11606), and an image unpacked through the fallback path loses the store-path
+        # annotations, so its container starts with an empty `/nix/store`.
+        #
+        # Declaring this list REPLACES the default, so `overlayfs` has to stay in it.
+        plugins."io.containerd.transfer.v1.local".unpack_config = [
+          {
+            platform = goPlatform;
+            snapshotter = "overlayfs";
+          }
+          {
+            platform = goPlatform;
+            snapshotter = "nix";
+          }
+        ];
       };
     };
 
@@ -128,7 +189,10 @@ in
           RuntimeDirectoryPreserve = "yes";
         };
       };
-    } // lib.mapAttrs' (name: c: lib.nameValuePair "container-${name}" (containerUnit name c)) cfg.containers;
+    }
+    // lib.mapAttrs' (
+      name: c: lib.nameValuePair "container-${name}" (containerUnit name c)
+    ) cfg.containers;
 
     environment.systemPackages = [ pkgs.nerdctl ];
     environment.extraInit = ''

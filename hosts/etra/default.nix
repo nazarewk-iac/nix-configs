@@ -92,6 +92,8 @@ in
   imports = [
     ({ kdn.pkgs.pin = true; })
     kdnConfig.self.nixosModules.default
+    # Containerd + nix-snapshotter and the `workshop-hello` proof container.
+    ./containers.nix
     # LiteLLM gateway (docs/tasks/2026-11/litellm-gateway/). autoStart=false:
     # inert until a brys-side firewall opening lets it reach a backend.
     ./litellm.nix
