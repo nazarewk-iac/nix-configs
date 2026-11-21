@@ -13,12 +13,21 @@
 # and fell to 2.9 GiB with two builds running, while five decodes no slower (31.9 against 30.7 t/s
 # saturated) because the expert cache shrinks as the slot sessions grow.
 #
-# The three siblings exist because the card cannot be everything at once:
+# The siblings exist because the card cannot be everything at once:
 #
 #   max-multi    UD-IQ4_XS, 512k x 5  12.0 GiB free  31.9 t/s  the resting profile
 #   max-swarm    UD-IQ4_XS, 256k x 8  18.4 GiB free  36.2 t/s  the same slots with RAM to spare
 #   max-long     UD-IQ4_XS,   1M x 2  10.5 GiB free  29.7 t/s  one or two long sessions
+#   max-single   UD-IQ4_XS,   1M x 1   9.6 GiB K/V   86.6 t/s  one big job, no concurrency
 #   fast-swarm   IQ2_XS,    384k x 8  31.4 GiB free  61.0 t/s  concurrency over pack quality
+#
+# **This file is the only place a profile's context window, slot count, VRAM reserve and resident
+# K/V are written** (`.agents/rules/config-single-source.md`). The generated `config.json` is built
+# from the `profiles` table below, the manager reads that file, and `strata-serve.sh` reads the same
+# file with `jq`. Neither carries a table or a fallback. The reason is a real drift: before
+# 2026-11-21 the slot count lived here, in `strata-serve.sh` (`parallel=6`) and in the Go adapter
+# (`Parallel: 6`) at the same time, and the omni profiles were served with 8 slots by the manager
+# while this file said 1 and 2.
 #
 # `omni-fast` is the colo profile: the IQ2_XS pack with a 21.5 GiB reserve, 71.6 t/s at 1M, and the
 # companion answers at 98.8 t/s beside it. `omni-max` keeps the better pack and drops the frontier to
@@ -42,6 +51,41 @@ let
     '';
   };
 
+  # The window Qwen3.8-Flash-Next was trained on. A profile above it needs yarn scaling, and the
+  # factor is exactly the served window over this number, so no profile writes a rope value of its
+  # own and the two can never disagree.
+  nativeContext = 262144;
+
+  # One operating point. Every knob a profile has is written here and nowhere else: the deployment
+  # file carries the result, the manager and `strata-serve.sh` read it, and the `status` table shows
+  # it. `ropeScale` is derived from the window, not a second knob.
+  #
+  # `conversationCacheMiB = null` keeps the base config's own value, which is the engine's default.
+  # That is what the two colo profiles were measured with, and it is spelled out rather than left
+  # to a consumer's fallback: a missing key is an error in both consumers.
+  frontierProfile =
+    {
+      base,
+      parallel,
+      maxContext,
+      reserveMiB,
+      kvResident,
+      conversationCacheMiB,
+      pleIO,
+    }:
+    {
+      inherit
+        base
+        parallel
+        maxContext
+        reserveMiB
+        kvResident
+        conversationCacheMiB
+        pleIO
+        ;
+      ropeScale = maxContext / (nativeContext * 1.0);
+    };
+
   # The profile the manual fallback unit starts, and the profile a timed loan returns to. Change this
   # one value, or run `hack/brys-frontier.sh up --profile <name> --ttl <duration>` for a one-off. It
   # matches `textProfiles` below: the manager rests on `max-multi`.
@@ -54,11 +98,14 @@ let
   engines = "${llmsRoot}/models/.bench";
   dataHome = "${engines}/xdg";
 
-  # The llm-swap entry point: materialises a profile and serves it in the foreground.
+  # The llm-swap entry point: materialises a profile and serves it in the foreground. It needs `jq`
+  # on PATH because the deployment file is the only source of a profile's knobs; a missing key stops
+  # the entry instead of falling back to a literal.
   strataServe = pkgs.writeShellScriptBin "strata-serve" ''
     export PATH=${
       pkgs.lib.makeBinPath [
         pkgs.python3
+        pkgs.jq
         pkgs.coreutils
       ]
     }:$PATH
@@ -112,9 +159,10 @@ in
   };
 
   # The runtime's deployment file. The Go CLI and both daemons read this one path, so a port, an
-  # alias or the cache-drop hook is a Nix value here and never a rebuild of the binary. The built-in
-  # defaults describe brys, so this file is deliberately a complete copy rather than a delta: it is
-  # the place a person edits.
+  # alias or the cache-drop hook is a Nix value here and never a rebuild of the binary. It is
+  # deliberately a complete copy rather than a delta: the binary carries **no** profile table for
+  # this deployment, so the `profiles` block below is the only definition of a profile's window,
+  # slot count, VRAM reserve and resident K/V.
   environment.etc."kdn-inference-helpers/config.json".text = builtins.toJSON {
     engine = "strata";
     dataDir = dataHome;
@@ -126,11 +174,13 @@ in
       qfn = "auto";
       # `qfn-max` is the old name of the 1M whole-card profile and keeps that meaning: it resolves
       # to `max-long`, the same window on the same pack, now with two slots instead of one. It stays
-      # because clients name it; the explicit spelling is `qfn-max-long`.
+      # because clients name it; the explicit spelling is `qfn-max-long`, and the one-slot shape is
+      # `qfn-max-single`.
       qfn-max = "max-long";
       qfn-max-multi = "max-multi";
       qfn-max-swarm = "max-swarm";
       qfn-max-long = "max-long";
+      qfn-max-single = "max-single";
       qfn-fast-swarm = "fast-swarm";
       qfn-max-colo = "omni-max";
       qfn-fast-colo = "omni-fast";
@@ -141,6 +191,7 @@ in
       "qfn-max-multi"
       "qfn-max-swarm"
       "qfn-max-long"
+      "qfn-max-single"
       "qfn-fast-swarm"
       "qfn-max-colo"
       "qfn-fast-colo"
@@ -164,25 +215,28 @@ in
       "max-multi"
       "max-swarm"
       "max-long"
+      "max-single"
       "fast-swarm"
       "omni-max"
       "omni-fast"
     ];
-    # Concurrent engine slots per frontier profile. `strata serve --parallel N` becomes the engine's
-    # `--batch N`, one session per slot, and each session carves its own K/V for the whole
-    # `--max-context` at start-up: 9.56 KiB per cell with k8v4, so 2.39 GiB for a 256k slot,
-    # 3.59 GiB for a 384k slot, 4.78 GiB for a 512k slot and 9.56 GiB for a 1M slot. The wall is
-    # host RAM, not the card:
+    # The operating points. `strata serve --parallel N` becomes the engine's `--batch N`, one session
+    # per slot, and each session carves its own K/V for the whole `--max-context` at start-up:
+    # 9.56 KiB per cell with k8v4, so 2.39 GiB for a 256k slot, 3.59 GiB for a 384k slot,
+    # 4.78 GiB for a 512k slot and 9.56 GiB for a 1M slot. The wall is host RAM, not the card:
     #
     #   profile      slots x ctx   K/V total  MemAvailable  measured
     #   max-multi      5 x 512k     23.9 GiB     12.0 GiB   31.9 t/s aggregate, load 58 s
     #   max-swarm      8 x 256k     19.1 GiB     18.4 GiB   36.2 t/s aggregate, load 54 s
     #   max-long       2 x 1M       19.1 GiB     10.5 GiB   29.7 t/s aggregate, load 58 s
+    #   max-single     1 x 1M        9.6 GiB     20+ GiB    86.6 t/s single stream, load 58 s
     #   fast-swarm     8 x 384k     28.7 GiB     31.4 GiB   61.0 t/s aggregate, load 44 s
     #
     # Eight is the engine's own cap (SLOTS_MAX; `vram_fit` prices min(slots, 8)), so no profile asks
     # for more. 1M stops at two slots: a third would fit arithmetically, but this host has hard-reset
-    # twice under a long prefill and the window keeps a slot of headroom for it.
+    # twice under a long prefill and the window keeps a slot of headroom for it. `max-single` is the
+    # one-slot shape of the same window — the fastest single stream this host serves (86.6 t/s), for
+    # one big job with no concurrency; the manager still rests on `max-multi`.
     #
     # 512k stops at five, because this host builds as well as serves. Five leaves 12.0 GiB and
     # decodes no faster than six (31.9 against 30.7 t/s saturated): the expert cache shrinks as the
@@ -202,24 +256,76 @@ in
     # `--batch` turns MTP drafting off unless `--batch-mtp` is added. Measured: with it, drafting
     # does survive (140 of 174 proposals accepted, 80.5%) but the eight-slot aggregate falls 12%
     # (61.0 -> 54.0 t/s) and it costs about 3 GiB of RAM, so it stays off.
+    #
+    # This table is the single source. Every consumer reads the generated `config.json`: the manager
+    # through the Go adapter, `strata-serve.sh` through `jq`. No consumer may carry a number of its
+    # own, and `checks/inference-helpers/profiles.nix` fails when one does.
     profiles = {
-      max-multi = {
+      max-multi = frontierProfile {
+        base = "unsloth-ud-iq4_xs";
         parallel = 5;
+        maxContext = 524288;
+        reserveMiB = 1024;
+        kvResident = 32768;
+        conversationCacheMiB = 2048;
+        pleIO = "mmap";
       };
-      max-swarm = {
+      max-swarm = frontierProfile {
+        base = "unsloth-ud-iq4_xs";
         parallel = 8;
+        maxContext = 262144;
+        reserveMiB = 1024;
+        kvResident = 32768;
+        conversationCacheMiB = 2048;
+        pleIO = "mmap";
       };
-      max-long = {
+      max-long = frontierProfile {
+        base = "unsloth-ud-iq4_xs";
         parallel = 2;
+        maxContext = 1048576;
+        reserveMiB = 1024;
+        kvResident = 32768;
+        conversationCacheMiB = 1024;
+        pleIO = "mmap";
       };
-      fast-swarm = {
-        parallel = 8;
-      };
-      omni-max = {
+      max-single = frontierProfile {
+        base = "unsloth-ud-iq4_xs";
         parallel = 1;
+        maxContext = 1048576;
+        reserveMiB = 1024;
+        kvResident = 32768;
+        conversationCacheMiB = 1024;
+        pleIO = "mmap";
       };
-      omni-fast = {
+      fast-swarm = frontierProfile {
+        base = "iq2_xs";
+        parallel = 8;
+        maxContext = 393216;
+        reserveMiB = 1024;
+        kvResident = 32768;
+        conversationCacheMiB = 2048;
+        pleIO = "mmap";
+      };
+      # The colo pair keeps the engine's own park pool (`null`) and the n-gram table locked in RAM,
+      # which is what their 21.5 GiB reserve was measured with. The 1M window is spelled out rather
+      # than inherited from the base config: the deployment file is the only source.
+      omni-max = frontierProfile {
+        base = "unsloth-ud-iq4_xs";
+        parallel = 1;
+        maxContext = 1048576;
+        reserveMiB = 21500;
+        kvResident = 32768;
+        conversationCacheMiB = null;
+        pleIO = "ram";
+      };
+      omni-fast = frontierProfile {
+        base = "iq2_xs";
         parallel = 2;
+        maxContext = 1048576;
+        reserveMiB = 21500;
+        kvResident = 32768;
+        conversationCacheMiB = null;
+        pleIO = "ram";
       };
     };
     # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier

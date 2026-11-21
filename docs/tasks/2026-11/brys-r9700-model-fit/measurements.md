@@ -683,6 +683,32 @@ more callers, it only interleaves them. That is the honest ceiling: one session 
 four sessions are the comfortable "several agents, none of them in a hurry" mode, and eight would
 divide the same throughput eight ways.
 
+### The one-slot 1M profile is the fastest single stream
+
+The served profile for "one big job, no concurrency" is `max-single` (`qfn-max-single`): the
+UD-IQ4_XS pack, a 1M window, one slot, the same `mmap` n-gram table and 1 GiB park pool as
+`max-long`. Recorded history: **86.6 t/s**, a 58 s load, ~9.6 GiB of K/V.
+
+Verified through llama-swap on 2026-11-21 after a cold reload, on a host carrying load average
+~7 (another build) — three runs of the same profile: **65.1 t/s** (121 tokens), **61.5 t/s** (512)
+and **66.1 t/s** (256). The absolute numbers are below the recorded 86.6 because the host was busy
+and the n-gram table had just been read back from disk; the comparison that matters is in the same
+minute on the same prompt:
+
+| profile      | shape     | fresh single stream | K/V      | load |
+| ------------ | --------- | ------------------: | -------- | ---: |
+| **max-single** | 1 x 1M  | **65.1 t/s**        | ~9.6 GiB | 58 s |
+| max-multi    | 5 x 512k  | 53.8 t/s            | 23.9 GiB | 65 s |
+
+A second slot does not add throughput, it adds a caller: the five-slot aggregate is 31.9 t/s, so
+one stream on `max-single` is 21 % faster than one stream on `max-multi`, and it holds 9.6 GiB of
+pinned K/V instead of 23.9. It is **not** the resting profile: an agent fleet asks for several short
+sessions far more often than for one million-token one, so the manager still rests on `max-multi`,
+and a caller asks for `qfn-max-single` explicitly.
+
+The rest of the profile table is one decision each, and the numbers live in one place:
+`hosts-den/brys/strata-profiles.nix` (see `.agents/rules/config-single-source.md`).
+
 Session _count_ is a different number from live slots:
 
 - **Live** — `--parallel`, up to 8 slots, each holding its own conversation K/V.

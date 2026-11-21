@@ -167,6 +167,7 @@ in
         "max-multi"
         "max-swarm"
         "max-long"
+        "max-single"
         "fast-swarm"
         "omni-max"
         "omni-fast"
@@ -177,7 +178,7 @@ in
       measured = "2026-11-21";
       source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
     };
-    # The four frontier profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit,
+    # The frontier profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit,
     # "The swarm profiles"). `vramMiB` is the measured whole-card footprint minus
     # the slot sessions, and `kvReserveMiB` is those sessions: the engine prices one at 1300 MiB
     # per 512k slot, 1106 MiB per 384k slot, 881 MiB per 256k slot and 2232 MiB per 1M slot (its
@@ -231,6 +232,23 @@ in
       measured = "2026-11-21";
       source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The swarm profiles: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
     };
+    # The one-slot shape of the same 1M window. It shares the two-slot row's weights and buffers
+    # (27074 MiB) and holds one slot session instead of two, so its measured total is 29306 MiB of
+    # the card. It is the fastest single stream this host serves: 86.6 t/s, 58 s load, 9.6 GiB of
+    # K/V in host RAM.
+    "qfn-max-single" = {
+      kind = "engine";
+      tier = "frontier";
+      profile = "max-single";
+      persistent = true;
+      vramMiB = 27074;
+      kvReserveMiB = 2232;
+      ramMiB = 59400;
+      loadSeconds = 58;
+      switchSeconds = 72;
+      measured = "2026-11-21";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, The one-slot 1M profile: 86.6 t/s single stream, 58 s load, 9.6 GiB K/V";
+    };
     "qfn-fast-swarm" = {
       kind = "engine";
       tier = "frontier";
@@ -248,6 +266,20 @@ in
       kind = "engine";
       tier = "frontier";
       profile = "omni-fast";
+      persistent = true;
+      vramMiB = 10957;
+      kvReserveMiB = frontierKvReserveMiB;
+      ramMiB = 60000;
+      switchSeconds = 55;
+      measured = "2026-11-20";
+    };
+    # The better-pack colo profile. It was in `textProfiles` and `coloProfiles` from the start but
+    # had no row here, so `status` showed it without numbers. The footprint is the same reserve
+    # shape as `qfn-fast-colo`: the frontier keeps 10957 MiB and omni takes the 21.5 GiB reserve.
+    "qfn-max-colo" = {
+      kind = "engine";
+      tier = "frontier";
+      profile = "omni-max";
       persistent = true;
       vramMiB = 10957;
       kvReserveMiB = frontierKvReserveMiB;
