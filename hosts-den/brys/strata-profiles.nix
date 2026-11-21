@@ -125,13 +125,17 @@ in
     # is never "kept" for a chat request, because a diffusion server answers no chat. Anything
     # outside this list is a batch profile, and asking for `auto` while one is loaded is refused
     # with an error that names the way back.
-    # `omni-fast` first: it is the resting profile and the one `DefaultTextProfile()` returns, so a
-    # companion unload lands on a profile that still has the reserve. With `max` first the restore
-    # took the whole card and every companion request then failed with 500.
+    # `max` first: the whole-card profile is the primary and the resting one, by decision. Every
+    # fallback — `auto` with nothing loaded, a companion unload, a refusal that names the way back —
+    # lands here unless the caller asks for something else.
+    #
+    # Consequence to keep in mind: on `max` there is about 1 GiB left, so a companion or a small
+    # model cannot load beside it. That is intended, and the refusal must be a readable 409 offering
+    # `kdn_switch_to: omni-fast`, never a 500.
     textProfiles = [
-      "omni-fast"
-      "omni-max"
       "max"
+      "omni-max"
+      "omni-fast"
     ];
     # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier
     # first (drain, then stop, then load) and selecting a text profile stops the editor.
