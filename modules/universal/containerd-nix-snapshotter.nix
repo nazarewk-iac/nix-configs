@@ -14,6 +14,18 @@
 #     cmd = [ "whisper-server" "--port" "8089" ];
 #     ports = [ "127.0.0.1:8089:8089" ];
 #   };
+#
+# ## State is a path, and the filesystem behind it is the host's business
+#
+# Every container gets a state root: `stateDir`, `/var/lib/kdn/<name>` by default, mounted at the
+# same absolute path inside the container and handed to it as `KDN_STATE_DIR`. Nothing the service
+# must keep lives anywhere else, so a backup is one directory and a restore is that directory plus
+# the image revision from the repo.
+#
+# On a host with ZFS the directory is a dedicated dataset (`stateDataset`), which makes the backup
+# `zfs snapshot` + `zfs send` and the restore `zfs receive` + `nixos-rebuild switch`. On a host
+# without ZFS the same path stays a plain directory: the contract is the path, not the filesystem,
+# and switching a service to a dataset is a mount, not a migration.
 {
   config,
   lib,
@@ -23,49 +35,109 @@
 let
   cfg = config.kdn.containers;
 
-  containerType = lib.types.submodule {
-    options = {
-      image = lib.mkOption {
-        type = lib.types.package;
-        description = "A nix-snapshotter image (`pkgs.nix-snapshotter.buildImage`).";
+  containerType = lib.types.submodule (
+    { name, ... }:
+    {
+      options = {
+        image = lib.mkOption {
+          type = lib.types.package;
+          description = "A nix-snapshotter image (`pkgs.nix-snapshotter.buildImage`).";
+        };
+        cmd = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Overrides the image's command.";
+        };
+        args = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Arguments appended to the command.";
+        };
+        env = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          description = "Environment; renders as `-e`, a ConfigMap later.";
+        };
+        stateDir = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          defaultText = lib.literalExpression ''"/var/lib/kdn/${name}"'';
+          description = ''
+            Host directory holding everything the container must keep, mounted at the same absolute
+            path inside it and exported as `KDN_STATE_DIR`. Defaults to `/var/lib/kdn/<name>`.
+
+            No other host path may carry state: a service that writes outside its state root breaks
+            the backup contract.
+          '';
+        };
+        stateDataset = lib.mkOption {
+          type = lib.types.nullOr (
+            lib.types.submodule {
+              options = {
+                name = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Fully qualified dataset, e.g. `tank/kdn/services/whisper`.";
+                };
+                refquota = lib.mkOption {
+                  type = lib.types.str;
+                  default = "20G";
+                  description = ''
+                    Quota on the dataset's own data. `refquota` rather than `quota` on purpose: a
+                    snapshot must not consume the live filesystem's budget.
+                  '';
+                };
+                compression = lib.mkOption {
+                  type = lib.types.str;
+                  default = "zstd";
+                  description = "Compression algorithm for the dataset.";
+                };
+              };
+            }
+          );
+          default = null;
+          description = ''
+            Declares the state root as a ZFS dataset instead of a plain directory. The dataset is
+            created on demand with `mountpoint=<stateDir>`, `refquota`, `compression`, `atime=off`
+            and `xattr=sa`, so the backup is `zfs snapshot` + `zfs send` and the restore is
+            `zfs receive` + `nixos-rebuild switch`.
+          '';
+        };
+        volumes = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          description = "host path -> container path; renders as `-v`, a PVC later.";
+        };
+        devices = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Device nodes to expose, e.g. `/dev/dri` or `/dev/kfd`. Engine containers only.";
+        };
+        ports = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Port mappings, `host:container` or `addr:host:container`.";
+        };
+        extraArgs = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Anything else for `nerdctl run`.";
+        };
       };
-      cmd = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Overrides the image's command.";
-      };
-      args = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Arguments appended to the command.";
-      };
-      env = lib.mkOption {
-        type = lib.types.attrsOf lib.types.str;
-        default = { };
-        description = "Environment; renders as `-e`, a ConfigMap later.";
-      };
-      volumes = lib.mkOption {
-        type = lib.types.attrsOf lib.types.str;
-        default = { };
-        description = "host path -> container path; renders as `-v`, a PVC later.";
-      };
-      devices = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Device nodes to expose, e.g. `/dev/dri` or `/dev/kfd`. Engine containers only.";
-      };
-      ports = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Port mappings, `host:container` or `addr:host:container`.";
-      };
-      extraArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        description = "Anything else for `nerdctl run`.";
-      };
-    };
-  };
+    }
+  );
+
+  # The state root is derived once here, so the volume, the dataset mountpoint, the tmpfiles rule
+  # and `KDN_STATE_DIR` cannot drift apart.
+  stateDirOf = name: c: if c.stateDir != null then c.stateDir else "/var/lib/kdn/${name}";
+
+  # An explicit `volumes` entry for the state path wins: a container that wants its state root at
+  # another path inside says so once, in `volumes`.
+  volumesOf =
+    name: c:
+    {
+      ${stateDirOf name c} = stateDirOf name c;
+    }
+    // c.volumes;
 
   # containerd spells a platform the Go way (`os/arch`), so the CPU name needs the Go spelling.
   # The transfer service matches on the OS alone unless `check_platform_supported` is set, so an
@@ -98,12 +170,56 @@ let
       ++ map (p: "-p ${p}") c.ports
       ++ map (d: "--device ${d}") c.devices
       ++ lib.mapAttrsToList (k: v: "-e ${k}=${v}") c.env
-      ++ lib.mapAttrsToList (h: v: "-v ${h}:${v}") c.volumes
+      # The state root is handed over twice: as the mount and as `KDN_STATE_DIR`, so a service
+      # never has to hardcode the path it was given.
+      ++ [ "-e KDN_STATE_DIR=${stateDirOf name c}" ]
+      ++ lib.mapAttrsToList (h: v: "-v ${h}:${v}") (volumesOf name c)
       ++ c.extraArgs
       ++ [ "nix:0${c.image}" ]
       ++ c.cmd
       ++ c.args
     );
+
+  # `zfs create` is the only way to make a dataset: NixOS mounts a declared filesystem but never
+  # creates what is under it. The unit is `requiredBy` the container, so the state root exists and
+  # is mounted before the first `nerdctl run`, and it re-mounts a dataset that exists but is
+  # unmounted (a manual `zfs unmount`, a restore into a fresh pool).
+  stateUnit = name: c: {
+    description = "ZFS dataset for container ${name} state (${c.stateDataset.name})";
+    requiredBy = [ "container-${name}.service" ];
+    before = [ "container-${name}.service" ];
+    # The mountpoint can sit inside a bind mount (an impermanent `/var/lib`), which local-fs
+    # installs; mounting over a path that is not there yet fails.
+    after = [ "local-fs.target" ];
+    path = [
+      config.boot.zfs.package
+      pkgs.coreutils
+      pkgs.util-linux
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      set -eu
+      stateDir=${lib.escapeShellArg (stateDirOf name c)}
+      dataset=${lib.escapeShellArg c.stateDataset.name}
+      mkdir -p "$stateDir"
+      if ! zfs list -H -o name "$dataset" > /dev/null 2>&1; then
+        zfs create -p \
+          -o mountpoint="$stateDir" \
+          -o compression=${c.stateDataset.compression} \
+          -o atime=off \
+          -o xattr=sa \
+          -o refquota=${c.stateDataset.refquota} \
+          "$dataset"
+      fi
+      mountpoint -q "$stateDir" || zfs mount "$dataset"
+      # ZFS creates a mountpoint 0755; the plain-directory half of the contract is 0750
+      # (systemd.tmpfiles.rules), so make both halves agree.
+      chmod 0750 "$stateDir"
+    '';
+  };
 
   containerUnit = name: c: {
     description = "container ${name}";
@@ -129,6 +245,7 @@ let
       ExecStopPost = "${pkgs.nerdctl}/bin/nerdctl rm -f ${name}";
     };
   };
+
 in
 {
   options.kdn.containers = {
@@ -192,7 +309,21 @@ in
     }
     // lib.mapAttrs' (
       name: c: lib.nameValuePair "container-${name}" (containerUnit name c)
+    ) cfg.containers
+    // lib.mapAttrs' (name: c: lib.nameValuePair "kdn-container-state-${name}" (stateUnit name c)) (
+      lib.filterAttrs (_: c: c.stateDataset != null) cfg.containers
+    );
+
+    # The plain-directory half of the contract: a host without ZFS gets the same path as a
+    # directory, created before the container starts.
+    systemd.tmpfiles.rules = lib.mapAttrsToList (
+      name: c: "d ${stateDirOf name c} 0750 root root -"
     ) cfg.containers;
+
+    assertions = lib.mapAttrsToList (name: c: {
+      assertion = c.stateDataset == null || config.boot.supportedFilesystems ? zfs;
+      message = "kdn.containers.containers.${name}.stateDataset needs ZFS support, and boot.supportedFilesystems of this host does not list \"zfs\".";
+    }) cfg.containers;
 
     environment.systemPackages = [ pkgs.nerdctl ];
     environment.extraInit = ''
