@@ -60,27 +60,34 @@ asks the manager and then proxies: **`qfn`** (profile-neutral, sends `auto`), **
 
 The card holds one engine at a time, and the VRAM reserve for the companion
 (`qwen3-omni-30b-a3b`, video and audio) is a start-up argument — so a profile change is a reload,
-not a slider. Measured 2026-11-19 (`docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`):
+not a slider. Measured 2026-11-21 (`docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`,
+"384k swarm"):
 
-| profile     | pack + reserve              |      QFN decode | omni              | RAM left      |
-| ----------- | --------------------------- | --------------: | ----------------- | ------------- |
-| `max`       | UD-IQ4_XS, whole card       | 95-100 / 73 @1M | 6.1 t/s co-loaded | 2-3 GiB       |
-| `omni-max`  | UD-IQ4_XS + 21.5 GB reserve |  59-62 / 42 @1M | 96.9 t/s, ready   | 3-5 GiB       |
-| `omni-fast` | IQ2_XS + 21.5 GB reserve    |   88 / 71.6 @1M | 98.8 t/s, ready   | **23-27 GiB** |
+| profile      | pack + reserve                | aggregate t/s (8 short callers) | omni              | RAM left     |
+| ------------ | ----------------------------- | ------------------------------: | ----------------- | ------------ |
+| `max-multi`  | UD-IQ4_XS, whole card, 384k×8 |                            31.9 | 6.1 t/s co-loaded | 8.1 GiB      |
+| `max-swarm`  | UD-IQ4_XS, whole card, 256k×8 |                            36.2 | 6.1 t/s co-loaded | 18.4 GiB     |
+| `max-long`   | UD-IQ4_XS, whole card, 1M×2   |                            29.7 | 6.1 t/s co-loaded | 10.5 GiB     |
+| `fast-swarm` | IQ2_XS, whole card, 384k×8    |                        **61.0** | 6.1 t/s co-loaded | **31.4 GiB** |
+| `omni-max`   | UD-IQ4_XS + 21.5 GB reserve   |                  59-62 / 42 @1M | 96.9 t/s, ready   | 3-5 GiB      |
+| `omni-fast`  | IQ2_XS + 21.5 GB reserve      |                   88 / 71.6 @1M | 98.8 t/s, ready   | 23-27 GiB    |
 
-**The resting profile is `omni-fast`** (`defaultProfile` in `strata-profiles.nix`). It is the only
-one that leaves RAM to spare, both models answer without a switch, and the frontier keeps 88 % of
-its short-context speed. A session that wants the better pack flips deliberately:
+**The resting profile is `max-multi`** (`defaultProfile` in `strata-profiles.nix`; decided
+2026-11-21, it was `omni-fast`): eight 384k slots on the best pack, 8.1 GiB of RAM left, 31.9 t/s
+across eight short callers. The colo profiles are the ones to borrow for a companion, and
+`fast-swarm` is the throughput alternative at the same slot count (IQ2_XS is 22 GiB lighter in
+experts, so the same card holds more of them):
 
 ```bash
-hack/brys-frontier.sh up --profile max --ttl 2h   # quality session; returns by itself
-hack/brys-frontier.sh up                          # back to the resting profile now
-hack/brys-frontier.sh down                        # stop the engine, free the card
-hack/brys-frontier.sh status                      # profile, models, RAM, VRAM
+hack/brys-frontier.sh up --profile max-long --ttl 2h  # a long 1M session, then back
+hack/brys-frontier.sh up --profile omni-fast          # borrow the card for the companion
+hack/brys-frontier.sh up                              # back to the resting profile now
+hack/brys-frontier.sh down                            # stop the engine, free the card
+hack/brys-frontier.sh status                          # profile, models, RAM, VRAM
 ```
 
-A flip costs 50-69 s either way (a reload plus a page-cache drop). Do not rely on omni co-loaded
-beside `max`: it gets about 1 GiB of VRAM and runs at 6.1 t/s.
+A flip costs 58-74 s either way (a reload plus a page-cache drop). Do not rely on omni co-loaded
+beside any whole-card profile: it gets about 1 GiB of VRAM and runs at 6.1 t/s.
 
 ### The API an agent (or a person) steers it with
 

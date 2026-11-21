@@ -648,6 +648,12 @@ supports **two profiles with two roles**:
 | orchestrator | `max` (UD-IQ4_XS) at 1M              |     1 | 9.56 GiB | 86.6 t/s short context, 73.1 t/s at 1M        |
 | swarm        | a 256k profile on IQ2_XS, whole card |     8 | 19.1 GiB | all 8 complete; 1.59 t/s completion aggregate |
 
+**Superseded later the same day** by the "384k swarm" measurement: the resting profile is now
+`qfn-max-multi` (UD-IQ4_XS, 384k × 8, 8.1 GiB of `MemAvailable`, 31.9 t/s aggregate) with
+`qfn-max-swarm` (256k × 8), `qfn-max-long` (1M × 2 — two 1M slots now fit, because `--ple-io mmap`
+keeps the ~30 GiB n-gram table out of locked RAM) and `qfn-fast-swarm` (IQ2_XS, 384k × 8, 61.0 t/s)
+beside it.
+
 Two consequences for the host files:
 
 - **A swarm profile needs `--max-context 262144`, not 1048576.** The window is what buys the slots:

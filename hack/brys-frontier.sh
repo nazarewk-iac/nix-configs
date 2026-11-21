@@ -4,32 +4,35 @@
 # The manager (:8181) owns the engine. llama-swap's entries call `strata-select`, which asks the
 # manager and then proxies; this script is the human and agent entry point to the same switch.
 #
-# Measured on the R9700, 2026-11-19 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
+# Measured on the R9700 (docs/tasks/2026-11/brys-r9700-model-fit/measurements.md):
 #
-#   profile    pack + reserve                frontier decode        RAM left with it
-#   max        UD-IQ4_XS, whole card         94.8-100.4 t/s short   2-3 GiB
-#                                            73.1 t/s at 1M
-#   omni-max   UD-IQ4_XS + 21.5 GB reserve   59.2-62.0 t/s short    3-5 GiB
-#                                            42.3 t/s at 1M
-#   omni-fast  IQ2_XS    + 21.5 GB reserve   88.3 t/s short         23-27 GiB
-#                                            71.6 t/s at 1M
+#   profile      pack + reserve                aggregate t/s (8 short callers)   RAM left with it
+#   max-multi    UD-IQ4_XS, whole card, 384k    31.9 saturated                     8.1 GiB
+#   max-swarm    UD-IQ4_XS, whole card, 256k    36.2 saturated                    18.4 GiB
+#   max-long     UD-IQ4_XS, whole card,   1M    29.7 saturated (2 slots)          10.5 GiB
+#   fast-swarm   IQ2_XS,    whole card, 384k    61.0 saturated                    31.4 GiB
+#   omni-max     UD-IQ4_XS + 21.5 GB reserve    59.2-62.0 t/s short               3-5 GiB
+#                                               42.3 t/s at 1M
+#   omni-fast    IQ2_XS    + 21.5 GB reserve    88.3 t/s short                   23-27 GiB
+#                                               71.6 t/s at 1M
 #
 # The companion (qwen3-omni-30b-a3b, video and audio) answers at 96.9-98.8 t/s inside either
-# reserve. Co-loaded beside `max` instead it gets about 1 GiB of VRAM and runs at 6.1 t/s, so a
-# media request is worth a real switch, not a co-load.
+# reserve. Co-loaded beside a whole-card profile instead it gets about 1 GiB of VRAM and runs at
+# 6.1 t/s, so a media request is worth a real switch, not a co-load.
 #
-# The resting profile is `omni-fast`: both models are reachable, and only it leaves RAM to spare.
-# A `--ttl` loan flips to another profile and comes back by itself.
+# The resting profile is `max-multi` since 2026-11-21 (it was `omni-fast`): eight 384k slots on the
+# best pack. The colo profiles are the ones to borrow for a companion. A `--ttl` loan flips to
+# another profile and comes back by itself.
 #
 # Usage:
 #   hack/brys-frontier.sh up                                   # select the resting profile
-#   hack/brys-frontier.sh up --profile max --ttl 2h            # a quality session, then back
+#   hack/brys-frontier.sh up --profile max-long --ttl 2h       # a long session, then back
 #   hack/brys-frontier.sh down                                 # stop the engine, free the card
 #   hack/brys-frontier.sh status                               # profile, models, RAM, VRAM
 set -uo pipefail
 
 MANAGER=${STRATA_MANAGER:-127.0.0.1:8181}
-RESTING=${STRATA_RESTING_PROFILE:-omni-fast}
+RESTING=${STRATA_RESTING_PROFILE:-max-multi}
 PORT=${STRATA_PORT:-8080}
 VRAM=/sys/class/drm/card1/device/mem_info_vram_used
 
@@ -134,7 +137,7 @@ status)
   status
   ;;
 *)
-  echo "usage: $0 {up|down|status} [--profile max|omni-max|omni-fast|none] [--ttl 30m] [--resting <profile>]" >&2
+  echo "usage: $0 {up|down|status} [--profile max-multi|max-swarm|max-long|fast-swarm|omni-max|omni-fast|none] [--ttl 30m] [--resting <profile>]" >&2
   exit 2
   ;;
 esac

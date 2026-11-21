@@ -100,7 +100,8 @@ func TestPathsDeriveFromDataDir(t *testing.T) {
 // touch the runtime.
 func TestAcceptsIsDerivedFromTheDeployment(t *testing.T) {
 	c := Defaults()
-	for _, want := range []string{"auto", "none", "max", "omni-fast", "qfn", "qfn-max"} {
+	for _, want := range []string{"auto", "none", "max-multi", "omni-fast", "qfn", "qfn-max",
+		"qfn-max-long", "qfn-max-swarm", "qfn-fast-swarm"} {
 		if !c.Accepts(c.Normalise(want)) {
 			t.Fatalf("%q is not accepted", want)
 		}
@@ -115,7 +116,7 @@ func TestAcceptsIsDerivedFromTheDeployment(t *testing.T) {
 	if c.IsText("image-qwen") {
 		t.Fatal("an image profile is treated as text")
 	}
-	if !c.IsText("max") || c.DefaultTextProfile() != "max" {
+	if !c.IsText("max-multi") || c.DefaultTextProfile() != "max-multi" {
 		t.Fatalf("text profiles = %v", c.TextProfiles)
 	}
 }

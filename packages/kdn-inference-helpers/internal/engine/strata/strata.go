@@ -18,8 +18,8 @@ import (
 	"kdn-inference-helpers/internal/engine"
 )
 
-// Profile is one operating point: a base config, a VRAM reserve, how much K/V stays resident, and
-// how many requests may decode at once.
+// Profile is one operating point: a base config, a VRAM reserve, how much K/V stays resident, how
+// many requests may decode at once, and the window those slots are carved at.
 type Profile struct {
 	Name       string
 	Base       string
@@ -29,16 +29,73 @@ type Profile struct {
 	// as `--batch N` (verified with `strata serve --plan`), and the engine documents 2..8, so 8 is
 	// the maximum. Zero leaves the engine's own default alone.
 	Parallel int
+	// MaxContext is the window every slot is carved at, and RopeScale is the yarn factor that
+	// reaches it (the window over the model's trained 262144). The K/V is carved per slot and is
+	// linear in this number: 9.56 KiB per cell with k8v4, so 2.39 GiB for a 256k slot, 3.59 GiB for
+	// a 384k slot and 9.56 GiB for a 1M slot. Zero leaves the base config's values alone.
+	MaxContext int
+	RopeScale  float64
+	// ConversationCacheMiB caps the pool that parks idle conversations. It is the one RAM pool a
+	// swarm can trade for another live slot, so a multi-slot profile runs it small.
+	ConversationCacheMiB int
+	// PLEIO is the n-gram table's backing store. `ram` locks about 30 GiB of it; `mmap` leaves it
+	// in the page cache, which the kernel reclaims under pressure instead of OOM-killing the
+	// engine. Measured 2026-11-21: mmap freed 22-25 GiB and was not slower. Empty keeps the base
+	// config's value.
+	PLEIO string
+	// BatchMTP asks the engine for one MTP proposal per slot per window. Measured 2026-11-21:
+	// drafting does survive the batch (140 of 174 proposals accepted, 80.5%) but the eight-slot
+	// aggregate falls 12% (61.0 -> 54.0 t/s) and it costs about 3 GiB of RAM, so it stays off.
+	BatchMTP bool
 }
 
-// defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit). A deployment
-// can retune a row through `config.Profiles` without a rebuild.
+// defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit, "384k swarm").
+// A deployment can retune a row through `config.Profiles` without a rebuild.
 //
 // `KVResident` is 32768 cells of each QSA layer for every frontier profile: it is a per-layer
 // streaming window shared by the slots, not a per-slot allocation, so 32768 is what 8 slots x 4k
 // needs. The omni profiles used to run 4096, which at 8 slots is 512 cells per slot.
+//
+// The four `max-*`/`fast-swarm` rows are one decision, taken 2026-11-21: the resting profile is a
+// swarm, not the single 1M session it used to be. The reason is concurrency — an agent fleet asks
+// for several short sessions far more often than for one million-token one — and 1M is now an
+// explicit request (`max-long`) instead of the default. The older decision of the same day ("`max`
+// is the primary and resting profile") is overridden, not forgotten.
+//
+// Measured on the R9700, 125 GiB RAM, no swap, one load per row, five concurrent 64-token requests
+// plus a saturated batch of one request per slot:
+//
+//	profile      pack         ctx  slots  K/V total  MemAvailable  VRAM    aggregate t/s
+//	max-multi    UD-IQ4_XS    384k     8     28.7 GiB       8.1 GiB  30.8 GiB   31.9 saturated
+//	max-swarm    UD-IQ4_XS    256k     8     19.1 GiB      18.4 GiB  30.8 GiB   36.2 saturated
+//	max-long     UD-IQ4_XS     1M      2     19.1 GiB      10.5 GiB  30.8 GiB   29.7 saturated
+//	fast-swarm   IQ2_XS        384k     8     28.7 GiB      31.4 GiB  30.8 GiB   61.0 saturated
+//
+// Every row is the maximum slot count that fits: eight is the engine's cap (SLOTS_MAX), and 1M at
+// two slots is where the long profile stops — three would fit arithmetically but the host has
+// hard-reset twice under a long prefill, so the window keeps one slot of headroom for it.
+//
+// `fast-swarm` carries the concurrency (IQ2_XS is 22 GiB of experts lighter, so 1.9x the aggregate
+// of the same shape on the better pack); `max-multi` rests because it is the better pack at the
+// same slot count, and the fleet can switch to `fast-swarm` when throughput matters more than the
+// 88.9% top-token agreement.
 var defaults = []Profile{
-	{Name: "max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8},
+	{
+		Name: "max-multi", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
+		MaxContext: 393216, RopeScale: 1.5, ConversationCacheMiB: 2048, PLEIO: "mmap",
+	},
+	{
+		Name: "max-swarm", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
+		MaxContext: 262144, RopeScale: 1, ConversationCacheMiB: 2048, PLEIO: "mmap",
+	},
+	{
+		Name: "max-long", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 2,
+		MaxContext: 1048576, RopeScale: 4, ConversationCacheMiB: 1024, PLEIO: "mmap",
+	},
+	{
+		Name: "fast-swarm", Base: "iq2_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8,
+		MaxContext: 393216, RopeScale: 1.5, ConversationCacheMiB: 2048, PLEIO: "mmap",
+	},
 	{Name: "omni-fast", Base: "iq2_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
 	{Name: "omni-max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
 }
@@ -147,9 +204,11 @@ func (a *Adapter) Stop(ctx context.Context) error {
 	return nil
 }
 
-// PatchConfig applies a profile to a base config's `args`. Only the two profile flags change; every
-// other argument is preserved verbatim, which is what keeps the tuned flags (dflash2, k8v4, rope,
-// MTP) identical across profiles.
+// PatchConfig applies a profile to a base config's `args`. The profile flags change — the VRAM
+// reserve, the resident window, and (when the profile names them) the context, the yarn factor,
+// the parked-conversation pool, the n-gram table's backing store and per-slot MTP drafting — and
+// every other argument is preserved verbatim, which is what keeps the tuned flags (dflash2, k8v4,
+// rope, MTP) identical across profiles.
 func PatchConfig(base []byte, p Profile) ([]byte, error) {
 	var cfg map[string]any
 	if err := json.Unmarshal(base, &cfg); err != nil {
@@ -169,6 +228,20 @@ func PatchConfig(base []byte, p Profile) ([]byte, error) {
 	}
 	args = setFlag(args, "--vram-reserve-mib", fmt.Sprint(p.ReserveMiB))
 	args = setFlag(args, "--kv-resident", fmt.Sprint(p.KVResident))
+	if p.MaxContext > 0 {
+		args = setFlag(args, "--max-context", fmt.Sprint(p.MaxContext))
+	}
+	if p.RopeScale > 0 {
+		// `1.5`, `1`, `4`: the engine parses a float, and a bare `1` is what its own help prints.
+		args = setFlag(args, "--rope-scale", strconv.FormatFloat(p.RopeScale, 'g', -1, 64))
+	}
+	if p.ConversationCacheMiB > 0 {
+		args = setFlag(args, "--conversation-cache-mib", fmt.Sprint(p.ConversationCacheMiB))
+	}
+	if p.PLEIO != "" {
+		args = setFlag(args, "--ple-io", p.PLEIO)
+	}
+	args = setBoolFlag(args, "--batch-mtp", p.BatchMTP)
 	out := make([]any, len(args))
 	for i, a := range args {
 		out[i] = a
@@ -185,4 +258,19 @@ func setFlag(args []string, flag, value string) []string {
 		}
 	}
 	return append(args, flag, value)
+}
+
+// setBoolFlag adds or removes a valueless engine flag. The base configs never carry `--batch-mtp`,
+// so this mostly guards a hand-edited config that does.
+func setBoolFlag(args []string, flag string, on bool) []string {
+	kept := args[:0]
+	for _, a := range args {
+		if a != flag {
+			kept = append(kept, a)
+		}
+	}
+	if on {
+		kept = append(kept, flag)
+	}
+	return kept
 }

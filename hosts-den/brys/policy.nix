@@ -164,26 +164,81 @@ in
       tier = "frontier";
       persistent = true;
       requiresProfile = [
-        "max"
+        "max-multi"
+        "max-swarm"
+        "max-long"
+        "fast-swarm"
         "omni-max"
         "omni-fast"
       ];
       vramMiB = 10957;
       kvReserveMiB = frontierKvReserveMiB;
       ramMiB = 60000;
-      measured = "2026-11-20";
+      measured = "2026-11-21";
       source = "docs/tasks/2026-11/policy-behaviour-tree/definition.md";
     };
-    "qfn-max" = {
+    # The four frontier profiles, measured 2026-11-21 (docs/tasks/2026-11/brys-r9700-model-fit,
+    # "384k swarm"). `vramMiB` is the measured whole-card footprint minus the slot sessions, and
+    # `kvReserveMiB` is those sessions: the engine prices one at 1106 MiB per 384k slot, 881 MiB
+    # per 256k slot and 2232 MiB per 1M slot (its own `--batch N: N slot sessions on CUDA0` line).
+    # The sum is the measured total, so `fits-beside` sees the card as full — which it is.
+    #
+    # `ramMiB` is the non-reclaimable resident set: the experts' arena the engine names at load
+    # (55.4 GiB on UD-IQ4_XS, 33.0 GiB on IQ2_XS) plus the park pool plus about 1.5 GiB of buffers.
+    # The n-gram table is NOT in it: these profiles run `--ple-io mmap`, so its ~30 GiB are clean
+    # page cache, which the kernel reclaims instead of OOM-killing the engine (measured: mmap
+    # freed 22-25 GiB and was not slower than locking it).
+    "qfn-max-multi" = {
       kind = "engine";
       tier = "frontier";
-      profile = "max";
+      profile = "max-multi";
       persistent = true;
-      vramMiB = 31539;
-      kvReserveMiB = frontierKvReserveMiB;
-      ramMiB = 62000;
+      vramMiB = 22694;
+      kvReserveMiB = 8848;
+      ramMiB = 60300;
+      loadSeconds = 60;
+      switchSeconds = 74;
+      measured = "2026-11-21";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 8 slots x 384k, MemAvailable 8.1 GiB, 31.9 t/s saturated";
+    };
+    "qfn-max-swarm" = {
+      kind = "engine";
+      tier = "frontier";
+      profile = "max-swarm";
+      persistent = true;
+      vramMiB = 24501;
+      kvReserveMiB = 7048;
+      ramMiB = 60300;
+      loadSeconds = 54;
+      switchSeconds = 68;
+      measured = "2026-11-21";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 8 slots x 256k, MemAvailable 18.4 GiB, 36.2 t/s saturated";
+    };
+    "qfn-max-long" = {
+      kind = "engine";
+      tier = "frontier";
+      profile = "max-long";
+      persistent = true;
+      vramMiB = 27074;
+      kvReserveMiB = 4464;
+      ramMiB = 59400;
+      loadSeconds = 58;
       switchSeconds = 72;
-      measured = "2026-11-20";
+      measured = "2026-11-21";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: 2 slots x 1M, MemAvailable 10.5 GiB, 29.7 t/s saturated";
+    };
+    "qfn-fast-swarm" = {
+      kind = "engine";
+      tier = "frontier";
+      profile = "fast-swarm";
+      persistent = true;
+      vramMiB = 22657;
+      kvReserveMiB = 8848;
+      ramMiB = 37400;
+      loadSeconds = 44;
+      switchSeconds = 58;
+      measured = "2026-11-21";
+      source = "docs/tasks/2026-11/brys-r9700-model-fit/measurements.md, 384k swarm: IQ2_XS 8 slots x 384k, MemAvailable 31.4 GiB, 61.0 t/s saturated";
     };
     "qfn-fast-colo" = {
       kind = "engine";

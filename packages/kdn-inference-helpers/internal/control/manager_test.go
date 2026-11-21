@@ -97,6 +97,15 @@ func newTestManager(t *testing.T, b Backend) (*Manager, *journal.Journal) {
 	t.Helper()
 	cfg := config.Defaults()
 	cfg.DataDir = t.TempDir()
+	// The profile names below are this fixture's, not the deployment's: these tests cover the
+	// manager's rules (which profile `auto` starts, what a companion unload returns to), and the
+	// deployment's resting profile changes without rewriting them. `max` stands in for "the first
+	// text profile".
+	cfg.Aliases = map[string]string{
+		"qfn": "auto", "qfn-max": "max", "qfn-max-colo": "omni-max", "qfn-fast-colo": "omni-fast",
+	}
+	cfg.TextProfiles = []string{"max", "omni-max", "omni-fast"}
+	cfg.FrontierIDs = []string{"qfn", "qfn-max", "qfn-max-colo", "qfn-fast-colo"}
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}

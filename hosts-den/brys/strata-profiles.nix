@@ -4,10 +4,18 @@
 # its own files"), so it must run as the owner of its data tree. It also must not run as a human
 # account: the engine pins tens of GB and holds the GPU.
 #
-# `max` is the primary and resting profile, by decision: the whole card, the best pack (UD-IQ4_XS),
-# 94.8-100.4 t/s measured 2026-11-19, and the profile every fallback lands on. It leaves ~1 GiB of
-# VRAM, so a companion cannot load beside it; a companion request is a readable 409 offering
-# `kdn_switch_to: omni-fast`, never a 500.
+# `max-multi` is the primary and resting profile, by decision of 2026-11-21: a swarm of eight 384k
+# slots on the best pack (UD-IQ4_XS). It overrides the earlier decision of the same day ("`max`, one
+# 1M session, is the primary"), because an agent fleet asks for several short sessions far more
+# often than for one million-token one; 1M is now an explicit request (`max-long`). Measured
+# 2026-11-21: 8 slots x 384k, 28.7 GiB of pinned K/V, 8.3 GiB of MemAvailable, 31.9 t/s aggregate.
+#
+# The three siblings exist because the card cannot be everything at once:
+#
+#   max-multi    UD-IQ4_XS, 384k x 8   8.1 GiB free  31.9 t/s  the resting profile
+#   max-swarm    UD-IQ4_XS, 256k x 8  18.4 GiB free  36.2 t/s  the same slots with RAM to spare
+#   max-long     UD-IQ4_XS,   1M x 2  10.5 GiB free  29.7 t/s  one or two long sessions
+#   fast-swarm   IQ2_XS,    384k x 8  31.4 GiB free  61.0 t/s  concurrency over pack quality
 #
 # `omni-fast` is the colo profile: the IQ2_XS pack with a 21.5 GiB reserve, 71.6 t/s at 1M, and the
 # companion answers at 98.8 t/s beside it. `omni-max` keeps the better pack and drops the frontier to
@@ -33,8 +41,8 @@ let
 
   # The profile the manual fallback unit starts, and the profile a timed loan returns to. Change this
   # one value, or run `hack/brys-frontier.sh up --profile <name> --ttl <duration>` for a one-off. It
-  # matches `textProfiles` below: the manager rests on `max`.
-  defaultProfile = "max";
+  # matches `textProfiles` below: the manager rests on `max-multi`.
+  defaultProfile = "max-multi";
 
   # One parent for everything the LLM stack owns, so a second machine can share it by mounting the
   # same datasets. `models` and `engines` live on usr/data, `sessions` on usr/cache, `home` on
@@ -113,13 +121,24 @@ in
     engineBin = "${engines}/bin/strata";
     aliases = {
       qfn = "auto";
-      qfn-max = "max";
+      # `qfn-max` is the old name of the 1M whole-card profile and keeps that meaning: it resolves
+      # to `max-long`, the same window on the same pack, now with two slots instead of one. It stays
+      # because clients name it; the explicit spelling is `qfn-max-long`.
+      qfn-max = "max-long";
+      qfn-max-multi = "max-multi";
+      qfn-max-swarm = "max-swarm";
+      qfn-max-long = "max-long";
+      qfn-fast-swarm = "fast-swarm";
       qfn-max-colo = "omni-max";
       qfn-fast-colo = "omni-fast";
     };
     frontierIDs = [
       "qfn"
       "qfn-max"
+      "qfn-max-multi"
+      "qfn-max-swarm"
+      "qfn-max-long"
+      "qfn-fast-swarm"
       "qfn-max-colo"
       "qfn-fast-colo"
     ];
@@ -127,39 +146,63 @@ in
     # is never "kept" for a chat request, because a diffusion server answers no chat. Anything
     # outside this list is a batch profile, and asking for `auto` while one is loaded is refused
     # with an error that names the way back.
-    # `max` first: the whole-card profile is the primary and the resting one, by decision. Every
-    # fallback — `auto` with nothing loaded, a companion unload, a refusal that names the way back —
-    # lands here unless the caller asks for something else.
     #
-    # Consequence to keep in mind: on `max` there is about 1 GiB left, so a companion or a small
-    # model cannot load beside it. That is intended, and the refusal must be a readable 409 offering
-    # `kdn_switch_to: omni-fast`, never a 500.
+    # `max-multi` first: the swarm is the primary and the resting one, by decision of 2026-11-21.
+    # Every fallback — `auto` with nothing loaded, a companion unload, a refusal that names the way
+    # back — lands here unless the caller asks for something else. It overrides the earlier decision
+    # of the same day, which rested on `max` (one 1M slot): an agent fleet asks for several short
+    # sessions far more often than for one million-token one, and 1M is now an explicit request.
+    #
+    # Consequence to keep in mind: every whole-card profile leaves under 20 GiB of RAM and about
+    # 1 GiB of VRAM, so a companion or a small model cannot load beside any of them. That is
+    # intended, and the refusal must be a readable 409 offering `kdn_switch_to: omni-fast`, never a
+    # 500.
     textProfiles = [
-      "max"
+      "max-multi"
+      "max-swarm"
+      "max-long"
+      "fast-swarm"
       "omni-max"
       "omni-fast"
     ];
     # Concurrent engine slots per frontier profile. `strata serve --parallel N` becomes the engine's
-    # `--batch N`, one session per slot, and each session pins its own K/V for the whole
-    # `--max-context` (~15.8 GiB at 1M, measured). The host has 125 GiB and no swap, and the pack's
-    # experts are already locked in RAM, so the wall is RAM and not the card:
+    # `--batch N`, one session per slot, and each session carves its own K/V for the whole
+    # `--max-context` at start-up: 9.56 KiB per cell with k8v4, so 2.39 GiB for a 256k slot,
+    # 3.59 GiB for a 384k slot and 9.56 GiB for a 1M slot. The wall is host RAM, not the card:
     #
-    #   * 8 slots: Shmem reached 89.7 GB and the load was OOM-killed at 125 GiB used.
-    #   * `max` / `omni-max` (UD-IQ4_XS, 55 GiB pack) at 2 slots: OOM-killed, engine RSS 109.6 GiB.
-    #   * `omni-fast` (IQ2_XS, 35 GiB pack) at 2 slots: loads and serves, `MemAvailable` 7.8 GiB.
+    #   profile      slots x ctx   K/V total  MemAvailable  measured
+    #   max-multi      8 x 384k     28.7 GiB      8.1 GiB   31.9 t/s aggregate, load 60 s
+    #   max-swarm      8 x 256k     19.1 GiB     18.4 GiB   36.2 t/s aggregate, load 54 s
+    #   max-long       2 x 1M       19.1 GiB     10.5 GiB   29.7 t/s aggregate, load 58 s
+    #   fast-swarm     8 x 384k     28.7 GiB     31.4 GiB   61.0 t/s aggregate, load 44 s
     #
-    # So 8 — the engine's maximum — does not fit this host at 1M context. `omni-fast` carries the
-    # concurrency; the whole-card profiles stay at 1 slot. The price on `omni-fast`: with 7.8 GiB
-    # available, `/admit` refuses the 21 GiB companion on its RAM check, so that profile is either
-    # "concurrent" or "colo", not both, until the companion's `ramMiB` is re-measured as the
-    # non-reclaimable part (its weights are mmap'd, the KV and buffers are not).
+    # Eight is the engine's own cap (SLOTS_MAX; `vram_fit` prices min(slots, 8)), so no profile asks
+    # for more. 1M stops at two slots: a third would fit arithmetically, but this host has hard-reset
+    # twice under a long prefill and the window keeps a slot of headroom for it.
     #
-    # `strata serve` fits the start to the card and lowers `--kv-resident` below the profile's value
-    # when the sessions leave no VRAM room (measured: it answered 4096 for a requested 32768 at 2
-    # slots). That is its own safety net, not a bug.
+    # Two settings carry the fit, both measured 2026-11-21:
+    #
+    #   * `--ple-io mmap`, not `ram`. Locking the ~30 GiB n-gram table in RAM is what made a second
+    #     1M slot OOM (engine RSS 109.6 GiB, 2026-11-21) and what pushed a 384k load to 126 s. In
+    #     the page cache the same load takes 56 s, frees 22-25 GiB and decodes no slower.
+    #   * `--conversation-cache-mib 2048`, not the engine's 8 GiB default. The park pool buys parked
+    #     conversations; a swarm spends that RAM on live slots instead.
+    #
+    # `--batch` turns MTP drafting off unless `--batch-mtp` is added. Measured: with it, drafting
+    # does survive (140 of 174 proposals accepted, 80.5%) but the eight-slot aggregate falls 12%
+    # (61.0 -> 54.0 t/s) and it costs about 3 GiB of RAM, so it stays off.
     profiles = {
-      max = {
-        parallel = 1;
+      max-multi = {
+        parallel = 8;
+      };
+      max-swarm = {
+        parallel = 8;
+      };
+      max-long = {
+        parallel = 2;
+      };
+      fast-swarm = {
+        parallel = 8;
       };
       omni-max = {
         parallel = 1;

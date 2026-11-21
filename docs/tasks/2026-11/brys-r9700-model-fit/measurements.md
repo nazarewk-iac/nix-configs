@@ -1254,3 +1254,158 @@ Two smaller findings from the same runs:
   measured with 10.5k prompts, so a 1M-token prompt has never completed on this host, and the two
   resets are a hardware/power question to settle before anyone serves an orchestrator that reads a
   million-token prompt in one turn.
+
+> **Superseded later the same day by "384k swarm" below.** Two claims here are wrong in the light of
+> that run: 8 slots × 256k is not the best swarm (384k × 8 fits and gives a longer window per slot),
+> and 2 slots × 1M does fit — the earlier OOM was the n-gram table locked in RAM, not the K/V. The
+> per-slot K/V arithmetic in this section stands.
+
+## 384k swarm: the resting profile (2026-11-21)
+
+The owner's decision of 2026-11-21 moves the resting profile from one 1M session to a **swarm**,
+because an agent fleet asks for several short sessions far more often than for one million-token
+one. Four profiles were measured for it, one load per configuration:
+
+| profile          | pack      | window | slots | role                        |
+| ---------------- | --------- | -----: | ----: | --------------------------- |
+| `qfn-max-multi`  | UD-IQ4_XS |  384k |     8 | **default resting**         |
+| `qfn-max-swarm`  | UD-IQ4_XS |  256k |     8 | maximised slots on the pack |
+| `qfn-max-long`   | UD-IQ4_XS |    1M |     2 | explicit long sessions      |
+| `qfn-fast-swarm` | IQ2_XS    |  384k |     8 | concurrency over quality    |
+
+### Method
+
+- `strata serve` by hand, not through the manager: a profile config materialised from the installed
+  `strata-unsloth-ud-iq4_xs.json` or `strata-iq2_xs.json`, with `--max-context`, `--rope-scale`,
+  `--kv-resident`, `--vram-reserve-mib`, `--conversation-cache-mib` and `--ple-io` patched, and
+  `--parallel N` on the command line (it reaches the engine as `--batch N`; verified with
+  `strata serve --plan`).
+- The unit ran as `llm-server` with `LimitMEMLOCK=infinity` and `MemoryMax=118G` — the manager's own
+  limits — on port 8090. The manager's engine was stopped first (`ctl down`) and restored at the
+  end (`ctl up --profile max-multi`, 64 s).
+- The page cache was dropped before every load. `MemAvailable` and `mem_info_vram_used` were sampled
+  every 2 s; the unit's own cgroup `memory.current` was sampled with them.
+- Requests went to `/v1/chat/completions` with distinct ~110-token prompts and `max_tokens 64`, so
+  the prompt cache could not serve one request from another. Two batches per load: **five
+  concurrent** callers (the specified test) and then **one request per slot**, the only batch that
+  shows what the slot count buys. Decode comes from the engine's own `timings` block; aggregate is
+  predicted tokens over the batch wall clock.
+
+### The engine's own arithmetic
+
+It prints the carve before any request exists, and it is linear in the window at 9.56 KiB per cell
+with `k8v4`:
+
+| window | per-slot K/V | slot session on the card |
+| -----: | -----------: | -----------------------: |
+|   256k |     2.39 GiB |              881 MiB ea. |
+|   384k |     3.59 GiB |             1106 MiB ea. |
+|     1M |     9.56 GiB |             2232 MiB ea. |
+
+### The runs
+
+Every row is one load. `MemAvail` is after the load; `min` is the lowest sample during the request
+batches. VRAM is `mem_info_vram_used`, which is the whole card in every row.
+
+| pack      | window × slots | PLE / park pool             | load s | MemAvail | min | VRAM | 5-caller t/s | saturated t/s | outcome             |
+| --------- | -------------- | --------------------------- | -----: | -------: | --: | ---: | -----------: | ------------: | ------------------- |
+| IQ2_XS    | 384k × 4       | ram / 8 GiB                 |   58.3 | 17.5 GiB | 16.9 GiB | 30.7 |        54.57 |             — | served              |
+| IQ2_XS    | 384k × 6       | ram / 8 GiB                 |   54.2 | 10.6 GiB |  9.3 GiB | 30.7 |        58.27 |             — | served              |
+| IQ2_XS    | 384k × 8       | ram / 8 GiB                 |   56.2 |  6.5 GiB |  5.0 GiB | 30.7 |        55.11 |         61.88 | served              |
+| IQ2_XS    | 384k × 8       | mmap / 2 GiB                |   44.2 | 31.4 GiB | 29.9 GiB | 30.8 |        53.08 |         61.04 | served              |
+| IQ2_XS    | 384k × 8       | mmap / 2 GiB, `--batch-mtp` |   44.2 | 28.2 GiB | 26.7 GiB | 30.8 |        52.49 |         53.96 | served              |
+| UD-IQ4_XS | 384k × 2       | ram / 8 GiB                 |   76.4 |  5.0 GiB |  4.2 GiB | 30.7 |        26.19 |         28.98 | served              |
+| UD-IQ4_XS | 384k × 4       | ram / 2 GiB                 |  126.5 |  1.3 GiB |  0.0 GiB | 30.7 |        22.89 |         30.50 | served, 1.3 GiB left |
+| UD-IQ4_XS | 384k × 4       | mmap / 2 GiB                |   56.3 | 22.7 GiB | 21.2 GiB | 30.8 |        30.85 |         33.83 | served              |
+| UD-IQ4_XS | 384k × 8       | mmap / 2 GiB                |   60.3 |  8.1 GiB |  6.5 GiB | 30.8 |        28.82 |         31.91 | served              |
+| UD-IQ4_XS | 256k × 8       | mmap / 2 GiB                |   54.2 | 18.4 GiB | 16.9 GiB | 30.8 |        31.32 |         36.19 | served              |
+| UD-IQ4_XS | 1M × 2         | mmap / 1 GiB                |   58.3 | 10.5 GiB |  9.3 GiB | 30.8 |        24.38 |         29.74 | served              |
+
+Nothing OOM'd and nothing hard-reset: every configuration in the table loaded and served. The
+engine warned at the tightest row (UD-IQ4_XS, 384k × 4, `ram`): "only 2 slots would keep 8 GiB free,
+and the system may end the engine when memory runs out. All 4 are carved as asked" — and it served
+with 1.3 GiB of `MemAvailable`, which is not a margin to run at.
+
+Per-request decode in the saturated batches spans 4.3-21.6 t/s on the max pack and 8.4-21.6 t/s on
+IQ2_XS. The spread is not noise: it is the expert cache shared between slots. Eight requests take a
+15.1-17.1 GiB expert cache on the max pack and 16.3-16.8 GiB on IQ2_XS, and the max pack has 22 GiB
+more expert bytes to miss on.
+
+### The n-gram table is the biggest RAM lever on this host
+
+The pack's 320M-row n-gram table is about 30 GiB. The installed configs lock it with
+`--ple-io ram`; the engine's own default is `direct`, and `mmap` is the middle arm.
+
+| UD-IQ4_XS, 384k × 4 | `--ple-io ram` | `--ple-io mmap` |
+| ------------------- | -------------: | --------------: |
+| load                |        126.5 s |          56.3 s |
+| `MemAvailable` after |       1.3 GiB |        22.7 GiB |
+| saturated aggregate |        30.5 t/s |         33.8 t/s |
+
+Locking the table costs 70 s of load and 21 GiB of RAM, and it is not faster: with the table in the
+page cache the kernel keeps the hot rows and reclaims the rest under pressure instead of pushing the
+engine into the OOM killer. Every profile above therefore runs `--ple-io mmap`.
+
+### `--batch-mtp`: the drafts survive, the throughput does not
+
+`--batch` turns MTP drafting off unless `--batch-mtp` is added; every batched request in the
+non-MTP runs reported `draft_n: 0`, and only a request that happened to run alone drafted (84.8 t/s
+with 45 guesses, 30 accepted, in the 384k × 4 run).
+
+With `--batch-mtp`, drafting **does** survive the batch — the engine's own line says
+`MTP proposals accepted 140 of 174 (80.5%)` — but it costs more than it returns at eight slots:
+
+| IQ2_XS, 384k × 8          | off       | `--batch-mtp` |
+| ------------------------- | --------: | ------------: |
+| saturated aggregate       | 61.04 t/s |     53.96 t/s |
+| `MemAvailable` after load |  31.4 GiB |       28.2 GiB |
+| per-request `draft_n`     |         0 | 0 (the batch path does not attribute drafts per request) |
+
+So `--batch-mtp` stays off: **-12% aggregate** and about 3 GiB of RAM for a draft rate the
+per-request counters cannot even report. A single-caller profile keeps its drafting (`max-long` at
+one caller is the old 86.6 t/s shape).
+
+### 1M at two slots fits, and the earlier OOM was the locked table
+
+The 2026-11-21 note "2 slots × 1M OOM-killed, engine RSS 109.6 GiB" was measured with
+`--ple-io ram`. With the table in the page cache, 2 × 1M loads in 58 s and leaves 10.5 GiB of
+`MemAvailable` (9.3 GiB at the worst sample): 19.1 GiB of K/V plus the 55.4 GiB expert arena.
+
+Three 1M slots would fit arithmetically (28.7 GiB of K/V, about 1 GiB left). They are not taken: the
+host has hard-reset twice under a long prefill, a 1M window is exactly the profile that invites one,
+and one slot of headroom is worth more than a third session.
+
+### t/s per GiB of pinned K/V
+
+The original selection metric, on the saturated batch:
+
+| profile                          |      K/V | saturated t/s | t/s per GiB |
+| -------------------------------- | -------: | ------------: | ----------: |
+| `fast-swarm` (IQ2_XS 384k × 8)   | 28.7 GiB |         61.04 |   **2.13** |
+| `max-swarm` (UD-IQ4_XS 256k × 8) | 19.1 GiB |         36.19 |        1.89 |
+| `max-long` (UD-IQ4_XS 1M × 2)    | 19.1 GiB |         29.74 |        1.56 |
+| `max-multi` (UD-IQ4_XS 384k × 8) | 28.7 GiB |         31.91 |        1.11 |
+
+`fast-swarm` wins the metric by 1.9x over `max-multi`: IQ2_XS is 22 GiB lighter in experts, so the
+same card holds a bigger share of them and the same eight requests decode twice as fast. The resting
+profile is still `max-multi`, by the owner's decision, because it is the better pack (88.9%
+top-token agreement against Q8_0, against IQ2_XS's lower tier) at the same slot count; a session
+that wants throughput asks for `qfn-fast-swarm` and pays a ~58 s switch.
+
+### What this decides
+
+- **The resting profile is a swarm, not a single session.** `qfn` (`auto`) resolves to
+  `qfn-max-multi`: eight 384k slots on UD-IQ4_XS, 8.1 GiB of `MemAvailable`, 31.9 t/s aggregate.
+  1M moved to `qfn-max-long` and is now an explicit request. `qfn-max` keeps its old 1M meaning and
+  resolves to `qfn-max-long`.
+- **Eight is the ceiling, and it is the engine's.** `SLOTS_MAX` is 8 without a layer split, and
+  `vram_fit` prices `min(slots, 8)`. No profile asks for more; 384k and 256k both reach it.
+- **`--ple-io mmap` is what makes any of this fit.** It is the difference between one 1M slot and
+  two, and between 1.3 GiB and 22.7 GiB of free RAM at 384k × 4.
+- **The park pool is the swarm's RAM.** The engine's 8 GiB default buys parked conversations; a
+  swarm spends that RAM on live slots instead, so the multi-slot profiles run
+  `--conversation-cache-mib 2048` (and `1024` on `max-long`, which has the least headroom).
+- **The colo reserve and every one of these profiles stay exclusive.** Each leaves about 1 GiB of
+  VRAM and under 20 GiB of RAM, so `/admit` must refuse a companion beside them and offer
+  `kdn_switch_to: omni-fast`.
+

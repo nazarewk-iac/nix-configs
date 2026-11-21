@@ -2,6 +2,7 @@ package strata
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,7 +10,7 @@ import (
 	"kdn-inference-helpers/internal/config"
 )
 
-// baseConfig is the shape the Strata Terminal writes: tuned flags plus the two profile flags.
+// baseConfig is the shape the Strata Terminal writes: tuned flags plus the profile flags.
 const baseConfig = `{
  "args": [
   "--pack", "/packs/unsloth-ud-iq4_xs",
@@ -28,6 +29,19 @@ const baseConfig = `{
  ]
 }`
 
+// profileNamed is the table lookup the tests read instead of an index: the table is a decision
+// surface and its order is not part of the contract.
+func profileNamed(t *testing.T, name string) Profile {
+	t.Helper()
+	for _, p := range defaults {
+		if p.Name == name {
+			return p
+		}
+	}
+	t.Fatalf("no profile %q in the table", name)
+	return Profile{}
+}
+
 func argsOf(t *testing.T, out []byte) []string {
 	t.Helper()
 	var cfg struct {
@@ -40,13 +54,13 @@ func argsOf(t *testing.T, out []byte) []string {
 }
 
 func TestPatchConfigReplacesBothProfileFlags(t *testing.T) {
-	out, err := PatchConfig([]byte(baseConfig), defaults[0])
+	out, err := PatchConfig([]byte(baseConfig), profileNamed(t, "omni-fast"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	args := argsOf(t, out)
-	if got := valueOf(args, "--vram-reserve-mib"); got != "1024" {
-		t.Fatalf("reserve = %q, want 1024", got)
+	if got := valueOf(args, "--vram-reserve-mib"); got != "21500" {
+		t.Fatalf("reserve = %q, want 21500", got)
 	}
 	if got := valueOf(args, "--kv-resident"); got != "32768" {
 		t.Fatalf("kv-resident = %q, want 32768", got)
@@ -61,18 +75,80 @@ func TestPatchConfigReplacesBothProfileFlags(t *testing.T) {
 	}
 }
 
-func TestPatchConfigAppendsAMissingFlag(t *testing.T) {
-	bare := `{"args": ["--pack", "/packs/x"]}`
-	out, err := PatchConfig([]byte(bare), defaults[1])
+// A swarm profile rewrites the window, the yarn factor, the park pool and the n-gram table's
+// backing store, and it asks for eight slots.
+func TestPatchConfigAppliesTheSwarmShape(t *testing.T) {
+	p := profileNamed(t, "max-multi")
+	out, err := PatchConfig([]byte(baseConfig), p)
 	if err != nil {
 		t.Fatal(err)
 	}
 	args := argsOf(t, out)
-	if got := valueOf(args, "--vram-reserve-mib"); got != "21500" {
-		t.Fatalf("reserve = %q, want 21500", got)
+	for flag, want := range map[string]string{
+		"--vram-reserve-mib":       "1024",
+		"--kv-resident":            "32768",
+		"--max-context":            "393216",
+		"--rope-scale":             "1.5",
+		"--conversation-cache-mib": "2048",
+		"--ple-io":                 "mmap",
+	} {
+		if got := valueOf(args, flag); got != want {
+			t.Fatalf("%s = %q, want %q (argv %v)", flag, got, want, args)
+		}
+	}
+	if contains(args, "--batch-mtp") {
+		t.Fatalf("--batch-mtp is off by measurement but reached the argv: %v", args)
+	}
+}
+
+// The long profile keeps the 1M window at its measured two slots, and 256k needs no rope at all.
+func TestTheContextAndTheSlotCountTravelTogether(t *testing.T) {
+	for name, want := range map[string]struct {
+		context string
+		rope    string
+		slots   int
+	}{
+		"max-multi":  {"393216", "1.5", 8},
+		"max-swarm":  {"262144", "1", 8},
+		"max-long":   {"1048576", "4", 2},
+		"fast-swarm": {"393216", "1.5", 8},
+	} {
+		p := profileNamed(t, name)
+		if p.Parallel != want.slots {
+			t.Fatalf("%s: Parallel = %d, want %d", name, p.Parallel, want.slots)
+		}
+		out, err := PatchConfig([]byte(baseConfig), p)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		args := argsOf(t, out)
+		if got := valueOf(args, "--max-context"); got != want.context {
+			t.Fatalf("%s: --max-context = %q, want %q", name, got, want.context)
+		}
+		if got := valueOf(args, "--rope-scale"); got != want.rope {
+			t.Fatalf("%s: --rope-scale = %q, want %q", name, got, want.rope)
+		}
+	}
+}
+
+func TestPatchConfigAppendsMissingFlags(t *testing.T) {
+	bare := `{"args": ["--pack", "/packs/x"]}`
+	out, err := PatchConfig([]byte(bare), profileNamed(t, "max-long"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := argsOf(t, out)
+	if got := valueOf(args, "--vram-reserve-mib"); got != "1024" {
+		t.Fatalf("reserve = %q, want 1024", got)
 	}
 	if got := valueOf(args, "--kv-resident"); got != "32768" {
 		t.Fatalf("kv-resident = %q, want 32768", got)
+	}
+	if got := valueOf(args, "--max-context"); got != "1048576" {
+		t.Fatalf("max-context = %q, want 1048576", got)
+	}
+	if got := valueOf(args, "--conversation-cache-mib"); got != "1024" {
+		t.Fatalf("conversation-cache-mib = %q, want 1024", got)
 	}
 }
 
@@ -100,11 +176,11 @@ func TestPrepareWritesTheProfileAndBuildsTheCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := New("/bin/strata", dir, nil)
-	cmd, err := a.Prepare("max")
+	cmd, err := a.Prepare("max-multi")
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantCfg := filepath.Join(dir, "strata", "profiles", "strata-max.json")
+	wantCfg := filepath.Join(dir, "strata", "profiles", "strata-max-multi.json")
 	if cmd.Path != "/bin/strata" || len(cmd.Args) < 3 || cmd.Args[0] != "serve" || cmd.Args[2] != wantCfg {
 		t.Fatalf("command = %+v", cmd)
 	}
@@ -133,15 +209,15 @@ func TestProfileOverridesRetuneWithoutARebuild(t *testing.T) {
 	if p.ReserveMiB != 17000 || p.KVResident != 8192 {
 		t.Fatalf("override not applied: %+v", p)
 	}
-	if q, _ := a.Profile("max"); q.ReserveMiB != 1024 {
-		t.Fatalf("max was modified by an unrelated override: %+v", q)
+	if q, _ := a.Profile("max-multi"); q.ReserveMiB != 1024 {
+		t.Fatalf("max-multi was modified by an unrelated override: %+v", q)
 	}
 }
 
 func TestAdapterListsEveryProfileInOrder(t *testing.T) {
 	a := New("/bin/strata", t.TempDir(), nil)
 	got := a.Profiles()
-	want := []string{"max", "omni-fast", "omni-max"}
+	want := []string{"max-multi", "max-swarm", "max-long", "fast-swarm", "omni-fast", "omni-max"}
 	if len(got) != len(want) {
 		t.Fatalf("profiles = %v", got)
 	}
@@ -170,10 +246,10 @@ func contains(args []string, want string) bool {
 	return false
 }
 
-// The frontier profiles ask `strata serve` for 8 slots and a 32768-cell resident window. `serve`
-// turns the first into the engine's `--batch N`, so it has to be on the command line: the profile
-// JSON only carries engine arguments.
-func TestPrepareAsksForEightSlotsOnEveryFrontierProfile(t *testing.T) {
+// Every profile asks `strata serve` for its own slot count and a 32768-cell resident window.
+// `serve` turns the first into the engine's `--batch N`, so it has to be on the command line: the
+// profile JSON only carries engine arguments.
+func TestPrepareAsksForTheProfilesSlotCount(t *testing.T) {
 	dir := t.TempDir()
 	install := filepath.Join(dir, "strata", "install")
 	if err := os.MkdirAll(install, 0o755); err != nil {
@@ -186,13 +262,14 @@ func TestPrepareAsksForEightSlotsOnEveryFrontierProfile(t *testing.T) {
 		}
 	}
 	a := New("/bin/strata", dir, nil)
-	for _, name := range []string{"max", "omni-fast", "omni-max"} {
+	for _, name := range a.Profiles() {
+		p, _ := a.Profile(name)
 		cmd, err := a.Prepare(name)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		if got := valueOf(cmd.Args, "--parallel"); got != "8" {
-			t.Fatalf("%s: --parallel = %q, want 8 (argv %v)", name, got, cmd.Args)
+		if got := valueOf(cmd.Args, "--parallel"); got != fmt.Sprint(p.Parallel) {
+			t.Fatalf("%s: --parallel = %q, want %d (argv %v)", name, got, p.Parallel, cmd.Args)
 		}
 		body, err := os.ReadFile(filepath.Join(dir, "strata", "profiles", "strata-"+name+".json"))
 		if err != nil {
