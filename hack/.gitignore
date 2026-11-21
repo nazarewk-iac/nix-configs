@@ -17,3 +17,8 @@
 !/*.sh
 !/*.md
 !/*.c
+# The media bench is a directory of a Makefile, helpers and a README: the top-level allow-list
+# above does not reach into it, so name it.
+!/media/Makefile
+!/media/*.py
+!/media/*.md
