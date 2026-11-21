@@ -339,6 +339,7 @@ memory in one directory. It runs as the nix-snapshotter container `hermes` on `e
 | state root  | `/var/lib/kdn/hermes` — the container's `stateDir`, `HERMES_HOME` and `KDN_STATE_DIR`                                           |
 | model       | `http://127.0.0.1:9530/v1` — a loopback relay to the LiteLLM guest (`10.233.100.2:4000`)                                        |
 | credentials | `CUSTOM_API_KEY` in `/var/lib/kdn/hermes/litellm.env`, rendered at boot from the sops `litellm/client-key`                      |
+| webapp      | `http://127.0.0.1:9120` — the gateway's own listener, loopback only; reach it through an SSH tunnel                             |
 
 ### The package is the upstream flake
 
@@ -407,13 +408,18 @@ a gateway for the run and that gateway exits after 600 s with no clients.
 
 The default model is `qfn` — the fleet frontier on `brys`, 393k context, and
 profile-neutral (it asks the engine manager for `auto`, so it never forces a reload).
-Switch for one call (flags go **before** `-z`, which takes the prompt as its value)
-or persistently:
+Switch it for one call (flags go **before** `-z`, which takes the prompt as its value):
 
 ```sh
 sudo nerdctl exec hermes hermes -m qfn-max -z "reply with one word"
-sudo nerdctl exec -it hermes hermes config set model.default chat-std-mid
 ```
+
+`hermes config set model.default …` does **not** work, and that is deliberate: the seed file
+(`configFile` in `hosts/etra/hermes.nix`) is mounted at `/etc/hermes/config.yaml`, which Hermes reads
+as its **managed layer** — every key in it is pinned, and a write to that key in the state file is
+refused with `it is managed by your administrator (/etc/hermes/config.yaml)`. A persistent change is
+an edit to `defaultModel` in `hosts/etra/hermes.nix` plus a rebuild; `-m` covers the ad-hoc case.
+Keys the seed does not name (such as `webapp.enabled`) stay the operator's.
 
 **Only models above 64k context work.** Hermes refuses anything smaller
 (`Model X has a context window of 32,768 tokens, which is below the minimum
@@ -426,7 +432,62 @@ with one deployment goes into a 30 s cooldown after two failed requests
 (`allowed_fails`/`cooldown_time` in `hosts/etra/litellm.nix`), and the frontier is
 unavailable whenever the engine on `brys` is restarting.
 
-### The messaging gateway
+### The webapp
+
+`hermes webapp` serves the Hermes Desktop workspace in a browser. The renderer is **not** built at
+runtime: the package builds it with pnpm and points `HERMES_WEBAPP_DIST` at the store path, so
+`hermes webapp --build-only` only reports the path:
+
+```
+→ Using Hermes Webapp renderer from HERMES_WEBAPP_DIST: /nix/store/…-hermes-agent-0.0.0/share/hermes-agent/webapp_dist
+Webapp bundle ready.
+```
+
+Turn it on — one key, in the state file, owned by the operator:
+
+```sh
+sudo nerdctl exec hermes hermes config set webapp.enabled true   # → /var/lib/kdn/hermes/config.yaml
+sudo systemctl restart container-hermes                          # the gateway reads it at start
+sudo nerdctl exec hermes hermes webapp --no-open
+```
+
+`--no-open` prints a **one-use sign-in link**, valid for 60 seconds:
+
+```
+Open the Webapp with this one-use link (valid for 60 seconds):
+  http://127.0.0.1:9120/webapp/launch#ticket=…
+```
+
+`hermes webapp --status` reports `Serving at http://127.0.0.1:9120`; `--sign-out` invalidates every
+open tab, which then needs a fresh link.
+
+**The port is loopback-only, and it is pinned there.** The gateway binds its one HTTP listener to
+`webapp.host`/`webapp.port`, which the seed sets to `127.0.0.1:9120` — those two keys are in the
+managed layer, so `hermes config set webapp.host 0.0.0.0` is refused. That matters because the
+container shares the host's network namespace: a wildcard bind would publish the workspace on
+`nb-priv`, a trusted interface, with no firewall change at all. No firewall port is opened for it,
+and the only listeners the container owns are these two:
+
+```
+$ sudo ss -ltnp | grep -E ':9120|:9530'
+LISTEN … 127.0.0.1:9120 … users:(("hermes",pid=…))     # the webapp
+LISTEN … 127.0.0.1:9530 … users:(("socat",pid=…))      # the litellm relay
+```
+
+**How a person reaches it: an SSH tunnel, then the link.** From `oams` (or any host that can `ssh
+etra`):
+
+```sh
+ssh -N -L 9120:127.0.0.1:9120 etra     # leave it running
+sudo nerdctl exec hermes hermes webapp --no-open   # on etra; copy the printed link
+# open http://127.0.0.1:9120/webapp/launch#ticket=… in the local browser
+```
+
+The link keeps `127.0.0.1:9120`, which on the client is the tunnel, so nothing has to be rewritten.
+The sign-in is a token in the link, not a peer check, so it survives the tunnel — measured
+2026-11-21: `curl http://127.0.0.1:19120/webapp/launch` through a local forward returns the launch
+page (HTTP 200). Because the browser sees a loopback origin, it keeps the secure-context APIs
+(clipboard, microphone, notifications) that plain HTTP elsewhere would switch off.
 
 The gateway is the container's long-lived process. With **no** platform token the
 entrypoint prints how to configure one and sleeps, so nothing polls anything. Add a
@@ -450,11 +511,16 @@ rebuild.
 Everything the agent must keep is in one directory, `/var/lib/kdn/hermes`:
 
 ```
-config.yaml    model/provider selection; seeded once from the store, then yours
+config.yaml    operator overrides — the keys the seed at /etc/hermes/config.yaml does not pin
 .env           platform tokens (written by `hermes gateway setup`)
 litellm.env    CUSTOM_API_KEY (managed: re-rendered on every boot)
 sessions/  state.db  memories/  skills/  kanban.db  projects.db  …   memory and history
 ```
+
+The seed itself is a store file mounted at `/etc/hermes/config.yaml`, and Hermes reads that path as
+its managed layer: the model, the provider and the webapp's bind are pinned there, so they change
+with a rebuild rather than with `hermes config set`. Everything else in the state file is the
+operator's.
 
 The directory is declared in `kdn.disks.persist."sys/state"`, so on `etra` it lives
 inside the ZFS dataset `etra-main/etra/impermanence/sys/state` and is bind-mounted
@@ -504,8 +570,9 @@ browser)`. Supplying a browser is the browser task, not this one.
 ### Container shape
 
 - `--net=host`: `etra` has no CNI, so a nerdctl bridge is unavailable (the same
-  reason `workshop-hello` runs `--net=none`). The agent's only endpoint is the
-  loopback relay, so host networking adds no reachable surface beyond the host's own.
+  reason `workshop-hello` runs `--net=none`). The agent's outbound endpoint is the loopback relay, and
+  its only inbound listener is the loopback webapp, so host networking adds no reachable surface
+  beyond the host's own.
 - `hermes-litellm-relay.service` — socat on `127.0.0.1:9530` → `10.233.100.2:4000`,
   bound to loopback so nothing off-host reaches the gateway through it.
 - `hermes-env.service` — renders `litellm.env` from

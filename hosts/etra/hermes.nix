@@ -41,6 +41,15 @@
 # URL in `config.yaml` names the relay, not the veth address: a litellm re-address
 # is then one line here, not an edit inside the agent's state.
 #
+# The webapp adds a SECOND loopback listener, and nothing else: with `webapp.enabled`
+# the gateway binds its own HTTP server to `webapp.host`/`webapp.port`, which the
+# seeded config sets to 127.0.0.1:9120. The container shares the host's network
+# namespace, so that is etra's loopback — no firewall port is opened and no address on
+# `lan`, `pic`, `nb-priv` or the WAN answers it. The way in is an SSH tunnel from a
+# client host (`ssh -L 9120:127.0.0.1:9120 etra`) plus the one-use link that
+# `hermes webapp --no-open` prints. The link is a token, not a peer check, so it
+# survives the tunnel; see docs/tasks/2026-11/ai-workshop/definition.md.
+#
 # ## State
 #
 # `/var/lib/kdn/hermes` is the container's `stateDir`: `kdn.containers` mounts it
@@ -50,10 +59,18 @@
 # dataset `etra-main/etra/impermanence/sys/state`, bind-mounted over the tmpfs root.
 # It holds everything that must survive a reboot:
 #
-#   config.yaml   model/provider selection (seeded once, then owned by the operator)
+#   config.yaml   operator overrides — the keys the seed below does not pin
 #   .env          platform tokens written by `hermes gateway setup` (never touched here)
 #   litellm.env   `CUSTOM_API_KEY`, derived from the sops client key (managed here)
 #   sessions/ state.db memories/ skills/ ...   the agent's own memory and history
+#
+# Two config layers, and the seed is the stronger one. The file below is mounted at
+# `/etc/hermes/config.yaml`, which Hermes reads as its MANAGED layer: every key in it is
+# pinned, and `hermes config set` refuses to change that key in the state file ("managed
+# by your administrator"). So the seed is not just a first-run default — it is live
+# policy, and a value here (the model, the provider, the webapp's bind) changes with a
+# rebuild. `webapp.enabled` is deliberately left out of it, so the operator owns the
+# switch.
 #
 # To make it its own dataset later, set `stateDataset = { name = "…/sys/state/hermes"; }`
 # on the container AND drop the `kdn.disks.persist` entry below: the module then
@@ -108,6 +125,10 @@ let
   # The loopback port the agent talks to. 9530 is the fleet's usual
   # OpenAI-compatible proxy port, so the number is recognisable in a config.
   relayPort = 9530;
+  # The webapp's own loopback port. 9120 is the upstream default
+  # (`gateway/webapp_listener.py`); spelled out because the SSH tunnel command
+  # in the task document names it.
+  webappPort = 9120;
 
   # The fleet frontier: `qfn` is profile-neutral (it asks the engine manager for
   # `auto`, so it never forces a reload), 1M context. `chat-fast` is the two-model
@@ -126,6 +147,14 @@ let
     # Written by hosts/etra/hermes.nix when the state directory had no config.yaml.
     # This file is the operator's after that: `hermes config set <key> <value>` or a
     # plain edit both survive a rebuild.
+    #
+    # Hermes reads this file as the MANAGED layer ("managed by your administrator"):
+    # every key written here is pinned, and `hermes config set` refuses to change it in
+    # the state file. That is used on purpose for the webapp's bind below — the address
+    # must stay loopback, and the container shares the host's network namespace, so a
+    # `0.0.0.0` there would publish the webapp on `nb-priv` (a trusted interface) with
+    # no firewall change. `webapp.enabled` is deliberately NOT pinned: turning the
+    # workspace on or off is the operator's (`hermes config set webapp.enabled true`).
     providers:
       litellm:
         base_url: http://127.0.0.1:${toString relayPort}/v1
@@ -134,6 +163,9 @@ let
     model:
       provider: litellm
       default: ${defaultModel}
+    webapp:
+      host: 127.0.0.1
+      port: ${toString webappPort}
   '';
 
   # Everything the container's `/bin` holds besides the agent itself: the entrypoint, and the tools
