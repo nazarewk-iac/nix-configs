@@ -18,7 +18,7 @@ make -f hack/media/Makefile vmaf   SRC=/data/vhs/tape-07.mkv OUT=/data/vhs/tape-
 | `denoise` | `video-denoised.mkv`           | `hqdn3d`, tuned for tape grain                                                                   |
 | `audio`   | `audio.wav`, `audio-clean.wav` | DeepFilterNet when installed, a copy otherwise, an empty file when the tape is silent            |
 | `master`  | `master.mkv`                   | SVT-AV1 CRF 28, 10-bit, Opus 128k                                                                |
-| `proxy`   | `proxy.mp4`                    | 720p H.264 for the client side                                                                   |
+| `proxy`   | `proxy.mp4`                    | at most 720 lines, 8-bit H.264, for the client side                                              |
 | `vmaf`    | —                              | fails the run when the master drops below `VMAF_FLOOR` (93)                                      |
 | `notify`  | —                              | ntfy, when `~/.config/ntfy/topic` exists                                                         |
 
@@ -102,3 +102,15 @@ The runner is host-native (it is a shell of `ffmpeg` calls). Anything it invokes
 goes through `admit`, so the placement tree decides whether the card can take it — the bench never
 starts a model server directly. Long GPU steps are meant to run from a scheduled window (Hermes cron)
 as `class: batch`.
+
+`ffmpeg` must be the **`ffmpeg-full`** variant: plain `ffmpeg` from nixpkgs carries `libsvtav1` but
+not `libvmaf`, so `make vmaf` cannot run with it. `brys` does not ship either in its host profile
+today, so a run there takes the binaries from the package set:
+
+```sh
+export PATH=$(nix shell nixpkgs#ffmpeg-full -c bash -c 'dirname $(command -v ffmpeg)'):$PATH
+```
+
+The synthetic capture that proved the archive half, with the per-stage timings and the verification
+output, is recorded in
+[docs/tasks/2026-11/ai-workshop/vhs-poc.md](../../docs/tasks/2026-11/ai-workshop/vhs-poc.md).

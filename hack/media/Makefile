@@ -68,9 +68,11 @@ probe-print: $(PROBE)
 # ---------------------------------------------------------------- cut to content
 # A VHS capture starts and ends with black or snow. `blackdetect` finds the ends; the cut keeps the
 # span between the first and the last non-black second. A capture that is black throughout is left
-# alone and flagged, which is the "broken recording" tag.
+# alone and flagged, which is the "broken recording" tag. The marker goes beside `cut.mkv`, not
+# beside the temporary name the cut is written under.
 $(CUT): $(SRC) $(PROBE) | $(OUT)
-	@python3 hack/media/cut.py --src "$(SRC)" --probe "$(PROBE)" --out "$(basename $(CUT)).tmp.mkv" --ffmpeg "$(FFMPEG)"
+	@python3 hack/media/cut.py --src "$(SRC)" --probe "$(PROBE)" --out "$(basename $(CUT)).tmp.mkv" \
+	  --marker "$(CUT).broken.json" --ffmpeg "$(FFMPEG)"
 	mv "$(basename $(CUT)).tmp.mkv" "$(CUT)"
 
 # ---------------------------------------------------------------- picture
@@ -134,10 +136,12 @@ $(MASTER): $(VDN) $(ACLEAN)
 	fi
 	mv "$(basename $@).tmp$(suffix $@)" "$@"
 
-# A small proxy for the client side: 720p, fast to copy to a laptop.
+# A small proxy for the client side: at most 720 lines, 8-bit, fast to copy to a laptop. A PAL
+# capture is already 576 lines, so the cap keeps the proxy below the master instead of upscaling
+# it, and the 8-bit format is what consumer players decode.
 $(PROXY): $(MASTER)
-	$(FFMPEG) -hide_banner -loglevel error -y -i "$<" -vf "scale=-2:720" \
-	  -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 96k "$(basename $@).tmp$(suffix $@)"
+	$(FFMPEG) -hide_banner -loglevel error -y -i "$<" -vf "scale=-2:'min(720,ih)'" \
+	  -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 96k "$(basename $@).tmp$(suffix $@)"
 	mv "$(basename $@).tmp$(suffix $@)" "$@"
 
 # ---------------------------------------------------------------- gates

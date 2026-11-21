@@ -10,6 +10,7 @@ leaves the file whole and writes a `<out>.broken.json` marker so the caller can 
 guessing from a zero-length output.
 
 Usage: cut.py --src IN --probe probe.json --out OUT --ffmpeg ffmpeg [--threshold 0.10] [--min 0.6]
+               [--marker PATH]
 """
 
 from __future__ import annotations
@@ -63,8 +64,16 @@ def black_spans(
     return spans
 
 
-def content_span(spans: list[tuple[float, float]], total: float) -> tuple[float, float] | None:
-    """The span that survives: from the end of the leading black to the start of the trailing black."""
+def content_span(
+    spans: list[tuple[float, float]], total: float, trailing_slack: float = 0.25
+) -> tuple[float, float] | None:
+    """The span that survives: from the end of the leading black to the start of the trailing black.
+
+    Leading black always begins at frame zero, so a tight tolerance is safe there. Trailing black
+    always runs to the end of the file, but `blackdetect` reports the start of the last black
+    *frame*, so the span ends up to one frame short — plus whatever the container adds for the
+    audio stream. `trailing_slack` covers that and nothing more.
+    """
     begin, end = 0.0, total
     # Merge overlapping or touching spans first, so a flicker does not split the tape.
     merged: list[list[float]] = []
@@ -75,7 +84,7 @@ def content_span(spans: list[tuple[float, float]], total: float) -> tuple[float,
             merged.append([s, e])
     if merged and merged[0][0] <= 0.05:
         begin = merged[0][1]
-    if merged and merged[-1][1] >= total - 0.05:
+    if merged and merged[-1][1] >= total - trailing_slack:
         end = merged[-1][0]
     if end - begin < 1.0:
         return None
@@ -88,17 +97,27 @@ def main() -> int:
     ap.add_argument("--probe", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ffmpeg", default="ffmpeg")
-    ap.add_argument("--threshold", type=float, default=0.10, help="pixel brightness that counts as black")
-    ap.add_argument("--min", type=float, default=0.6, help="seconds of black that count as a span")
+    ap.add_argument(
+        "--threshold",
+        type=float,
+        default=0.10,
+        help="pixel brightness that counts as black",
+    )
+    ap.add_argument(
+        "--min", type=float, default=0.6, help="seconds of black that count as a span"
+    )
+    ap.add_argument(
+        "--marker", help="broken-tape marker path (default: OUT.broken.json)"
+    )
     args = ap.parse_args()
 
     total = duration(args.probe)
     spans = black_spans(args.ffmpeg, args.src, args.threshold, args.min)
-    span = content_span(spans, total)
+    span = content_span(spans, total, max(0.25, 3 * frame_duration(args.probe)))
 
     if span is None:
         # Broken or empty tape: keep it whole, tag it, and let the caller decide.
-        marker = args.out + ".broken.json"
+        marker = args.marker or args.out + ".broken.json"
         with open(marker, "w") as fh:
             json.dump(
                 {"reason": "no content span", "duration": total, "black": spans},
