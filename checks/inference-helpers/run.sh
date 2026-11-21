@@ -32,6 +32,7 @@ cat >"$CONFIG" <<EOF
   "swapURL": "http://127.0.0.1:1",
   "aliases": { "qfn": "auto", "qfn-max": "max", "qfn-fast-colo": "omni-fast" },
   "frontierIDs": ["qfn", "qfn-max", "qfn-fast-colo"],
+  "textProfiles": ["max"],
   "cacheDropCommand": [],
   "engineLog": "$WORK/data/strata/engine.log",
   "drainTimeoutSeconds": 60,
