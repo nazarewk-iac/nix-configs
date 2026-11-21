@@ -45,16 +45,16 @@ without redesign.
 
 ## PoCs, each with an acceptance
 
-| PoC                | steps                                                                                                                     | acceptance                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **VHS archive**    | capture → black/silence detect → cut → probe → notify                                                                     | one command cuts a capture to its content and pings ntfy; re-running is a no-op                |
-| **VHS restore**    | deinterlace → video denoise → audio denoise (DeepFilterNet) → optional upscale/interpolate → encode (SVT-AV1 + VMAF gate) | a 5-minute capture produces a master whose VMAF is above the floor and whose audio has no hiss |
-| **documents → KB** | OCR (dots.ocr) → chunk → embed (qwen3-embedding) → index → search                                                         | a scanned PDF is findable by a paraphrase of its content                                       |
-| **albums**         | EXIF + embeddings + face clusters → VLM captions → narrative                                                              | a trip folder becomes one album with a written summary                                         |
-| **voice loop**     | wake/VAD → whisper-turbo → agent → Kokoro                                                                                 | a spoken command reaches an agent session and the answer is spoken back                        |
-| **spam**           | corpus → rules/model → sealed eval → reviewer                                                                             | precision and recall on the sealed split both improve, and the split hash is unchanged         |
-| **LTX clip**       | text → LTX-2.3 (or 2.5) → mp4 with audio                                                                                  | one 5-second clip with synchronised audio, timed                                               |
-| **UI check**       | browser driver → screenshot → VLM verdict                                                                                 | a broken layout is reported with the element that broke                                        |
+| PoC                | steps                                                                                                                     | acceptance                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **VHS archive**    | capture → black/silence detect → cut → probe → notify                                                                     | one command cuts a capture to its content; re-running is a no-op (notification is a placeholder) |
+| **VHS restore**    | deinterlace → video denoise → audio denoise (DeepFilterNet) → optional upscale/interpolate → encode (SVT-AV1 + VMAF gate) | a 5-minute capture produces a master whose VMAF is above the floor and whose audio has no hiss   |
+| **documents → KB** | OCR (dots.ocr) → chunk → embed (qwen3-embedding) → index → search                                                         | a scanned PDF is findable by a paraphrase of its content                                         |
+| **albums**         | EXIF + embeddings + face clusters → VLM captions → narrative                                                              | a trip folder becomes one album with a written summary                                           |
+| **voice loop**     | wake/VAD → whisper-turbo → agent → Kokoro                                                                                 | a spoken command reaches an agent session and the answer is spoken back                          |
+| **spam**           | corpus → rules/model → sealed eval → reviewer                                                                             | precision and recall on the sealed split both improve, and the split hash is unchanged           |
+| **LTX clip**       | text → LTX-2.3 (or 2.5) → mp4 with audio                                                                                  | one 5-second clip with synchronised audio, timed                                                 |
+| **UI check**       | browser driver → screenshot → VLM verdict                                                                                 | a broken layout is reported with the element that broke                                          |
 
 ## Measurements the scheduler needs
 

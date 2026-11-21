@@ -147,12 +147,4 @@ vmaf: $(MASTER)
 	@python3 hack/media/vmaf.py --reference "$(VDN)" --distorted "$(MASTER)" --floor $(VMAF_FLOOR) --ffmpeg "$(FFMPEG)"
 
 notify:
-	@if [ -r "$(NTFY)" ]; then \
-	  curl -fsS -m 10 -H "Title: media bench" -d "$$(basename $(OUT)) finished" "https://ntfy.sh/$$(cat $(NTFY))" >/dev/null && \
-	  echo "notified"; \
-	else \
-	  echo "no ntfy topic at $(NTFY); skipping" >&2; \
-	fi
-
-clean:
-	rm -rf "$(OUT)"
+	@echo "notification is a placeholder: no backend is wired (ntfy was a far-future idea)" >&2
