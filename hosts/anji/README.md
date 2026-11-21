@@ -34,6 +34,26 @@ secret-handling rule are in
 "Findings from the 2026-10-16 password run (run 3)". That session (`ses_ebcb73c34ffec6ZLNGEYVUTBiW`)
 used `pass show hosts/anji/users/kdn/password`; it did not change the password.
 
+## SSH daemons
+
+- `org.nixos.nixpkgs-sshd` — nixpkgs OpenSSH 10.6p1 on **2222**. It serves the fleet host
+  certificates (ed25519 and `ssh-mldsa44-ed25519-cert`) and the CA trust. The launchd job runs
+  through `kdn-nix-darwin-helper`, so `/nix` is mounted and the Full Disk Access grant covers it.
+- Apple's sshd on **22** and Remote Login stay on. This is the FileVault pre-boot unlock path and
+  the recovery daemon.
+- `ssh anji` and its FQDNs default to 2222 through the `kdn-ssh-access` plain `Host` block.
+  `ssh anji+apple` (or `ssh kdn-anji+apple`) uses Apple's daemon on 22.
+- The nixpkgs Darwin build has no PAM. The nixpkgs config includes only the fleet fragments, not
+  `100-macos.conf`; do not add `UsePAM` to it.
+- The application firewall allows the nixpkgs `sshd` binary separately from Apple's. The
+  activation re-adds it; if the daemon started before the rule, run
+  `sudo launchctl kickstart -k system/org.nixos.nixpkgs-sshd`.
+
+```bash
+ssh anji          # fleet sshd, 2222, PQ host identity
+ssh anji+apple    # Apple's sshd, 22, recovery
+```
+
 ## Recovery console
 
 The NanoKVM at `kvm-2795` is the out-of-band console. Its MCP tools and failure modes are in

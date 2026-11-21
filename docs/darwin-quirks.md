@@ -215,3 +215,33 @@ the program runs.
 
 **Related trap.** A Nix builder whose working directory is on an unmounted external volume hits
 both this quirk and the read-only mount point above. The unlock must run first.
+
+## nixpkgs OpenSSH on Darwin has no PAM
+
+**Symptom.** A nixpkgs `sshd` on macOS listens on its port, but a client connects and waits
+forever for the SSH banner. The log says `Unsupported option UsePAM` and the daemon does not
+serve. `sshd -T` may still parse the rest of the file.
+
+**Cause.** The Darwin build of nixpkgs OpenSSH is built **without PAM**. `UsePAM` is not an
+option that can be set to `no`; the binary does not know it. A config that includes the Apple
+`/etc/ssh/sshd_config.d/100-macos.conf` pulls in `UsePAM yes` and triggers the fault.
+
+**Fix.** Do not include `100-macos.conf` in a nixpkgs `sshd` config, and do not set `UsePAM` at
+all. Include only the fleet fragments (host keys, certificates, CA trust, authorized keys) by
+name. Measured on `anji` on 2026-11-21 while bringing up the fleet daemon on 2222.
+
+## The application firewall allows per binary
+
+**Symptom.** A new daemon listens on a TCP port, the host answers the TCP handshake, but a remote
+client gets no application data. Apple's daemon on the same port works.
+
+**Cause.** The macOS application firewall decides per executable path. A nixpkgs binary at a
+`/nix/store/...` path is not covered by the allowance for Apple's `/usr/sbin/sshd`, even when the
+daemon runs as root. A `/nix/store` path also changes with every nixpkgs bump, so a manual
+allowance is not durable.
+
+**Fix.** Add and unblock the exact path with
+`/usr/libexec/ApplicationFirewall/socketfilterfw --add <path>` and `--unblockapp <path>`. Do it in
+the host activation so a bump re-adds the new path. A daemon that started before the rule can keep
+failing; restart its launchd job after the rule. Measured on `anji` on 2026-11-21 with the nixpkgs
+`sshd` on 2222.

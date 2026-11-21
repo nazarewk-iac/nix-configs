@@ -1,12 +1,17 @@
 ---
 type: Task
 description: Replace Apple's sshd on anji with the pinned nixpkgs OpenSSH, so the Mac presents the post-quantum host identity and runs the same sshd as the fleet.
-status: open
+status: done
+solution: done.md
 authored_by: agent
 timestamp: 2026-11-12T00:00:00+01:00
 ---
 
 # Run nixpkgs OpenSSH as the sshd on anji
+
+**Solution:** [done.md](done.md). The delivered route is the alternate port: nixpkgs OpenSSH on
+2222, Apple's sshd on 22, `ssh anji` and its FQDNs default to 2222, and `anji+apple` is the
+recovery alias on 22.
 
 ## Context
 
@@ -142,9 +147,8 @@ on 2026-11-21: generation 105,
 - `ssh -o HostKeyAlgorithms=ssh-mldsa44-ed25519-cert anji true` fails with
   `no matching host key type found`; the server offers ed25519 only.
 - The port-22 replacement is still blocked by the FileVault pre-boot SSH unlock.
-- Decision pending: nixpkgs sshd on an alternate port (approach 1) or Apple-only (approach 3).
-  Approach 1 is the only one that gives `anji` the PQ identity without losing the pre-boot
-  unlock.
+- Decision: **delivered** as nixpkgs sshd on 2222 (approach 1); Apple's sshd keeps 22 for the
+  pre-boot unlock and the `anji+apple` recovery alias. See [done.md](done.md).
 
 ## Out of scope
 
