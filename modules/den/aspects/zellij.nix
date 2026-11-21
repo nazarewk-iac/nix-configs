@@ -66,12 +66,12 @@
 # loopback by default. A consumer sets `kdn.zellij.web.*`: `bindAddress`, `port`, `certFile`,
 # `keyFile`, `user`, `firewallInterfaces`, `sharedByDefault` and `mobileFontSize`.
 #
-# The last two shape what a client sees, and both live in `~/.config/zellij/config.kdl`:
+# The last three shape what a client sees, and all live in `~/.config/zellij/config.kdl`:
 # `sharedByDefault` writes `web_sharing`, so a new session is attachable from the phone without
-# the Share plugin, and `mobileFontSize` writes `web_client.mobile_font_size`, the mobile-only
-# font size. The built-in mobile default is 24px, which reads as a ~3x zoom on a high-DPI phone.
-# Both keys come from the nazarewk-iac zellij fork (`inputs.zellij`, applied in
-# `modules/den-pkgs/overlays.nix`).
+# the Share plugin; `mobileFontDevicePx` writes `web_client.mobile_font_device_px`, the mobile font
+# in device pixels per em, so one value suits a dense phone and a coarse one; `mobileFontSize`
+# writes `web_client.mobile_font_size`, the fixed-pixel fallback. All three keys come from the
+# nazarewk-iac zellij fork (`inputs.zellij`, applied in `modules/den-pkgs/overlays.nix`).
 #
 # The aspect declares no `enable` option. Inclusion is the switch, as rule 2 states. The `web`
 # options hold no `enable` either, so the standalone check finds no reachable one.
@@ -143,16 +143,32 @@ let
 
         mobileFontSize = lib.mkOption {
           type = lib.types.nullOr (lib.types.ints.between 1 96);
-          default = 10;
+          default = null;
           example = 12;
           description = ''
-              Font size in pixels for mobile viewports only (`web_client.mobile_font_size`, from the
-              nazarewk-iac zellij fork). Desktop web clients keep `web_client.font_size`. The
-              built-in mobile default is 24px, which on a high-DPI phone reads as a ~3x zoom: about
-              27 columns on a 390px-wide screen. `null` keeps the built-in default.
+            Fixed font size in CSS pixels for mobile viewports (`web_client.mobile_font_size`,
+            from the nazarewk-iac zellij fork). It applies only when `mobileFontDevicePx` is null.
+            Desktop web clients keep `web_client.font_size`.
 
             A stock zellij ignores the key in silence, so a fork overlay that stops applying
-            shows the 24px default and no error.
+            shows the built-in default and no error.
+          '';
+        };
+
+        mobileFontDevicePx = lib.mkOption {
+          type = lib.types.nullOr (lib.types.ints.between 1 512);
+          default = 24;
+          example = 28;
+          description = ''
+            Font size for mobile viewports in **device pixels per em**
+            (`web_client.mobile_font_device_px`). The client divides it by the browser's
+            `devicePixelRatio`, so one value gives 8px on a 3x phone and 12px on a 2x one, and
+            glyph sharpness stays the same on every screen. Coarser panels get physically larger
+            text.
+
+            It wins over `mobileFontSize`. `null` falls back to `mobileFontSize`, then to the
+            built-in 24px. The phone's menu and pinch gesture remember a per-browser override
+            that wins over both, so a device can be tuned without touching this value.
           '';
         };
       };
@@ -338,10 +354,10 @@ in
   # The user service. It runs on Linux only, and it needs a certificate. A missing key is not fatal
   # at start: the unit restarts until the consumer supplies it.
   #
-  # The two settings below travel in `~/.config/zellij/config.kdl`. `web_sharing` is read by the
-  # session when it starts; `web_client.mobile_font_size` is read by the web server. They live here,
-  # not in the base aspect's Home Manager body: this module imports `optionsModule`, so `cfg.web` is
-  # always defined, and the base aspect still evaluates on its own.
+  # The settings below travel in `~/.config/zellij/config.kdl`. `web_sharing` is read by the
+  # session when it starts; the font keys are read by the web server. They live here, not in the
+  # base aspect's Home Manager body: this module imports `optionsModule`, so `cfg.web` is always
+  # defined, and the base aspect still evaluates on its own.
   kdn.zellij-web.homeManager =
     {
       config,
@@ -359,6 +375,9 @@ in
         (lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
           programs.zellij.settings = {
             web_sharing = if cfg.web.sharedByDefault then "on" else "off";
+          }
+          // lib.optionalAttrs (cfg.web.mobileFontDevicePx != null) {
+            web_client.mobile_font_device_px = cfg.web.mobileFontDevicePx;
           }
           // lib.optionalAttrs (cfg.web.mobileFontSize != null) {
             web_client.mobile_font_size = cfg.web.mobileFontSize;

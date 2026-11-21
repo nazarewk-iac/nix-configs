@@ -2269,11 +2269,11 @@
     "zellij": {
       "flake": false,
       "locked": {
-        "lastModified": 1795170495,
-        "narHash": "sha256-jlgqUWFqKDLP+oCyYtb1Wxbfn9iUe47Y92QcjQuB7/8=",
+        "lastModified": 1795285710,
+        "narHash": "sha256-nZN3Qwicb/53BUvLoZe4vizdPOAOfkg0/i7EQ3an5fk=",
         "owner": "nazarewk-iac",
         "repo": "zellij",
-        "rev": "940e41f6fd50b0c648def0c09fd3bb33dc08ab08",
+        "rev": "3a5b74632027cf229b6a1dcf5794eed2233f53c7",
         "type": "github"
       },
       "original": {

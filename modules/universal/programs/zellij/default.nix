@@ -6,9 +6,10 @@
 # interfaces in `web.firewallInterfaces` to expose it.
 #
 # Two web settings shape what a client sees: `web.sharedByDefault` marks new sessions as shared
-# (`web_sharing`), so the phone can attach without the Share plugin; `web.mobileFontSize` sets
-# `web_client.mobile_font_size`, the mobile-only font size (the built-in 24px reads as a ~3x
-# zoom on a high-DPI phone). Both come from the nazarewk-iac zellij fork.
+# (`web_sharing`), so the phone can attach without the Share plugin; `web.mobileFontDevicePx` sets
+# `web_client.mobile_font_device_px`, the mobile-only font size in device pixels per em, so one
+# value suits a dense phone and a coarse one. `web.mobileFontSize` is the fixed-pixel fallback.
+# All three come from the nazarewk-iac zellij fork.
 {
   lib,
   pkgs,
@@ -82,16 +83,31 @@ in
 
       mobileFontSize = lib.mkOption {
         type = lib.types.nullOr (lib.types.ints.between 1 96);
-        default = 10;
+        default = null;
         example = 12;
         description = ''
-          Font size in pixels for mobile viewports only (`web_client.mobile_font_size`, from the
-          nazarewk-iac zellij fork). Desktop web clients keep `web_client.font_size`. The built-in
-          mobile default is 24px, which on a high-DPI phone reads as a ~3x zoom: about 27 columns
-          on a 390px-wide screen. `null` keeps the built-in default.
+          Fixed font size in CSS pixels for mobile viewports (`web_client.mobile_font_size`, from
+          the nazarewk-iac zellij fork). It applies only when `mobileFontDevicePx` is null. Desktop
+          web clients keep `web_client.font_size`.
 
           A stock zellij ignores the key in silence, so a fork overlay that stops applying shows
-          the 24px default and no error.
+          the built-in default and no error.
+        '';
+      };
+
+      mobileFontDevicePx = lib.mkOption {
+        type = lib.types.nullOr (lib.types.ints.between 1 512);
+        default = 24;
+        example = 28;
+        description = ''
+          Font size for mobile viewports in **device pixels per em**
+          (`web_client.mobile_font_device_px`). The client divides it by the browser's
+          `devicePixelRatio`, so one value gives 8px on a 3x phone and 12px on a 2x one, and glyph
+          sharpness stays the same on every screen. Coarser panels get physically larger text.
+
+          It wins over `mobileFontSize`. `null` falls back to `mobileFontSize`, then to the
+          built-in 24px. The phone's menu and pinch gesture remember a per-browser override that
+          wins over both, so a device can be tuned without touching this value.
         '';
       };
     };
@@ -145,9 +161,12 @@ in
           }
           (lib.mkIf (cfg.web.enable && pkgs.stdenv.hostPlatform.isLinux) {
             # Both settings travel in `~/.config/zellij/config.kdl`. `web_sharing` is read by the
-            # session when it starts; `web_client.mobile_font_size` is read by the web server.
+            # session when it starts; the font keys are read by the web server.
             programs.zellij.settings = {
               web_sharing = if cfg.web.sharedByDefault then "on" else "off";
+            }
+            // lib.optionalAttrs (cfg.web.mobileFontDevicePx != null) {
+              web_client.mobile_font_device_px = cfg.web.mobileFontDevicePx;
             }
             // lib.optionalAttrs (cfg.web.mobileFontSize != null) {
               web_client.mobile_font_size = cfg.web.mobileFontSize;

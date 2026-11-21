@@ -1110,6 +1110,7 @@ let
       kdn.zellij.web = {
         sharedByDefault = false;
         mobileFontSize = null;
+        mobileFontDevicePx = null;
       };
     }
   ];
@@ -1290,24 +1291,59 @@ let
       };
     }
     {
-      name = "a bare adopter shares new sessions and sets the 10px mobile font";
+      name = "a bare adopter shares new sessions and sizes the mobile font by screen density";
       expected = {
         web_sharing = "on";
-        mobile_font_size = 10;
+        mobile_font_device_px = 24;
+        has_fixed_size = false;
       };
       actual = {
         inherit (zellijWebHome.programs.zellij.settings) web_sharing;
-        mobile_font_size = zellijWebHome.programs.zellij.settings.web_client.mobile_font_size;
+        mobile_font_device_px = zellijWebHome.programs.zellij.settings.web_client.mobile_font_device_px;
+        has_fixed_size = zellijWebHome.programs.zellij.settings.web_client ? mobile_font_size;
+      };
+    }
+    {
+      name = "a fixed mobile font size replaces the density rule";
+      expected = {
+        mobile_font_size = 12;
+        has_device_px = false;
+      };
+      actual = {
+        mobile_font_size =
+          (mkZellijWebHome [
+            {
+              kdn.zellij.web = {
+                mobileFontDevicePx = null;
+                mobileFontSize = 12;
+              };
+            }
+          ]).programs.zellij.settings.web_client.mobile_font_size;
+        has_device_px =
+          (mkZellijWebHome [
+            {
+              kdn.zellij.web = {
+                mobileFontDevicePx = null;
+                mobileFontSize = 12;
+              };
+            }
+          ]).programs.zellij.settings.web_client
+            ? mobile_font_device_px;
       };
     }
     {
       name = "both web settings can be turned off";
       expected = {
         web_sharing = "off";
+        mobile_font_device_px = null;
         mobile_font_size = null;
       };
       actual = {
         inherit (zellijWebHomeOptedOut.programs.zellij.settings) web_sharing;
+        mobile_font_device_px = lib.attrByPath [
+          "web_client"
+          "mobile_font_device_px"
+        ] null zellijWebHomeOptedOut.programs.zellij.settings;
         mobile_font_size = lib.attrByPath [
           "web_client"
           "mobile_font_size"

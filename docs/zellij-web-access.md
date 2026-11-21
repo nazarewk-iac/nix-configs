@@ -94,33 +94,46 @@ watch but not type.
 ## Mobile font size
 
 The web client picks its font size in `zellij-client/assets/terminal.js` (`settleFontSize`): the
-`web_client.font_size` value when set, otherwise 24px on a mobile viewport and 12px elsewhere. On
-a high-DPI phone the 24px default reads as a ~3x zoom. It shows about 27 columns on a 390px-wide
-screen and 31 on a 448px one, roughly a fifth of a desktop session.
+`web_client.font_size` value when set, otherwise 24px on a mobile viewport and 12px elsewhere. That
+default reads as a ~3x zoom on a high-DPI phone: 31 columns on a 448px-wide screen, about a fifth
+of a desktop session.
 
-`web_client.mobile_font_size` (nazarewk-iac zellij fork) overrides that mobile default only, so a
-desktop browser keeps its own size. Both trees set it from `web.mobileFontSize`, which defaults to
-`10`:
+The nazarewk-iac fork adds two mobile-only keys. Desktop web clients keep `web_client.font_size`.
+
+| key                                | repo option              | default | meaning              |
+| ---------------------------------- | ------------------------ | ------- | -------------------- |
+| `web_client.mobile_font_device_px` | `web.mobileFontDevicePx` | `24`    | device pixels per em |
+| `web_client.mobile_font_size`      | `web.mobileFontSize`     | `null`  | fixed CSS pixels     |
+
+`mobile_font_device_px` is the one to use. The client divides it by the browser's
+`devicePixelRatio`, so one value gives 8px on a 3x phone, 9px at 2.625x, 12px at 2x and 16px at
+1.5x — the same glyph sharpness on every screen, and physically larger text where the panel is
+coarser. CSS has no unit for this: `in`, `mm` and `pt` are fixed multiples of the CSS pixel, and the
+CSS pixel is already density-independent, so `devicePixelRatio` is the only density signal a browser
+exposes.
+
+Measured on a Pixel 8 Pro (448x998 CSS pixels, device pixel ratio 3), same session:
+
+| setting                                | effective size | columns x rows | share of a 120-column desktop |
+| -------------------------------------- | -------------- | -------------- | ----------------------------- |
+| built-in 24px                          | 24px           | 31 x 34        | 26% wide, 85% tall            |
+| `mobile_font_size 10`                  | 10px           | 74 x 86        | 62% wide, 100% tall           |
+| `mobile_font_device_px 24` (this repo) | 8px            | 96 x 105       | 80% wide, 100% tall           |
 
 ```nix
-kdn.programs.zellij.web.mobileFontSize = 10;  # or kdn.zellij.web.mobileFontSize in the den tree
+kdn.programs.zellij.web.mobileFontDevicePx = 24;  # or kdn.zellij.web.mobileFontDevicePx in den
 ```
 
-Measured on a Pixel 8 Pro (448x998 CSS pixels, device pixel ratio 3), with the same session:
+The client also remembers a size per browser: the pinch gesture and the mobile menu row (A−, A+,
+Reset) store `zellij:font-size` in `localStorage`. That value wins over both config keys and
+survives a reload, so a device can be tuned without touching this repo. Reset returns to the config
+value and clears the key.
 
-| `mobile_font_size` | columns x rows | share of a 120-column desktop |
-| ------------------ | -------------- | ----------------------------- |
-| `24` (built-in)    | 31 x 34        | 26% wide, 85% tall            |
-| `12`               | 64 x 68        | 53% wide, 100% tall           |
-| `10` (this repo)   | 74 x 86        | 62% wide, 100% tall           |
-| `8`                | 83 x 88        | 70% wide, 100% tall           |
+The config keys are read by the web server at start, so a change to one needs
+`systemctl --user restart zellij-web` and a page reload. `null` on both keeps the built-in 24px.
 
-The value is read by the web server at start, so a change needs
-`systemctl --user restart zellij-web` and a page reload. `null` keeps the built-in 24px.
-
-Stock zellij ignores `mobile_font_size` in silence: the key parses, and the client keeps the
-24px default. So if the fork overlay ever stops applying, nothing fails — the phone just looks
-zoomed in again.
+Stock zellij ignores both keys in silence: they parse, and the client keeps its built-in default.
+So if the fork overlay ever stops applying, nothing fails — the phone just looks zoomed in again.
 
 ## Connect from Firefox on an Android phone
 
