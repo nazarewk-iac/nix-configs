@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: The kdn-knowledge pipeline — read harness sessions, extract durable items with the local frontier, merge the repeats, and propose concepts and skills for the agent memory bundle.
-timestamp: 2026-11-21T23:55:00+01:00
+timestamp: 2026-11-22T00:00:00+01:00
 ---
 
 # kdn-knowledge
@@ -15,23 +15,25 @@ Task: [docs/tasks/2026-11/knowledge-pipeline/definition.md](tasks/2026-11/knowle
 
 ## The four steps
 
-| command | what it does | writes |
-| --- | --- | --- |
-| `harvest` | reads `~/.local/share/opencode/opencode.db`, normalises each session, drops reasoning parts | `corpus/<session>.json` |
-| `extract` | one `qfn` call per session, strict JSON contract, one repair attempt | `candidates/<session>.json` |
-| `dream` | lexical clustering, one merge call per cluster, comparison with the bundle | `proposals/<ts>/{concepts,skills,plan.json,report.md}` |
-| `apply` | hands the concepts to the bundle writer, then validates | `.agents/knowledge/**` |
+| command   | what it does                                                                                | writes                                                 |
+| --------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `harvest` | reads `~/.local/share/opencode/opencode.db`, normalises each session, drops reasoning parts | `corpus/<session>.json`                                |
+| `extract` | one `qfn` call per session, strict JSON contract, one repair attempt                        | `candidates/<session>.json`                            |
+| `dream`   | lexical clustering, one merge call per cluster, comparison with the bundle                  | `proposals/<ts>/{concepts,skills,plan.json,report.md}` |
+| `apply`   | hands the concepts to the bundle writer, then validates                                     | `.agents/knowledge/**`                                 |
 
 `run` is the first three and stops before `apply`.
 
 ## The run, from a laptop, over NetBird
 
 The endpoint is `https://llama-swap.brys.priv.nb.net.int.kdn.im/v1` and it resolves to brys'
-NetBird address, so the same command works on the LAN and in another city. The key is a file that
-already exists on every host:
+NetBird address, so the same command works on the LAN and in another city. The bearer key is a file
+that already exists on every host, and the tool reads it itself: `--key-file` (or
+`KDN_KNOWLEDGE_KEY_FILE`) overrides the default `/run/configs/llms/llama-server/api-keys/default`.
+There is no key variable to export. What the tool resolved:
 
 ```bash
-export KDN_LLM_API_KEY=$(cat /run/configs/llms/llama-server/api-keys/default)
+kdn-knowledge status    # endpoint, key file, corpus, estimate, and the placement verdict
 ```
 
 A first pass that you can watch:
@@ -57,10 +59,15 @@ Resume after a stop is the same command: a session whose content hash is unchang
 
 ## What it costs
 
-One real session of 24 000 characters cost 7 405 prompt tokens, 879 completion tokens and 20.8 s
-on `qfn` while the engine rested on `max-multi`. A 570-session pass is therefore about three
-hours. It runs on the frontier that is already loaded, so nothing switches, nothing unloads, and
-no second model competes for the card.
+`extract` prints a running average and the estimate for the sessions that remain; `status` prints
+the same estimate from the sessions that are already finished. On 2026-11-21 the runs measured
+54.3 s per session ("~2.9 h for 192 remaining"), then 64.6 s ("~3.6 h for 200 remaining"), and by
+23:54 the average over the 15 finished sessions was 73.1 s ("~4.1 h for 200 sessions"). A long
+session costs more than a short one, so the average moves as the corpus fills: read the line the
+tool prints, not this paragraph.
+
+Nothing switches, nothing unloads, and no second model competes for the card, because every call
+goes to the frontier that is already loaded on the resting profile.
 
 A llama.cpp grunt model cannot do this on the resting profile: `gemma-4-e4b` and
 `ministral-3-3b-reasoning` are refused beside `max-multi` and only start on a colo profile
@@ -76,6 +83,11 @@ and `status: draft`; nothing is `stable` until a human says so.
 `index.md` stay coherent, then runs
 `okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge`. It refuses to
 overwrite a concept whose status is `stable`.
+
+One gap is open, and it is the bundle writer's: `okf-memory create` writes neither `id` nor
+`links`, while the repo's stricter gate `ai-xf-validate .agents/knowledge --level 2` requires an
+`id` on every concept. A freshly applied draft therefore fails that gate until a human adds the id;
+`okf-memory update` preserves an id that is already there, and `ai-xf-canon` does not add one.
 
 ## Searching the result
 

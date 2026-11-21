@@ -1,7 +1,7 @@
 ---
 type: Design
 description: The command surface, the on-disk layout, the JSON contracts and the model prompts of kdn-knowledge, a session-to-knowledge pipeline that runs only on the local fleet.
-timestamp: 2026-11-21T23:15:00+01:00
+timestamp: 2026-11-22T00:00:00+01:00
 ---
 
 # kdn-knowledge — design
@@ -85,7 +85,7 @@ The model returns a JSON array of items and nothing else. A reply that is not va
 repair attempt with the parser error appended; a second failure records the session as `failed`
 with the reason, and the run continues.
 
-## Extraction prompt (fixed text, in `prompt.go`)
+## Extraction prompt (fixed text, the `SystemPrompt` constant in `extract.go`)
 
 System:
 
@@ -155,9 +155,12 @@ links: []
 summary: sessions read, items extracted, clusters merged, actions by type, and every failed
 session with its reason.
 
-`apply --yes` copies the concept files into `.agents/knowledge/<type-dir>/`, refuses to overwrite a
-concept whose `status` is `stable`, and then runs `kdn-okf doctor --parse-only` when that binary is
-on `PATH`. A validation error rolls the copied files back.
+`apply --yes` writes the concepts into `.agents/knowledge/<type-dir>/` through `okf-memory
+create|update` when that binary is on `PATH` (direct file writing is only the fallback, and it warns
+that the log and index were not updated). It refuses to overwrite a concept whose `status` is
+`stable`, then gates the bundle with `okflint validate --manifest <bundle>/okf-base.yaml <bundle>`
+and falls back to `kdn-okf doctor --parse-only` when `okflint` is absent. A validation error rolls
+every change back.
 
 ## Endpoint guard
 
