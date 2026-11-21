@@ -120,28 +120,28 @@ conv VAE are unverified in sd.cpp, and Hermes Agent has no Nix packaging yet.
 5. **PoCs in order**: VHS archive → VHS restore → documents → albums → spam → voice → UI → LTX.
 6. **crew** — only when a PoC has shown that one agent is not enough.
 
-## Services are containers, Nix-native first
+## Services are containers, Nix-native only
 
-A service that might move must not depend on the host it was built for. Three tiers, in preference
-order:
+A service that might move must not depend on the host it was built for. Two tiers, and no image
+tarballs anywhere:
 
 1. **NixOS container (`containers.<name>`, systemd-nspawn)** — the default for our own services
-   (Hermes Agent, Kokoro, DeepFilterNet, dots.ocr). The container _is_ a NixOS module: no image is
-   built, `/nix/store` is shared, and the whole definition is a few lines in the host module.
+   (Hermes Agent, Kokoro, DeepFilterNet, dots.ocr). The container _is_ a NixOS module: nothing is
+   built as an image, `/nix/store` is shared, and the definition is a few lines in the host module.
    Devices are bind-mounted (`/dev/dri` for Vulkan, `/dev/kfd` for ROCm) and the container's
    `hardware.graphics` settings match the host, so the driver libraries are the host's own store
    paths. **Migration unit: the module plus its bind mount.**
-2. **OCI from the store, no registry** — `virtualisation.oci-containers.containers.<name>` with
-   `imageFile = pkgs.dockerTools.buildImage { ... }` and the podman backend. The image tarball lives
-   in the store, so nothing is pulled and nothing is pushed. Use it only when the thing really is an
-   OCI image (a third-party Dockerfile, ComfyUI). **Migration unit: the image derivation plus the
-   volume.**
-3. **nix-snapshotter** — containerd-only (the author confirms it does not work with docker-ce or
-   podman), and the Podman/CRI-O equivalent (`bitbloxhub/nix-storage-plugin`, Apr 2026) needs an
-   overlay patch and is experimental. Neither is a dependency. Revisit if we ever run containerd or
-   k3s; until then tier 2 already gives store-native images without a registry.
+2. **nix-snapshotter (containerd)** — the cluster path: layers reference Nix store paths, so an
+   image is a manifest over paths that are already on disk. `pkgs.nix-snapshotter.buildImage`, the
+   Pod names `nix:0${image}`, and nothing is pulled or pushed. k3s support landed in the March 2026
+   cycle; plain NixOS kubernetes uses the same snapshotter.
 
-Rules that hold for all three:
+**`dockerTools.buildImage` and `imageFile` are out.** They stream the store into compressed tarballs
+and duplicate what the binary cache already has, which is the cost nix-snapshotter exists to remove.
+A third-party image that only ships a Dockerfile is the one case where a real OCI pull is
+unavoidable; it is rare and it is not the default.
+
+Rules that hold for both tiers:
 
 - **CPU-only hosts run the same definition.** Kokoro, DeepFilterNet and whisper-turbo have no device
   requirement, so the identical container runs on a 4-core box with no GPU.
