@@ -125,10 +125,13 @@ in
     # is never "kept" for a chat request, because a diffusion server answers no chat. Anything
     # outside this list is a batch profile, and asking for `auto` while one is loaded is refused
     # with an error that names the way back.
+    # `omni-fast` first: it is the resting profile and the one `DefaultTextProfile()` returns, so a
+    # companion unload lands on a profile that still has the reserve. With `max` first the restore
+    # took the whole card and every companion request then failed with 500.
     textProfiles = [
-      "max"
-      "omni-max"
       "omni-fast"
+      "omni-max"
+      "max"
     ];
     # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier
     # first (drain, then stop, then load) and selecting a text profile stops the editor.
