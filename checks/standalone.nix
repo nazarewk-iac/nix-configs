@@ -265,6 +265,7 @@ let
   #   aspect would have to reach back into that tree.
   allowedEnables = [
     "llm/nixos: kdn.llm.local.compatProxy.enable"
+    "llm/nixos: kdn.llm.local.swap.admit.enable"
     "llm/nixos: kdn.llm.local.swap.enable"
     "security-secrets-age/darwin: kdn.security.secrets.age.tpm.enable"
     "security-secrets-age/homeManager: kdn.security.secrets.age.tpm.enable"
