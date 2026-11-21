@@ -9,8 +9,11 @@ A capture that is black throughout is *not* an error: it is a broken or empty ta
 leaves the file whole and writes a `<out>.broken.json` marker so the caller can tag it instead of
 guessing from a zero-length output.
 
+The span it chose is what the archive report calls "content", so `--info` writes it beside the cut
+as JSON: the span, the black spans it was derived from, and whether the tape was broken.
+
 Usage: cut.py --src IN --probe probe.json --out OUT --ffmpeg ffmpeg [--threshold 0.10] [--min 0.6]
-               [--marker PATH]
+               [--marker PATH] [--info PATH]
 """
 
 from __future__ import annotations
@@ -109,6 +112,7 @@ def main() -> int:
     ap.add_argument(
         "--marker", help="broken-tape marker path (default: OUT.broken.json)"
     )
+    ap.add_argument("--info", help="write the chosen span and the black spans as JSON")
     args = ap.parse_args()
 
     total = duration(args.probe)
@@ -167,7 +171,31 @@ def main() -> int:
             args.out,
         ]
     result = subprocess.run(cmd)
-    return result.returncode
+    if result.returncode != 0 or not args.info:
+        return result.returncode
+
+    # Only a cut that ffmpeg accepted gets a description; a half-written file must not look
+    # measured. The black spans are the ones measured on the source, which is what the cut removed.
+    info = {
+        "source": args.src,
+        "duration": round(total, 3),
+        "begin": None,
+        "end": None,
+        "seconds": round(total, 3),
+        "broken": span is None,
+        "black_spans": [
+            {"start": round(s, 3), "end": round(e, 3), "seconds": round(e - s, 3)}
+            for s, e in spans
+        ],
+    }
+    if span is not None:
+        info["begin"] = round(span[0], 3)
+        info["end"] = round(span[1], 3)
+        info["seconds"] = round(span[1] - span[0], 3)
+    with open(args.info, "w") as fh:
+        json.dump(info, fh, indent=2)
+        fh.write("\n")
+    return 0
 
 
 if __name__ == "__main__":

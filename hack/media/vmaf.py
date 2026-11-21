@@ -25,20 +25,31 @@ def main() -> int:
     ap.add_argument("--distorted", required=True)
     ap.add_argument("--floor", type=float, default=93.0)
     ap.add_argument("--ffmpeg", default="ffmpeg")
-    ap.add_argument("--sample-seconds", type=float, default=120.0, help="measure at most this much")
+    ap.add_argument(
+        "--sample-seconds", type=float, default=120.0, help="measure at most this much"
+    )
     args = ap.parse_args()
 
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
         log_path = fh.name
 
     cmd = [
-        args.ffmpeg, "-hide_banner", "-nostats",
-        "-t", f"{args.sample_seconds}",
-        "-i", args.distorted,
-        "-t", f"{args.sample_seconds}",
-        "-i", args.reference,
-        "-lavfi", f"[0:v][1:v]libvmaf=log_fmt=json:log_path={log_path}",
-        "-f", "null", "-",
+        args.ffmpeg,
+        "-hide_banner",
+        "-nostats",
+        "-t",
+        f"{args.sample_seconds}",
+        "-i",
+        args.distorted,
+        "-t",
+        f"{args.sample_seconds}",
+        "-i",
+        args.reference,
+        "-lavfi",
+        f"[0:v][1:v]libvmaf=log_fmt=json:log_path={log_path}",
+        "-f",
+        "null",
+        "-",
     ]
     out = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
     if out.returncode != 0:
