@@ -94,6 +94,8 @@ in
     kdnConfig.self.nixosModules.default
     # Containerd + nix-snapshotter and the `workshop-hello` proof container.
     ./containers.nix
+    # Hermes Agent: the workshop's agent container (docs/tasks/2026-11/ai-workshop/).
+    ./hermes.nix
     # LiteLLM gateway (docs/tasks/2026-11/litellm-gateway/). autoStart=false:
     # inert until a brys-side firewall opening lets it reach a backend.
     ./litellm.nix
