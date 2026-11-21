@@ -61,6 +61,24 @@ let
     options = {
       user = strOpt;
       hostKeyAlias = strOpt;
+      names = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Public names (short name and FQDNs) that get a plain `Host` block in the
+          emitted ssh config. That block uses this host's `port` and the same
+          dispatcher as `kdn-<name>`, so `ssh <name>` and every FQDN take the same
+          route. Include the short name in the list.
+        '';
+      };
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 22;
+        description = ''
+          Default port for the plain `Host` block. The `reachedFrom` edges carry the
+          port the dispatcher dials, so set both when the fleet sshd is not on 22.
+        '';
+      };
       reachedFrom = lib.mkOption {
         type = lib.types.listOf edgeType;
         default = [ ];

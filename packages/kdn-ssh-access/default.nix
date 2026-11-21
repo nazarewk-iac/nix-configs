@@ -8,7 +8,7 @@
 }:
 buildGoModule (finalAttrs: {
   pname = "kdn-ssh-access";
-  version = "0.0.1";
+  version = "0.1.0";
 
   src = lib.sourceByRegex ./. [
     ''^go\.(mod|sum)$''

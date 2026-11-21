@@ -87,13 +87,20 @@ The ssh alias is `kdn-<name>`, with optional `+tag` suffixes:
 | `+direct`     | Keep only LAN-origin paths                                                                                                                             |
 | `+remote`     | Keep only internet-origin paths (a WAN entry or a relay chain)                                                                                         |
 | `+via=<host>` | Keep only paths through that relay                                                                                                                     |
+| `+apple`      | Force the final target to port 22. This is the recovery alias for a host whose fleet sshd runs on an alternate port while Apple's daemon keeps 22.      |
 | `+4` / `+6`   | Force an address family. It filters IP literals only — a hostname always passes, because its family is unknown until the hop that dials it resolves it |
 
 ```bash
 ssh kdn-myhost           # let the dispatcher select
 ssh kdn-myhost+direct    # fail rather than go over the internet
 ssh kdn-myhost+via=relay # force a specific relay
+ssh kdn-anji+apple       # the recovery daemon on 22
 ```
+
+A host may also set `names` (the short name and its FQDNs) and `port`. The emitted config then
+contains a plain `Host` block for those names, with the host's port and the same dispatcher as
+`kdn-<name>`, so `ssh <name>` and every FQDN take the same route. The `anji` graph uses this for
+the fleet sshd on 2222 and the `anji+apple` recovery alias on 22.
 
 # Debugging
 

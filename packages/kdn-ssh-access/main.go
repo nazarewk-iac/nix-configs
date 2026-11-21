@@ -76,9 +76,11 @@ type Edge struct {
 }
 
 type Host struct {
-	User         string `json:"user"`
-	HostKeyAlias string `json:"hostKeyAlias"`
-	ReachedFrom  []Edge `json:"reachedFrom"`
+	User         string   `json:"user"`
+	HostKeyAlias string   `json:"hostKeyAlias"`
+	Names        []string `json:"names"`
+	Port         int      `json:"port"`
+	ReachedFrom  []Edge   `json:"reachedFrom"`
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -503,6 +505,9 @@ type spec struct {
 	onlyRemote bool
 	via        string
 	family     string
+	// apple forces the final target to port 22. It is the recovery tag for a host
+	// that serves the fleet sshd on an alternate port and keeps Apple's sshd on 22.
+	apple bool
 }
 
 func parseSpec(sshHost string) spec {
@@ -515,6 +520,8 @@ func parseSpec(sshHost string) spec {
 			s.onlyDirect = true
 		case t == "remote":
 			s.onlyRemote = true
+		case t == "apple":
+			s.apple = true
 		case t == "4" || t == "6":
 			s.family = t
 		case strings.HasPrefix(t, "via="):
@@ -603,12 +610,13 @@ func tryPath(cfg *Config, self string, p []step, s spec) bool {
 	for _, addr := range addrs {
 		if len(p) == 1 {
 			// direct: the reachability dial IS the connection we pipe (no throwaway probe).
-			conn := dialCached(cfg, addr, edgePort(origin))
+			port := targetPort(origin, s)
+			conn := dialCached(cfg, addr, port)
 			if conn == nil {
 				continue
 			}
 			recordRoute(fmt.Sprintf("direct %s (%s)",
-				net.JoinHostPort(addr, strconv.Itoa(edgePort(origin))), pathString(p)))
+				net.JoinHostPort(addr, strconv.Itoa(port)), pathString(p)))
 			pipe(conn)
 			return true
 		}
@@ -618,7 +626,7 @@ func tryPath(cfg *Config, self string, p []step, s spec) bool {
 			continue
 		}
 		recordRoute("chain " + pathString(p))
-		if err := runChain(cfg, self, p, addr); err == nil {
+		if err := runChain(cfg, self, p, addr, s); err == nil {
 			return true
 		} else {
 			dbg("chain via %s failed: %v", addr, err)
@@ -634,6 +642,15 @@ func edgePort(e Edge) int {
 	return e.Port
 }
 
+// targetPort is the port the final target listens on. The `+apple` tag forces the
+// recovery daemon on 22; every other tag keeps the edge port.
+func targetPort(e Edge, s spec) int {
+	if s.apple {
+		return 22
+	}
+	return edgePort(e)
+}
+
 // chainPlan holds everything a relay chain needs: the generated ssh config, the `-W` target, and
 // the alias of the last relay. buildChainPlan resolves it without any connection, so the debug
 // mode can show the exact stanzas and target that runChain would use.
@@ -645,7 +662,7 @@ type chainPlan struct {
 
 // buildChainPlan renders a Host stanza per relay (ProxyJump-linked). r1Addr is the locally-resolved
 // address of the first relay; every later relay's address is a literal resolved on its predecessor.
-func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
+func buildChainPlan(cfg *Config, p []step, r1Addr string, s spec) (chainPlan, error) {
 	// relays are the destinations of all steps except the last; the last step's edge addresses the target.
 	relays := p[:len(p)-1]
 	last := p[len(p)-1]
@@ -692,7 +709,7 @@ func buildChainPlan(cfg *Config, p []step, r1Addr string) (chainPlan, error) {
 	}
 	return chainPlan{
 		sshConfig: b.String(),
-		target:    net.JoinHostPort(targetAddr, strconv.Itoa(edgePort(last.edge))),
+		target:    net.JoinHostPort(targetAddr, strconv.Itoa(targetPort(last.edge, s))),
 		lastAlias: aliases[len(relays)-1],
 	}, nil
 }
@@ -714,8 +731,8 @@ func userConfigInclude() string {
 
 // runChain writes the plan's ssh config to a per-invocation file and runs
 // `ssh -F cfg -W <target>:<port> <lastRelay>` as a child.
-func runChain(cfg *Config, self string, p []step, r1Addr string) error {
-	plan, err := buildChainPlan(cfg, p, r1Addr)
+func runChain(cfg *Config, self string, p []step, r1Addr string, s spec) error {
+	plan, err := buildChainPlan(cfg, p, r1Addr, s)
 	if err != nil {
 		return err
 	}
@@ -800,6 +817,55 @@ func emitSSHConfig(cfg *Config, self, cfgPath string) string {
 			fmt.Fprintf(&b, "    HostKeyAlias %s\n", h.HostKeyAlias)
 		}
 		b.WriteString("\n")
+	}
+	// A host that names its public names gets a plain Host block too, so `ssh <name>`
+	// and every FQDN use the same dispatcher and the same default port. The `+apple`
+	// block is the recovery path for a host that serves the fleet sshd on an alternate
+	// port and keeps Apple's daemon on 22.
+	for _, n := range names {
+		h := cfg.Hosts[n]
+		if len(h.Names) == 0 {
+			continue
+		}
+		port := h.Port
+		if port == 0 {
+			port = 22
+		}
+		user := h.User
+		if user == "" {
+			user = cfg.Defaults.User
+		}
+		fmt.Fprintf(&b, "Host %s\n", strings.Join(h.Names, " "))
+		fmt.Fprintf(&b, "    HostName %s\n", n)
+		fmt.Fprintf(&b, "    Port %d\n", port)
+		if user != "" {
+			fmt.Fprintf(&b, "    User %s\n", user)
+		}
+		if h.HostKeyAlias != "" {
+			fmt.Fprintf(&b, "    HostKeyAlias %s\n", h.HostKeyAlias)
+		}
+		b.WriteString("    IdentityAgent SSH_AUTH_SOCK\n")
+		if cfg.Defaults.IdentityFile != "" {
+			fmt.Fprintf(&b, "    IdentityFile %s\n", cfg.Defaults.IdentityFile)
+		}
+		fmt.Fprintf(&b, "    ProxyCommand %s proxy --config %s %s %%p\n\n", self, cfgPath, n)
+		if port == 22 {
+			continue
+		}
+		fmt.Fprintf(&b, "Host %s+apple\n", n)
+		fmt.Fprintf(&b, "    HostName %s\n", n)
+		b.WriteString("    Port 22\n")
+		if user != "" {
+			fmt.Fprintf(&b, "    User %s\n", user)
+		}
+		if h.HostKeyAlias != "" {
+			fmt.Fprintf(&b, "    HostKeyAlias %s\n", h.HostKeyAlias)
+		}
+		b.WriteString("    IdentityAgent SSH_AUTH_SOCK\n")
+		if cfg.Defaults.IdentityFile != "" {
+			fmt.Fprintf(&b, "    IdentityFile %s\n", cfg.Defaults.IdentityFile)
+		}
+		fmt.Fprintf(&b, "    ProxyCommand %s proxy --config %s %s+apple %%p\n\n", self, cfgPath, n)
 	}
 	b.WriteString("Host kdn-*\n")
 	b.WriteString("    IdentityAgent SSH_AUTH_SOCK\n")
@@ -1219,7 +1285,7 @@ func debugHost(cfg *Config, arg string, r *report, timeout time.Duration, probe 
 				continue
 			}
 			if len(p) > 1 {
-				plan, perr := buildChainPlan(cfg, p, addr)
+				plan, perr := buildChainPlan(cfg, p, addr, s)
 				if perr != nil {
 					r.fail("%-9s path %d relay address: %v", s.host, i+1, perr)
 					continue
