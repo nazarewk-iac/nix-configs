@@ -235,6 +235,29 @@ The answer decides the policy: if builds measurably degrade generation, the
 model-load probe is mandatory and a build may need to preempt by
 force-unloading the frontier, or wait.
 
+## Confirmed 2026-11-21 — the darwin pool works out of the box
+
+A plain `nix build .#darwinConfigurations.anji.system` on `oams` scheduled every
+`aarch64-darwin` derivation on `ssh-ng://kdn-nix-remote-build@buildfarm-darwin` and copied
+the output back. No `--builders`, `--store` or `--max-jobs` flag was needed. The
+`build-farm` systemd-nspawn container on `etra` is active; the `buildfarm-darwin` pool
+needs no config change.
+
+The one prerequisite was local: the evaluation source
+`/nix/store/rvm8i3q64h6dalxkfjlgd14pam8vb6bm-devenv-nixpkgs-patched` had to exist in the
+local store. Without it, evaluation failed before the build hook was consulted. That is a
+local input-availability gap, not a buildfarm fault.
+
+The manual `ssh kdn-nix-remote-build@buildfarm-darwin` still prints
+`Certificate invalid: name is not a listed principal` and `Permission denied`, because the
+key is root-only and the user's agent offers the user's certificate. The Nix daemon (root)
+uses the builder successfully. Use a real `nix build` as the health check, not the manual
+SSH.
+
+Follow-up: make the local evaluation source available automatically — realise the flake
+input before evaluation, or document the one-time copy — so a fresh client does not hit
+the evaluation error.
+
 ## Acceptance
 
 - With `brys` on the LAN, a build goes to it; with the cable out and no NetBird
