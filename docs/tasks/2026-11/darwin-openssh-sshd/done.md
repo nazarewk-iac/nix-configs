@@ -80,10 +80,16 @@ the boot order adds the rule before the job starts.
 - `ssh anji` and its FQDNs use 2222; `anji+apple` uses 22.
 - The PQ certificate negotiates; the strict connection from `oams` passes; the CA verifies the
   host certificate.
-- Boot proof: see below.
+- Boot proof: passed on 2026-11-21; see below.
 
-## Boot proof
+## Boot proof (2026-11-21)
 
-The runtime proof is above. The launchd job uses the same helper and store-mount path as the
-nix-daemon, and Apple's sshd on 22 remains the recovery daemon. The reboot proof is recorded in
-the worklog of the run that performed it.
+- Rebooted `anji`. The pre-boot FileVault SSH on 22 accepted the account password from
+  `pass show hosts/anji/users/kdn/password` at 40 s, which unlocked the disk and continued the
+  boot. The pre-boot client used `-F /dev/null -p 22` with password auth and no host-key check.
+- The fleet sshd on 2222 answered 10 s later. The helper log shows
+  `store volume A8D810B7-5177-4930-890A-10CD1BF7AC96 mounted at /nix` and
+  `nixpkgs-sshd spawned pid 691`.
+- `ssh anji` → `… 192.168.73.85 2222`; `ssh anji+apple` → `… 192.168.73.85 22`.
+- The PQ certificate still negotiates; Remote Login is On; the firewall entry for the nixpkgs
+  `sshd` persists; Apple's sshd is the recovery daemon.
