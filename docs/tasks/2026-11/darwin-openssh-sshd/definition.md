@@ -132,6 +132,20 @@ the buildfarm is unreachable or the local evaluation source is missing. The syst
 on 2026-11-21: generation 105,
 `/nix/store/dazc1g2l2x5dpn40xzlk9cm8riy4jyhz-darwin-system-26.11.ff0e21a`.
 
+## Current state 2026-11-21
+
+- Apple's `sshd` 10.3p1 is still the daemon (`/usr/libexec/sshd-keygen-wrapper`); Remote Login
+  is On.
+- `sshd -T` lists the ed25519 and `mldsa44-ed25519` host keys and certificates, but the daemon
+  logs `Unable to load host key ... unknown or unsupported key type` for the PQ key.
+- The PQ certificate is valid to 2027-02-10; the ed25519 certificate to 2027-01-13.
+- `ssh -o HostKeyAlgorithms=ssh-mldsa44-ed25519-cert anji true` fails with
+  `no matching host key type found`; the server offers ed25519 only.
+- The port-22 replacement is still blocked by the FileVault pre-boot SSH unlock.
+- Decision pending: nixpkgs sshd on an alternate port (approach 1) or Apple-only (approach 3).
+  Approach 1 is the only one that gives `anji` the PQ identity without losing the pre-boot
+  unlock.
+
 ## Out of scope
 
 - Replacing sshd on any other darwin host (there is none).
