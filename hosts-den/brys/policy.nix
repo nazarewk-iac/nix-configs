@@ -11,6 +11,10 @@
 #
 # The numbers come from docs/tasks/2026-11/image-video-editing-models/measurements.md and the
 # brys sweep; `measured` is the date they were taken, so a stale table is visible.
+#
+# The decode floor guards a future profile, not a retired name: `profile-met` already refuses a
+# companion beside a whole-card profile, so `minDecodeTps` is kept for a profile that admits both,
+# and the `max` key it was measured under is not kept "just in case".
 { lib }:
 let
   # The one source of the frontier's serving data, and the projection that quotes it.
@@ -116,8 +120,10 @@ in
   # on the model in `data/llm.nix`.
   coloProfiles = strata.coloProfiles;
   defaultDeadlineSeconds = 120;
-  # Below this, a model beside the frontier is not worth serving: the measured companion beside the
-  # whole-card profile ran at 6.1 t/s.
+  # Below this, a model beside the frontier is not worth serving: the companion measured 6.1 t/s
+  # beside a whole-card profile that left it about 1 GiB of VRAM, against 98.8 t/s inside the
+  # reserve. That pairing is refused by the profile gate, so no measurement keyed by a whole-card
+  # profile name is carried (see the header).
   minDecodeTps = 20;
 
   tree = sel [
@@ -244,10 +250,11 @@ in
       # already covers. Rounded up to the next MiB.
       ramMiB = 129;
       minResidencySeconds = 60;
-      # Measured: 98.8 t/s beside omni-fast, 6.1 t/s beside max. The floor is what stops the second.
+      # Measured: 98.8 t/s beside omni-fast. Beside a whole-card profile the engine leaves it about
+      # 1 GiB of VRAM and it runs at 6.1 t/s; `profile-met` refuses that pairing, so only the colo
+      # points are keys here.
       decodeWithFrontier = {
         omni-fast = 98.8;
-        max = 6.1;
       };
       measured = "2026-11-21";
       source = "llama-server /proc/<pid>/status: RssAnon+RssShmem (the non-reclaimable part), sampled 10 s after readiness, n_ctx 16384 beside omni-fast, 2026-11-21; vramMiB from hack/measure-footprint.py 2026-11-20; KV from companion.log at n_ctx 16384";
