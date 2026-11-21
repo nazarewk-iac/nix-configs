@@ -4,13 +4,14 @@
 # its own files"), so it must run as the owner of its data tree. It also must not run as a human
 # account: the engine pins tens of GB and holds the GPU.
 #
-# `omni-fast` is the resting profile, measured 2026-11-19 on this host: the frontier reads
-# 88.3 t/s (short context) and 71.6 t/s at 1M with the IQ2_XS pack, the companion answers at
-# 98.8 t/s beside it, and the box keeps **23-27 GiB** of RAM free. Every alternative costs
-# something worse: `max` (UD-IQ4_XS, whole card) is 94.8-100.4 t/s but leaves 2-3 GiB free and a
-# media request then runs the companion at 6.1 t/s on the CPU; `omni-max` keeps the better pack but
-# drops the frontier to 59-62 t/s and still leaves 3-5 GiB. Flip to `max` deliberately for a
-# quality-critical session, with a TTL so the box returns here.
+# `max` is the primary and resting profile, by decision: the whole card, the best pack (UD-IQ4_XS),
+# 94.8-100.4 t/s measured 2026-11-19, and the profile every fallback lands on. It leaves ~1 GiB of
+# VRAM, so a companion cannot load beside it; a companion request is a readable 409 offering
+# `kdn_switch_to: omni-fast`, never a 500.
+#
+# `omni-fast` is the colo profile: the IQ2_XS pack with a 21.5 GiB reserve, 71.6 t/s at 1M, and the
+# companion answers at 98.8 t/s beside it. `omni-max` keeps the better pack and drops the frontier to
+# 59-62 t/s. Flip to a colo profile deliberately, for a session that needs a companion.
 { lib, pkgs, ... }:
 let
   # The KFD shim: ROCm 7.2 aborts `hsa_init` because the RX 550 (gfx803) reports a deprecated
@@ -30,9 +31,10 @@ let
     '';
   };
 
-  # The profile the service starts with, and the profile a timed loan returns to. Change this one
-  # value, or run `hack/brys-frontier.sh up --profile <name> --ttl <duration>` for a one-off.
-  defaultProfile = "omni-fast";
+  # The profile the manual fallback unit starts, and the profile a timed loan returns to. Change this
+  # one value, or run `hack/brys-frontier.sh up --profile <name> --ttl <duration>` for a one-off. It
+  # matches `textProfiles` below: the manager rests on `max`.
+  defaultProfile = "max";
 
   # One parent for everything the LLM stack owns, so a second machine can share it by mounting the
   # same datasets. `models` and `engines` live on usr/data, `sessions` on usr/cache, `home` on
@@ -137,6 +139,35 @@ in
       "omni-max"
       "omni-fast"
     ];
+    # Concurrent engine slots per frontier profile. `strata serve --parallel N` becomes the engine's
+    # `--batch N`, one session per slot, and each session pins its own K/V for the whole
+    # `--max-context` (~15.8 GiB at 1M, measured). The host has 125 GiB and no swap, and the pack's
+    # experts are already locked in RAM, so the wall is RAM and not the card:
+    #
+    #   * 8 slots: Shmem reached 89.7 GB and the load was OOM-killed at 125 GiB used.
+    #   * `max` / `omni-max` (UD-IQ4_XS, 55 GiB pack) at 2 slots: OOM-killed, engine RSS 109.6 GiB.
+    #   * `omni-fast` (IQ2_XS, 35 GiB pack) at 2 slots: loads and serves, `MemAvailable` 7.8 GiB.
+    #
+    # So 8 — the engine's maximum — does not fit this host at 1M context. `omni-fast` carries the
+    # concurrency; the whole-card profiles stay at 1 slot. The price on `omni-fast`: with 7.8 GiB
+    # available, `/admit` refuses the 21 GiB companion on its RAM check, so that profile is either
+    # "concurrent" or "colo", not both, until the companion's `ramMiB` is re-measured as the
+    # non-reclaimable part (its weights are mmap'd, the KV and buffers are not).
+    #
+    # `strata serve` fits the start to the card and lowers `--kv-resident` below the profile's value
+    # when the sessions leave no VRAM room (measured: it answered 4096 for a requested 32768 at 2
+    # slots). That is its own safety net, not a bug.
+    profiles = {
+      max = {
+        parallel = 1;
+      };
+      omni-max = {
+        parallel = 1;
+      };
+      omni-fast = {
+        parallel = 2;
+      };
+    };
     # The editors. Each is an `sd-server` on the engine port, so selecting one stops the frontier
     # first (drain, then stop, then load) and selecting a text profile stops the editor.
     commands = imageModels.profiles;

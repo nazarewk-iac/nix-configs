@@ -35,9 +35,26 @@ while [ $# -gt 0 ]; do
 done
 
 case "$profile" in
-  max)       base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768 ;;
-  omni-max)  base=unsloth-ud-iq4_xs; reserve=21500; kvres=4096 ;;
-  omni-fast) base=iq2_xs;            reserve=21500; kvres=4096 ;;
+  # `parallel` is `strata serve`'s slot count; it reaches the engine as `--batch N` (verified with
+  # `strata serve --plan`: `--parallel 8` appends `--batch 8` to the engine argv). The engine's
+  # maximum is 8, but each slot pins its own K/V for the whole `--max-context` (~15.8 GiB at 1M,
+  # measured on brys 2026-11-21). The host has 125 GiB and no swap, and the pack's experts are
+  # already locked in RAM, so the wall is RAM:
+  #   8 slots  -> Shmem 89.7 GB, OOM-killed at 125 GiB used
+  #   max/omni-max (55 GiB pack) at 2 -> OOM-killed, engine RSS 109.6 GiB
+  #   omni-fast (35 GiB pack) at 2    -> loads and serves, MemAvailable 7.8 GiB
+  # So the concurrency lives on `omni-fast` and the whole-card profiles keep 1 slot. The manager's
+  # profile table (`internal/engine/strata`) and `config.json` carry the same numbers; this script is
+  # the manual `strata-frontier` fallback.
+  #
+  # `kvres` is `--kv-resident`: cells of each QSA layer kept in VRAM, a per-layer streaming window
+  # shared by the slots, not a per-slot allocation. 32768 cells is 8 slots x 4k, which is why the
+  # three frontier profiles now agree on it: the omni profiles ran 4096 (512 cells per slot at 8
+  # slots) and would have streamed almost every token of a slot's context from RAM. `strata serve`
+  # lowers it further when the sessions do not leave room on the card.
+  max)       base=unsloth-ud-iq4_xs; reserve=1024;  kvres=32768; parallel=1 ;;
+  omni-max)  base=unsloth-ud-iq4_xs; reserve=21500; kvres=32768; parallel=1 ;;
+  omni-fast) base=iq2_xs;            reserve=21500; kvres=32768; parallel=2 ;;
   *) echo "strata-serve: unknown profile '$profile'" >&2; exit 2 ;;
 esac
 
@@ -69,4 +86,5 @@ PY
 
 # The Terminal's own launcher, run through nix-ld. The `pkgs.kdn.strata` FHS wrapper cannot be used
 # here: llama-swap's sandbox forbids the user namespace bubblewrap needs.
-exec "${STRATA_BIN:-/var/lib/kdn/llms/models/.bench/bin/strata}" serve --profile "$dst" --host 127.0.0.1 --port "$port"
+exec "${STRATA_BIN:-/var/lib/kdn/llms/models/.bench/bin/strata}" serve --profile "$dst" \
+  --host 127.0.0.1 --port "$port" --parallel "$parallel"

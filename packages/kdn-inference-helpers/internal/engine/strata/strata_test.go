@@ -71,8 +71,8 @@ func TestPatchConfigAppendsAMissingFlag(t *testing.T) {
 	if got := valueOf(args, "--vram-reserve-mib"); got != "21500" {
 		t.Fatalf("reserve = %q, want 21500", got)
 	}
-	if got := valueOf(args, "--kv-resident"); got != "4096" {
-		t.Fatalf("kv-resident = %q, want 4096", got)
+	if got := valueOf(args, "--kv-resident"); got != "32768" {
+		t.Fatalf("kv-resident = %q, want 32768", got)
 	}
 }
 
@@ -168,4 +168,68 @@ func contains(args []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// The frontier profiles ask `strata serve` for 8 slots and a 32768-cell resident window. `serve`
+// turns the first into the engine's `--batch N`, so it has to be on the command line: the profile
+// JSON only carries engine arguments.
+func TestPrepareAsksForEightSlotsOnEveryFrontierProfile(t *testing.T) {
+	dir := t.TempDir()
+	install := filepath.Join(dir, "strata", "install")
+	if err := os.MkdirAll(install, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, base := range []string{"unsloth-ud-iq4_xs", "iq2_xs"} {
+		if err := os.WriteFile(filepath.Join(install, "strata-"+base+".json"),
+			[]byte(baseConfig), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := New("/bin/strata", dir, nil)
+	for _, name := range []string{"max", "omni-fast", "omni-max"} {
+		cmd, err := a.Prepare(name)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got := valueOf(cmd.Args, "--parallel"); got != "8" {
+			t.Fatalf("%s: --parallel = %q, want 8 (argv %v)", name, got, cmd.Args)
+		}
+		body, err := os.ReadFile(filepath.Join(dir, "strata", "profiles", "strata-"+name+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := valueOf(argsOf(t, body), "--kv-resident"); got != "32768" {
+			t.Fatalf("%s: --kv-resident = %q, want 32768 (8 slots x 4k cells)", name, got)
+		}
+	}
+}
+
+// A deployment can retune the slot count, and zero means "leave the engine's default alone".
+func TestTheSlotCountCanBeOverriddenOrLeftAlone(t *testing.T) {
+	dir := t.TempDir()
+	install := filepath.Join(dir, "strata", "install")
+	if err := os.MkdirAll(install, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, base := range []string{"unsloth-ud-iq4_xs", "iq2_xs"} {
+		if err := os.WriteFile(filepath.Join(install, "strata-"+base+".json"), []byte(baseConfig), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	four := 4
+	zero := 0
+	a := New("/bin/strata", dir, map[string]config.ProfileOverride{
+		"omni-fast": {Parallel: &four},
+		"omni-max":  {Parallel: &zero},
+	})
+	if p, _ := a.Profile("omni-fast"); p.Parallel != 4 {
+		t.Fatalf("override not applied: %+v", p)
+	}
+	cmd, err := a.Prepare("omni-max")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valueOf(cmd.Args, "--parallel"); got != "" {
+		t.Fatalf("a zero slot count still passed --parallel %q", got)
+	}
 }

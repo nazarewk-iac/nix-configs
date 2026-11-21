@@ -81,6 +81,8 @@ type GateSpec struct {
 type ProfileOverride struct {
 	ReserveMiB *int `json:"reserveMiB,omitempty"`
 	KVResident *int `json:"kvResident,omitempty"`
+	// Parallel is the concurrent slot count `strata serve` is asked for (engine `--batch N`).
+	Parallel *int `json:"parallel,omitempty"`
 }
 
 // Defaults is brys. Values are measured, not guessed; see docs/tasks/2026-11/brys-r9700-model-fit.

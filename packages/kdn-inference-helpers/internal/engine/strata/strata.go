@@ -12,25 +12,35 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 
 	"kdn-inference-helpers/internal/config"
 	"kdn-inference-helpers/internal/engine"
 )
 
-// Profile is one operating point: a base config, a VRAM reserve and how much K/V stays resident.
+// Profile is one operating point: a base config, a VRAM reserve, how much K/V stays resident, and
+// how many requests may decode at once.
 type Profile struct {
 	Name       string
 	Base       string
 	ReserveMiB int
 	KVResident int
+	// Parallel is the number of concurrent slots `strata serve` is asked for. It reaches the engine
+	// as `--batch N` (verified with `strata serve --plan`), and the engine documents 2..8, so 8 is
+	// the maximum. Zero leaves the engine's own default alone.
+	Parallel int
 }
 
 // defaults is the measured table for brys (docs/tasks/2026-11/brys-r9700-model-fit). A deployment
 // can retune a row through `config.Profiles` without a rebuild.
+//
+// `KVResident` is 32768 cells of each QSA layer for every frontier profile: it is a per-layer
+// streaming window shared by the slots, not a per-slot allocation, so 32768 is what 8 slots x 4k
+// needs. The omni profiles used to run 4096, which at 8 slots is 512 cells per slot.
 var defaults = []Profile{
-	{Name: "max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768},
-	{Name: "omni-fast", Base: "iq2_xs", ReserveMiB: 21500, KVResident: 4096},
-	{Name: "omni-max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 21500, KVResident: 4096},
+	{Name: "max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 1024, KVResident: 32768, Parallel: 8},
+	{Name: "omni-fast", Base: "iq2_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
+	{Name: "omni-max", Base: "unsloth-ud-iq4_xs", ReserveMiB: 21500, KVResident: 32768, Parallel: 8},
 }
 
 // Adapter serves Strata profiles.
@@ -51,6 +61,9 @@ func New(bin, dataDir string, overrides map[string]config.ProfileOverride) *Adap
 			}
 			if o.KVResident != nil {
 				p.KVResident = *o.KVResident
+			}
+			if o.Parallel != nil {
+				p.Parallel = *o.Parallel
 			}
 		}
 		a.profiles[p.Name] = p
@@ -85,9 +98,14 @@ func (a *Adapter) Prepare(profile string) (engine.Command, error) {
 	if err != nil {
 		return engine.Command{}, err
 	}
+	args := []string{"serve", "--profile", cfgPath, "--host", "127.0.0.1"}
+	if p.Parallel > 0 {
+		// `strata serve` turns this into the engine's `--batch N`, one session per slot.
+		args = append(args, "--parallel", strconv.Itoa(p.Parallel))
+	}
 	return engine.Command{
 		Path:     a.Bin,
-		Args:     []string{"serve", "--profile", cfgPath, "--host", "127.0.0.1"},
+		Args:     args,
 		PortFlag: "--port",
 	}, nil
 }
