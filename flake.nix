@@ -15,6 +15,11 @@
   # Every `*-upstream` input is an anchor for `.flake.patches/update.py`. No output reads one, and
   # `.#sources` drops them. They cost an adopter one extra fetch each.
 
+  # nix-snapshotter: containerd snapshots whose layers are Nix store paths. The nixpkgs passthru
+  # `buildImage` is a partial callPackage that aborts ("globset"), so the image builder comes from
+  # the upstream flake, which is the only place it is complete.
+  inputs.nix-snapshotter.url = "github:pdtpartners/nix-snapshotter";
+  inputs.nix-snapshotter.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
   # * pinned inputs to keep up to date manually

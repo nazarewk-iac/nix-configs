@@ -1,76 +1,140 @@
-# nix-snapshotter: containers whose layers are Nix store paths.
+# Declarative containers on containerd + nix-snapshotter, without a cluster.
 #
-# This is the workshop's target container path. An image is a manifest over store paths that are
-# already on disk, so nothing is pulled, nothing is pushed, and nothing is duplicated — the reason
-# `dockerTools.buildImage` is not used.
+# `nerdctl` talks to containerd directly, so a container is a systemd unit and nothing else — no
+# k3s, no kubelet, no control plane on a host whose job is routing. The image is a nix-snapshotter
+# image: its layers are Nix store paths, so nothing is pulled, pushed or duplicated.
 #
-# It is containerd-only (the upstream author confirms it does not work with docker-ce or podman).
-# The same containerd can later be k3s's runtime, so a container written here becomes a Pod with a
-# changed reference and no changed image.
+# The container definition is data, deliberately shaped like a Pod spec (image, cmd, args, env,
+# volumes, devices, ports, health). When a cluster does appear, the same block renders into a Pod and
+# the runner changes; the definition does not.
 #
-# `nerdctl` is the CLI. The image reference is `nix:0${image}`.
-#
-# STATUS: the containerd side evaluates and the plugin binary is 0.4.0, but **the image builder in
-# nixpkgs does not work**: `pkgs.nix-snapshotter.buildImage` is a `callPackage` that needs arguments
-# from the upstream flake's own scope and aborts with `Function called without required argument
-# "globset"`. Building an image therefore needs the pdtpartners flake as a flake input (or a
-# hand-written manifest), which is the next step. Nothing here is deployed yet.
-{ pkgs, lib, ... }:
+#   kdn.containers.enable = true;
+#   kdn.containers.containers.whisper = {
+#     image = pkgs.nix-snapshotter.buildImage { name = "whisper"; … };
+#     cmd = [ "whisper-server" "--port" "8089" ];
+#     ports = [ "127.0.0.1:8089:8089" ];
+#   };
+{ config, lib, pkgs, ... }:
 let
-  socket = "/run/nix-snapshotter/nix-snapshotter.sock";
+  cfg = config.kdn.containers;
 
-  # The snapshotter reads one TOML file; these are the defaults from its own config package, written
-  # out so the unit has no hidden state.
-  config = pkgs.writeText "nix-snapshotter.toml" ''
-    address = "${socket}"
-    root = "/var/lib/containerd/io.containerd.snapshotter.v1.nix"
-
-    [image_service]
-    enable = true
-    containerd_address = "/run/containerd/containerd.sock"
-  '';
-in
-{
-  virtualisation.containerd = {
-    enable = true;
-    settings = {
-      # containerd has to know the plugin before it will route a snapshot request to it.
-      proxy_plugins.nix = {
-        type = "snapshot";
-        address = socket;
+  containerType = lib.types.submodule {
+    options = {
+      image = lib.mkOption {
+        type = lib.types.package;
+        description = "A nix-snapshotter image (`pkgs.nix-snapshotter.buildImage`).";
+      };
+      cmd = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Overrides the image's command.";
+      };
+      args = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Arguments appended to the command.";
+      };
+      env = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        description = "Environment; renders as `-e`, a ConfigMap later.";
+      };
+      volumes = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        description = "host path -> container path; renders as `-v`, a PVC later.";
+      };
+      devices = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Device nodes to expose, e.g. `/dev/dri` or `/dev/kfd`. Engine containers only.";
+      };
+      ports = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Port mappings, `host:container` or `addr:host:container`.";
+      };
+      extraArgs = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Anything else for `nerdctl run`.";
       };
     };
   };
 
-  systemd.services.nix-snapshotter = {
-    description = "nix-snapshotter - containerd snapshotter that understands Nix store paths";
+  runArgs = name: c: lib.concatStringsSep " " (
+    [ "${pkgs.nerdctl}/bin/nerdctl" "run" "--name" name "--snapshotter" "nix" ]
+    ++ map (p: "-p ${p}") c.ports
+    ++ map (d: "--device ${d}") c.devices
+    ++ lib.mapAttrsToList (k: v: "-e ${k}=${v}") c.env
+    ++ lib.mapAttrsToList (h: v: "-v ${h}:${v}") c.volumes
+    ++ c.extraArgs
+    ++ [ "nix:0${c.image}" ]
+    ++ c.cmd
+    ++ c.args
+  );
+
+  containerUnit = name: c: {
+    description = "container ${name}";
     wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-    # A snapshotter without containerd is useless, and a stale one after a containerd restart is
-    # worse than none: both follow containerd's lifecycle.
-    partOf = [ "containerd.service" ];
-    restartTriggers = [ config ];
-    path = [ pkgs.nix ];
+    after = [ "containerd.service" "nix-snapshotter.service" ];
+    requires = [ "containerd.service" ];
+    path = [ pkgs.nerdctl ];
     serviceConfig = {
-      Type = "notify";
-      ExecStart = "${lib.getExe' pkgs.nix-snapshotter "nix-snapshotter"} --config ${config}";
+      Type = "simple";
       Restart = "always";
-      RestartSec = "2";
-      Delegate = "yes";
-      KillMode = "mixed";
-      StateDirectory = "containerd";
-      RuntimeDirectory = "nix-snapshotter";
-      RuntimeDirectoryPreserve = "yes";
+      RestartSec = "5";
+      ExecStart = runArgs name c;
+      ExecStop = "${pkgs.nerdctl}/bin/nerdctl stop ${name}";
+      ExecStopPost = "${pkgs.nerdctl}/bin/nerdctl rm -f ${name}";
+    };
+  };
+in
+{
+  options.kdn.containers = {
+    enable = lib.mkEnableOption "containerd with nix-snapshotter and declarative containers";
+    containers = lib.mkOption {
+      type = lib.types.attrsOf containerType;
+      default = { };
+      description = "Containers to run, one systemd unit each.";
     };
   };
 
-  environment.systemPackages = [ pkgs.nerdctl ];
-  environment.extraInit = ''
-    if [ -z "$CONTAINERD_ADDRESS" ]; then
-      export CONTAINERD_ADDRESS=/run/containerd/containerd.sock
-    fi
-    if [ -z "$CONTAINERD_SNAPSHOTTER" ]; then
-      export CONTAINERD_SNAPSHOTTER=nix
-    fi
-  '';
+  config = lib.mkIf cfg.enable {
+    virtualisation.containerd = {
+      enable = true;
+      settings.proxy_plugins.nix = {
+        type = "snapshot";
+        address = "/run/nix-snapshotter/nix-snapshotter.sock";
+      };
+    };
+
+    systemd.services = {
+      nix-snapshotter = {
+        description = "nix-snapshotter - containerd snapshotter over Nix store paths";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network.target" ];
+        partOf = [ "containerd.service" ];
+        path = [ pkgs.nix ];
+        serviceConfig = {
+          Type = "notify";
+          ExecStart = "${lib.getExe' pkgs.nix-snapshotter "nix-snapshotter"}";
+          Restart = "always";
+          RestartSec = "2";
+          Delegate = "yes";
+          KillMode = "mixed";
+          StateDirectory = "containerd";
+          RuntimeDirectory = "nix-snapshotter";
+          RuntimeDirectoryPreserve = "yes";
+        };
+      };
+    } // lib.mapAttrs' (name: c: lib.nameValuePair "container-${name}" (containerUnit name c)) cfg.containers;
+
+    environment.systemPackages = [ pkgs.nerdctl ];
+    environment.extraInit = ''
+      : "''${CONTAINERD_ADDRESS:=/run/containerd/containerd.sock}"
+      : "''${CONTAINERD_SNAPSHOTTER:=nix}"
+      export CONTAINERD_ADDRESS CONTAINERD_SNAPSHOTTER
+    '';
+  };
 }
