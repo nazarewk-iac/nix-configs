@@ -184,11 +184,25 @@
         # { from = "drek"; address = "<brys on drek WiFi>"; priority = 50; }
       ];
 
+      # The fleet sshd on anji listens on 2222; Apple's sshd keeps 22 for the
+      # pre-boot FileVault unlock and the `anji+apple` recovery alias. The plain
+      # names get a Host block with this port, and the edges carry the same port
+      # for the dispatcher.
       anji.hostKeyAlias = "anji";
+      anji.port = 2222;
+      anji.names = [
+        "anji"
+        "anji.lan.etra.net.int.kdn.im"
+        "anji.lan.etra.net.int.kdn.im."
+        "anji.priv.nb.net.int.kdn.im"
+        "anji.priv.nb.net.int.kdn.im."
+        "anji.netbird.cloud"
+      ];
       anji.reachedFrom = [
         {
           from = "lan";
           address = "anji.lan.etra.net.int.kdn.im.";
+          port = 2222;
           priority = 10;
         }
         # anji has no static address on any of these nets, so a relay through etra depends on the
@@ -196,7 +210,16 @@
         {
           from = "etra";
           address = "anji.lan.etra.net.int.kdn.im.";
+          port = 2222;
           priority = 40;
+        }
+        # The NetBird name is the reliable relay address: etra runs the mesh and resolves
+        # `*.priv.nb.net.int.kdn.im`. This edge is the recovery path when the LAN zone fails.
+        {
+          from = "etra";
+          address = "anji.priv.nb.net.int.kdn.im.";
+          port = 2222;
+          priority = 43;
         }
         # { from = "drek"; address = "<anji on drek WiFi>"; priority = 50; }
       ];

@@ -73,6 +73,12 @@ let
   helperSwitch = true;
   bootstrapPath = if helperSwitch then helperPath else legacyBootstrapPath;
 
+  # The fleet sshd on anji. Apple's sshd keeps 22 for the FileVault pre-boot unlock
+  # and the `anji+apple` recovery alias; this nixpkgs daemon serves the fleet on 2222
+  # with the post-quantum host identity. The helper wraps it, so the store is mounted
+  # and the TCC grant covers the daemon tree.
+  nixpkgsSshdPort = 2222;
+
   # Daemons whose nix-darwin `command` is re-homed behind the bootstrap. The wrapper's own comment
   # claimes socket activation survives the spawn (launchd resolves `launch_activate_socket` by the
   # calling process's job, and a spawn counts as the job). That is FALSE for this grandchild
@@ -91,6 +97,7 @@ let
     "nix-optimise"
     "anji-ext-unlock"
     "kdn-rosetta-farm-forward"
+    "nixpkgs-sshd"
   ];
 
   bootstrapStoreJson = builtins.toJSON {
@@ -617,6 +624,11 @@ in
           "$alf" --unblockapp '${pkgs.socat}/bin/socat' >/dev/null 2>&1 || true
           echo "anji: allowed socat through the application firewall (farm forward on 31123)" >&2
         fi
+        if ! "$alf" --listapps 2>/dev/null | grep -Fq -- '${pkgs.openssh}/bin/sshd'; then
+          "$alf" --add '${pkgs.openssh}/bin/sshd' >/dev/null 2>&1 || true
+          "$alf" --unblockapp '${pkgs.openssh}/bin/sshd' >/dev/null 2>&1 || true
+          echo "anji: allowed nixpkgs sshd through the application firewall (fleet sshd on 2222)" >&2
+        fi
       '';
     }
     (lib.optionalAttrs storeOnExternal {
@@ -652,7 +664,46 @@ in
               ];
             };
           };
+          # The fleet sshd on 2222. The map above also names this job; this entry replaces that
+          # value with the payload and the full service config. Apple's sshd keeps 22 and Remote
+          # Login, so the FileVault pre-boot unlock and the `anji+apple` recovery alias are
+          # untouched.
+          nixpkgs-sshd = {
+            command = "${pkgs.openssh}/bin/sshd -D -f /etc/ssh/sshd_nixpkgs_config";
+            serviceConfig = {
+              ProgramArguments = lib.mkForce [
+                bootstrapPath
+                "run"
+                "nixpkgs-sshd"
+              ];
+              RunAtLoad = true;
+              KeepAlive = true;
+              StandardOutPath = "/var/log/nixpkgs-sshd.log";
+              StandardErrorPath = "/var/log/nixpkgs-sshd.log";
+            };
+          };
         };
+
+      # The main config names only the fragments nixpkgs sshd can read. `100-macos.conf` carries
+      # `UsePAM yes`, and the Darwin build of nixpkgs OpenSSH has no PAM support; including the
+      # whole directory makes the daemon log `Unsupported option UsePAM` and refuse to serve.
+      # The explicit list keeps the fleet host keys/certs, the CA trust and the
+      # AuthorizedKeysCommand. nixpkgs OpenSSH 10.6 loads the PQ key that Apple's 10.3 cannot.
+      environment.etc."ssh/sshd_nixpkgs_config".text = ''
+        Port ${toString nixpkgsSshdPort}
+        ListenAddress 0.0.0.0
+        ListenAddress ::
+        PidFile /var/run/sshd_nixpkgs.pid
+        LogLevel INFO
+        PasswordAuthentication no
+        KbdInteractiveAuthentication no
+        PermitRootLogin no
+        Subsystem sftp ${pkgs.openssh}/libexec/sftp-server
+        Include /etc/ssh/sshd_config.d/050-kdn-authorized-keys-command.conf
+        Include /etc/ssh/sshd_config.d/099-host-keys.conf
+        Include /etc/ssh/sshd_config.d/100-nix-darwin.conf
+        Include /etc/ssh/sshd_config.d/101-authorized-keys.conf
+      '';
 
       # Real files at the fixed config dir, plus the binary at its TCC-granted path — installed
       # ONCE and never replaced in place. `mkAfter` so the volumes are unlocked first, and
