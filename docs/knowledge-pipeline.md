@@ -90,6 +90,11 @@ llama-swap metrics ring traps, the VHS never-upscale rule. Repetition does exist
 single source" pair each became one concept — but most items are genuinely new, so the proposal cap
 (`--max-concepts`, default 60) is the review lever, not the merge threshold.
 
+**27 of those 73 sessions produced an empty list**, and that is a success: a short session that
+fixed a typo carries nothing that will still be true next month, and the prompt asks for `[]` in
+that case. `status` counts extracted sessions; `dream` counts the ones with at least one item, so
+the two numbers differ by exactly that many.
+
 Nothing switches, nothing unloads, and no second model competes for the card, because every call
 goes to the frontier that is already loaded on the resting profile.
 
