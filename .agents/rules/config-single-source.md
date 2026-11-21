@@ -1,70 +1,76 @@
 ---
 type: Rule
-description: A profile knob has one home — hosts-den/brys/strata-profiles.nix — and every consumer derives from the generated config.json; a guard test proves the agreement.
-timestamp: 2026-11-21T21:00:00+01:00
+description: A frontier serving knob has exactly one home — the model itself in data/llm.nix (hosts.<host>.serving) — and every consumer is a Nix expression over it; there is no second copy, so there is no guard check.
+timestamp: 2026-11-21T22:40:00+01:00
 ---
 
-# One knob, one file
+# One knob, one file — and nothing to validate
 
-A **profile knob** is a number that says how one operating point of the Strata engine serves: its
-context window, its slot count, its VRAM reserve and its resident K/V. Every knob has exactly one
-home: `hosts-den/brys/strata-profiles.nix`.
+A **frontier serving knob** is a number that says how one operating point of the Strata engine
+serves: its base pack, its context window, its slot count, its VRAM reserve, its resident K/V, its
+park pool, its n-gram backing store, and the measured facts the placement policy quotes.
 
 ## The rule
 
-1. **One knob, one file.** The `profiles` table in `hosts-den/brys/strata-profiles.nix` is the only
-   place a profile's `maxContext`, `parallel`, `reserveMiB` and `kvResident` are written. Add a
-   profile by adding a row there — not by adding a default anywhere else.
-2. **Every consumer derives.** The deployment file is generated from that table
-   (`/etc/kdn-inference-helpers/config.json`), and a consumer reads it:
-   - the manager reads it through `config.ProfileSpec` and serves it;
-   - `strata-serve.sh` reads it with `jq` and **fails loudly** when a key is missing — no literal
-     fallback, no default;
-   - `status --long` renders the same values.
-     A consumer may derive a value that is a function of a knob (the yarn factor is the window over
-     the model's native window), but it may not hold a second copy of the knob.
-3. **A guard test proves the agreement.** `checks/inference-helpers/profiles.nix` imports the
-   deployment file, reads the generated `config.json`, and runs `strata-serve.sh <profile> --print`
-   to get the argv it would really build. It asserts that the window, the slot count, the reserve
-   and the resident K/V agree for every profile in `textProfiles`, that every such profile has a
-   policy row with measured facts, and that every alias resolves to something servable. It also
-   fails on the two shapes the drift took before: a context literal in `strata-serve.sh` and a
-   built-in profile table in `strata.go`.
-   A failure names the profile and both values.
+1. **One home: the model.** Every knob is written on the model that serves it, in
+   `data/llm.nix`, under `hosts.<host>.serving`. Add an operating point by adding one model entry
+   with its `serving` block — never by adding a default, a table or a fallback anywhere else. The
+   entry's key is the llama-swap name; its `serving.profile` is the operating point that name
+   forces; `serving.rank` orders `textProfiles` (rank 0 rests); `serving.colo = true` marks a point
+   that keeps a reserve for a companion.
+2. **Every consumer is a derivation.** `lib/llm.nix` `strata data "<host>"` is the only reader, and
+   it yields, from that one block:
+   - the manager's `config.json` — `profiles`, `textProfiles`, `aliases`, `frontierIDs`
+     (`hosts-den/brys/strata-profiles.nix`);
+   - the llama-swap `cmd` of the entry — `strata-select <profile> --alias <entry> --port ${PORT}`
+     (`modules/den/aspects/llm.nix`, `strataProfile`);
+   - the placement policy's frontier rows — `vramMiB`, `kvReserveMiB`, `ramMiB`, `loadSeconds`,
+     `switchSeconds` — and `coloProfiles` (`hosts-den/brys/policy.nix`);
+   - the engine argv, because `strata-serve.sh` reads the generated `config.json` with `jq` and
+     **fails loudly** when a key is missing — no literal fallback, no default;
+   - the yarn factor (`ropeScale` = served window / `servers.<host>.frontier.nativeContext`), so no
+     entry writes a rope value of its own.
+3. **There is no guard check, because there is no second copy.** A validation test exists to catch
+   two copies drifting apart. Here the numbers have one home and every consumer is an expression
+   over it, so `checks/inference-helpers/profiles.nix` was deleted on 2026-11-21: it asserted that
+   a file agreed with itself. If a consumer ever needs a value that is a _function_ of a knob, write
+   the function — not a copy.
 
-Run the guard alone:
-
-```bash
-nix build --no-eval-cache -L '.#checks.x86_64-linux.inference-helpers-profiles'
-```
-
-It is a member of `bundle-pkgs`.
+Behaviour that must stay identical is proven by the artifacts, not by a check: `config.json` and
+`policy.json` diff clean against the previous deployment, `strata-serve <profile> --print` prints
+the same argv, and `status --long` shows the same facts.
 
 ## Why
 
 The rule exists because the drift was real, not hypothetical. On 2026-11-21 the slot count lived in
 **three** places at once:
 
-- `hosts-den/brys/strata-profiles.nix` → the generated `config.json` (`max-multi = 5`),
+- the deployment file → the generated `config.json` (`max-multi = 5`),
 - `hosts-den/brys/strata-serve.sh` → a hardcoded `parallel=6` in its own `case` table,
 - `packages/kdn-inference-helpers/internal/engine/strata/strata.go` → a built-in table with
   `Parallel: 6`.
 
 Two consequences followed. The manual fallback served six slots while the manager served five, and
-the manager served the two omni profiles with **8** slots while the Nix file said 1 and 2 — the
+the manager served the two omni profiles with **8** slots while the file said 1 and 2 — the
 measured colo shape was not the shape the manager ran. A second copy of a number is not a
 convenience; it is a future disagreement with no owner.
 
-## Adding a profile
+The 2026-11-21 follow-up moved the remaining copies into `data/llm.nix`: the `config.json` tables,
+the `strata-select <profile>` strings in each entry, and the policy's frontier facts. That is what
+made the guard check unnecessary rather than merely satisfied.
 
-1. Add one row to `profiles` in `hosts-den/brys/strata-profiles.nix` (the helper derives the yarn
-   factor; `conversationCacheMiB = null` means "keep the base config's value").
-2. Add it to `textProfiles` (if it serves chat) and add its alias and `frontierIDs` entry.
-3. Add its measured facts to `hosts-den/brys/policy.nix` with `profile = "<name>"`, so
-   `status --long` shows numbers; the guard fails when a frontier profile has no such row.
-4. Run the guard, then deploy, then restart `strata-manager` (it caches `config.json`) and
-   `ctl down && ctl up`.
+## Adding an operating point
 
-`hosts-den/brys/policy.nix` holds **measured facts** (VRAM footprint, K/V reserve, load and switch
-seconds), not knobs; it is a second file by design, and the guard checks that the two agree on the
-profile set.
+1. Add one model entry to `data/llm.nix` under the frontier section: its identity (`capabilities`,
+   `gpu`, `contextSize`), its `hosts.brys.serving` block (profile name, `rank`, pack, window, slots,
+   reserve, resident K/V, park pool, `pleIO`, measured facts), and its `hosts.brys.common` (file,
+   download off). For a second name for a point that exists, add a llama-swap alias to the existing
+   entry instead of a new entry — one point, one `serving` block.
+2. Deploy. `config.json` gains the profile, `textProfiles` gains it at its `rank`, `aliases` and
+   `frontierIDs` gain its names, the llama-swap entry is generated, `status --long` shows its facts
+   and the policy sees its row.
+3. Restart `strata-manager` (it caches `config.json`) and `ctl down && ctl up`.
+
+`hosts-den/brys/policy.nix` keeps the behaviour tree, the card budget, the companions, the small
+models and the image profiles. It holds no frontier knob and no frontier measured fact: those are
+on the model, next to the window and the reserve that produced them.
