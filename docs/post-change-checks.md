@@ -104,7 +104,9 @@ Builds are the expensive step: prefer a warm store, and do not build a host the 
 reach.
 
 Activate only the hosts the change reaches, in the order the owner names. With no order given, use
-`moss`, `brys`, `etra`, `oams`, then `briv`, then `anji`.
+`moss`, `brys`, `etra`, `oams`, then `briv`, then `anji`. `anji` is the exception: an agent may
+build and activate it without owner approval. The darwin buildfarm is the normal build route; a
+manual build on the Mac is a recovery step.
 
 ```sh
 sudo nixos-rebuild switch --flake .#<host> --option builders ""

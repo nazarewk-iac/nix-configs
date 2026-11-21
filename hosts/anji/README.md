@@ -42,7 +42,8 @@ and reset GPIO pulses do nothing, so a power-cycle is a physical action.
 
 ## Build and activate
 
-The normal route is from `oams`:
+No owner approval is required to build or activate `anji`; an agent may do both. The normal route
+is from `oams`:
 
 ```bash
 nix build .#darwinConfigurations.anji.system

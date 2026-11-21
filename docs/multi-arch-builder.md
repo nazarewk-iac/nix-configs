@@ -127,8 +127,8 @@ volume" and "Nix's bash needs Full Disk Access".
 ### The three switches
 
 Set the three flags in `hosts/anji/default.nix`, then run the switch. `darwin-rebuild switch` is a
-host-level action that the owner approves. The normal build is through the darwin buildfarm; a
-manual build on `anji` is a fallback/recovery step only. See
+host-level action that an agent may run without owner approval. The normal build is through the
+darwin buildfarm; a manual build on `anji` is a fallback/recovery step only. See
 [hosts/anji/README.md](../hosts/anji/README.md), "Build and activate".
 
 ```bash
