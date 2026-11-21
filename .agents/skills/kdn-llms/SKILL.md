@@ -58,22 +58,22 @@ Full design:
 Pick the alias by intent, not by model. Current assignments, read from the deployed
 llama-swap config on 2026-11-21:
 
-| alias                                   | use it for                    | live model                    | ctx   | speed |
-| --------------------------------------- | ----------------------------- | ----------------------------- | ----- | ----- |
-| `chat-std-fast`                         | normal chat/assistant         | lfm2.5-24b-a2b                | 32768 | 23    |
-| `tools-std-fast`                        | agent tools, RAG, terminal    | lfm2.5-24b-a2b                | 32768 | 23    |
-| `chat-std-mid`                          | normal chat, more quality     | qwen3.5-35b-a3b               | 262144| 23    |
-| `chat-std-mid-long`                     | long-context chat             | nemotron-3-nano-30b-a3b       | 32768 | 12    |
-| `reason-std-fast`                       | reasoning, long context       | nemotron-3-nano-30b-a3b       | 32768 | 12    |
-| `reason-quick-fast`                     | cheap step-by-step            | mellum-2.1-12b-a2.5b-thinking | 32768 | 14.8  |
-| `reason-quick-fast-alt`                 | the same, smaller              | ministral-3-3b-reasoning      | 16384 | —     |
-| `code-std-fast-alt`                     | code, non-thinking            | mellum-2.1-12b-a2.5b-thinking | 32768 | 14.8  |
-| `vision-std-fast`                       | images, general               | qwen3-vl-30b-a3b              | 32768 | 15.7  |
-| `vision-std-fast-moe`                   | the same model, own name      | qwen3-vl-30b-a3b              | 32768 | 15.7  |
-| `vision-std-fast-alt`                   | images, dense text            | ornith-1.5-35b-a3b            | 32768 | 8.8   |
-| `vision-deep-slow`                      | hard image tasks              | ornith-1.5-35b-a3b            | 32768 | 8.8   |
-| `embed-std-fast`                        | embeddings (RAG)              | qwen3-embedding-4b            | 8192  | —     |
-| `rank-std-fast`                         | reranking (RAG)               | qwen3-reranker-4b             | 8192  | —     |
+| alias                   | use it for                 | live model                    | ctx    | speed |
+| ----------------------- | -------------------------- | ----------------------------- | ------ | ----- |
+| `chat-std-fast`         | normal chat/assistant      | lfm2.5-24b-a2b                | 32768  | 23    |
+| `tools-std-fast`        | agent tools, RAG, terminal | lfm2.5-24b-a2b                | 32768  | 23    |
+| `chat-std-mid`          | normal chat, more quality  | qwen3.5-35b-a3b               | 262144 | 23    |
+| `chat-std-mid-long`     | long-context chat          | nemotron-3-nano-30b-a3b       | 32768  | 12    |
+| `reason-std-fast`       | reasoning, long context    | nemotron-3-nano-30b-a3b       | 32768  | 12    |
+| `reason-quick-fast`     | cheap step-by-step         | mellum-2.1-12b-a2.5b-thinking | 32768  | 14.8  |
+| `reason-quick-fast-alt` | the same, smaller          | ministral-3-3b-reasoning      | 16384  | —     |
+| `code-std-fast-alt`     | code, non-thinking         | mellum-2.1-12b-a2.5b-thinking | 32768  | 14.8  |
+| `vision-std-fast`       | images, general            | qwen3-vl-30b-a3b              | 32768  | 15.7  |
+| `vision-std-fast-moe`   | the same model, own name   | qwen3-vl-30b-a3b              | 32768  | 15.7  |
+| `vision-std-fast-alt`   | images, dense text         | ornith-1.5-35b-a3b            | 32768  | 8.8   |
+| `vision-deep-slow`      | hard image tasks           | ornith-1.5-35b-a3b            | 32768  | 8.8   |
+| `embed-std-fast`        | embeddings (RAG)           | qwen3-embedding-4b            | 8192   | —     |
+| `rank-std-fast`         | reranking (RAG)            | qwen3-reranker-4b             | 8192   | —     |
 
 Everything else is reachable by its base id and has no alias: `gemma-4-e4b`,
 `qwen2.5-vl-7b`, `qwen3-omni`, `longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`, and the
@@ -117,23 +117,23 @@ id. Speeds are measured decode tok/s on brys.
   and the nine frontier names. Three image editors are served but kept out of that list. The GGUF
   list is the truth; this is the shape of it.
 
-| model                         | ctx    | role                                             |
-| ----------------------------- | ------ | ------------------------------------------------ |
-| `qwen3.5-35b-a3b`             | 262144 | biggest local chat model, MoE, 23 t/s            |
-| `lfm2.5-24b-a2b`              | 32768  | chat and tools workhorse, 23 t/s                 |
-| `nemotron-3-nano-30b-a3b`     | 32768  | reasoning and long chat, 12 t/s                  |
-| `mellum-2.1-12b-a2.5b-thinking` | 32768 | cheap reasoning and code, 14.8 t/s               |
-| `ministral-3-3b-reasoning`    | 16384  | smallest reasoning model                         |
-| `gemma-4-e4b`                 | 32768  | small general model, no alias                    |
-| `ornith-1.5-35b-a3b`          | 32768  | best at dense terminal text, 8.8 t/s             |
-| `qwen3-vl-30b-a3b`            | 32768  | vision workhorse, 15.7 t/s                       |
-| `qwen2.5-vl-7b`               | 16384  | small vision model                               |
-| `qwen3-omni`                  | 16384  | audio + vision + text companion                  |
-| `qwen3-embedding-4b`          | 8192   | embeddings                                       |
-| `qwen3-reranker-4b`           | 8192   | reranking                                        |
-| `longcat-image-edit`          | 4096   | image edit                                       |
-| `qwen-image-edit`             | 4096   | image edit                                       |
-| `wan-vace-14b`                | 4096   | video edit                                       |
+| model                           | ctx    | role                                  |
+| ------------------------------- | ------ | ------------------------------------- |
+| `qwen3.5-35b-a3b`               | 262144 | biggest local chat model, MoE, 23 t/s |
+| `lfm2.5-24b-a2b`                | 32768  | chat and tools workhorse, 23 t/s      |
+| `nemotron-3-nano-30b-a3b`       | 32768  | reasoning and long chat, 12 t/s       |
+| `mellum-2.1-12b-a2.5b-thinking` | 32768  | cheap reasoning and code, 14.8 t/s    |
+| `ministral-3-3b-reasoning`      | 16384  | smallest reasoning model              |
+| `gemma-4-e4b`                   | 32768  | small general model, no alias         |
+| `ornith-1.5-35b-a3b`            | 32768  | best at dense terminal text, 8.8 t/s  |
+| `qwen3-vl-30b-a3b`              | 32768  | vision workhorse, 15.7 t/s            |
+| `qwen2.5-vl-7b`                 | 16384  | small vision model                    |
+| `qwen3-omni`                    | 16384  | audio + vision + text companion       |
+| `qwen3-embedding-4b`            | 8192   | embeddings                            |
+| `qwen3-reranker-4b`             | 8192   | reranking                             |
+| `longcat-image-edit`            | 4096   | image edit                            |
+| `qwen-image-edit`               | 4096   | image edit                            |
+| `wan-vace-14b`                  | 4096   | video edit                            |
 
 The smaller grunts (`qwen3.5-0.8b/2b/4b`, `granite-4.2-3b/8b`, `tmax-*`, `gemma-4-e2b`, the CPU
 variants) and every dense 27-36B model were retired on 2026-11-21 to free disk and VRAM. Their
@@ -229,17 +229,18 @@ Full recipe: [docs/local-llms.md](../../../docs/local-llms.md#observability-and-
 
 On brys the frontier is **not** a llama.cpp model. One Strata engine serves QFN, and a **profile
 manager** on `:8181` owns it. The profile is a start-up argument, so changing it is a **reload**,
-not a slider. Seven profiles, measured 2026-11-21:
+not a slider. Seven frontier profiles, measured 2026-11-21 (the deployment serves twelve profiles
+in all: these seven, two companions and three image editors):
 
 | profile      | pack      | window × slots | single stream | aggregate | note                    |
 | ------------ | --------- | -------------- | ------------: | --------: | ----------------------- |
-| `max-multi`  | UD-IQ4_XS | 512k × 5       | 54–76 t/s      | 31.9 t/s  | **resting**             |
-| `max-swarm`  | UD-IQ4_XS | 256k × 8       | —              | 36.2 t/s  | most concurrent slots   |
-| `max-long`   | UD-IQ4_XS | 1M × 2         | —              | 29.7 t/s  | two long sessions       |
-| `max-single` | UD-IQ4_XS | 1M × 1         | 61–86 t/s      | —         | one big job, no sharing |
-| `fast-swarm` | IQ2_XS    | 384k × 8       | —              | 61.0 t/s  | lowest quality, fastest |
-| `omni-max`   | UD-IQ4_XS | 1M × 1         | —              | —         | keeps a 21.5 GB reserve |
-| `omni-fast`  | IQ2_XS    | 1M × 2         | —              | —         | keeps the reserve, fast |
+| `max-multi`  | UD-IQ4_XS | 512k × 5       |     54–76 t/s |  31.9 t/s | **resting**             |
+| `max-swarm`  | UD-IQ4_XS | 256k × 8       |             — |  36.2 t/s | most concurrent slots   |
+| `max-long`   | UD-IQ4_XS | 1M × 2         |             — |  29.7 t/s | two long sessions       |
+| `max-single` | UD-IQ4_XS | 1M × 1         |     61–86 t/s |         — | one big job, no sharing |
+| `fast-swarm` | IQ2_XS    | 384k × 8       |             — |  61.0 t/s | lowest quality, fastest |
+| `omni-max`   | UD-IQ4_XS | 1M × 1         |             — |         — | keeps a 21.5 GB reserve |
+| `omni-fast`  | IQ2_XS    | 1M × 2         |             — |         — | keeps the reserve, fast |
 
 The resting profile is **`max-multi`**: it holds 23.9 GiB of K/V, leaves the RAM floor that a build
 needs, and gives five concurrent sessions a fair share. One job does **not** spread over five
@@ -247,17 +248,17 @@ slots; a slot is a concurrent request. A single stream gets the single-stream ra
 
 Every profile is also a llama-swap name. The alias map comes from `data/llm.nix`:
 
-| name             | profile        |
-| ---------------- | -------------- |
-| `qfn`            | current (`auto`, never switches) |
-| `qfn-max-multi`  | `max-multi`    |
-| `qfn-max-swarm`  | `max-swarm`    |
-| `qfn-max`        | `max-long`     |
-| `qfn-max-long`   | `max-long`     |
-| `qfn-max-single` | `max-single`   |
-| `qfn-fast-swarm` | `fast-swarm`   |
-| `qfn-max-colo`   | `omni-max`     |
-| `qfn-fast-colo`  | `omni-fast`    |
+| name             | profile                                    |
+| ---------------- | ------------------------------------------ |
+| `qfn`            | current (`auto`, never switches)           |
+| `qfn-max-multi`  | `max-multi`                                |
+| `qfn-max-swarm`  | `max-swarm`                                |
+| `qfn-max`        | `max-long`                                 |
+| `qfn-max-long`   | `max-long`                                 |
+| `qfn-max-single` | `max-single`                               |
+| `qfn-fast-swarm` | `fast-swarm`                               |
+| `qfn-max-colo`   | `omni-max`                                 |
+| `qfn-fast-colo`  | `omni-fast`                                |
 | `qwen3-omni`     | the companion, no switch, fits the reserve |
 
 **`qfn` is the name to use.** It never switches, and a switch that somebody else starts does not cut
@@ -318,7 +319,9 @@ The manager writes one JSON line per event to `events.jsonl`: `switch` (from, to
 aggregates them (`n`, median, p90, max, per event and per transition), so an agent can quote a
 measured cost instead of a guess. First measurement, 2026-11-19: switch median 42 s, `max →
 omni-fast` 50 s, `omni-fast → max` 69 s, engine load 42-60 s, cache drop 4-5 s, companion load
-90 s. Add a row here when a number drifts.
+90 s. Cumulative to 2026-11-21 (1159 events, 181 switches): switch median 54 s, `max → omni-fast`
+53 s, `omni-fast → max` 76 s, engine load 51 s (p90 87), cache drop 3 s (p90 5), companion load
+165 s (n=5), companion unload 0.6 s. Add a row here when a number drifts.
 
 This skill is a **living document**. Update it as we learn, in the same change
 that changes the fleet. Record:

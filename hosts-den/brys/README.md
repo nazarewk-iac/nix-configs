@@ -135,6 +135,9 @@ The manager appends one JSON line per event to `events.jsonl`:
 transition, so a future switching skill quotes measured costs rather than guesses. First day of
 data (2026-11-19): switch median 42 s, `max → omni-fast` 50 s, `omni-fast → max` 69 s, engine load
 42-60 s, engine stop 3.7 s, cache drop 4.2 s, companion load 90 s, companion unload 0.6 s.
+Cumulative to 2026-11-21 (1159 events, 181 switches): switch median 54 s, `max → omni-fast` 53 s,
+`omni-fast → max` 76 s, engine load 51 s (p90 87), engine stop 4 s, cache drop 3 s (p90 5),
+companion load 165 s (n=5), companion unload 0.6 s.
 
 The `llms` appliance specialisation from the universal tree is **not ported** to the den host
 yet. Only the `desktop` boot profile exists, so the served context sizes are the ones that share

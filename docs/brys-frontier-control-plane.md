@@ -20,7 +20,7 @@ the agent-facing rules in [.agents/skills/kdn-llms/SKILL.md](../.agents/skills/k
 ```
  harness (OpenCode, Pi, curl)
         |
-        |  OpenAI /v1, model = qfn | qfn-max | qfn-fast-colo | qwen3-omni
+        |  OpenAI /v1, model = qfn | qfn-max | qfn-fast-colo | qfn-max-colo | qwen3-omni
         v
  LiteLLM gateway (etra)  .............  optional; the four names are static there
         |
@@ -40,8 +40,8 @@ the agent-facing rules in [.agents/skills/kdn-llms/SKILL.md](../.agents/skills/k
         |
         |  supervises one child
         v
- strata serve :8080  .................  the frontier (QFN) at 1M context     [the only engine]
- qwen3-omni llama.cpp :10013  .........  the companion, inside the VRAM reserve, on demand
+ strata serve :8080  .................  the frontier (QFN), up to 1M context   [the only engine]
+ qwen3-omni llama.cpp :N  ............  the companion, inside the VRAM reserve, on demand
 ```
 
 Nothing above `strata-manager` knows what a profile is. Nothing below llama-swap knows what a
@@ -49,18 +49,18 @@ harness is.
 
 ## The names
 
-| name             | entry command                | what happens                                                     |
-| ---------------- | ---------------------------- | ---------------------------------------------------------------- |
-| `qfn`            | `strata-select auto`         | keeps the current profile; **no reload**                         |
-| `qfn-max-multi`  | `strata-select max-multi`    | 512k × 5, the resting profile                                    |
-| `qfn-max-swarm`  | `strata-select max-swarm`    | 256k × 8                                                         |
-| `qfn-max`        | `strata-select max-long`     | 1M × 2 (UD-IQ4_XS)                                               |
-| `qfn-max-long`   | `strata-select max-long`     | the same profile under its own name                              |
-| `qfn-max-single` | `strata-select max-single`   | 1M × 1, the fastest single stream                                |
-| `qfn-fast-swarm` | `strata-select fast-swarm`   | IQ2_XS, 384k × 8                                                 |
-| `qfn-max-colo`   | `strata-select omni-max`     | UD-IQ4_XS plus the 21.5 GB reserve                               |
-| `qfn-fast-colo`  | `strata-select omni-fast`    | IQ2_XS plus the 21.5 GB reserve                                  |
-| `qwen3-omni`     | plain llama.cpp model        | loads inside the reserve, beside the engine                      |
+| name             | entry command              | what happens                                |
+| ---------------- | -------------------------- | ------------------------------------------- |
+| `qfn`            | `strata-select auto`       | keeps the current profile; **no reload**    |
+| `qfn-max-multi`  | `strata-select max-multi`  | 512k × 5, the resting profile               |
+| `qfn-max-swarm`  | `strata-select max-swarm`  | 256k × 8                                    |
+| `qfn-max`        | `strata-select max-long`   | 1M × 2 (UD-IQ4_XS)                          |
+| `qfn-max-long`   | `strata-select max-long`   | the same profile under its own name         |
+| `qfn-max-single` | `strata-select max-single` | 1M × 1, the fastest single stream           |
+| `qfn-fast-swarm` | `strata-select fast-swarm` | IQ2_XS, 384k × 8                            |
+| `qfn-max-colo`   | `strata-select omni-max`   | UD-IQ4_XS plus the 21.5 GB reserve          |
+| `qfn-fast-colo`  | `strata-select omni-fast`  | IQ2_XS plus the 21.5 GB reserve             |
+| `qwen3-omni`     | plain llama.cpp model      | loads inside the reserve, beside the engine |
 
 The manager accepts the same words as profile names (`qfn` → `auto`, `qfn-max` → `max-long`,
 `qfn-fast-colo` → `omni-fast`), so a person and a harness share one vocabulary; the alias map is
@@ -78,10 +78,13 @@ A switch is deliberately not "kill and start". `select(profile)` runs five steps
    lease. Requests that arrive now are delayed, never refused.
 2. **Wait for the leases that are already out.** `strata-proxy` takes one lease per request before
    it forwards, and releases it when the response has been relayed. The switch waits until every
-   lease is released (300 s ceiling, then it proceeds anyway and journals `drain_timeout`).
+   lease is released (1200 s ceiling, then it proceeds anyway and journals `drain_timeout`; the
+   ceiling was 300 s until a Wan VACE edit measured 1039 s, and a drain shorter than the longest
+   request cuts it).
 3. **Unload the companion.** Only models that are _not_ frontier entries: `qwen3-omni` holds about
-   20 GiB of VRAM and 2 GiB of RAM that the incoming engine wants. The frontier proxies stay
-   loaded — they point at the same port, so they remain valid across the switch.
+   20 GiB of VRAM (19.1 GiB of weights plus a 1.5 GiB K/V reserve) and 129 MiB of RAM that the
+   incoming engine wants. The frontier proxies stay loaded — they point at the same port, so they
+   remain valid across the switch.
 4. **Stop, drop the page cache, start.** The cache drop is a root oneshot (`sync; echo 3 >
 /proc/sys/vm/drop_caches`) reached through one NUL-free sudoers line. A model load is a ~95 GiB
    allocation burst on a 125 GiB host with no swap; without the drop the kernel OOM-kills the
@@ -147,12 +150,12 @@ guess, and that a regression shows up as a drifting median.
 
 ## Code map
 
-| file                                 | role                                                                                                                                                          |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| file                                 | role                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/kdn-inference-helpers/`    | the control plane in Go: `select`, `manager`, `proxy`, `admit`, `status`; `/select`, `/status`, `/stats`, `/events`, `/lease`, `/release`, `/unload`; owns the engine child; journals |
-| `hosts-den/brys/strata-serve.sh`     | materialises a profile config and execs `strata serve` (used by the unit fallback)                                                                            |
-| `hosts-den/brys/strata-profiles.nix` | the account, the units, the sudoers line, the cache-drop oneshot — and the writer of the derived `config.json`, never a profile table                         |
-| `data/llm.nix`                       | the fleet catalogue; each frontier model's `hosts.<host>.serving` block is the one place its profile knobs and measured facts are written                     |
-| `lib/llm.nix`                        | `strata`: the projection that derives the manager's `config.json`, the llama-swap entry command, the policy's fact rows and the engine argv from those blocks |
-| `hack/brys-frontier.sh`              | the human entry point: `up`, `up --profile X --ttl 2h`, `down`, `status`                                                                                      |
-| `hack/probe-drain*.py`               | the proofs: in-flight at the proxy, through the gateway, under a harness                                                                                      |
+| `hosts-den/brys/strata-serve.sh`     | materialises a profile config and execs `strata serve` (used by the unit fallback)                                                                                                    |
+| `hosts-den/brys/strata-profiles.nix` | the account, the units, the sudoers line, the cache-drop oneshot — and the writer of the derived `config.json`, never a profile table                                                 |
+| `data/llm.nix`                       | the fleet catalogue; each frontier model's `hosts.<host>.serving` block is the one place its profile knobs and measured facts are written                                             |
+| `lib/llm.nix`                        | `strata`: the projection that derives the manager's `config.json`, the llama-swap entry command, the policy's fact rows and the engine argv from those blocks                         |
+| `hack/brys-frontier.sh`              | the human entry point: `up`, `up --profile X --ttl 2h`, `down`, `status`                                                                                                              |
+| `hack/probe-drain*.py`               | the proofs: in-flight at the proxy, through the gateway, under a harness                                                                                                              |
