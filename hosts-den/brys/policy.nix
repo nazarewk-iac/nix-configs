@@ -236,32 +236,46 @@ in
     "gemma-4-e4b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 5939;
-      ramMiB = 6451;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 4162;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first. This one is
+      # high for its size (2.9 GiB, against 0.2-0.7 GiB for the dense models): it is a MatFormer
+      # with a separate vision projector, and both are mapped.
+      ramMiB = 2946;
+      loadSeconds = 13;
+      decodeWithFrontier.omni-fast = 81.3;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "granite-4.2-3b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 3164;
-      ramMiB = 3676;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 3382;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 223;
+      loadSeconds = 5;
+      decodeWithFrontier.omni-fast = 114.3;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "granite-4.2-8b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 6124;
-      ramMiB = 6636;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 7581;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 303;
+      loadSeconds = 11;
+      decodeWithFrontier.omni-fast = 72.9;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "lfm2.5-24b-a2b" = {
       kind = "small";
@@ -276,22 +290,30 @@ in
     "mellum-2.1-12b-a2.5b-thinking" = {
       kind = "small";
       tier = "small";
-      vramMiB = 8724;
-      ramMiB = 9236;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 8232;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 220;
+      loadSeconds = 16;
+      decodeWithFrontier.omni-fast = 122.0;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "ministral-3-3b-reasoning" = {
       kind = "small";
       tier = "small";
-      vramMiB = 3072;
-      ramMiB = 3584;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 3839;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 421;
+      loadSeconds = 5;
+      decodeWithFrontier.omni-fast = 147.9;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "nemotron-3-nano-30b-a3b" = {
       kind = "small";
@@ -346,22 +368,30 @@ in
     "qwen3.5-0.8b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 1536;
-      ramMiB = 2048;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 844;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 374;
+      loadSeconds = 2;
+      decodeWithFrontier.omni-fast = 61.9;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "qwen3.5-2b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 2243;
-      ramMiB = 2755;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 1567;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 568;
+      loadSeconds = 4;
+      decodeWithFrontier.omni-fast = 122.1;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
     "qwen3.5-35b-a3b" = {
       kind = "small";
@@ -376,12 +406,16 @@ in
     "qwen3.5-4b" = {
       kind = "small";
       tier = "small";
-      vramMiB = 3635;
-      ramMiB = 4147;
-      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
-      # measurement from stage 0 before trusting a tight admission.
+      # Measured beside `qfn-fast-colo` (omni-fast) on the R9700, 2026-11-21. `vramMiB` is the
+      # model's own footprint: the frontier is resident in both samples, so it cancels out.
+      vramMiB = 3274;
+      # The resident set with the weights on the card. The load burst is `budget.loadBurstRAMMiB`,
+      # not this number: a cold load reads the whole GGUF through the page cache first.
+      ramMiB = 699;
+      loadSeconds = 6;
+      decodeWithFrontier.omni-fast = 83.6;
       measured = "2026-11-21";
-      source = "gguf size + 1 GiB";
+      source = "hack/measure-footprint.py";
     };
   };
 }
