@@ -120,26 +120,37 @@ conv VAE are unverified in sd.cpp, and Hermes Agent has no Nix packaging yet.
 5. **PoCs in order**: VHS archive → VHS restore → documents → albums → spam → voice → UI → LTX.
 6. **crew** — only when a PoC has shown that one agent is not enough.
 
-## Services are containers, Nix-native only
+## Services are containers: nix-snapshotter first, nspawn as the interim
 
-A service that might move must not depend on the host it was built for. Two tiers, and no image
-tarballs anywhere:
+The long-term target is **containerd + nix-snapshotter**: OCI-native, store-path layers, the same
+artefact on a laptop, a server or a cluster, and no image tarballs. NixOS containers are the interim
+because they are the shortest path today, not because they are the destination.
 
-1. **NixOS container (`containers.<name>`, systemd-nspawn)** — the default for our own services
-   (Hermes Agent, Kokoro, DeepFilterNet, dots.ocr). The container _is_ a NixOS module: nothing is
-   built as an image, `/nix/store` is shared, and the definition is a few lines in the host module.
-   Devices are bind-mounted (`/dev/dri` for Vulkan, `/dev/kfd` for ROCm) and the container's
-   `hardware.graphics` settings match the host, so the driver libraries are the host's own store
-   paths. **Migration unit: the module plus its bind mount.**
-2. **nix-snapshotter (containerd)** — the cluster path: layers reference Nix store paths, so an
-   image is a manifest over paths that are already on disk. `pkgs.nix-snapshotter.buildImage`, the
-   Pod names `nix:0${image}`, and nothing is pulled or pushed. k3s support landed in the March 2026
-   cycle; plain NixOS kubernetes uses the same snapshotter.
+| tier                                  | role                                               | duplication                   | portability                    |
+| ------------------------------------- | -------------------------------------------------- | ----------------------------- | ------------------------------ |
+| **containerd + nix-snapshotter**      | **target**: every service that may move            | none — layers are store paths | OCI: `nerdctl`, k3s, plain k8s |
+| NixOS container (`containers.<name>`) | interim: get a service running in an afternoon     | none — shares the store       | NixOS only                     |
+| third-party OCI pull                  | only when something ships nothing but a Dockerfile | unavoidable                   | OCI                            |
+
+The snapshotter does not need a cluster: `virtualisation.containerd.nixSnapshotterIntegration` plus
+`nerdctl` runs single containers with store-path images today, and the same image becomes a Pod when
+k3s arrives. `pkgs.nix-snapshotter.buildImage` is the image builder; the reference is `nix:0${image}`.
 
 **`dockerTools.buildImage` and `imageFile` are out.** They stream the store into compressed tarballs
-and duplicate what the binary cache already has, which is the cost nix-snapshotter exists to remove.
-A third-party image that only ships a Dockerfile is the one case where a real OCI pull is
-unavoidable; it is rare and it is not the default.
+and duplicate what the binary cache already holds, which is the cost nix-snapshotter exists to
+remove.
+
+The contract that makes the interim disposable — every service declares these once, and the runner
+is the only thing that changes:
+
+| field             | nspawn                                               | nerdctl              | Pod                   |
+| ----------------- | ---------------------------------------------------- | -------------------- | --------------------- |
+| name              | `containers.<name>`                                  | `nerdctl run --name` | `metadata.name`       |
+| entrypoint + args | `config.systemd.services`                            | the image config     | `command` / `args`    |
+| environment       | `environment.etc` / `systemd.services.*.environment` | `-e`                 | `env` / ConfigMap     |
+| state             | `bindMounts`                                         | `-v`                 | PVC                   |
+| devices           | `bindMounts` of `/dev/dri`, `/dev/kfd`               | `--device`           | hostPath + node label |
+| health            | a systemd unit check                                 | `--health-cmd`       | `readinessProbe`      |
 
 Rules that hold for both tiers:
 
