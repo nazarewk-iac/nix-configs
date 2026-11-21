@@ -158,9 +158,12 @@ session with its reason.
 `apply --yes` writes the concepts into `.agents/knowledge/<type-dir>/` through `okf-memory
 create|update` when that binary is on `PATH` (direct file writing is only the fallback, and it warns
 that the log and index were not updated). It refuses to overwrite a concept whose `status` is
-`stable`, then gates the bundle with `okflint validate --manifest <bundle>/okf-base.yaml <bundle>`
-and falls back to `kdn-okf doctor --parse-only` when `okflint` is absent. A validation error rolls
-every change back.
+`stable`. The writer sets no `id`, and AI-XF Level 1 requires one, so `apply` inserts
+`id: <file-slug>` directly after `type:` and leaves every other byte of the file as it was. Any
+non-canonical file is then rewritten by `ai-xf-canon write`, and two gates run in order:
+`okflint validate --manifest <bundle>/okf-base.yaml <bundle>`, then
+`ai-xf-validate <bundle> --level 2` (a missing binary is a printed warning). A failing gate
+removes the concepts this run created and restores the bookkeeping files.
 
 ## Endpoint guard
 
@@ -276,11 +279,15 @@ truth.
    flag is absent.
 9. **`apply` uses the bundle writer.** When `okf-memory` is on `PATH`, `apply` calls
    `okf-memory create|update` with `--status draft` and `--actor agent/kdn-knowledge`, so `log.md`
-   and the parent `index.md` stay correct, then gates the bundle with
-   `okflint validate --manifest <bundle>/okf-base.yaml <bundle>`. A validation error removes the
-   concepts just created and restores the bookkeeping files. Direct file writing is only the
-   fallback, and it warns that the log and index were not updated. Skill drafts are not concepts,
-   so `apply` leaves them in the proposal.
+   and the parent `index.md` stay correct. The writer sets no `id`, and AI-XF Level 1 requires one,
+   so `apply` inserts `id: <file-slug>` directly after `type:` — the canonical position — and
+   leaves every other byte of the file as it was; a concept that already has an `id` is untouched.
+   `ai-xf-canon check` then reports any non-canonical file, `ai-xf-canon write` rewrites those, and
+   the two gates run in order: `okflint` and `ai-xf-validate --level 2`. A missing binary is a
+   warning. A failing gate removes the concepts just created, restores the bookkeeping and
+   canonicalised files, and exits non-zero. Direct file writing is only the fallback, and it warns
+   that the log and index were not updated. Skill drafts are not concepts, so `apply` leaves them
+   in the proposal.
 10. **The estimate is measured, not guessed.** `extract` prints the running average and the
     estimate for the sessions that remain. `status` prints the same estimate from the finished
     sessions in `state.json` (the `seconds` field).

@@ -27,8 +27,8 @@ func makeBundle(t *testing.T) string {
 	write("index.md", "# Knowledge\n")
 	write("log.md", "# Log\n")
 	write("decisions/index.md", "# Decisions\n")
-	write("decisions/no-push.md", "---\ntype: Decision\ntitle: Never push\ndescription: The user reviews every change.\ngenerated: { by: agent/cli, at: \"2026-11-01T00:00:00Z\" }\nstatus: stable\n---\n\n# Never push\n\nThe user reviews every change.\n")
-	write("decisions/old-draft.md", "---\ntype: Decision\ntitle: Old draft\ndescription: An older draft decision.\ngenerated: { by: agent/cli, at: \"2026-11-01T00:00:00Z\" }\nstatus: draft\n---\n\n# Old draft\n\nAn older draft decision.\n")
+	write("decisions/no-push.md", "---\ntype: Decision\nid: no-push\ntitle: Never push\ndescription: The user reviews every change.\ngenerated: { by: agent/cli, at: \"2026-11-01T00:00:00Z\" }\nstatus: stable\n---\n\n# Never push\n\nThe user reviews every change.\n")
+	write("decisions/old-draft.md", "---\ntype: Decision\nid: old-draft\ntitle: Old draft\ndescription: An older draft decision.\ngenerated: { by: agent/cli, at: \"2026-11-01T00:00:00Z\" }\nstatus: draft\n---\n\n# Old draft\n\nAn older draft decision.\n")
 	return root
 }
 
@@ -124,8 +124,26 @@ func TestRunFilesFallback(t *testing.T) {
 	if strings.Join(skipped, ",") != "push-always,rebuild" {
 		t.Fatalf("skipped = %v, want the conflict and the skill", skipped)
 	}
-	if !strings.Contains(result.Validation, "no validator") {
-		t.Fatalf("validation = %q, want the no-validator note", result.Validation)
+	warnings := strings.Join(result.Warnings, "\n")
+	for _, want := range []string{"ai-xf-canon", "okflint", "ai-xf-validate"} {
+		if !strings.Contains(warnings, want) {
+			t.Fatalf("warnings = %q, want a skip note for %s", warnings, want)
+		}
+	}
+	for _, gate := range result.Gates {
+		if gate.Status != "skipped" {
+			t.Fatalf("gate %s = %s, want skipped", gate.Name, gate.Status)
+		}
+	}
+	if result.Written[0] == "" {
+		t.Fatal("nothing was written")
+	}
+	body, err = os.ReadFile(filepath.Join(root, "facts/sqlite-cli.md"))
+	if err != nil {
+		t.Fatalf("read new concept: %v", err)
+	}
+	if !strings.Contains(string(body), "id: sqlite-cli") {
+		t.Fatalf("the fallback concept has no id: %s", body)
 	}
 }
 
@@ -160,6 +178,10 @@ func TestRunWithOkfMemory(t *testing.T) {
 	}
 	root := makeBundle(t)
 	// okf-memory needs the manifest to exist when okflint validates afterwards.
+	if err := os.WriteFile(filepath.Join(root, "manifest.ai-xf.yaml"),
+		[]byte("ai-xf: \"0.5\"\nname: kdn-knowledge test bundle\n"), 0o644); err != nil {
+		t.Fatalf("write ai-xf manifest: %v", err)
+	}
 	manifest := filepath.Join(root, "okf-base.yaml")
 	if err := os.WriteFile(manifest, []byte(`okf_version: "0.2"
 base:
@@ -204,5 +226,116 @@ profile:
 	}
 	if !strings.Contains(result.Validation, "OKF-conformant") {
 		t.Fatalf("validation = %q", result.Validation)
+	}
+}
+
+func TestInsertIDKeepsTheFile(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "concept.md")
+	original := "---\ntype: Fact\ntitle: A fact\ndescription: One sentence.\ntags: [nix, brys]\ngenerated: { by: agent/kdn-knowledge, at: \"2026-11-21T00:00:00Z\" }\nstatus: draft\n---\n\n# A fact\n\nThe statement.\n"
+	if err := os.WriteFile(path, []byte(original), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := insertID(path, "the-concept-slug"); err != nil {
+		t.Fatalf("insertID: %v", err)
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	updated := string(body)
+	if !strings.Contains(updated, "type: Fact\nid: the-concept-slug\ntitle: A fact\n") {
+		t.Fatalf("id is not directly after type:\n%s", updated)
+	}
+	if strings.Count(updated, "id:") != 1 {
+		t.Fatalf("the file carries more than one id:\n%s", updated)
+	}
+	// Every other line is byte-identical and in the same order.
+	withoutID := strings.Replace(updated, "id: the-concept-slug\n", "", 1)
+	if withoutID != original {
+		t.Fatalf("the edit changed more than the id field:\n%s", updated)
+	}
+
+	// A second pass is a no-op.
+	if err := insertID(path, "another-slug"); err != nil {
+		t.Fatalf("insertID twice: %v", err)
+	}
+	again, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if string(again) != updated {
+		t.Fatalf("a second insertID changed the file:\n%s", again)
+	}
+}
+
+func TestInsertIDRejectsFileWithoutFrontmatter(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "concept.md")
+	if err := os.WriteFile(path, []byte("# Title\n\nBody.\n"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := insertID(path, "slug"); err == nil {
+		t.Fatal("insertID accepted a file without frontmatter")
+	}
+}
+
+// TestRunRollsBackOnGateFailure pins the rollback path: a failing gate removes the concepts the
+// run created and restores the files it rewrote.
+func TestRunRollsBackOnGateFailure(t *testing.T) {
+	dir := t.TempDir()
+	writeFake := func(name, body string) {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
+			t.Fatalf("write fake %s: %v", name, err)
+		}
+	}
+	writeFake("ai-xf-canon", `case "$1" in check) exit 0;; write) exit 0;; esac; exit 0`)
+	writeFake("okflint", `echo "FAIL [F102] missing required field: generated"; exit 1`)
+	writeFake("ai-xf-validate", `exit 0`)
+	t.Setenv("PATH", dir)
+
+	root := makeBundle(t)
+	// Without a manifest the okflint gate is skipped, so the fake would never run.
+	if err := os.WriteFile(filepath.Join(root, "okf-base.yaml"), []byte(`okf_version: "0.2"
+base:
+  name: "test"
+  roots:
+    - path: "."
+  reserved_files:
+    index: "index.md"
+    log: "log.md"
+  link_resolution:
+    scope: base
+    external_refs: []
+profile:
+  types:
+    Decision:
+      required: [type, title, description, status, generated]
+    Fact:
+      required: [type, title, description, status, generated]
+`), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	plan := testPlan()
+	proposalDir := makeProposal(t, plan)
+	result, err := Run(root, proposalDir, plan)
+	if err == nil {
+		t.Fatal("Run passed despite a failing okflint gate")
+	}
+	if !result.RolledBack {
+		t.Fatalf("the failing run did not report a rollback: %+v", result)
+	}
+	if _, statErr := os.Stat(filepath.Join(root, "facts/sqlite-cli.md")); !os.IsNotExist(statErr) {
+		t.Fatalf("the created concept survived the rollback: %v", statErr)
+	}
+	body, readErr := os.ReadFile(filepath.Join(root, "decisions/old-draft.md"))
+	if readErr != nil {
+		t.Fatalf("read restored concept: %v", readErr)
+	}
+	if !strings.Contains(string(body), "An older draft decision.") {
+		t.Fatalf("the updated concept was not restored:\n%s", body)
 	}
 }

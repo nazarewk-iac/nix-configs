@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"kdn-knowledge/internal/apply"
 	"kdn-knowledge/internal/dream"
@@ -14,13 +15,16 @@ import (
 )
 
 type applySummary struct {
-	Proposal   string       `json:"proposal"`
-	Bundle     string       `json:"bundle"`
-	Written    []string     `json:"written"`
-	Skipped    []apply.Skip `json:"skipped"`
-	RolledBack bool         `json:"rolled_back"`
-	Validation string       `json:"validation,omitempty"`
-	Confirmed  bool         `json:"confirmed"`
+	Proposal      string       `json:"proposal"`
+	Bundle        string       `json:"bundle"`
+	Written       []string     `json:"written"`
+	Skipped       []apply.Skip `json:"skipped"`
+	Canonicalised []string     `json:"canonicalised,omitempty"`
+	Gates         []apply.Gate `json:"gates"`
+	Warnings      []string     `json:"warnings,omitempty"`
+	RolledBack    bool         `json:"rolled_back"`
+	Validation    string       `json:"validation,omitempty"`
+	Confirmed     bool         `json:"confirmed"`
 }
 
 func (a *App) runApply(args []string) error {
@@ -54,6 +58,7 @@ func (a *App) runApply(args []string) error {
 		Bundle:   cfg.Bundle,
 		Written:  []string{},
 		Skipped:  []apply.Skip{},
+		Gates:    []apply.Gate{},
 	}
 	if !yes {
 		a.progressf("apply: %d actions in %s; pass --yes to copy them into %s",
@@ -66,13 +71,24 @@ func (a *App) runApply(args []string) error {
 	result, err := apply.Run(cfg.Bundle, proposalDir, &plan)
 	summary.Written = result.Written
 	summary.Skipped = result.Skipped
+	summary.Canonicalised = result.Canonicalised
+	summary.Gates = result.Gates
+	summary.Warnings = result.Warnings
 	summary.RolledBack = result.RolledBack
 	summary.Validation = result.Validation
+	statuses := make([]string, 0, len(result.Gates))
+	for _, gate := range result.Gates {
+		statuses = append(statuses, gate.Name+" "+gate.Status)
+	}
+	for _, warning := range result.Warnings {
+		a.progressf("warning: %s", warning)
+	}
 	if err != nil {
 		return &ExitError{Code: 1, Err: err}
 	}
-	return a.emit("apply", fmt.Sprintf("apply: %d written, %d skipped, bundle %s",
-		len(result.Written), len(result.Skipped), cfg.Bundle), summary)
+	return a.emit("apply", fmt.Sprintf("apply: %d written, %d skipped, %d canonicalised, bundle %s (%s)",
+		len(result.Written), len(result.Skipped), len(result.Canonicalised), cfg.Bundle,
+		strings.Join(statuses, ", ")), summary)
 }
 
 // newestProposal returns the newest directory under proposals/.

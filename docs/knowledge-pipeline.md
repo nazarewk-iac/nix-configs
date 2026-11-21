@@ -80,14 +80,18 @@ A llama.cpp grunt model cannot do this on the resting profile: `gemma-4-e4b` and
 and `status: draft`; nothing is `stable` until a human says so.
 
 `apply --yes` creates the concepts through `okf-memory create`, so `log.md` and the directory
-`index.md` stay coherent, then runs
-`okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge`. It refuses to
-overwrite a concept whose status is `stable`.
+`index.md` stay coherent, then runs three gates in order: `ai-xf-canon check` (with a rewrite of
+every non-canonical file), `okflint validate --manifest .agents/knowledge/okf-base.yaml
+.agents/knowledge`, and `ai-xf-validate .agents/knowledge --level 2`. A missing gate binary is a
+printed warning, not a failure. It refuses to overwrite a concept whose status is `stable`, and a
+failing gate removes the concepts this run created and restores the bookkeeping files.
 
-One gap is open, and it is the bundle writer's: `okf-memory create` writes neither `id` nor
-`links`, while the repo's stricter gate `ai-xf-validate .agents/knowledge --level 2` requires an
-`id` on every concept. A freshly applied draft therefore fails that gate until a human adds the id;
-`okf-memory update` preserves an id that is already there, and `ai-xf-canon` does not add one.
+`okf-memory create` leaves out one field that the repo's AI-XF Level 2 gate requires: `id`.
+`apply` therefore inserts `id: <file-slug>` directly after `type:` in every concept it creates —
+the canonical position — and leaves the rest of the file byte-identical. A concept that already
+carries an `id` is left alone, so an update of an older concept also becomes conformant. `links`
+is still the writer's gap: `okf-memory` does not set it, AI-XF Level 2 does not require it, and a
+human adds relations when a concept needs them.
 
 ## Searching the result
 
