@@ -726,7 +726,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "grunt";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -983,7 +983,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1034,7 +1034,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1593,7 +1593,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {
@@ -1666,7 +1666,7 @@ in
       gpu = true;
       contextSize = 16384;
       hosts.brys = {
-        set = "surveyed";
+        set = "retired";
         servedContext = 16384;
         common = {
           download = {

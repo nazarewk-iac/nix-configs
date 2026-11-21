@@ -151,11 +151,11 @@ let
   # request (context/vision) instead of always using one alias. Curated to fast
   # GPU models (cheap health checks, 16k context); extending the pool with a big
   # context model would let the same selector escalate on long prompts.
+  # Only the two small models the fleet still serves: the rest were retired because they beat
+  # neither the frontier's decode nor its prefill, and cannot co-reside with it on `max`.
   poolBaseIds = [
-    "qwen3.5-2b"
-    "granite-4.2-3b"
-    "qwen3.5-4b"
     "ministral-3-3b-reasoning"
+    "gemma-4-e4b"
   ];
   poolDeployments = map (
     baseId:
