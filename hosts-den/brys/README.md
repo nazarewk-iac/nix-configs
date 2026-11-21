@@ -1,7 +1,7 @@
 ---
 type: Reference
 description: brys host — Ryzen 5950X / 128 GB DDR4 workstation. Also serves local LLMs via the kdn.llm.local slot.
-timestamp: 2026-11-18T14:11:34+01:00
+timestamp: 2026-11-22T00:00:00+01:00
 ---
 
 # brys host
@@ -67,7 +67,7 @@ not a slider. Measured 2026-11-21 (`docs/tasks/2026-11/brys-r9700-model-fit/meas
 
 | profile      | pack + reserve                | aggregate t/s (concurrent callers) | omni              | RAM left     |
 | ------------ | ----------------------------- | ---------------------------------: | ----------------- | ------------ |
-| `max-multi`  | UD-IQ4_XS, whole card, 512k×5 |                               31.9 | 6.1 t/s co-loaded | 7-8 GiB      |
+| `max-multi`  | UD-IQ4_XS, whole card, 512k×5 |                               31.9 | 6.1 t/s co-loaded | 12.0 GiB     |
 | `max-swarm`  | UD-IQ4_XS, whole card, 256k×8 |                               36.2 | 6.1 t/s co-loaded | 18.4 GiB     |
 | `max-long`   | UD-IQ4_XS, whole card, 1M×2   |                               29.7 | 6.1 t/s co-loaded | 10.5 GiB     |
 | `max-single` | UD-IQ4_XS, whole card, 1M×1   |                                  — | 6.1 t/s co-loaded | —            |

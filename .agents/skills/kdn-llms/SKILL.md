@@ -2,7 +2,7 @@
 name: kdn-llms
 description: Pick and use a model on the kdn LLM server (brys) by its stable purpose alias, and steer the engine profile (max, omni-fast, omni-max) without reloading it by accident. Use when choosing a model for a task, naming a model in opencode, asking which local model to use for chat, code, vision, audio, reasoning, tools, retrieval, or orchestration, or when a session needs the multimodal companion beside the frontier.
 type: Skill
-timestamp: 2026-11-19T22:30:00+01:00
+timestamp: 2026-11-22T00:00:00+01:00
 ---
 
 # kdn-llms
@@ -69,6 +69,7 @@ llama-swap config on 2026-11-21:
 | `reason-quick-fast-alt`                 | the same, smaller              | ministral-3-3b-reasoning      | 16384 | —     |
 | `code-std-fast-alt`                     | code, non-thinking            | mellum-2.1-12b-a2.5b-thinking | 32768 | 14.8  |
 | `vision-std-fast`                       | images, general               | qwen3-vl-30b-a3b              | 32768 | 15.7  |
+| `vision-std-fast-moe`                   | the same model, own name      | qwen3-vl-30b-a3b              | 32768 | 15.7  |
 | `vision-std-fast-alt`                   | images, dense text            | ornith-1.5-35b-a3b            | 32768 | 8.8   |
 | `vision-deep-slow`                      | hard image tasks              | ornith-1.5-35b-a3b            | 32768 | 8.8   |
 | `embed-std-fast`                        | embeddings (RAG)              | qwen3-embedding-4b            | 8192  | —     |
@@ -79,9 +80,10 @@ Everything else is reachable by its base id and has no alias: `gemma-4-e4b`,
 frontier names below.
 
 **Several aliases are dead.** `chat-dumb-fast`, `chat-dumb-fast-alt`, `code-quick-fast`,
-`tiny-dumb-fast`, `tiny-quick-fast`, `tools-dumb-fast`, `vision-std-fast-moe` and `audio-std-mid`
-still appear in `data/llm.nix`, but their models were pruned on 2026-11-21, so a request to one
-answers `{"error":{"message":"no router for requested model"}}`. Check before you rely on one:
+`tiny-dumb-fast`, `tiny-quick-fast` and `tools-dumb-fast` still appear in `data/llm.nix`, but
+their models were pruned on 2026-11-21, so a request to one answers
+`{"error":{"message":"no router for requested model"}}`. `audio-std-mid` is not in `data/llm.nix`
+either, so no entry could answer it. Check before you rely on one:
 
 ```bash
 curl -s https://llama-swap.brys.priv.nb.net.int.kdn.im/v1/models | jq -r '.data[].id' | sort
@@ -96,7 +98,7 @@ Rules of thumb:
   because the bigger models are slower and cost VRAM the frontier wants.
 - **`embed-*` and `rank-*` are not chat models.** They use `/v1/embeddings` and `/v1/rerank`.
 - **No purpose alias points at a frontier model.** Every alias maps to a grunt model, and every
-  model runs `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
+  grunt model runs `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
   _different_ aliases, not many calls to one. The frontier is QFN on the Strata engine, below.
 - **Some aliases share one process.** `chat-std-fast` and `tools-std-fast` are both
   `lfm2.5-24b-a2b`; `reason-std-fast` and `chat-std-mid-long` are both `nemotron-3-nano-30b-a3b`;
@@ -111,8 +113,9 @@ id. Speeds are measured decode tok/s on brys.
 - **Frontier**: QFN on the Strata engine, seven profiles, listed in the next section. It is not a
   llama-swap model in the usual sense: the `qfn*` entries are `strata-select` proxies.
 - **Deep tier**: Requesty SaaS through the etra gateway, not on brys.
-- **Live catalogue on brys (2026-11-21)**: 23 models plus the frontier names. The GGUF list is
-  the truth; this is the shape of it.
+- **Live catalogue on brys (2026-11-21)**: `/v1/models` answers 35 ids — 12 base ids, 14 aliases
+  and the nine frontier names. Three image editors are served but kept out of that list. The GGUF
+  list is the truth; this is the shape of it.
 
 | model                         | ctx    | role                                             |
 | ----------------------------- | ------ | ------------------------------------------------ |
