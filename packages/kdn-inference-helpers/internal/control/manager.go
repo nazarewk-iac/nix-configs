@@ -62,6 +62,10 @@ type Manager struct {
 	statePath  string
 	companions map[string]bool // model id -> loaded, as last observed
 	observedMu sync.Mutex
+	// stateMu guards the state file. The profile and the eviction epoch live in the same file, and
+	// a read-modify-write that lost one of them would either drop the selected profile or let a
+	// stale eviction plan through, so every access takes this lock.
+	stateMu sync.Mutex
 }
 
 // NewManager wires the control plane. It does not start anything; call Restore for that.
@@ -75,7 +79,15 @@ func NewManager(cfg *config.Config, j *journal.Journal, leases *Leases, backend 
 
 // ---------------- state ----------------
 
+// loadState reads the state file. A missing or corrupt file reads as an empty state: "no profile"
+// is a safe answer, and a crash here would leave the card unattended.
 func (m *Manager) loadState() map[string]any {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
+	return m.loadStateLocked()
+}
+
+func (m *Manager) loadStateLocked() map[string]any {
 	body, err := os.ReadFile(m.statePath)
 	if err != nil {
 		return map[string]any{}
@@ -87,11 +99,23 @@ func (m *Manager) loadState() map[string]any {
 	return state
 }
 
+// saveState writes the given keys and keeps the ones already on disk. The profile and the eviction
+// epoch are written by different callers, and a caller that sets one key must not erase the other.
 func (m *Manager) saveState(state map[string]any) error {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
+	return m.saveStateLocked(state)
+}
+
+func (m *Manager) saveStateLocked(state map[string]any) error {
 	if err := os.MkdirAll(filepath.Dir(m.statePath), 0o755); err != nil {
 		return err
 	}
-	body, err := json.Marshal(state)
+	merged := m.loadStateLocked()
+	for k, v := range state {
+		merged[k] = v
+	}
+	body, err := json.Marshal(merged)
 	if err != nil {
 		return err
 	}
@@ -105,6 +129,35 @@ func (m *Manager) CurrentProfile() string {
 	return p
 }
 
+// EvictionID is the current eviction epoch: the token a caller must echo back to `/admit` to prove
+// its plan is still the one the manager would apply. It is created on first use, so a manager that
+// has just started still answers `/decide` with an id a caller can quote.
+func (m *Manager) EvictionID() string {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
+	state := m.loadStateLocked()
+	if id, ok := state["last_eviction_id"].(string); ok && id != "" {
+		return id
+	}
+	id := newUUIDv4()
+	if err := m.saveStateLocked(map[string]any{"last_eviction_id": id}); err != nil {
+		log.Printf("could not persist the eviction id: %v", err)
+	}
+	return id
+}
+
+// rotateEvictionID starts a new epoch and returns its id. Every applied plan rotates it: after an
+// eviction the world the caller decided on no longer exists, so its token must stop working.
+func (m *Manager) rotateEvictionID() string {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
+	id := newUUIDv4()
+	if err := m.saveStateLocked(map[string]any{"last_eviction_id": id}); err != nil {
+		log.Printf("could not persist the eviction id: %v", err)
+	}
+	return id
+}
+
 // ---------------- switching ----------------
 
 // Select switches, or reports what a switch would cost. The returned map is the JSON body.
@@ -116,13 +169,20 @@ func (m *Manager) Select(ctx context.Context, requested string, dryRun bool) map
 // alive. Without it the switch unloads every non-frontier model — including the gate process that
 // is waiting on this very call, which cancels the call and fails the switch it asked for.
 func (m *Manager) SelectKeeping(ctx context.Context, requested string, dryRun, keepCompanions bool) map[string]any {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.selectLocked(ctx, requested, dryRun, keepCompanions)
+}
+
+// selectLocked is the switch itself, for a caller that already holds the switch lock. `/admit`
+// decides under that lock and then has to apply a plan that may name a profile, so it cannot go
+// through SelectKeeping: a `sync.Mutex` is not reentrant, and taking it twice deadlocks the manager
+// on the first companion that needs a colo profile.
+func (m *Manager) selectLocked(ctx context.Context, requested string, dryRun, keepCompanions bool) map[string]any {
 	profile := m.Cfg.Normalise(requested)
 	if !m.Cfg.Accepts(profile) {
 		return map[string]any{"error": fmt.Sprintf("unknown profile %q", requested)}
 	}
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	current := m.CurrentProfile()
 	switch {
@@ -384,6 +444,9 @@ func (m *Manager) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"loaded_companions": m.LoadedCompanions(),
 		"in_flight":         m.Leases.InFlight(),
 		"draining":          m.Leases.Draining(),
+		// The epoch a caller must quote back to `/admit`. It is here as well as in `/decide` so an
+		// operator can see which plan the manager would accept without asking for a new one.
+		"eviction_id": m.EvictionID(),
 	}
 	if last, ok := m.Journal.LastSwitch(); ok {
 		body["last_switch"] = last
@@ -436,6 +499,13 @@ func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m.SelectKeeping(context.WithoutCancel(r.Context()), body.Profile, body.DryRun, body.KeepCompanions))
 }
 
+// decision is the `/decide` body: the tree's answer plus the epoch it was decided against. The
+// epoch is the manager's, not the policy's, so the policy package stays a pure decision engine.
+type decision struct {
+	policy.Result
+	EvictionID string `json:"eviction_id"`
+}
+
 // handleDecide runs the placement tree and returns the verdict with its trace. It is advisory: it
 // reads the state, it changes nothing, and it is deliberately not run under the switch lock.
 func (m *Manager) handleDecide(w http.ResponseWriter, r *http.Request) {
@@ -466,16 +536,35 @@ func (m *Manager) handleDecide(w http.ResponseWriter, r *http.Request) {
 		req.Model = m.profileNeutralEngine()
 	case "none":
 		writeJSON(w, http.StatusConflict, map[string]any{
-			"error": "the engine is stopped; select a profile first",
+			"error":       "the engine is stopped; select a profile first",
+			"eviction_id": m.EvictionID(),
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, m.Policy.Decide(req, m.activeForPolicy(r.Context()), m.policyState()))
+	res := m.Policy.Decide(req, m.activeForPolicy(r.Context()), m.policyState())
+	writeJSON(w, http.StatusOK, decision{Result: res, EvictionID: m.EvictionID()})
+}
+
+// admitRequest is `/decide`'s request plus the act: the set the caller wants evicted, and the epoch
+// it decided against.
+type admitRequest struct {
+	policy.Request
+	// Evict is the set to unload, which may differ from the plan's suggestion: the caller may have
+	// decided to keep a model the policy would have taken. Absent means "apply the plan".
+	Evict []string `json:"evict"`
+	// ExpectedEvictionID is the compare-and-swap token. Empty means the caller did not take part in
+	// the epoch protocol (the `admit` wrapper in every llama-swap entry), and the plan is applied
+	// unconditionally, as before this field existed.
+	ExpectedEvictionID string `json:"expected_eviction_id"`
 }
 
 // handleAdmit is `/decide` plus the act: it re-decides under the switch lock, applies the plan and
 // answers 200 so the caller may start its server. A refusal is returned verbatim, body and all, so
 // the wrapper can print it and llama-swap logs the reason instead of a bare exit code.
+//
+// The eviction epoch makes the two-step decide/admit safe. A caller quotes the id it decided
+// against; if another plan was applied in between, the id has rotated and the answer is 409 with
+// the fresh suggestion, so two callers can never evict the same victim twice.
 func (m *Manager) handleAdmit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST only"})
@@ -485,11 +574,12 @@ func (m *Manager) handleAdmit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotImplemented, map[string]any{"error": "this deployment has no placement policy"})
 		return
 	}
-	var req policy.Request
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var body admitRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "body must be JSON"})
 		return
 	}
+	req := body.Request
 	if req.Model == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "request.model is required"})
 		return
@@ -523,31 +613,91 @@ func (m *Manager) handleAdmit(w http.ResponseWriter, r *http.Request) {
 		if res.Refusal != nil && res.Refusal.Code != 0 {
 			code = res.Refusal.Code
 		}
-		writeJSON(w, code, res)
+		writeJSON(w, code, decision{Result: res, EvictionID: m.EvictionID()})
 		return
 	}
 
-	if res.Plan.Profile != "" && res.Plan.Profile != m.CurrentProfile() {
-		body := m.SelectKeeping(r.Context(), res.Plan.Profile, false, false)
-		if e, ok := body["error"]; ok {
+	// The plan was decided against an epoch. If the epoch moved, the suggestion is stale and the
+	// caller must decide again rather than act on a world that no longer exists.
+	current := m.EvictionID()
+	if body.ExpectedEvictionID != "" && body.ExpectedEvictionID != current {
+		writeJSON(w, http.StatusConflict, map[string]any{
+			"verdict":              res.Verdict,
+			"error":                "the eviction plan is stale: another plan was applied since this decision",
+			"plan":                 res.Plan,
+			"why":                  res.Why,
+			"resulting":            res.Resulting,
+			"eviction_id":          current,
+			"expected_eviction_id": body.ExpectedEvictionID,
+		})
+		return
+	}
+	cas := "matched"
+	if body.ExpectedEvictionID == "" {
+		cas = "skipped"
+	}
+
+	// The caller's set wins over the suggestion, so a caller that decided to keep a model is not
+	// overruled by a decision it already saw.
+	applied := res.Plan.Evict
+	if body.Evict != nil {
+		applied = body.Evict
+	}
+	switching := res.Plan.Profile != "" && res.Plan.Profile != m.CurrentProfile()
+	// A switch stops the engine and unloads the companions by itself; the set only names what the
+	// caller expects to leave. Without a switch the set is the act, and the engine is not a victim:
+	// only a profile switch may stop it, so a caller that names it is refused rather than allowed to
+	// drop the frontier for a companion.
+	if !switching {
+		for _, name := range applied {
+			if model, ok := m.Policy.Models[name]; ok && model.Kind == "engine" {
+				writeJSON(w, http.StatusConflict, map[string]any{
+					"error":       fmt.Sprintf("%q is an engine; it leaves only through a profile switch", name),
+					"eviction_id": current,
+					"plan":        res.Plan,
+				})
+				return
+			}
+		}
+	}
+
+	if switching {
+		reply := m.selectLocked(r.Context(), res.Plan.Profile, false, false)
+		if e, ok := reply["error"]; ok {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": e, "plan": res.Plan, "why": res.Why})
 			return
 		}
-	} else if len(res.Plan.Evict) > 0 {
-		if _, err := m.Backend.UnloadCompanions(r.Context()); err != nil {
-			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
-			return
+	} else if len(applied) > 0 {
+		if m.Accessories == nil {
+			// A deployment without llama-swap owns no companion to unload one at a time; the
+			// backend's own unload is the only path, and it takes everything.
+			if _, err := m.Backend.UnloadCompanions(r.Context()); err != nil {
+				writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+				return
+			}
+		} else {
+			for _, name := range applied {
+				if err := m.Accessories.Unload(r.Context(), name); err != nil {
+					writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error(), "evicted": name})
+					return
+				}
+			}
 		}
 	}
+	next := m.rotateEvictionID()
 	_ = m.Journal.Append(map[string]any{"event": "admit", "model": req.Model,
-		"profile": m.CurrentProfile(), "plan": res.Plan, "vram_mib": res.Resulting.VRAMMiB})
+		"profile": m.CurrentProfile(), "plan": res.Plan, "vram_mib": res.Resulting.VRAMMiB,
+		"evicted": applied, "eviction_id": next, "previous_eviction_id": current,
+		"expected_eviction_id": body.ExpectedEvictionID, "cas": cas})
 	writeJSON(w, http.StatusOK, map[string]any{
-		"verdict": "admit",
-		"model":   req.Model,
-		"profile": m.CurrentProfile(),
-		"port":    m.Backend.CurrentPort(),
-		"plan":    res.Plan,
-		"why":     res.Why,
+		"verdict":     "admit",
+		"model":       req.Model,
+		"profile":     m.CurrentProfile(),
+		"port":        m.Backend.CurrentPort(),
+		"plan":        res.Plan,
+		"why":         res.Why,
+		"evicted":     applied,
+		"eviction_id": next,
 	})
 }
 

@@ -64,9 +64,10 @@ func (r *recorder) order() []string {
 }
 
 type fakeAccessory struct {
-	mu      sync.Mutex
-	loaded  []string
-	refused bool
+	mu       sync.Mutex
+	loaded   []string
+	unloaded []string
+	refused  bool
 }
 
 func (f *fakeAccessory) Loaded(ctx context.Context) ([]string, error) {
@@ -81,7 +82,15 @@ func (f *fakeAccessory) Unload(ctx context.Context, model string) error {
 	if f.refused {
 		return errors.New("unload refused")
 	}
+	f.unloaded = append(f.unloaded, model)
 	return nil
+}
+
+// unloads is what `/admit` actually unloaded, in order.
+func (f *fakeAccessory) unloads() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string(nil), f.unloaded...)
 }
 
 func newTestManager(t *testing.T, b Backend) (*Manager, *journal.Journal) {
