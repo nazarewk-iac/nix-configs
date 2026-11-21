@@ -484,6 +484,49 @@ found`.
   rung that never reads `CUSTOM_API_KEY`, which surfaces as a plain `HTTP 401:
 Invalid API key` (measured 2026-11-21).
 
+## Follow-up: the orchestrator + swarm concurrency measurement
+
+**The intent is not N equal sessions.** It is **one orchestrator at up to 1M context** plus a
+**swarm of agents at 64-256k**. The 2026-11-21 test measured eight _full-context_ slots, which
+nobody asked for, and its OOM therefore answers the wrong question.
+
+### The question
+
+Does strata size K/V **per request**, or preallocate it per slot at `--max-context`? The one data
+point so far — auto-fit answering `--kv-resident 4096` for a requested 32768 at two slots — says
+per request. The arithmetic if it does:
+
+| workload               | K/V      | + pack (55 GiB) | fits 125 GiB           |
+| ---------------------- | -------- | --------------- | ---------------------- |
+| 8 × 1M (measured, OOM) | ~126 GiB | 181 GiB         | no                     |
+| **1 × 1M + 7 × 64k**   | ~23 GiB  | **78 GiB**      | **yes, ~45 GiB spare** |
+| 1 × 1M + 7 × 256k      | ~44 GiB  | 99 GiB          | yes, ~25 GiB spare     |
+
+### The test
+
+1. `--parallel 8` on `qfn-fast-colo`, `--max-context 1048576` (unchanged).
+2. One request at 1M context, seven concurrent at 64k.
+3. Record: `MemAvailable` during the run, VRAM, per-request t/s, aggregate t/s, and whether all
+   eight complete.
+4. Repeat with the swarm at 256k.
+5. Same two runs on `qfn-max` (55 GiB pack) if the colo profile passes — that is where the margin
+   is thin.
+
+### The two outcomes, and what each decides
+
+- **K/V is per request** → one profile with 8 slots is correct; set `--parallel 8` and keep
+  `--kv-resident` as the shared window. The policy's `kvReserveMiB` becomes a per-role number
+  (orchestrator vs agent) rather than one upper bound.
+- **K/V is preallocated per slot at max context** → two profiles, two roles:
+  `qfn` at 1M with one slot (orchestrator) and `qfn-fast-colo` at 256k with eight slots (swarm).
+  That is also the shape the placement tree already understands: a profile is a placement decision.
+
+### Acceptance
+
+Numbers recorded in `docs/tasks/2026-11/brys-r9700-model-fit/measurements.md`; the profile table and
+`hosts-den/brys/policy.nix` updated to whichever shape the measurement supports; and the earlier
+"8 slots impossible" line in the policy task corrected to "8 slots **at 1M context**".
+
 ## Non-goals
 
 ComfyUI is not adopted until a PoC needs a tensor graph sd.cpp cannot express; etra never runs
