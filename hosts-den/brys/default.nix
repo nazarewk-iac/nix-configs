@@ -1066,7 +1066,18 @@ in
 
       # The old `profile/default-secrets` installed the clipboard anonymiser whenever a desktop
       # was on. The aspect publishes the package; the host installs it.
-      environment.systemPackages = [ config.kdn.profile-default-secrets.anonymizeClipboard ];
+      #
+      # The audio models of the media bench (`hack/media/`) are CPU-only and are NOT llama-swap
+      # entries: whisper.cpp and Piper speak their own protocols, not the OpenAI chat API, so they
+      # have no place in `data/llm.nix`. The model files live on the shared LLM tree, beside the
+      # weights, so a second machine that mounts that dataset gets them too:
+      #   /var/lib/kdn/llms/models/whisper/ggml-base.en.bin
+      #   /var/lib/kdn/llms/models/piper/en_US-lessac-medium.onnx
+      environment.systemPackages = [
+        config.kdn.profile-default-secrets.anonymizeClipboard
+        pkgs.whisper-cpp
+        pkgs.piper-tts
+      ];
 
       # --- per-service HTTPS exposure --------------------------------------
       # llama-swap and Prometheus each on their own subdomain, behind the internal CA leaf.
