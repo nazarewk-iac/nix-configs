@@ -158,6 +158,11 @@ in
         enable = true;
         routerEngine = "matrix";
         debug = true;
+        # Every entry asks the placement policy before llama-swap starts it. The tree lives in
+        # hosts-den/brys/policy.nix; llama-swap keeps the catalogue and the process ownership.
+        admit = {
+          enable = true;
+        };
         # One tier of mutually-exclusive small models. They co-reside with the frontier in `main`:
         # flash-next holds ~21 GiB of VRAM at `nCpuMoe = 24` and the biggest member here is
         # 2.6 GB, so the pair fits the 32 GB card (measured 24.2 GiB total).
@@ -231,6 +236,11 @@ in
         enable = true;
         routerEngine = "matrix";
         debug = true;
+        # Every entry asks the placement policy before llama-swap starts it. The tree lives in
+        # hosts-den/brys/policy.nix; llama-swap keeps the catalogue and the process ownership.
+        admit = {
+          enable = true;
+        };
         # Only the models that fit in 12 GB are co-residency-tiered; the MoE
         # candidates go on a RAM tier once measured.
         # One Vulkan0 tier: the small fast models and the MoE winner are mutually

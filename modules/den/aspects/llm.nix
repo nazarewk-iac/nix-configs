@@ -478,7 +478,21 @@
               lib.concatStringsSep " " m.command
             else
               lib.concatStringsSep " " (
-                (if m.wrapper != null then m.wrapper else [ ])
+                # The placement policy asks first. `admit` execs the argv after it, so llama-swap
+                # still owns the process and its stop signal reaches the server.
+                (
+                  if cfg.swap.admit.enable then
+                    [
+                      cfg.swap.admit.binary
+                      "admit"
+                      "--model"
+                      name
+                      "--"
+                    ]
+                  else
+                    [ ]
+                )
+                ++ (if m.wrapper != null then m.wrapper else [ ])
                 ++ [
                   (lib.getExe' (modelPackage name) "llama-server")
                   "--port"
@@ -1566,6 +1580,26 @@
           Loopback port llama-swap listens on. The compat proxy targets it when `swap.enable` is
           set. The default is a free port beside the router ports.
         '';
+      };
+
+      options.kdn.llm.local.swap.admit = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Ask the placement policy before llama-swap starts an entry.
+
+            The generated `cmd` becomes `kdn-inference-helpers admit --model <id> -- <argv>`, which
+            asks the manager's behaviour tree, prints a refusal verbatim, and execs the server on a
+            yes. It replaces llama-swap's eviction matrix as the decision point: one scheduler over
+            one card.
+          '';
+        };
+        binary = lib.mkOption {
+          type = lib.types.str;
+          default = "/run/current-system/sw/bin/kdn-inference-helpers";
+          description = "The runtime binary that implements `admit`.";
+        };
       };
 
       options.kdn.llm.local.swap.coResidentTiers = lib.mkOption {

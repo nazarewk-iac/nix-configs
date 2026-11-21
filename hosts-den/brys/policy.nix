@@ -47,6 +47,12 @@ in
   };
 
   switchCooldownSeconds = 30;
+  # A capacity refusal on a model with no profile requirement offers these: they are the profiles
+  # that leave a reserve for a second model.
+  coloProfiles = [
+    "omni-max"
+    "omni-fast"
+  ];
   defaultDeadlineSeconds = 120;
   # Below this, a model beside the frontier is not worth serving: the measured companion beside the
   # whole-card profile ran at 6.1 t/s.
@@ -225,6 +231,157 @@ in
         omni-fast = 40.0;
       };
       measured = "2026-11-20";
+    };
+
+    "gemma-4-e4b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 5939;
+      ramMiB = 6451;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "granite-4.2-3b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 3164;
+      ramMiB = 3676;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "granite-4.2-8b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 6124;
+      ramMiB = 6636;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "lfm2.5-24b-a2b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 14879;
+      ramMiB = 15391;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "mellum-2.1-12b-a2.5b-thinking" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 8724;
+      ramMiB = 9236;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "ministral-3-3b-reasoning" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 3072;
+      ramMiB = 3584;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "nemotron-3-nano-30b-a3b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 24463;
+      ramMiB = 24975;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "ornith-1.5-35b-a3b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 21729;
+      ramMiB = 22241;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3-embedding-4b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 3410;
+      ramMiB = 3922;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3-reranker-4b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 3410;
+      ramMiB = 3922;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3-vl-30b-a3b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 18719;
+      ramMiB = 19231;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3.5-0.8b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 1536;
+      ramMiB = 2048;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3.5-2b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 2243;
+      ramMiB = 2755;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3.5-35b-a3b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 22016;
+      ramMiB = 22528;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
+    };
+    "qwen3.5-4b" = {
+      kind = "small";
+      tier = "small";
+      vramMiB = 3635;
+      ramMiB = 4147;
+      # Estimated, not measured: GGUF size plus 1 GiB for KV and compute buffers. Replace with a
+      # measurement from stage 0 before trusting a tight admission.
+      measured = "2026-11-21";
+      source = "gguf size + 1 GiB";
     };
   };
 }

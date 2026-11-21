@@ -303,12 +303,11 @@ in
   # The wrapper defaults the shim to the dataset copy; the sandbox hides /home, so name it here.
   systemd.services.llama-swap.environment.ROCM_SHIM = "${engines}/rocm-skip.so";
 
-  # A llama-swap entry is a child process that lives until the model is unloaded, so a deploy that
-  # only changes the helper binary leaves the *old* helper serving: measured 2026-11-20, a `select`
-  # process from the previous store path kept answering after the switch. The manager's unit names
-  # the helper, so it changes on every deploy; tie llama-swap to it and the entries respawn with the
-  # binary that was just built.
-  systemd.services.llama-swap.restartTriggers = [ "strata-manager.service" ];
+  # A deploy that changes the helper leaves an entry running the *old* build: measured 2026-11-20,
+  # a `select` process from the previous store path kept answering after the switch. Restarting
+  # llama-swap fixes that but cuts every running request, so the entry does it itself instead: the
+  # proxy compares its own store path with `/run/current-system/sw/bin/kdn-inference-helpers` and
+  # leaves once it holds no request. The next request spawns the new build.
 
   # The data tree belongs to the engine user, and everyone may read the models.
   systemd.tmpfiles.rules = [
