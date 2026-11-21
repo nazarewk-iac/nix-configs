@@ -229,7 +229,7 @@ Backup then has two halves and no third: the **data** (one directory per service
 
 ### State is a dataset, not a directory
 
-Where the host has ZFS (brys today), each service's state root is its **own dataset**, not a
+Where the host has ZFS (`brys` and `etra` today), each service's state root is its **own dataset**, not a
 directory inside a shared one:
 
 ```
@@ -256,11 +256,52 @@ Caveats that must be written per service:
 - a snapshot is **crash-consistent**, not application-consistent. SQLite and most file-based
   services are fine; a database needs a dump or an `fsfreeze` in the snapshot hook, and that fact
   belongs in the service's contract entry.
-- **Only ZFS hosts get this.** `etra` has no ZFS pool today, so its services use a plain directory
-  under the same path and `restic` until a pool exists; the contract (one state root) is unchanged,
-  which is why the switch is a mount, not a migration.
+- **Only ZFS hosts get this.** A host without a pool uses a plain directory under the same path and
+  `restic`; the contract (one state root) is unchanged, which is why the switch is a mount, not a
+  migration. Measured 2026-11-21: `etra` **does** have a pool (`etra-main`), so it gets datasets too.
+  What it lacks is a persisted `/var/lib` (tmpfs root), so a plain directory there is ephemeral.
 - **The dataset mount is the volume.** The container definition does not learn about ZFS; it is
   handed `/var/lib/kdn/<name>` and that is all.
+
+### Proven drill
+
+Proven 2026-11-21 on `etra` (pool `etra-main`) and `brys` (pool `brys-main`). The module is
+`kdn.containers.containers.<name>.stateDataset`; the container gets `stateDir` mounted at the same
+absolute path and exported as `KDN_STATE_DIR`.
+
+**Declarative path, `etra`.** `workshop-state` declares a dataset; the module's oneshot creates it
+before the container starts:
+
+```sh
+zfs create -p -o mountpoint=/var/lib/kdn/workshop-state -o compression=zstd \
+  -o atime=off -o xattr=sa -o refquota=1G etra-main/etra/kdn/services/workshop-state
+
+sudo zfs snapshot etra-main/etra/kdn/services/workshop-state@drill-1
+echo DRIFT | sudo tee -a /var/lib/kdn/workshop-state/starts.log
+sudo systemctl stop container-workshop-state.service   # ExecStopPost removes the container
+sudo zfs rollback etra-main/etra/kdn/services/workshop-state@drill-1
+sudo systemctl start container-workshop-state.service
+```
+
+```
+=== 3. destroy the container ===
+workshop-hello Up                 # workshop-state is gone from `nerdctl ps -a`
+=== 6. the state after rollback + restart ===
+2026-11-21T14:02:27+00:00
+2026-11-21T14:05:54+00:00
+2026-11-21T14:06:21+00:00         # the restarted container; DRIFT is gone
+```
+
+**By hand, `brys`.** containerd is not enabled there (it needs `hosts-den/brys/**`), so the dataset
+was created with the same `zfs create` and the container ran under rootful `podman` on an `alpine`
+image. Same result: a file written by the container survived `podman rm -f` + `zfs rollback`, and a
+file written after the snapshot did not. Dataset, snapshot and the `-p` parents were destroyed
+afterwards, so the drill leaves nothing outside the config.
+
+**Plain directory, `etra`.** `workshop-hello` declares no dataset: `tmpfiles` creates
+`/var/lib/kdn/workshop-hello`, the module mounts it, and the container appends a start line to
+`starts.log` that the host reads back. It runs, but the directory is tmpfs — a plain state root
+needs a persisted parent, and a dataset is the better answer wherever a pool exists.
 
 ### Risks
 
