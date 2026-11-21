@@ -175,6 +175,7 @@ in
         home.packages = [
           pkgs.kdn.kdn-journal
           pkgs.kdn.kdn-jj-meta
+          pkgs.kdn.kdn-knowledge
           pkgs.kdn.kdn-okf
           pkgs.kdn.okf-agent-memory
           pkgs.kdn.okf-guard

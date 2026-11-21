@@ -1,0 +1,93 @@
+---
+type: Reference
+description: The kdn-knowledge pipeline — read harness sessions, extract durable items with the local frontier, merge the repeats, and propose concepts and skills for the agent memory bundle.
+timestamp: 2026-11-21T23:55:00+01:00
+---
+
+# kdn-knowledge
+
+Turns finished sessions into short, deduplicated, searchable knowledge. Runs only on the local
+fleet: the model is `qfn` on `brys`, and the endpoint guard refuses any host that is not on the
+private network.
+
+Design: [docs/tasks/2026-11/knowledge-pipeline/design.md](tasks/2026-11/knowledge-pipeline/design.md).
+Task: [docs/tasks/2026-11/knowledge-pipeline/definition.md](tasks/2026-11/knowledge-pipeline/definition.md).
+
+## The four steps
+
+| command | what it does | writes |
+| --- | --- | --- |
+| `harvest` | reads `~/.local/share/opencode/opencode.db`, normalises each session, drops reasoning parts | `corpus/<session>.json` |
+| `extract` | one `qfn` call per session, strict JSON contract, one repair attempt | `candidates/<session>.json` |
+| `dream` | lexical clustering, one merge call per cluster, comparison with the bundle | `proposals/<ts>/{concepts,skills,plan.json,report.md}` |
+| `apply` | hands the concepts to the bundle writer, then validates | `.agents/knowledge/**` |
+
+`run` is the first three and stops before `apply`.
+
+## The run, from a laptop, over NetBird
+
+The endpoint is `https://llama-swap.brys.priv.nb.net.int.kdn.im/v1` and it resolves to brys'
+NetBird address, so the same command works on the LAN and in another city. The key is a file that
+already exists on every host:
+
+```bash
+export KDN_LLM_API_KEY=$(cat /run/configs/llms/llama-server/api-keys/default)
+```
+
+A first pass that you can watch:
+
+```bash
+kdn-knowledge harvest --project ~/dev/github.com/nazarewk-iac/nix-configs
+kdn-knowledge extract --limit 20
+kdn-knowledge dream
+less ~/.cache/kdn/knowledge/proposals/*/report.md
+```
+
+A full pass, detached, survives a dropped ssh session because every finished session is written
+to `state.json` before the next one starts:
+
+```bash
+systemd-run --user --unit kdn-knowledge --collect \
+  kdn-knowledge run --project ~/dev/github.com/nazarewk-iac/nix-configs
+journalctl --user -u kdn-knowledge -f
+```
+
+Resume after a stop is the same command: a session whose content hash is unchanged is skipped.
+`--force` re-extracts everything.
+
+## What it costs
+
+One real session of 24 000 characters cost 7 405 prompt tokens, 879 completion tokens and 20.8 s
+on `qfn` while the engine rested on `max-multi`. A 570-session pass is therefore about three
+hours. It runs on the frontier that is already loaded, so nothing switches, nothing unloads, and
+no second model competes for the card.
+
+A llama.cpp grunt model cannot do this on the resting profile: `gemma-4-e4b` and
+`ministral-3-3b-reasoning` are refused beside `max-multi` and only start on a colo profile
+(`qfn-fast-colo`), which costs a 58–74 s switch.
+
+## Reading the proposal
+
+`report.md` gives the counts, the strongest clusters and every failed session with its reason.
+`plan.json` is the same thing for a script. Each concept is one file with the bundle's frontmatter
+and `status: draft`; nothing is `stable` until a human says so.
+
+`apply --yes` creates the concepts through `okf-memory create`, so `log.md` and the directory
+`index.md` stay coherent, then runs
+`okflint validate --manifest .agents/knowledge/okf-base.yaml .agents/knowledge`. It refuses to
+overwrite a concept whose status is `stable`.
+
+## Searching the result
+
+```bash
+okf-memory search "jj split worklog" .agents/knowledge --limit 5
+kdn-okf list --type Decision --status draft    # the new drafts, once applied
+```
+
+## Guard rails
+
+- The endpoint must pass the host allow-list (`--allow-host` adds one). `api.openai.com` is
+  refused by construction.
+- The tool never switches profiles and never unloads a model.
+- The bundle has one writer: `apply` goes through `okf-memory`, and the pipeline never touches
+  `index.md` or `log.md` itself.
