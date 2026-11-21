@@ -146,8 +146,8 @@ plus the two qwen auxiliaries the pi `planner`, `reviewer` and `consultant` sub-
 `requesty/tensorx/qwen3.8-flash-next` (256K/256K — review and brainstorming). All three take a
 top-level `reasoning_effort`, not `chat_template_kwargs`.
 
-Known broken on this build: `ternary-bonsai-2-27b` (invalid ggml type), parakeet ASR (unknown
-architecture), `minicpm-v-4.7-*` (projector unsupported).
+Not in the catalogue, because this build cannot serve them: `ternary-bonsai-2-27b` (invalid ggml
+type), parakeet ASR (unknown architecture), `minicpm-v-4.7-*` (projector unsupported).
 
 ## Working with the fleet in practice
 
@@ -326,9 +326,9 @@ omni-fast` 50 s, `omni-fast → max` 69 s, engine load 42-60 s, cache drop 4-5 s
 This skill is a **living document**. Update it as we learn, in the same change
 that changes the fleet. Record:
 
-- **Eviction behaviour**: which models evict which. brys holds no frontier
-  model since 2026-11-13; the co-residency tiers in `data/llm.nix` are the
-  whole eviction story.
+- **Eviction behaviour**: which models evict which. The frontier is the Strata
+  engine, not a llama.cpp entry in the catalogue, so it leaves the card by a
+  profile switch and only the grunt tiers in `data/llm.nix` evict each other.
 - **What co-resides well**: which models can run together without halving speed.
   A CPU model beside a big GPU model competes for the same ~40 GB/s of RAM
   bandwidth; a GPU grunt beside another does not.
