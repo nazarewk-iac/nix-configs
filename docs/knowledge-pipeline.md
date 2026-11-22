@@ -12,6 +12,7 @@ private network.
 
 Design: [docs/tasks/2026-11/knowledge-pipeline/design.md](tasks/2026-11/knowledge-pipeline/design.md).
 Task: [docs/tasks/2026-11/knowledge-pipeline/definition.md](tasks/2026-11/knowledge-pipeline/definition.md).
+Architecture overview and the package map: [packages/kdn-knowledge/README.md](../packages/kdn-knowledge/README.md).
 
 ## The four steps
 
