@@ -5,6 +5,28 @@ proc log {logger message} {
 }
 
 lassign $argv dbpath passpath
+
+# Fetch the password BEFORE spawning KeePassXC. `pass` decrypts through gpg, which needs the
+# YubiKey; right after a cold boot the card and the agent are not ready yet, and the old order
+# spawned KeePassXC first and then died in `exec pass`, leaving an orphan with no password — the
+# database opened "locked" and systemd saw a healthy unit, so nothing retried. Retry here with a
+# bound, and fail before the spawn so `Restart=on-failure` reruns the whole unit.
+set password ""
+set got_password 0
+for {set attempt 1} {$attempt <= 20} {incr attempt} {
+  if {[catch {exec pass $passpath 2>/dev/null} out] == 0 && [string trim $out] ne ""} {
+    set password $out
+    set got_password 1
+    break
+  }
+  log kdn-keepassxc "pass failed (attempt $attempt of 20); retrying"
+  after 1500
+}
+if {!$got_password} {
+  log kdn-keepassxc "no password from pass after 20 attempts; not starting KeePassXC"
+  exit 1
+}
+
 spawn keepassxc --pw-stdin "$dbpath"
 set keepassxc_spawn_id $spawn_id
 set keepassxc_pid [exp_pid]
@@ -15,7 +37,6 @@ if {[info exists ::env(NOTIFY_SOCKET)]} {
   log kdn-keepassxc:systemd "MAINPID set to $keepassxc_pid"
 }
 
-set password [exec pass "$passpath" 2>/dev/null]
 expect {
   "Another instance of KeePassXC is already running." { exit 1 }
   "Database password: " {
