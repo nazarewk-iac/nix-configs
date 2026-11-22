@@ -20,6 +20,9 @@
   # the upstream flake, which is the only place it is complete.
   inputs.nix-snapshotter.url = "github:pdtpartners/nix-snapshotter";
   inputs.nix-snapshotter.inputs.nixpkgs.follows = "nixpkgs";
+  # The same dedup for the compat shim: without it the input pins its own `flake-compat`
+  # (ff81ac96) while the flake moved to 5edf11c4.
+  inputs.nix-snapshotter.inputs.flake-compat.follows = "flake-compat";
   inputs.nixpkgs-lib.follows = "nixpkgs";
 
   # * pinned inputs to keep up to date manually
@@ -32,6 +35,7 @@
   inputs.angrr.url = "github:linyinfeng/angrr";
   inputs.argon40-nix.url = "github:guusvanmeerveld/argon40-nix";
   inputs.base16.url = "github:SenchoPens/base16.nix";
+  inputs.base16.inputs.nixpkgs.follows = "nixpkgs";
   inputs.brew-tap--homebrew--cask.flake = false;
   inputs.brew-tap--homebrew--cask.url = "github:homebrew/homebrew-cask";
   inputs.brew-tap--homebrew--core.flake = false;
@@ -83,6 +87,7 @@
   inputs.nixos-crostini.url = "github:nazarewk-iac/nixos-crostini";
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
+  inputs.nixos-hardware.inputs.nixpkgs.follows = "nixpkgs";
   # The build-farm proxy project. The `build-farm` aspect currently renders HAProxy directly (its
   # `balance first` is not in yensid's strategy enum), but the away-mode design and the per-builder
   # `ca` host-key module come from here, so the input is kept to migrate back onto its modules.
@@ -204,6 +209,10 @@
   # Found by `hack/flake-structure-analysis.py`: transitive inputs that pinned their own
   # source. Keep this list in sync with that script.
   inputs.devenv.inputs.flake-compat.follows = "flake-compat";
+  # `devenv` carries its own nixpkgs by default. Without this line `devenv.lock` resolves a
+  # second nixpkgs (2026-11-22: a0788123 against the flake's 319e4ceb), and the shell and the
+  # system build from different pins.
+  inputs.devenv.inputs.nixpkgs.follows = "nixpkgs";
   inputs.devenv.inputs.flake-parts.follows = "flake-parts";
   inputs.devenv.inputs.nixd.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.devenv.inputs.rust-overlay.follows = "rust-overlay";
