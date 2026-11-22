@@ -35,8 +35,8 @@ func strp(v string) *string     { return &v }
 
 // deployment is a synthetic profile table. The numbers are deliberately unlike the ones brys
 // serves, so no test can pass by matching a built-in table: the adapter has none. The real table
-// lives in hosts-den/brys/strata-profiles.nix, and checks/inference-helpers/profiles.nix proves it
-// agrees with the generated config.json and with the argv strata-serve.sh builds.
+// lives in `data/llm.nix` on each frontier model, and `lib/llm.nix` projects it into the generated
+// config.json that this package loads.
 func deployment() map[string]config.ProfileSpec {
 	return map[string]config.ProfileSpec{
 		"swarm": {

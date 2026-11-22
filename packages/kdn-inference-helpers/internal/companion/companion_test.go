@@ -16,6 +16,9 @@ import (
 func newGate(t *testing.T, profile string, upstream string) (*Gate, *int32) {
 	t.Helper()
 	cfg := config.Defaults()
+	// The alias is the deployment's: the gate must resolve the llama-swap name to a profile before
+	// it checks the allow-list, so the fixture carries that one mapping.
+	cfg.Aliases = map[string]string{"qfn-max-colo": "omni-max"}
 	var selectCalls int32
 	manager := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

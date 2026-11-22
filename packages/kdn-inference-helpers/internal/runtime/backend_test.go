@@ -53,6 +53,9 @@ func newBackend(t *testing.T, loaded []string, cacheDrop []string) (*Backend, *[
 	cfg := config.Defaults()
 	cfg.DataDir = t.TempDir()
 	cfg.CacheDropCommand = cacheDrop
+	// The frontier set is the deployment's, not the binary's: this fixture names the two ids whose
+	// proxies must survive an unload.
+	cfg.FrontierIDs = []string{"qfn", "qfn-max"}
 	client, unloaded := fakeSwap(t, loaded)
 	return &Backend{
 		Supervisor: &engine.Supervisor{

@@ -8,30 +8,50 @@ import (
 	"kdn-inference-helpers/internal/engine/command"
 )
 
-func TestDefaultsDescribeBrys(t *testing.T) {
+// A binary with no deployment file knows no names. The alias, frontier and text-profile tables are
+// the deployment's, so a default here would be a second copy that drifts from `data/llm.nix`.
+func TestDefaultsCarryNoDeploymentNames(t *testing.T) {
 	c := Defaults()
 	if c.Engine != "strata" || c.EnginePort != 8080 || c.ManagerPort != 8181 {
 		t.Fatalf("defaults = %+v", c)
 	}
-	if got := c.Normalise("qfn"); got != "auto" {
-		t.Fatalf("qfn normalised to %q", got)
+	if len(c.Aliases) != 0 || len(c.FrontierIDs) != 0 || len(c.TextProfiles) != 0 {
+		t.Fatalf("names leaked into the defaults: %v %v %v", c.Aliases, c.FrontierIDs, c.TextProfiles)
 	}
-	if got := c.Normalise("qfn-max-colo"); got != "omni-max" {
-		t.Fatalf("qfn-max-colo normalised to %q", got)
+	if len(c.Profiles) != 0 {
+		t.Fatalf("a profile table leaked into the defaults: %v", c.Profiles)
 	}
-	if got := c.Normalise("qfn-fast-colo"); got != "omni-fast" {
-		t.Fatalf("qfn-fast-colo normalised to %q", got)
+	if got := c.Normalise("qfn"); got != "qfn" {
+		t.Fatalf("a name changed with no deployment: %q", got)
 	}
-	if got := c.Normalise("bogus"); got != "bogus" {
-		t.Fatalf("unknown name changed to %q", got)
+	if c.IsFrontier("qfn") {
+		t.Fatal("a bare binary calls qfn a frontier id")
 	}
-	if !c.IsFrontier("qfn") || !c.IsFrontier("qfn-fast-colo") || c.IsFrontier("qwen3-omni") {
-		t.Fatalf("frontier set = %v", c.FrontierIDs)
+	if c.DefaultTextProfile() != "" {
+		t.Fatalf("a bare binary has a resting profile: %q", c.DefaultTextProfile())
 	}
 	if len(c.CacheDropCommand) == 0 {
 		t.Fatal("brys needs the cache-drop hook")
 	}
 }
+
+// deploymentConfig is a small deployment the tests own. It is deliberately not brys: the tests cover
+// the rules, and the host's resting profile changes without rewriting them.
+func deploymentConfig() *Config {
+	c := Defaults()
+	c.Aliases = map[string]string{
+		"qfn": "auto", "qfn-max": "max", "qfn-fast-colo": "omni-fast",
+	}
+	c.FrontierIDs = []string{"qfn", "qfn-max", "qfn-fast-colo"}
+	c.TextProfiles = []string{"max", "omni-fast"}
+	c.Profiles = map[string]ProfileSpec{
+		"max":       {Base: "pack", MaxContext: ptr(4096), Parallel: ptr(2), ReserveMiB: ptr(0), KVResident: ptr(0), RopeScale: ptr(1.0)},
+		"omni-fast": {Base: "pack", MaxContext: ptr(4096), Parallel: ptr(1), ReserveMiB: ptr(1024), KVResident: ptr(0), RopeScale: ptr(1.0)},
+	}
+	return c
+}
+
+func ptr[T any](v T) *T { return &v }
 
 func TestLoadIsADeltaOverTheDefaults(t *testing.T) {
 	dir := t.TempDir()
@@ -99,9 +119,11 @@ func TestPathsDeriveFromDataDir(t *testing.T) {
 // Acceptance is derived, not compiled in: a deployment that adds an image profile does not have to
 // touch the runtime.
 func TestAcceptsIsDerivedFromTheDeployment(t *testing.T) {
-	c := Defaults()
-	for _, want := range []string{"auto", "none", "max-multi", "omni-fast", "qfn", "qfn-max",
-		"qfn-max-long", "qfn-max-swarm", "qfn-fast-swarm"} {
+	c := deploymentConfig()
+	for _, want := range []string{
+		"auto", "none", "max", "omni-fast", "qfn", "qfn-max",
+		"qfn-fast-colo",
+	} {
 		if !c.Accepts(c.Normalise(want)) {
 			t.Fatalf("%q is not accepted", want)
 		}
@@ -116,7 +138,7 @@ func TestAcceptsIsDerivedFromTheDeployment(t *testing.T) {
 	if c.IsText("image-qwen") {
 		t.Fatal("an image profile is treated as text")
 	}
-	if !c.IsText("max-multi") || c.DefaultTextProfile() != "max-multi" {
+	if !c.IsText("max") || c.DefaultTextProfile() != "max" {
 		t.Fatalf("text profiles = %v", c.TextProfiles)
 	}
 }

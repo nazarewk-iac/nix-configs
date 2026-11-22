@@ -142,38 +142,19 @@ func (p ProfileSpec) validate(name string) error {
 
 // Defaults is brys. Values are measured, not guessed; see docs/tasks/2026-11/brys-r9700-model-fit.
 //
-// There is deliberately no profile table here: a profile's window, slot count, reserve and resident
-// K/V live in `hosts-den/brys/strata-profiles.nix` only, and reach this package through the
-// deployment file. A binary run with no file at all therefore knows no profiles and refuses every
-// `/select` — the explicit fallback, because the alternative is a second copy of the numbers that
-// silently disagrees with the host.
+// There is deliberately no profile table and no name table here: a profile's window, slot count,
+// reserve and resident K/V live in `data/llm.nix` only, and its alias, frontier id and text-profile
+// rank reach this package through the deployment file. A binary run with no file at all therefore
+// knows no profiles and no names and refuses every `/select` — the explicit fallback, because the
+// alternative is a second copy of the numbers or the names that silently disagrees with the host.
 func Defaults() *Config {
 	return &Config{
-		Engine:      "strata",
-		DataDir:     "/var/lib/kdn/llms/models/.bench/xdg",
-		EnginePort:  8080,
-		ManagerPort: 8181,
-		SwapURL:     "http://127.0.0.1:39700",
-		EngineBin:   "/var/lib/kdn/llms/models/.bench/bin/strata",
-		Aliases: map[string]string{
-			"qfn":            "auto",
-			"qfn-max":        "max-long",
-			"qfn-max-multi":  "max-multi",
-			"qfn-max-swarm":  "max-swarm",
-			"qfn-max-long":   "max-long",
-			"qfn-max-single": "max-single",
-			"qfn-fast-swarm": "fast-swarm",
-			"qfn-max-colo":   "omni-max",
-			"qfn-fast-colo":  "omni-fast",
-		},
-		FrontierIDs: []string{
-			"qfn", "qfn-max", "qfn-max-multi", "qfn-max-swarm", "qfn-max-long",
-			"qfn-max-single", "qfn-fast-swarm", "qfn-max-colo", "qfn-fast-colo",
-		},
-		TextProfiles: []string{
-			"max-multi", "max-swarm", "max-long", "max-single", "fast-swarm",
-			"omni-max", "omni-fast",
-		},
+		Engine:           "strata",
+		DataDir:          "/var/lib/kdn/llms/models/.bench/xdg",
+		EnginePort:       8080,
+		ManagerPort:      8181,
+		SwapURL:          "http://127.0.0.1:39700",
+		EngineBin:        "/var/lib/kdn/llms/models/.bench/bin/strata",
 		PolicyPath:       "/etc/kdn-inference-helpers/policy.json",
 		CacheDropCommand: []string{"sudo", "-n", "systemctl", "start", "strata-drop-cache.service"},
 		Profiles:         map[string]ProfileSpec{},
@@ -257,7 +238,9 @@ func (c *Config) IsText(profile string) bool { return contains(c.TextProfiles, p
 // the whole-card frontier.
 func (c *Config) DefaultTextProfile() string {
 	if len(c.TextProfiles) == 0 {
-		return "max"
+		// No deployment, no resting profile. A literal here would be a second copy of the host's
+		// resting profile, and the first time somebody changes rank 0 it would be wrong.
+		return ""
 	}
 	return c.TextProfiles[0]
 }

@@ -59,15 +59,14 @@ The 2026-11-21 follow-up moved the remaining copies into `data/llm.nix`: the `co
 the `strata-select <profile>` strings in each entry, and the policy's frontier facts. That is what
 made the guard check unnecessary rather than merely satisfied.
 
-## The one copy that is left
+## The last copy is gone
 
-`config.Defaults()` in `packages/kdn-inference-helpers/internal/config/config.go` still carries a
-fallback `aliases` / `frontierIDs` / `textProfiles` list for a binary started with no deployment
-file. It holds **no numbers** — the profiles map is empty, so such a binary refuses every
-`/select` — but it repeats the names, and a names-only copy drifts the same way a numeric one does.
-The intended end state is to delete those three fields from `Defaults()` and let the deployment
-file be the only source of names, the same way it is the only source of knobs. Until that lands,
-treat the list as a fallback and never as a reference.
+`config.Defaults()` in `packages/kdn-inference-helpers/internal/config/config.go` used to carry a
+fallback `aliases` / `frontierIDs` / `textProfiles` list, and `DefaultTextProfile()` used to return
+the literal `"max"` when that list was empty. Both were copies of the deployment's names, and the
+literal was the exact name the 2026-11-21 refactor retired. They are deleted: a binary started with
+no deployment file now knows **no profiles and no names**, refuses every `/select`, and says so.
+The deployment file is the only source of names, the same way it is the only source of knobs.
 
 ## Adding an operating point
 
