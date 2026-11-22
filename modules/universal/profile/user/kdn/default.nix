@@ -288,6 +288,23 @@ in
               }
             ];
           }
+          # `home-manager-<user>` runs before `systemd-user-sessions`, so anything that blocks there
+          # delays every login. The generated GPG step runs `gpg --edit-key` to set trust; at boot
+          # the user agent is not up yet and scdaemon probes the YubiKey, so that call can block
+          # until the unit's 5-minute timeout, which kills the rest of the activation and leaves the
+          # session half-built. Import the keys with a bound and skip the interactive trust edit:
+          # trust belongs to the keyring and is set once by hand, not on every boot.
+          (lib.mkIf (cfg.gpg.publicKeys != null) {
+            home.activation.importGpgKeys = lib.mkForce {
+              after = [ "linkGeneration" ];
+              before = [ ];
+              data = ''
+                export GNUPGHOME="$HOME/.gnupg"
+                ${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe config.programs.gpg.package} --batch --quiet --import ${lib.escapeShellArg (toString cfg.gpg.publicKeys)} || true
+                unset GNUPGHOME
+              '';
+            };
+          })
           (lib.mkIf cfg.nextcloud.enable {
             home.activation = {
               linkPasswordStore = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
