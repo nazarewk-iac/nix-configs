@@ -126,7 +126,7 @@ Measured during the recovery:
 - The `AuthorizedKeysCommand` was rewritten to a `/bin/sh` script. The previous command had a
   `/nix/store` bash shebang, so key login depended on the store it was meant to recover.
 - Apple's sshd 10.3 still logs `Unable to load host key "/etc/ssh/ssh_host_mldsa44_ed25519_key":
-  unknown or unsupported key type`, so the PQ host identity remains inert on this host. The task
+unknown or unsupported key type`, so the PQ host identity remains inert on this host. The task
   stay open for the nixpkgs-sshd replacement.
 
 The live launchd plists use the new helper. The normal build is a plain

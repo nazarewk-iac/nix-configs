@@ -15,8 +15,8 @@ The task that produced it, with the full evidence, is
 ## Why it exists
 
 A gateway caps how many images one request may carry: **30** for requesty and the OpenCode gateway,
-**50** for Azure. OpenCode caps the *bytes* of an image (`media.image.max_base64_bytes`, 5 MiB by
-default) and never the *count*, and the cap is not in the model metadata, so no setting expresses
+**50** for Azure. OpenCode caps the _bytes_ of an image (`media.image.max_base64_bytes`, 5 MiB by
+default) and never the _count_, and the cap is not in the model metadata, so no setting expresses
 it.
 
 A session that collects screenshots — a NanoKVM loop, a repeated `read` of a PNG, a multi-page PDF —
@@ -55,15 +55,15 @@ image, so nothing is lost.
 
 `kdn.opencode.imageBudget` in the `opencode` aspect:
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `maxImages` | `8` | How many images one request may carry. |
-| `maxBytes` | `"8MiB"` | The cumulative Base64 payload of those images. |
-| `compaction.maxImages` | `0` | How many images a compaction or title request may carry. |
-| `compaction.maxBytes` | `0` | The payload of those requests. |
-| `providers.<id>` | `{}` | Per-provider `maxImages` / `maxBytes`. |
-| `models."<provider>/<model>"` | `{}` | Per-model `maxImages` / `maxBytes`. |
-| `debug` | `false` | Log one line per pruned request to the server log. |
+| Option                        | Default  | Meaning                                                  |
+| ----------------------------- | -------- | -------------------------------------------------------- |
+| `maxImages`                   | `8`      | How many images one request may carry.                   |
+| `maxBytes`                    | `"8MiB"` | The cumulative Base64 payload of those images.           |
+| `compaction.maxImages`        | `0`      | How many images a compaction or title request may carry. |
+| `compaction.maxBytes`         | `0`      | The payload of those requests.                           |
+| `providers.<id>`              | `{}`     | Per-provider `maxImages` / `maxBytes`.                   |
+| `models."<provider>/<model>"` | `{}`     | Per-model `maxImages` / `maxBytes`.                      |
+| `debug`                       | `false`  | Log one line per pruned request to the server log.       |
 
 ```nix
 kdn.opencode.imageBudget.providers.litellm = {

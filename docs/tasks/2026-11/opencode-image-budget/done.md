@@ -10,23 +10,23 @@ timestamp: 2026-11-20T12:00:00+01:00
 
 ## What changed
 
-| Path | Change |
-| --- | --- |
-| `modules/den/aspects/opencode/kdn-image-budget.ts` | New. The plugin source: 300 lines, no dependency. |
-| `modules/den/aspects/opencode.nix` | Generates `.opencode/plugins/kdn-image-budget.ts`, injects `kdn.opencode.imageBudget`, extends `enterTest`. |
-| `docs/opencode-image-budget.md` | New. The operator view: what it does, the options, how to recover a session that is already over the cap. |
+| Path                                               | Change                                                                                                      |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `modules/den/aspects/opencode/kdn-image-budget.ts` | New. The plugin source: 300 lines, no dependency.                                                           |
+| `modules/den/aspects/opencode.nix`                 | Generates `.opencode/plugins/kdn-image-budget.ts`, injects `kdn.opencode.imageBudget`, extends `enterTest`. |
+| `docs/opencode-image-budget.md`                    | New. The operator view: what it does, the options, how to recover a session that is already over the cap.   |
 
 ## How it works
 
 The plugin registers four request hooks and one retry hook:
 
-| Hook | Budget | Why |
-| --- | --- | --- |
-| `context` | the configured budget | The agent loop. This is the request that bricks. |
-| `generate` | the configured budget | Transient generation from the session context. |
-| `compaction` | 0 images | A summary does not need pixels, and a compaction carrying every image fails the same way. |
-| `title` | 0 images | Same, and the title model needs no image. |
-| `retry` | — | Learns the cap from `Too many images in request: N > M`, stores it, forces one retry. |
+| Hook         | Budget                | Why                                                                                       |
+| ------------ | --------------------- | ----------------------------------------------------------------------------------------- |
+| `context`    | the configured budget | The agent loop. This is the request that bricks.                                          |
+| `generate`   | the configured budget | Transient generation from the session context.                                            |
+| `compaction` | 0 images              | A summary does not need pixels, and a compaction carrying every image fails the same way. |
+| `title`      | 0 images              | Same, and the title model needs no image.                                                 |
+| `retry`      | —                     | Learns the cap from `Too many images in request: N > M`, stores it, forces one retry.     |
 
 The plugin walks `messages` for image parts. OpenCode 2.2.5 hands the hook provider-shaped messages
 (`{ role, content }` with `text` / `reasoning` / `tool-call` / `tool-result` parts), where a tool

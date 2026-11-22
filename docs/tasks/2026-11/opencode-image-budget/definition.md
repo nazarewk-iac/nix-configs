@@ -29,7 +29,7 @@ Three facts combine:
 1. **The cap is the gateway's, not OpenCode's.** requesty and the OpenCode gateway cap a request at
    30 images; Azure caps at 50. The limit is not in the model metadata (`Model.Info` has no image
    count) and there is no configuration for it.
-2. **OpenCode has no client-side image-count guard.** It caps image *bytes*
+2. **OpenCode has no client-side image-count guard.** It caps image _bytes_
    (`media.image.max_base64_bytes`, 5 MiB by default) and never the count. So 69 small screenshots
    of ~90 KB each pass every client check and are rejected by the gateway.
 3. **An image-count rejection is not context overflow.** `compaction.auto` recovers from a

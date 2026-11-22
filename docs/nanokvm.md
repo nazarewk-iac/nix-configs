@@ -111,7 +111,7 @@ host and not a capture fault. Recover in this order:
 2. **Restart the KVM server** only if the rebind does not help. `manual control is active` is a
    different fault: a browser WebSocket holds the input lock. A server restart releases it.
 3. **Reboot the KVM** when screenshots then fail with `retCode: -7` (`failed to capture
-   screenshot`). On 2026-11-20 a server restart left the capture pipeline in that state, and a
+screenshot`). On 2026-11-20 a server restart left the capture pipeline in that state, and a
    full KVM reboot restored both capture and HID.
 
 Do not reset the Mac for this signature. The host is still running; only the KVM's input path is

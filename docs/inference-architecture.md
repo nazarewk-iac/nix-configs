@@ -38,23 +38,23 @@ when each one does something. The design rationale is in
 
 ## What is a daemon and what is a command
 
-| piece | kind | lifetime | owner |
-| --- | --- | --- | --- |
-| `llama-swap.service` | **daemon** | boot to shutdown | systemd, `llm-server` |
-| `strata-manager.service` | **daemon** | boot to shutdown | systemd, `llm-server` |
-| `kdn-inference-helpers select …` | **daemon** (per entry) | while llama-swap keeps that model loaded | llama-swap |
-| `kdn-inference-helpers omni -- llama-server …` | **daemon** (per entry) + child | while llama-swap keeps the companion loaded | llama-swap (gate), gate (model) |
-| `llama-server` (grunt/surveyed models) | **daemon** (per entry) | while loaded | llama-swap |
-| `strata serve` | **daemon** (one) | while a profile is selected | the manager |
-| `llama-server` for the companion | **daemon** (one) | while the gate runs | the gate |
-| `kdn-inference-helpers ctl up\|down\|status\|stats\|unload` | **command** | seconds | a human or an agent |
-| `kdn-inference-helpers serve <profile> --port N` | **command** (execs the engine) | becomes the engine | the `strata-frontier` fallback unit |
-| `strata-drop-cache.service` | **oneshot**, root | ~4 s, triggered per switch | the manager, through one sudoers line |
-| `strata-revert.service` | **transient timer** | armed for `--ttl`, fires once | `ctl up --ttl` |
-| `r9700-power-cap.service` (+ `-resume`) | **oneshot**, root | boot and resume | systemd |
-| `strata-frontier.service` | **disabled fallback** | only when started by hand | nobody by default |
-| `container@litellm.service`, `litellm-brys-egress.service` | **daemons** | boot to shutdown | systemd on etra |
-| `hack/probe-drain*.py`, `hack/probe-power-*.py` | **commands** | minutes | a human, as acceptance tests |
+| piece                                                       | kind                           | lifetime                                    | owner                                 |
+| ----------------------------------------------------------- | ------------------------------ | ------------------------------------------- | ------------------------------------- |
+| `llama-swap.service`                                        | **daemon**                     | boot to shutdown                            | systemd, `llm-server`                 |
+| `strata-manager.service`                                    | **daemon**                     | boot to shutdown                            | systemd, `llm-server`                 |
+| `kdn-inference-helpers select …`                            | **daemon** (per entry)         | while llama-swap keeps that model loaded    | llama-swap                            |
+| `kdn-inference-helpers omni -- llama-server …`              | **daemon** (per entry) + child | while llama-swap keeps the companion loaded | llama-swap (gate), gate (model)       |
+| `llama-server` (grunt/surveyed models)                      | **daemon** (per entry)         | while loaded                                | llama-swap                            |
+| `strata serve`                                              | **daemon** (one)               | while a profile is selected                 | the manager                           |
+| `llama-server` for the companion                            | **daemon** (one)               | while the gate runs                         | the gate                              |
+| `kdn-inference-helpers ctl up\|down\|status\|stats\|unload` | **command**                    | seconds                                     | a human or an agent                   |
+| `kdn-inference-helpers serve <profile> --port N`            | **command** (execs the engine) | becomes the engine                          | the `strata-frontier` fallback unit   |
+| `strata-drop-cache.service`                                 | **oneshot**, root              | ~4 s, triggered per switch                  | the manager, through one sudoers line |
+| `strata-revert.service`                                     | **transient timer**            | armed for `--ttl`, fires once               | `ctl up --ttl`                        |
+| `r9700-power-cap.service` (+ `-resume`)                     | **oneshot**, root              | boot and resume                             | systemd                               |
+| `strata-frontier.service`                                   | **disabled fallback**          | only when started by hand                   | nobody by default                     |
+| `container@litellm.service`, `litellm-brys-egress.service`  | **daemons**                    | boot to shutdown                            | systemd on etra                       |
+| `hack/probe-drain*.py`, `hack/probe-power-*.py`             | **commands**                   | minutes                                     | a human, as acceptance tests          |
 
 The rule of thumb: a process that must stay attached to a port is a daemon; a process that asks for
 something and prints the answer is a command. The wrappers `strata-manager`, `strata-select`,
@@ -63,26 +63,26 @@ Go binary.
 
 ## Ports
 
-| port | thing | notes |
-| --- | --- | --- |
-| 39700 | llama-swap | the fleet's OpenAI front door on brys |
-| 8080 | Strata engine | one per card, owned by the manager |
-| 8181 | manager | `/select`, `/status`, `/stats`, `/events`, `/lease`, `/release`, `/unload` |
-| `${PORT}` | one per llama-swap entry | assigned by llama-swap, e.g. 10009 |
-| `${PORT}+1000` | companion model | the gate listens on `${PORT}`, the model behind it |
-| 39704 | etra → brys relay | used by the gateway container |
+| port           | thing                    | notes                                                                      |
+| -------------- | ------------------------ | -------------------------------------------------------------------------- |
+| 39700          | llama-swap               | the fleet's OpenAI front door on brys                                      |
+| 8080           | Strata engine            | one per card, owned by the manager                                         |
+| 8181           | manager                  | `/select`, `/status`, `/stats`, `/events`, `/lease`, `/release`, `/unload` |
+| `${PORT}`      | one per llama-swap entry | assigned by llama-swap, e.g. 10009                                         |
+| `${PORT}+1000` | companion model          | the gate listens on `${PORT}`, the model behind it                         |
+| 39704          | etra → brys relay        | used by the gateway container                                              |
 
 ## Files the runtime owns
 
-| path | who writes | what |
-| --- | --- | --- |
-| `/etc/kdn-inference-helpers/config.json` | NixOS | ports, aliases, frontier ids, cache-drop hook, log paths |
-| `<data>/strata/manager-state.json` | manager | the selected profile |
-| `<data>/strata/events.jsonl` | manager | one JSON line per switch, load, stop, drain, companion event |
-| `<data>/strata/engine.log` | manager | the engine child's stdout and stderr |
-| `<data>/strata/companion.log` | gate | the companion's stdout and stderr |
-| `<data>/strata/profiles/strata-<profile>.json` | adapter | the materialised engine config |
-| `<data>/strata/install/strata-<pack>.json` | the Strata Terminal | the base config each profile patches |
+| path                                           | who writes          | what                                                         |
+| ---------------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `/etc/kdn-inference-helpers/config.json`       | NixOS               | ports, aliases, frontier ids, cache-drop hook, log paths     |
+| `<data>/strata/manager-state.json`             | manager             | the selected profile                                         |
+| `<data>/strata/events.jsonl`                   | manager             | one JSON line per switch, load, stop, drain, companion event |
+| `<data>/strata/engine.log`                     | manager             | the engine child's stdout and stderr                         |
+| `<data>/strata/companion.log`                  | gate                | the companion's stdout and stderr                            |
+| `<data>/strata/profiles/strata-<profile>.json` | adapter             | the materialised engine config                               |
+| `<data>/strata/install/strata-<pack>.json`     | the Strata Terminal | the base config each profile patches                         |
 
 ## When things happen
 
@@ -120,13 +120,13 @@ with it). The manager's companion watcher notices the last companion gone and re
 
 ## Who owns which child (restart semantics)
 
-| if this restarts | what dies with it | what survives |
-| --- | --- | --- |
-| `strata-manager` | the engine (its child); the manager restores the profile on start | llama-swap and its entry proxies — they reconnect to the same port |
-| `llama-swap` | every entry child: the QFN proxies and the companion gate + its model | the engine, because the manager owns it; the next request re-attaches in ms |
-| the `select` proxy for an entry | that entry's port only; llama-swap restarts it on the next request | the engine and the other entries |
-| the `omni` gate | the companion model with it | the engine; the journal already recorded the unload |
-| `strata serve` | in-flight requests on the engine (the manager retries a restore) | the manager, which journals the failure and clears the profile |
+| if this restarts                | what dies with it                                                     | what survives                                                               |
+| ------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `strata-manager`                | the engine (its child); the manager restores the profile on start     | llama-swap and its entry proxies — they reconnect to the same port          |
+| `llama-swap`                    | every entry child: the QFN proxies and the companion gate + its model | the engine, because the manager owns it; the next request re-attaches in ms |
+| the `select` proxy for an entry | that entry's port only; llama-swap restarts it on the next request    | the engine and the other entries                                            |
+| the `omni` gate                 | the companion model with it                                           | the engine; the journal already recorded the unload                         |
+| `strata serve`                  | in-flight requests on the engine (the manager retries a restore)      | the manager, which journals the failure and clears the profile              |
 
 ## What is deliberately not in this picture
 

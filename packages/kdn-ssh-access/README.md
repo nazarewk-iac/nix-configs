@@ -82,13 +82,13 @@ kdn-ssh-access debug [host...]      # full diagnosis, and a real session (see be
 
 The ssh alias is `kdn-<name>`, with optional `+tag` suffixes:
 
-| Tag           | Effect                                                                                                                                                 |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `+direct`     | Keep only LAN-origin paths                                                                                                                             |
-| `+remote`     | Keep only internet-origin paths (a WAN entry or a relay chain)                                                                                         |
-| `+via=<host>` | Keep only paths through that relay                                                                                                                     |
-| `+apple` / `+recovery` | Force the final target to port 22. Both tags are aliases for the recovery daemon of a host whose fleet sshd runs on an alternate port.                  |
-| `+4` / `+6`   | Force an address family. It filters IP literals only — a hostname always passes, because its family is unknown until the hop that dials it resolves it |
+| Tag                    | Effect                                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `+direct`              | Keep only LAN-origin paths                                                                                                                             |
+| `+remote`              | Keep only internet-origin paths (a WAN entry or a relay chain)                                                                                         |
+| `+via=<host>`          | Keep only paths through that relay                                                                                                                     |
+| `+apple` / `+recovery` | Force the final target to port 22. Both tags are aliases for the recovery daemon of a host whose fleet sshd runs on an alternate port.                 |
+| `+4` / `+6`            | Force an address family. It filters IP literals only — a hostname always passes, because its family is unknown until the hop that dials it resolves it |
 
 ```bash
 ssh kdn-myhost           # let the dispatcher select

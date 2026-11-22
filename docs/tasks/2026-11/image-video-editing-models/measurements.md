@@ -13,7 +13,7 @@ stack: `stable-diffusion.cpp` built with `vulkanSupport = true`
 no torch and no ROCm.
 
 Every run uses the same prompt and the same reference image: a 1024x1024 photograph of a wooden dock
-on a lake, instruction *"turn the sky into a dramatic orange sunset with heavy clouds"*. Seed 42,
+on a lake, instruction _"turn the sky into a dramatic orange sunset with heavy clouds"_. Seed 42,
 Euler, flow shift 3.
 
 ## Power: both numbers, on purpose
@@ -26,12 +26,12 @@ A benchmark has the opposite requirement: it should not be limited by our electr
 next card's numbers are not comparable. So the survey was run twice, once at 210 W and once at the
 card's factory **300 W** ceiling, and both are reported. The cap costs **3-10 %** of wall time:
 
-| run | 210 W | 300 W | difference |
-| --- | --- | --- | --- |
-| Qwen-Image-Edit + Lightning, 4 steps | 44 s | 41 s | +7 % |
-| LongCat-Image-Edit-Turbo, 8 steps | 30 s | 29 s | +3 % |
-| Qwen-Image-Edit, 20 steps | 293 s | 266 s | +10 % |
-| Wan2.1 VACE 14B, 20 steps | 1039 s | 940 s | +10 % |
+| run                                  | 210 W  | 300 W | difference |
+| ------------------------------------ | ------ | ----- | ---------- |
+| Qwen-Image-Edit + Lightning, 4 steps | 44 s   | 41 s  | +7 %       |
+| LongCat-Image-Edit-Turbo, 8 steps    | 30 s   | 29 s  | +3 %       |
+| Qwen-Image-Edit, 20 steps            | 293 s  | 266 s | +10 %      |
+| Wan2.1 VACE 14B, 20 steps            | 1039 s | 940 s | +10 %      |
 
 That matches the earlier frontier measurement: a board cap mostly costs prefill and the long
 denoise, and it buys 90 W of heat and noise back. The cap stays at 210 W; the 300 W column is the
@@ -46,7 +46,7 @@ ggml_vulkan: 0 = AMD Radeon RX 550 / 550 Series (RADV POLARIS12) | fp16: 0 | bf1
 ggml_vulkan: 1 = AMD Radeon AI PRO R9700 (RADV GFX1201)     | fp16: dot2 | bf16: 1 | KHR_coopmat
 ```
 
-`--backend vulkan0` therefore means *the 4 GB Polaris card*, not the R9700. The first run did
+`--backend vulkan0` therefore means _the 4 GB Polaris card_, not the R9700. The first run did
 exactly that: **147 s/it** and 3.7 GB resident on the RX 550. Every number below pins
 `diffusion=vulkan1,te=vulkan1,vae=vulkan1`. `GGML_VK_VISIBLE_DEVICES=1` gives the same result and
 is what the serving unit should set, because the order depends on PCI enumeration.
@@ -68,13 +68,13 @@ it is trusted.**
 1024x1024 unless noted. Peak VRAM includes the shared Qwen2.5-VL-7B Q8_0 encoder (8.1 GB) and its
 `mmproj-F16` (1.35 GB), which both image editors load.
 
-| model | weights | size | steps | cfg | 210 W | 300 W | peak VRAM |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **Qwen-Image-Edit-2511 + Lightning 4-step LoRA** | Q4_K_M + 850 MB LoRA | 13.6 GB | 4 | 1.0 | 44 s | **41 s** | 26.2 GiB |
-| Qwen-Image-Edit-2511 | Q4_K_M GGUF | 12.8 GB | 20 | 2.5 | 293 s | 266 s | 25.4 GiB |
-| **LongCat-Image-Edit-Turbo** | official bf16 safetensors | 12.5 GB | 8 | 1.0 | 30 s | **29 s** | 22.9 GiB |
-| LongCat-Image-Edit-Turbo | Q8_0 GGUF (third-party) | 6.3 GB | 8 | 1.0 | 25 s | — | 17.4 GiB |
-| Qwen-Image-Edit-2511 | Q4_K_M GGUF, 512x512 | 12.8 GB | 20 | 2.5 | 66 s | — | 20.8 GiB |
+| model                                            | weights                   | size    | steps | cfg | 210 W | 300 W    | peak VRAM |
+| ------------------------------------------------ | ------------------------- | ------- | ----- | --- | ----- | -------- | --------- |
+| **Qwen-Image-Edit-2511 + Lightning 4-step LoRA** | Q4_K_M + 850 MB LoRA      | 13.6 GB | 4     | 1.0 | 44 s  | **41 s** | 26.2 GiB  |
+| Qwen-Image-Edit-2511                             | Q4_K_M GGUF               | 12.8 GB | 20    | 2.5 | 293 s | 266 s    | 25.4 GiB  |
+| **LongCat-Image-Edit-Turbo**                     | official bf16 safetensors | 12.5 GB | 8     | 1.0 | 30 s  | **29 s** | 22.9 GiB  |
+| LongCat-Image-Edit-Turbo                         | Q8_0 GGUF (third-party)   | 6.3 GB  | 8     | 1.0 | 25 s  | —        | 17.4 GiB  |
+| Qwen-Image-Edit-2511                             | Q4_K_M GGUF, 512x512      | 12.8 GB | 20    | 2.5 | 66 s  | —        | 20.8 GiB  |
 
 Per-step cost at 1024x1024: **14.1 s/step** for Qwen-Image-Edit (20B), **2.0 s/step** for
 LongCat-Turbo (6B). That ratio, not the benchmark table, is what a person feels. The Lightning LoRA
@@ -100,12 +100,12 @@ and it is the reason the entry in `data/llm.nix` names the official Comfy-Org fi
 Q4_K_M GGUF (11.6 GB), umt5-xxl Q8_0 encoder (6.0 GB), Wan 2.1 VAE. 832x480, 33 frames (2 s at
 16 fps), 20 steps, cfg 6.0, reference-to-video from the same photograph.
 
-| 210 W | 300 W | peak VRAM | per step |
-| --- | --- | --- | --- |
-| 1039 s (17m19s) | **940 s (15m40s)** | 28.6 GiB | 45-50 s |
+| 210 W           | 300 W              | peak VRAM | per step |
+| --------------- | ------------------ | --------- | -------- |
+| 1039 s (17m19s) | **940 s (15m40s)** | 28.6 GiB  | 45-50 s  |
 
 The clip is valid and the motion is real — the water ripples evolve between frames while the dock
-stays fixed — but a reference-to-video run *animates* the photograph, it does not restyle it: the
+stays fixed — but a reference-to-video run _animates_ the photograph, it does not restyle it: the
 sunset of the image prompt does not appear. The instruction-editing modes (masked replacement,
 subject swap, outpainting) are the VACE video-to-video paths with a control video, which this
 survey did not exercise. Treat the number as "the video path works and costs a quarter of an hour
@@ -116,7 +116,7 @@ per two seconds at 20 steps", not as an editing benchmark.
 - An edit at 1024x1024 costs **30-45 s** with a distilled model and **4.5 min** with the 20B at 20
   steps. That is a batch job, which is why the entry belongs in the `main` set and evicts `qfn`.
 - Peak VRAM is **23-26 GiB** for an image edit and **28.6 GiB** for a 2 s video. Nothing here fits
-  beside `qfn-max` (~30 GB), and nothing fits beside `qfn-colo` *plus* the omni companion
+  beside `qfn-max` (~30 GB), and nothing fits beside `qfn-colo` _plus_ the omni companion
   (~30.5 GB). The exclusive-mode decision stands.
 - The 4 GB RX 550 is a hazard, not a resource: pin the device or the job runs 100x slower while
   looking like it works.
