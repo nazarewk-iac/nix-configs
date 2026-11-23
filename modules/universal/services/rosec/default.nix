@@ -127,6 +127,96 @@ let
     };
   };
 
+  # The unlock gate: a per-provider target that clients depend on. The service proves that the
+  # daemon actually serves items (not just that the provider reports unlocked), and the probe keeps
+  # the target honest while the store is locked. It is opt-in; `rosec-unlock.service` stays the
+  # default until the gate has been proven on a host.
+  gateScript = pkgs.writeShellApplication {
+    name = "rosec-gate";
+    runtimeInputs = [
+      pkgs.systemd
+      pkgs.coreutils
+      pkgs.gnused
+      pkgs.gawk
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ./rosec-gate.sh;
+  };
+
+  gateUnlock = pkgs.writeShellScriptBin "rosec-unlock-gate" ''
+    set -eu
+    rosec_bin="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
+    ${pkgs.expect}/bin/expect -c '
+      set rosec_bin [lindex $argv 0]
+      set timeout 90
+      spawn $rosec_bin unlock
+      expect {
+        -re "Press Enter|No password needed" { send "\r"; exp_continue }
+        timeout { exit 1 }
+        eof
+      }
+    ' "$rosec_bin" || exit 1
+    exec ${lib.getExe gateScript} wait "$1"
+  '';
+
+  gateEnvironment =
+    [
+      "PATH=${servicePath}"
+      "GATE_SCOPE=${cfg.unlockGate.scope}"
+      "GATE_PROBE_TIMEOUT=${toString cfg.unlockGate.timeoutSeconds}"
+    ]
+    ++ lib.optional cfg.unlockGate.notify "GATE_NOTIFY_BIN=${pkgs.libnotify}/bin/notify-send";
+
+  gateServices = {
+    "secret-service-unlock@" = {
+      description = "Unlock and verify the rosec provider %i";
+      requires = [ "${cfg.rosecd.unitName}.service" ];
+      after = [ "${cfg.rosecd.unitName}.service" ];
+      partOf = [ "${cfg.rosecd.unitName}.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        TimeoutStartSec = "60s";
+        Environment = gateEnvironment;
+        ExecStart = "${lib.getExe gateUnlock} %i";
+      };
+    };
+    "secret-service-probe@" = {
+      description = "Check that the rosec provider %i still serves secrets";
+      requires = [ "${cfg.rosecd.unitName}.service" ];
+      after = [ "${cfg.rosecd.unitName}.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "30s";
+        Environment = gateEnvironment;
+        ExecStart = "${lib.getExe gateScript} probe %i";
+      };
+    };
+  };
+
+  gateTargets = {
+    "secret-service-unlocked@" = {
+      description = "rosec provider %i is unlocked and serving";
+      wants = [ "secret-service-unlock@%i.service" ];
+      after = [ "secret-service-unlock@%i.service" ];
+      bindsTo = [ "secret-service-unlock@%i.service" ];
+      partOf = [ "secret-service-unlock@%i.service" ];
+    };
+  };
+
+  gateTimers = {
+    "secret-service-probe@" = {
+      description = "Periodically check the rosec provider %i";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "30s";
+        OnUnitInactiveSec = "20s";
+        AccuracySec = "1s";
+        Unit = "secret-service-probe@%i.service";
+      };
+    };
+  };
+
   # `sops` and the age plugin are resolved from `PATH`: `rosecd` runs `sops` as a subprocess,
   # and `sops` runs the age plugin. `key_file` is exported too, so a manual `sops` run in the
   # same session honours the same identity.
@@ -254,6 +344,42 @@ in
         A locked provider blocks the first Secret Service client, and rosec has no silent unlock
         path; clients that start on their own should `Wants` this unit.
       '';
+    };
+
+    unlockGate.enable = lib.mkEnableOption ''
+      the per-provider Secret Service unlock gate. A dependent that `Wants` the gate target pulls
+      the unlock service, the target stays active only while the daemon serves items, and the probe
+      stops it when the store locks. Keep `rosecd.unlock.enable` on until the gate is proven.
+    '';
+
+    unlockGate.providers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ cfg.providers.sops.id ];
+      description = "rosec provider ids that get a gate instance (`%i` in the unit names).";
+    };
+
+    unlockGate.notify = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Send a desktop notification when the gate fails or the store locks, with a journal fallback
+        when there is no session bus.
+      '';
+    };
+
+    unlockGate.scope = lib.mkOption {
+      type = lib.types.enum [ "user" "system" ];
+      default = "user";
+      description = ''
+        Unit scope. `user` is the normal case. `system` exists for the container test, where a user
+        manager is not available.
+      '';
+    };
+
+    unlockGate.timeoutSeconds = lib.mkOption {
+      type = lib.types.int;
+      default = 45;
+      description = "How long the gate waits for the daemon to serve items before it fails.";
     };
 
     servicePath = lib.mkOption {
@@ -531,6 +657,23 @@ in
         systemd.user.units."rosecd.socket".enable = false;
         systemd.user.services.rosec-unlock = lib.mkIf cfg.rosecd.unlock.enable unlockUnit;
       }
+    ))
+
+    (kdnConfig.util.ifTypes [ "nixos" ] (
+      lib.mkIf cfg.unlockGate.enable (
+        if cfg.unlockGate.scope == "user" then
+          {
+            systemd.user.services = gateServices;
+            systemd.user.targets = gateTargets;
+            systemd.user.timers = gateTimers;
+          }
+        else
+          {
+            systemd.services = gateServices;
+            systemd.targets = gateTargets;
+            systemd.timers = gateTimers;
+          }
+      )
     ))
 
     (kdnConfig.util.ifHMParent (
