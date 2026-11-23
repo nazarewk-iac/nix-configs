@@ -9,7 +9,7 @@ timestamp: 2026-09-11T20:45:00+02:00
 # Checks
 
 **Do not run a bare `nix flake check`.** It builds all **85** attributes of `checks.<system>` on
-`aarch64-darwin` and **96** on `x86_64-linux` (counted 2026-11-23), counted with:
+`aarch64-darwin` and **97** on `x86_64-linux` (counted 2026-11-23), counted with:
 
 ```bash
 nix eval --raw '.#checks.aarch64-darwin' --apply 'x: toString (builtins.length (builtins.attrNames x))'
@@ -159,15 +159,18 @@ joins.
 | `den-artifact-home-linux`        | the standalone Linux generation does the same                                                                                                            | artifact | —     | `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-artifact-home-linux'`       |
 | `den-smoke-devenv-linux`         | the Linux shell's `enterTest` runs                                                                                                                       | artifact | —     | `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-smoke-devenv-linux'`        |
 | `den-smoke-host-nixos`           | the same, from the NixOS host's shell                                                                                                                    | artifact | —     | `nix build --no-eval-cache -L '.#checks.x86_64-linux.den-smoke-host-nixos'`          |
-| `dyn-aliases-config`             | the three text presets, the two modality groups, the Pi projection of all five, and no `dyn-*` in `data.models`                                          | core     | —     | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-config"`                    |
-| `dyn-aliases-ladder`             | resident wins, first admit wins, the 409 names a verb per candidate and no `confirm`, the text preset names the profile, an unreachable manager is named | core     | —     | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-ladder"`                    |
+| `dyn-aliases-config`             | the three text presets, the two modality groups, the Pi projection of all five, and no `dyn-*` in `data.models`                                          | core     | 2.0   | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-config"`                    |
+| `dyn-aliases-ladder`             | resident wins, first admit wins, the 409 names a verb per candidate and no `confirm`, the text preset names the profile, an unreachable manager is named | core     | 4.3   | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-ladder"`                    |
+| `dyn-aliases-e2e`                | the real gateway against a fake brys: both preset caps and thinking flags, the resident rung, the 409 body, the admit walk                               | slow     | 44.2  | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-e2e"`                       |
 
-A `—` means the check needs a Linux builder, so this machine measured no time. The two `dyn-aliases-*`
-checks are Linux-only; they measured 2.0 s and 4.3 s on `x86_64-linux`, warm store. A `‡` means the
+A `—` means the check needs a Linux builder, so this machine measured no time. The three
+`dyn-aliases-*` checks are Linux-only and carry their `x86_64-linux` time instead: 2.0 s, 4.3 s and
+44.2 s on a warm store, measured 2026-11-23. The last of them is a VM test: 33.8 s of its 44.2 s
+run inside the guest, and the rest is the QEMU boot and the test driver. A `‡` means the
 check landed after the timing run, so it carries no measured time yet; it is an eval-only assertion
 set, so it costs a few seconds. `markdown-format` carries a `x86_64-linux` time instead: it runs on
 both systems, and the formatting pass measured it there. The four times over 40 s are plain builds
-against a warm store, so they are lower bounds. The last seven names do not exist on
+against a warm store, so they are lower bounds. The last eight names do not exist on
 `aarch64-darwin`, and `aarch64-linux` carries none of the ten per-system names. Four more entry
 points exist:
 

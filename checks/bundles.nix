@@ -62,6 +62,11 @@ let
     # The model-driven delegation check needs a 0.5B model (~800 MiB RSS). The other Pi checks are
     # cheap and live in bundle-core.
     "pi-harness-delegates"
+    # The only VM test in this file: a QEMU boot plus the real LiteLLM proxy, 44.2 s measured
+    # 2026-11-23 on `x86_64-linux` (33.8 s of it inside the VM). It is a Linux guest, so unlike the
+    # Darwin guest in `bundle-vm` it is an ordinary derivation and CAN be a bundle member. It does
+    # not join `bundle-core`: a per-edit tripwire must not boot a machine.
+    "dyn-aliases-e2e"
   ];
   # Cross-cutting: each reads a bare consumer, not one aspect.
   crossCutting = [

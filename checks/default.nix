@@ -84,14 +84,16 @@ let
     else
       { };
 
-  # The `dyn-*` intent names: the values `lib/llm.nix` derives from `data/llm.nix`, and the
-  # residency ladder in `hosts/etra/litellm_resident.py` that reads them. Linux only, beside the
+  # The `dyn-*` intent names: the values `lib/llm.nix` derives from `data/llm.nix`, the
+  # residency ladder in `hosts/etra/litellm_resident.py` that reads them, and the gateway contract
+  # end to end (a real LiteLLM process against a fake brys in a VM). Linux only, beside the
   # inference runtime checks.
   dynAliasTests =
     if pkgs.stdenv.hostPlatform.isLinux then
       {
         dyn-aliases-config = pkgs.callPackage ./dyn-aliases/config.nix { };
         dyn-aliases-ladder = pkgs.callPackage ./dyn-aliases/ladder.nix { };
+        dyn-aliases-e2e = pkgs.callPackage ./dyn-aliases/e2e.nix { };
       }
     else
       { };
