@@ -88,11 +88,6 @@
   inputs.nixos-generators.url = "github:nix-community/nixos-generators";
   inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
   inputs.nixos-hardware.inputs.nixpkgs.follows = "nixpkgs";
-  # The build-farm proxy project. The `build-farm` aspect currently renders HAProxy directly (its
-  # `balance first` is not in yensid's strategy enum), but the away-mode design and the per-builder
-  # `ca` host-key module come from here, so the input is kept to migrate back onto its modules.
-  inputs.yensid.url = "github:garnix-io/yensid";
-  inputs.yensid.inputs.nixpkgs.follows = "nixpkgs";
   inputs.nur.url = "github:nix-community/NUR";
   inputs.oh-my-pi.url = "github:can1357/oh-my-pi";
   # Upstream Pi as a flake: npm/Bun packages, NixOS + Home Manager modules, and an
@@ -228,13 +223,6 @@
   inputs.pi.inputs.bun2nix-x86_64-darwin.inputs.treefmt-nix.follows = "treefmt-nix";
   inputs.pi.inputs.nixpkgs-x86_64-darwin.follows = "nixpkgs";
   inputs.stylix.inputs.base16.follows = "base16";
-  inputs.yensid.inputs.agenix.inputs.home-manager.follows = "home-manager";
-  inputs.yensid.inputs.agenix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.yensid.inputs.agenix.inputs.systems.follows = "systems";
-  inputs.yensid.inputs.garnix-lib.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.yensid.inputs.nixos-compose.inputs.flake-utils.follows = "flake-utils";
-  inputs.yensid.inputs.nixos-compose.inputs.flake-utils.inputs.systems.follows = "systems";
-  inputs.yensid.inputs.nixos-compose.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
     inputs@{

@@ -1,32 +1,5 @@
 {
   "nodes": {
-    "agenix": {
-      "inputs": {
-        "darwin": "darwin",
-        "home-manager": [
-          "home-manager"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "systems": [
-          "systems"
-        ]
-      },
-      "locked": {
-        "lastModified": 1760836749,
-        "narHash": "sha256-wyT7Pl6tMFbFrs8Lk/TlEs81N6L+VSybPfiIgzU8lbQ=",
-        "owner": "ryantm",
-        "repo": "agenix",
-        "rev": "2f0f812f69f3eb4140157fe15e12739adf82e32a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ryantm",
-        "repo": "agenix",
-        "type": "github"
-      }
-    },
     "angrr": {
       "inputs": {
         "nixpkgs": [
@@ -352,33 +325,6 @@
         "type": "github"
       }
     },
-    "cradle": {
-      "inputs": {
-        "flake-utils": [
-          "yensid",
-          "nixos-compose",
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "yensid",
-          "nixos-compose",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1717164253,
-        "narHash": "sha256-OiQnrWO78bsM23Gt7rWEoGh0Zeg5CDv+OiraKskjgd8=",
-        "owner": "garnix-io",
-        "repo": "cradle",
-        "rev": "dbad639f4ba132f336588b85089cd1dc0acad4ea",
-        "type": "github"
-      },
-      "original": {
-        "owner": "garnix-io",
-        "repo": "cradle",
-        "type": "github"
-      }
-    },
     "crane": {
       "locked": {
         "lastModified": 1793836618,
@@ -408,29 +354,6 @@
         "owner": "rossng",
         "repo": "crate2nix",
         "rev": "ba5dd398e31ee422fbe021767eb83b0650303a6e",
-        "type": "github"
-      }
-    },
-    "darwin": {
-      "inputs": {
-        "nixpkgs": [
-          "yensid",
-          "agenix",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1744478979,
-        "narHash": "sha256-dyN+teG9G82G+m+PX/aSAagkC+vUv0SgUw3XkPhQodQ=",
-        "owner": "lnl7",
-        "repo": "nix-darwin",
-        "rev": "43975d782b418ebf4969e9ccba82466728c2851b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "lnl7",
-        "ref": "master",
-        "repo": "nix-darwin",
         "type": "github"
       }
     },
@@ -683,48 +606,6 @@
       "original": {
         "owner": "SenchoPens",
         "repo": "fromYaml",
-        "type": "github"
-      }
-    },
-    "garnix-lib": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1758561011,
-        "narHash": "sha256-yYXd4qOH22Oe5PaaoGms0imXYweQeEeme+VUoMm4zwY=",
-        "owner": "garnix-io",
-        "repo": "garnix-lib",
-        "rev": "fbd9865a68c8f7f4bd9d4e136f27be04098fe1ee",
-        "type": "github"
-      },
-      "original": {
-        "owner": "garnix-io",
-        "repo": "garnix-lib",
-        "type": "github"
-      }
-    },
-    "garnix-lib_2": {
-      "inputs": {
-        "nixpkgs": [
-          "yensid",
-          "nixos-compose",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1746387091,
-        "narHash": "sha256-YivN7BL4XkZIJpUTdDJRQpYX/JORVdbZTQbSnULgRnY=",
-        "owner": "garnix-io",
-        "repo": "garnix-lib",
-        "rev": "4cc103317aef34dd99617ed9ff12c44d659d86d0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "garnix-io",
-        "repo": "garnix-lib",
         "type": "github"
       }
     },
@@ -1398,31 +1279,6 @@
         "type": "github"
       }
     },
-    "nixos-compose": {
-      "inputs": {
-        "cradle": "cradle",
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "garnix-lib": "garnix-lib_2",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1761583039,
-        "narHash": "sha256-P6G8ErbExEcEtTlFgm6yqW4J3lqx95JA5Q7asYulqVA=",
-        "owner": "garnix-io",
-        "repo": "nixos-compose",
-        "rev": "baac106235325ebf8910643b51859c4d323ca66b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "garnix-io",
-        "repo": "nixos-compose",
-        "type": "github"
-      }
-    },
     "nixos-crostini": {
       "inputs": {
         "nixpkgs": [
@@ -1820,7 +1676,6 @@
         "treefmt-nix": "treefmt-nix",
         "uv2nix": "uv2nix",
         "wezterm": "wezterm",
-        "yensid": "yensid",
         "zellij": "zellij"
       }
     },
@@ -2170,29 +2025,6 @@
         "owner": "wez",
         "ref": "main",
         "repo": "wezterm",
-        "type": "github"
-      }
-    },
-    "yensid": {
-      "inputs": {
-        "agenix": "agenix",
-        "garnix-lib": "garnix-lib",
-        "nixos-compose": "nixos-compose",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1761686858,
-        "narHash": "sha256-FWCrsT2q6DKp/mwvssp+0qE7P1AMvank25RpKCxPwXQ=",
-        "owner": "garnix-io",
-        "repo": "yensid",
-        "rev": "fdf4cfd1aa9c3e74ad2dc1e0690a1b35a7cb46c4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "garnix-io",
-        "repo": "yensid",
         "type": "github"
       }
     },
