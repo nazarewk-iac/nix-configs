@@ -238,7 +238,7 @@ let
           m = data.models.${name};
           caps = m.capabilities or { };
           aliases = m.aliases or [ ];
-          ctx = toString (lib.min (m.pi.contextWindow or data.pi.defaults.contextWindow) m.contextSize);
+          ctx = toString (piCtx name);
         in
         map (alias: {
           inherit alias ctx name;
@@ -256,12 +256,12 @@ let
 
       fmt = r: "${r.alias}\t${r.ctx}\t${r.op}\t${r.load}\t${r.vision}\t${r.name}";
       headerRow = {
-        alias = "alias";
+        alias = "name";
         ctx = "ctx";
         op = "op";
         load = "load~s";
         vision = "vision";
-        name = "model";
+        name = "base";
       };
     in
     lib.concatStringsSep "\n" (map fmt ([ headerRow ] ++ table));

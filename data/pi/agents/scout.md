@@ -2,7 +2,7 @@
 name: scout
 description: Fast read-only recon that returns compressed context for another agent. Defaults to a small fast model; escalate to `summarizer` (big window) when the input is larger than the model window.
 tools: read, grep, find, ls, bash
-model: litellm/mellum-2.1-12b-a2.5b-thinking
+model: litellm/qfn
 thinking: low
 ---
 

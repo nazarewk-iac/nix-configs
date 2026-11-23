@@ -49,10 +49,14 @@ let
 
     ## Model catalog (for the orchestrator)
 
-    What each purpose alias is and what a switch costs. `ctx` is the served context in tokens — a
+    What each served model id is and what a switch costs. `ctx` is the served context in tokens — a
     hard filter, not a suggestion. `op` is where the model runs (`cpu` or `gpu`); `load~s` is the
     estimated cold-load seconds, so a `cpu` model is expensive to switch to and a `gpu` model is
     cheap. `vision` marks the models that accept images. Columns are tab-separated.
+
+    `qfn` is the frontier and the only model that needs no load: it never switches, and its slot
+    count (5 on the resting profile) is the concurrency limit. Every other local model is refused
+    on the resting profile — it needs a colo profile, which reloads the engine for everybody.
 
     ```
     ${llm.mkCatalog}

@@ -2,7 +2,7 @@
 name: editor
 description: Makes one bounded code edit with the hashline edit tool, isolated from project context, on a 32k window. Use for a small exact change; give it the intent, not sed line ranges.
 tools: read, edit, write, bash
-model: litellm/mellum-2.1-12b-a2.5b-thinking
+model: litellm/qfn
 isolated: true
 ---
 

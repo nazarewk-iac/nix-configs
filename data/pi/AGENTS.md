@@ -19,8 +19,12 @@ Local models are cheap and fast; your own context is the expensive resource. So:
 - **Open questions go to a sub-agent** (`consultant`) when you need options, not an answer: a
   design fork, an approach that is not working, a feature to size. It brainstorms several
   directions and recommends one; it changes nothing.
-- **Pick the cheapest tier that fits.** Pass `model:"brys/<alias>"` per task when you want a
-  specific one; otherwise the agent's default applies. The `kdn-llms` skill lists the tiers.
+- **Name the model id, and prefer `qfn`.** The purpose aliases are gone: a model is its id
+  (`qfn`, `lfm2.5-24b-a2b`, `mellum-2.1-12b-a2.5b-thinking`, ...). Pass
+  `model:"litellm/<id>"` per task when you want a specific one; otherwise the agent's default
+  applies. `qfn` is the frontier: always loaded, never switches, and its slot count is the
+  concurrency limit (5 on the resting profile), so a sixth concurrent call queues rather than
+  fails. Every other local model needs a colo profile and is refused on the resting one.
 - **Bound your own recon.** If you have made five tool calls without an edit or a delegate, stop
   and delegate the rest.
 
