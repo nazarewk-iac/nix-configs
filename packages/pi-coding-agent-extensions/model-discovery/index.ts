@@ -285,12 +285,14 @@ function register(pi: ExtensionAPI, ep: Endpoint): void {
     api: ep.api,
     authHeader: true,
     models: [],
-    refreshModels: async (context) => {
-      // `pi --list-models` runs offline-safe (allowNetwork=false) and still calls
-      // this. Attempt the fetch (short timeout, degrades to []), unless explicitly
-      // opted out with KDN_PI_DISCOVER_OFFLINE=1.
+    refreshModels: async () => {
+      // `pi --list-models` runs offline-safe (allowNetwork=false) and still calls this, but it
+      // hands over an ALREADY-ABORTED `context.signal`. Honouring it made every fetch throw
+      // `AbortError`, and a provider with no models is omitted from the list — so the dynamic
+      // catalog silently disappeared (measured 2026-11-23). Use our own short timeout; a failure
+      // still degrades to []. Opt out entirely with KDN_PI_DISCOVER_OFFLINE=1.
       if (process.env.KDN_PI_DISCOVER_OFFLINE === "1") return [];
-      const signal = context.signal ?? AbortSignal.timeout(TIMEOUT_MS);
+      const signal = AbortSignal.timeout(TIMEOUT_MS);
       try {
         const key = readKey(ep.keySources, ep.apiKeyEnv)();
         const list = await getModels(ep.baseUrl, key, signal);
