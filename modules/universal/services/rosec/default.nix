@@ -145,9 +145,9 @@ let
 
   gateUnlock = pkgs.writeShellScriptBin "rosec-unlock-gate" ''
     set -eu
-    rosec_bin="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
+    export ROSEC_GATE_BIN="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
     ${pkgs.expect}/bin/expect -c '
-      set rosec_bin [lindex $argv 0]
+      set rosec_bin $env(ROSEC_GATE_BIN)
       set timeout 90
       spawn $rosec_bin unlock
       expect {
@@ -155,7 +155,7 @@ let
         timeout { exit 1 }
         eof
       }
-    ' "$rosec_bin" || exit 1
+    ' || exit 1
     exec ${lib.getExe gateScript} wait "$1"
   '';
 
@@ -204,18 +204,24 @@ let
     };
   };
 
-  gateTimers = {
-    "secret-service-probe@" = {
-      description = "Periodically check the rosec provider %i";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnBootSec = "30s";
-        OnUnitInactiveSec = "20s";
-        AccuracySec = "1s";
-        Unit = "secret-service-probe@%i.service";
+  # A template unit cannot be enabled through `WantedBy`: systemd turns
+  # `timers.target.wants/secret-service-probe@.timer` into the instance `@timers`. Instantiate the
+  # timer for each provider instead; the service stays a template.
+  gateTimers = lib.listToAttrs (
+    map (provider: {
+      name = "secret-service-probe@${provider}";
+      value = {
+        description = "Periodically check the rosec provider ${provider}";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "30s";
+          OnUnitInactiveSec = "20s";
+          AccuracySec = "1s";
+          Unit = "secret-service-probe@${provider}.service";
+        };
       };
-    };
-  };
+    }) cfg.unlockGate.providers
+  );
 
   # `sops` and the age plugin are resolved from `PATH`: `rosecd` runs `sops` as a subprocess,
   # and `sops` runs the age plugin. `key_file` is exported too, so a manual `sops` run in the

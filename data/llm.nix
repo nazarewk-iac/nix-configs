@@ -730,7 +730,6 @@ in
     #   longcat-image-edit, official bf16             29-30 s per edit, 23 GiB
     #   wan-vace-14b, 480p x 33 frames                940-1039 s, 29 GiB
     "qwen-image-edit" = {
-      aliases = [ ];
       capabilities = {
         loadSeconds = 40;
         operation = "gpu";
@@ -768,7 +767,6 @@ in
       };
     };
     "longcat-image-edit" = {
-      aliases = [ ];
       capabilities = {
         loadSeconds = 40;
         operation = "gpu";
@@ -806,7 +804,6 @@ in
       };
     };
     "wan-vace-14b" = {
-      aliases = [ ];
       capabilities = {
         loadSeconds = 60;
         operation = "gpu";
@@ -858,7 +855,6 @@ in
       # the frontier names now. With eight frontier names (`qfn`, the five `qfn-*` points and the
       # two colo ones), keeping a second model on one of them would make the gateway expose a name
       # that resolves to whichever model folded last.
-      aliases = [ ];
       capabilities = {
         # Measured 2026-11-18 on the R9700 (gpu-r9700), llama.cpp Vulkan, `--n-cpu-moe 26`,
         # 64k context, mmap load. Not an estimate.
@@ -947,13 +943,6 @@ in
       };
     };
     "qwen3.5-4b" = {
-      aliases = [
-        "grunt"
-        "chat-dumb-fast"
-        "code-quick-fast"
-        "code-std-fast"
-        "tiny-quick-fast"
-      ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1207,10 +1196,6 @@ in
       };
     };
     "granite-4.2-3b" = {
-      aliases = [
-        "tools-dumb-fast"
-        "chat-dumb-fast-alt"
-      ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1261,7 +1246,6 @@ in
       };
     };
     "granite-4.2-8b" = {
-      aliases = [ "tools-std-fast-alt" ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1294,10 +1278,6 @@ in
       };
     };
     "lfm2.5-24b-a2b" = {
-      aliases = [
-        "chat-std-fast"
-        "tools-std-fast"
-      ];
       capabilities = {
         loadSeconds = 15;
         operation = "cpu";
@@ -1322,10 +1302,6 @@ in
       };
     };
     "mellum-2.1-12b-a2.5b-thinking" = {
-      aliases = [
-        "reason-quick-fast"
-        "code-std-fast-alt"
-      ];
       capabilities = {
         loadSeconds = 12;
         operation = "cpu";
@@ -1412,7 +1388,6 @@ in
       };
     };
     "ministral-3-3b-reasoning" = {
-      aliases = [ "reason-quick-fast-alt" ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1507,10 +1482,6 @@ in
       };
     };
     "nemotron-3-nano-30b-a3b" = {
-      aliases = [
-        "reason-std-fast"
-        "chat-std-mid-long"
-      ];
       capabilities = {
         loadSeconds = 20;
         operation = "cpu";
@@ -1602,10 +1573,6 @@ in
     "ornith-1.5-35b-a3b" = {
       # The best reader of dense terminal text in the 2026-11-04 probe: it alone got the failed
       # unit count right, the /nix/var/nix symlink target right, and the emergency-mode cause right.
-      aliases = [
-        "vision-deep-slow"
-        "vision-std-fast-alt"
-      ];
       capabilities = {
         loadSeconds = 25;
         operation = "cpu";
@@ -1636,7 +1603,6 @@ in
       };
     };
     "qwen3-embedding-4b" = {
-      aliases = [ "embed-std-fast" ];
       capabilities = {
         loadSeconds = 2;
         operation = "gpu";
@@ -1661,7 +1627,6 @@ in
       };
     };
     "qwen3-omni" = {
-      aliases = [ ];
       # The gate in front of the model. It refuses the request with a readable 409 unless the engine
       # has a VRAM reserve for it, and a body field (`kdn_switch_to`) lets the caller ask for the
       # switch in the same request. Only a process on the entry port can read the body, so the gate
@@ -1717,7 +1682,6 @@ in
     # The gate is the same policy as the companion: only a colo profile has the reserve, and a
     # caller that names a colo tier in `kdn_switch_to` gets the switch and the answer in one request.
     "qwen2.5-vl-7b" = {
-      aliases = [ ];
       wrapper = [
         "/run/current-system/sw/bin/kdn-inference-helpers"
         "gate"
@@ -1758,7 +1722,6 @@ in
       };
     };
     "qwen3-reranker-4b" = {
-      aliases = [ "rank-std-fast" ];
       capabilities = {
         loadSeconds = 2;
         operation = "gpu";
@@ -1786,10 +1749,6 @@ in
       # vision-quick-fast is retired: it resolved to this same model, so the "quick" tier was
       # the standard tier with a different sample. Measured on a 256px icon it said "pig"
       # where the same model said "elephant" — a label that promised nothing.
-      aliases = [
-        "vision-std-fast"
-        "vision-std-fast-moe"
-      ];
       capabilities = {
         loadSeconds = 20;
         operation = "cpu";
@@ -1820,7 +1779,6 @@ in
       };
     };
     "qwen3.5-0.8b" = {
-      aliases = [ "tiny-dumb-fast" ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1893,7 +1851,6 @@ in
       };
     };
     "qwen3.5-2b" = {
-      aliases = [ "tiny-dumb-fast-alt" ];
       capabilities = {
         # Measured throughput on GPU (docs/local-llms.md unified table).
         rates = {
@@ -1966,7 +1923,6 @@ in
       };
     };
     "qwen3.5-35b-a3b" = {
-      aliases = [ "chat-std-mid" ];
       capabilities = {
         # Measured throughput on CPU (docs/local-llms.md unified table).
         rates = {

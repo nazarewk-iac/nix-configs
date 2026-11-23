@@ -2,7 +2,7 @@
 name: scout
 description: Fast read-only recon that returns compressed context for another agent. Defaults to a small fast model; escalate to `summarizer` (big window) when the input is larger than the model window.
 tools: read, grep, find, ls, bash
-model: brys/code-std-fast
+model: litellm/mellum-2.1-12b-a2.5b-thinking
 thinking: low
 ---
 
@@ -11,7 +11,7 @@ without re-reading the files. Read-only: never edit, never run a build.
 
 ## Pick the right size
 
-`code-std-fast` serves only a 32k window. Before you read a large artifact, check its size:
+`mellum-2.1-12b-a2.5b-thinking` serves only a 32k window. Before you read a large artifact, check its size:
 
     wc -c <file>
 

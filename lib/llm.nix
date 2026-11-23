@@ -75,11 +75,11 @@ let
 
   isAutoEntry = m: lib.any (h: ((h.serving or { }).profile or "") == "auto") (lib.attrValues m.hosts);
 
-  # The client view of one SERVED MODEL, expanded to one entry PER ALIAS.
+  # The client view of one SERVED MODEL, one entry per name it answers to.
   #
-  # Pi lists and selects by the entry `id`, and a caller names an intent (`chat-std-fast`), not a
-  # base model id. So each alias becomes its own entry against the same served model. A model with
-  # no alias also gets one entry under its base id, so nothing is unreachable.
+  # Pi lists and selects by the entry `id`. Since the purpose aliases were dropped (2026-11-23) the
+  # name is the model id itself, plus any genuine alternate name the model still declares (the
+  # `qfn-max` alias on `qfn-max-long`).
   piEntries =
     name:
     let
@@ -132,7 +132,10 @@ let
       // lib.optionalAttrs (m.reasoning or null != null) {
         thinkingLevelMap = m.reasoning.levels;
       };
-      ids = if (m.aliases or [ ]) == [ ] then [ name ] else m.aliases;
+      # BOTH the served id and every extra name it answers to. A model with an alias used to be
+      # listed under the alias alone, which hid the id the engine actually serves (`qfn-max-long`
+      # vanished behind `qfn-max`).
+      ids = [ name ] ++ (m.aliases or [ ]);
     in
     map (id: base // { inherit id; }) ids;
 
@@ -195,10 +198,10 @@ let
 
   # The orchestrator's model catalog, as a compact aligned table for the system prompt.
   #
-  # One row per PURPOSE ALIAS, not per model: the orchestrator picks an intent (`chat-std-fast`),
-  # so the alias is the key it needs. Columns are what the alias name does not already say:
+  # One row per served name, not per model: the orchestrator names a model id in `delegate`.
+  # Columns are what the id does not already say:
   #
-  #   alias      the intent the orchestrator names in `delegate`
+  #   alias      the name the orchestrator uses (the model id, or its second name)
   #   ctx        served context (tokens) — the hard filter
   #   op         cpu | gpu — where it runs
   #   load~s     estimated cold-load seconds — is a switch affordable?
@@ -246,7 +249,7 @@ let
             in
             if seconds != null then toString seconds else "-";
           vision = if m.vision or false then "yes" else "-";
-        }) aliases
+        }) ([ name ] ++ aliases)
       ) (builtins.attrNames servedModels);
 
       table = lib.sort (a: b: a.alias < b.alias) rows;
@@ -441,5 +444,6 @@ in
     mkServerModels
     mkMemberView
     piCtx
+    servedOn
     ;
 }

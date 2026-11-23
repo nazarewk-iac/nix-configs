@@ -2,7 +2,7 @@
 name: summarizer
 description: Condenses a large artifact (a long transcript, a log, a diff) into a structured hand-off. Read-only tools. Use for bulk reading of many chunks; keep each task within the model window.
 tools: read, grep, find, ls
-model: brys/code-std-fast
+model: litellm/mellum-2.1-12b-a2.5b-thinking
 thinking: off
 ---
 

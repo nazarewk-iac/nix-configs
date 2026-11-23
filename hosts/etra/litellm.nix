@@ -217,15 +217,14 @@ let
   }) requestyModelIds;
 
   # Every group name the gateway should expose on `host`: its aliases (alias -> base
-  # id) PLUS the served base ids that have no alias (base id -> itself), so the
-  # gateway mirrors the static catalog. A base id that already has an alias is NOT
-  # also listed under its own id (the alias is the canonical name), matching
-  # lib/llm.nix's `if aliases == [] then [name] else aliases`.
+  # id) PLUS every served base id (base id -> itself), so the gateway mirrors the static
+  # catalogue and a caller can name either the id the engine serves or an extra name it answers
+  # to. A model with an alias is listed under both; `qfn-max-long` used to vanish behind
+  # `qfn-max`.
   nameToBaseFor =
     host:
     let
       aliases = views.${host}.aliasToModel;
-      aliasedBaseIds = builtins.attrValues aliases;
       # ONLY what llama-swap actually serves: the same projection the host uses
       # (`mkServerModels` filters by the boot profile's `sets`, so `retired` models
       # — defined but not served — are correctly excluded). Mirroring just
@@ -240,9 +239,8 @@ let
           acc: prof: acc // lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host prof)
         ) { } (builtins.attrNames data.servers.${host}.profiles)
       );
-      unaliasedBaseIds = builtins.filter (id: !(builtins.elem id aliasedBaseIds)) servedBaseIds;
     in
-    aliases // lib.genAttrs unaliasedBaseIds (id: id);
+    aliases // lib.genAttrs servedBaseIds (id: id);
 
   modelList =
     (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY" (nameToBaseFor "brys"))

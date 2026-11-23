@@ -651,16 +651,23 @@ in
             };
           };
 
-          systemd.user.timers."secret-service-probe@" = {
-            Unit.Description = "Periodically check the rosec provider %i";
-            Timer = {
-              OnBootSec = "30s";
-              OnUnitInactiveSec = "20s";
-              AccuracySec = "1s";
-              Unit = "secret-service-probe@%i.service";
-            };
-            Install.WantedBy = [ "timers.target" ];
-          };
+          # A template unit cannot be enabled through `WantedBy`; systemd instantiates it as
+          # `@timers`. One timer instance per provider, the service stays a template.
+          systemd.user.timers = lib.listToAttrs (
+            map (provider: {
+              name = "secret-service-probe@${provider}";
+              value = {
+                Unit.Description = "Periodically check the rosec provider ${provider}";
+                Timer = {
+                  OnBootSec = "30s";
+                  OnUnitInactiveSec = "20s";
+                  AccuracySec = "1s";
+                  Unit = "secret-service-probe@${provider}.service";
+                };
+                Install.WantedBy = [ "timers.target" ];
+              };
+            }) cfg.unlockGate.providers
+          );
         })
 
         # The package ships `share/systemd/user/rosecd.service`, and the profile's

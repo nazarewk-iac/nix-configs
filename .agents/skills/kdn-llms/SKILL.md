@@ -16,128 +16,78 @@ Full design: [alias-scheme.design.md](../../../docs/tasks/2026-10/llm-model-expa
 Model comparison: [model-selection-guide.md](../../../docs/tasks/2026-10/llm-model-expansion/model-selection-guide.md).
 Measurements: [measurements.research.md](../../../docs/tasks/2026-10/llm-benchmark-suite/001-benchmark-suite/measurements.research.md).
 
-## How to name a model: the purpose alias
+## How to name a model: the model id
 
-Do not name a base model id (`qwen3.5-35b-a3b`). Name a **stable purpose alias**:
+Name the **model id**, the same string llama-swap, the LiteLLM gateway, `pi --list-models` and
+`kdn-inference-helpers status --long` all print. There is no alias layer any more.
 
-```
-<purpose>-<complexity>-<speed>[-<tag>][-alt]
-```
+Until 2026-11-23 a purpose-alias scheme (`chat-std-fast`, `vision-deep-slow`, `embed-std-fast`, …)
+sat in front of the models. It was dropped: an alias hides which model answers, six of them pointed
+at models the fleet no longer served, and a stale alias looks exactly like a live one. The
+`qfn*` names stay — they are the frontier operating points, not aliases.
 
-- **purpose**: `chat`, `code`, `vision`, `audio`, `reason`, `tools`, `embed`,
-  `rank`, `tiny`, `orchestrate`.
-- **complexity**: `dumb` (mechanical, follows tight instructions, no reasoning),
-  `quick` (trivial but needs a little judgment), `std` (normal), `deep` (hard,
-  long, or creative).
-- **speed**: `fast`, `mid`, `slow` — the latency you accept.
-- **tag** (optional): `vision`, `tools`, `long`, `moe`, `gpu`, `think`.
-- **-alt**: the alternate model for the slot. The bare id is the primary.
-
-The server maps the alias to a model. To change the model, someone moves the
-alias string in `data/llm.nix` (`models.<id>.aliases`) and redeploys — **the client keeps
-the same id**. Never hardcode the base model name in a client config.
-
-## Every alias is also an opencode sub-agent
-
-On a host with the oams opencode profile, each purpose alias is registered as an
-opencode **subagent** with the alias as its name (`lib/llm-agents.nix`,
-generated from `data/llm.nix`). So an orchestrator delegates by naming the
-alias as the Task tool's `subagent_type`:
-
-```
-Task { subagent_type: "chat-std-fast", prompt: "..." }
-```
-
-Use a concrete alias, never a family (`qwen-*` is not a valid `subagent_type`).
-A subagent with no `model` inherits the caller's model, so always name one.
-Full design:
-[opencode-subagent-model-routing/done.md](../../../docs/tasks/2026-10/opencode-subagent-model-routing/done.md).
-
-## Which alias to use (decide from what is live)
-
-Pick the alias by intent, not by model. Current assignments, read from the deployed
-llama-swap config on 2026-11-21:
-
-| alias                   | use it for                 | live model                    | ctx    | speed |
-| ----------------------- | -------------------------- | ----------------------------- | ------ | ----- |
-| `chat-std-fast`         | normal chat/assistant      | lfm2.5-24b-a2b                | 32768  | 23    |
-| `tools-std-fast`        | agent tools, RAG, terminal | lfm2.5-24b-a2b                | 32768  | 23    |
-| `chat-std-mid`          | normal chat, more quality  | qwen3.5-35b-a3b               | 262144 | 23    |
-| `chat-std-mid-long`     | long-context chat          | nemotron-3-nano-30b-a3b       | 32768  | 12    |
-| `reason-std-fast`       | reasoning, long context    | nemotron-3-nano-30b-a3b       | 32768  | 12    |
-| `reason-quick-fast`     | cheap step-by-step         | mellum-2.1-12b-a2.5b-thinking | 32768  | 14.8  |
-| `reason-quick-fast-alt` | the same, smaller          | ministral-3-3b-reasoning      | 16384  | —     |
-| `code-std-fast-alt`     | code, non-thinking         | mellum-2.1-12b-a2.5b-thinking | 32768  | 14.8  |
-| `vision-std-fast`       | images, general            | qwen3-vl-30b-a3b              | 32768  | 15.7  |
-| `vision-std-fast-moe`   | the same model, own name   | qwen3-vl-30b-a3b              | 32768  | 15.7  |
-| `vision-std-fast-alt`   | images, dense text         | ornith-1.5-35b-a3b            | 32768  | 8.8   |
-| `vision-deep-slow`      | hard image tasks           | ornith-1.5-35b-a3b            | 32768  | 8.8   |
-| `embed-std-fast`        | embeddings (RAG)           | qwen3-embedding-4b            | 8192   | —     |
-| `rank-std-fast`         | reranking (RAG)            | qwen3-reranker-4b             | 8192   | —     |
-
-Everything else is reachable by its base id and has no alias: `gemma-4-e4b`,
-`qwen2.5-vl-7b`, `qwen3-omni`, `longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`, and the
-frontier names below.
-
-**Several aliases are dead.** `chat-dumb-fast`, `chat-dumb-fast-alt`, `code-quick-fast`,
-`tiny-dumb-fast`, `tiny-quick-fast` and `tools-dumb-fast` still appear in `data/llm.nix`, but
-their models were pruned on 2026-11-21, so a request to one answers
-`{"error":{"message":"no router for requested model"}}`. `audio-std-mid` is not in `data/llm.nix`
-either, so no entry could answer it. Check before you rely on one:
+**Check what is live before you name it:**
 
 ```bash
 curl -s https://llama-swap.brys.priv.nb.net.int.kdn.im/v1/models | jq -r '.data[].id' | sort
+pi --list-models                       # context and max-out per model, as a client sees them
 ```
 
-**Base ids are the safe choice for scripted work.** An alias can be re-pointed or orphaned; a base
-id answers as long as its GGUF is on disk.
+**Check what each model is for:** the table below is the short answer; the model's own entry in
+`data/llm.nix` carries its measured rate, context and source.
+
+## Which model for what
+
+| model                                                                                                                                   | use it for                                                                        |     ctx | decode |
+| --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------: | -----: |
+| `qwen3.5-35b-a3b`                                                                                                                       | biggest local chat model, MoE                                                     |    262k |     23 |
+| `lfm2.5-24b-a2b`                                                                                                                        | chat and tool calls, the workhorse                                                |     32k |     23 |
+| `nemotron-3-nano-30b-a3b`                                                                                                               | reasoning, long-ish context                                                       |     32k |     12 |
+| `mellum-2.1-12b-a2.5b-thinking`                                                                                                         | cheap reasoning and code edits                                                    |     32k |   14.8 |
+| `ministral-3-3b-reasoning`                                                                                                              | smallest reasoning model                                                          |     16k |      — |
+| `gemma-4-e4b`                                                                                                                           | small general model                                                               |     32k |     13 |
+| `ornith-1.5-35b-a3b`                                                                                                                    | dense terminal text, screenshots                                                  |     32k |    8.8 |
+| `qwen3-vl-30b-a3b`                                                                                                                      | general vision                                                                    |     32k |   15.7 |
+| `qwen2.5-vl-7b`                                                                                                                         | small vision                                                                      |     16k |      — |
+| `qwen3-omni`                                                                                                                            | audio + vision + text companion                                                   |     16k |      — |
+| `qwen3-embedding-4b`                                                                                                                    | embeddings (`/v1/embeddings`)                                                     |      8k |      — |
+| `qwen3-reranker-4b`                                                                                                                     | reranking (`/v1/rerank`)                                                          |      8k |      — |
+| `longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`                                                                                 | image and video editors                                                           |      4k |      — |
+| `qfn`, `qfn-max-multi`, `qfn-max-swarm`, `qfn-max`, `qfn-max-long`, `qfn-max-single`, `qfn-fast-swarm`, `qfn-max-colo`, `qfn-fast-colo` | the frontier engine, one name per operating point — see the profile section below | 256k–1M |  30–86 |
 
 Rules of thumb:
 
-- **Start with `chat-std-fast`.** Only step up to `chat-std-mid` when the task is genuinely harder,
-  because the bigger models are slower and cost VRAM the frontier wants.
-- **`embed-*` and `rank-*` are not chat models.** They use `/v1/embeddings` and `/v1/rerank`.
-- **No purpose alias points at a frontier model.** Every alias maps to a grunt model, and every
-  grunt model runs `--parallel 1`, so concurrent calls to one alias queue. Fan a fleet out across
-  _different_ aliases, not many calls to one. The frontier is QFN on the Strata engine, below.
-- **Some aliases share one process.** `chat-std-fast` and `tools-std-fast` are both
-  `lfm2.5-24b-a2b`; `reason-std-fast` and `chat-std-mid-long` are both `nemotron-3-nano-30b-a3b`;
-  `reason-quick-fast` and `code-std-fast-alt` are both `mellum-2.1-12b-a2.5b-thinking`. Treat each
-  pair as one worker with one queue.
+- **Start with `lfm2.5-24b-a2b`** for chat and tools; step up to `qwen3.5-35b-a3b` only when the
+  task is genuinely harder.
+- **`qwen3-embedding-4b` and `qwen3-reranker-4b` are not chat models.** They use `/v1/embeddings`
+  and `/v1/rerank`.
+- **Every model runs `--parallel 1`**, so concurrent calls to one id queue. Fan a fleet out across
+  _different_ models, not many calls to one.
+- **The frontier is not a llama.cpp model.** `qfn*` is the Strata engine; the names, their windows
+  and their costs are in the profile section below.
 
-## What is registered (short summary)
+### The opencode and Pi sub-agents
 
-Everything below is served; most carry no alias and are reachable by their base
-id. Speeds are measured decode tok/s on brys.
+Both harnesses register **one sub-agent per served model id** (`lib/llm-agents.nix` for opencode,
+`data/pi/agents/*.md` for Pi). A caller names the model:
 
-- **Frontier**: QFN on the Strata engine, seven profiles, listed in the next section. It is not a
-  llama-swap model in the usual sense: the `qfn*` entries are `strata-select` proxies.
-- **Deep tier**: Requesty SaaS through the etra gateway, not on brys.
-- **Live catalogue on brys (2026-11-21)**: `/v1/models` answers 35 ids — 12 base ids, 14 aliases
-  and the nine frontier names. Three image editors are served but kept out of that list. The GGUF
-  list is the truth; this is the shape of it.
+```
+Task { subagent_type: "mellum-2.1-12b-a2.5b-thinking", prompt: "..." }
+```
 
-| model                           | ctx    | role                                  |
-| ------------------------------- | ------ | ------------------------------------- |
-| `qwen3.5-35b-a3b`               | 262144 | biggest local chat model, MoE, 23 t/s |
-| `lfm2.5-24b-a2b`                | 32768  | chat and tools workhorse, 23 t/s      |
-| `nemotron-3-nano-30b-a3b`       | 32768  | reasoning and long chat, 12 t/s       |
-| `mellum-2.1-12b-a2.5b-thinking` | 32768  | cheap reasoning and code, 14.8 t/s    |
-| `ministral-3-3b-reasoning`      | 16384  | smallest reasoning model              |
-| `gemma-4-e4b`                   | 32768  | small general model, no alias         |
-| `ornith-1.5-35b-a3b`            | 32768  | best at dense terminal text, 8.8 t/s  |
-| `qwen3-vl-30b-a3b`              | 32768  | vision workhorse, 15.7 t/s            |
-| `qwen2.5-vl-7b`                 | 16384  | small vision model                    |
-| `qwen3-omni`                    | 16384  | audio + vision + text companion       |
-| `qwen3-embedding-4b`            | 8192   | embeddings                            |
-| `qwen3-reranker-4b`             | 8192   | reranking                             |
-| `longcat-image-edit`            | 4096   | image edit                            |
-| `qwen-image-edit`               | 4096   | image edit                            |
-| `wan-vace-14b`                  | 4096   | video edit                            |
+The frontier `qfn*` models are excluded: they are the orchestrator itself, and a turn that recursed
+into them would only wait on the same engine.
 
-The smaller grunts (`qwen3.5-0.8b/2b/4b`, `granite-4.2-3b/8b`, `tmax-*`, `gemma-4-e2b`, the CPU
-variants) and every dense 27-36B model were retired on 2026-11-21 to free disk and VRAM. Their
-aliases still exist in `data/llm.nix`, which is why a dead alias answers "no router".
+## What is served
+
+`/v1/models` on brys answers one entry per served model plus the nine `qfn*` names. Two kinds are
+not in that list: the three image editors (`longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`,
+served through the manager) and the Requesty deep tier.
+
+Retired on 2026-11-21 to free disk and VRAM: the small grunts (`qwen3.5-0.8b/2b/4b`,
+`granite-4.2-3b/8b`, `tmax-*`, `gemma-4-e2b`, the CPU variants) and every dense 27-36B model. Their
+entries stay in `data/llm.nix` for the measurements they carry, but they are not served and have no
+name; asking for one answers `no router for requested model`.
 
 The deep tier runs on Requesty SaaS through the etra gateway:
 `requesty/deepinfra/deepseek-v4.1-flash-1017` (the pi harness default and the primary, 1M ctx),
