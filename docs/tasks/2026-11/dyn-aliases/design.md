@@ -89,10 +89,11 @@ dyn = {
 4. `dyn-image` with `qwen3-vl-30b-a3b` resident returns it, with no switch and no load.
 5. `dyn-image` on `max-multi` with nothing resident returns **409**, built from the tree's refusal,
    naming `qfn-fast-colo` / `qfn-max-colo`, every candidate, and the failing check per candidate.
-6. `/v1/models` lists `dyn-fast`, `dyn-avg`, `dyn-max` with `context_length` 262144 and the
+6. `/v1/models` lists `dyn-fast`, `dyn-avg`, `dyn-max` with **`max_input_tokens`** 262144 and the
    preset's `max_output_tokens`, and `dyn-audio`/`dyn-image` with the window of their default
    route (32768) — the same number their Pi entry promises, never a 262144 a 32k model cannot
-   serve.
+   serve. The gateway publishes `max_input_tokens`, not the OpenAI field name `context_length`;
+   verified live 2026-11-24.
 7. `pi --list-models` shows the text presets with the right context, cap and thinking flag.
 8. `dyn-image-gen` and `dyn-video` are absent from `/v1/models` and documented as routes.
 

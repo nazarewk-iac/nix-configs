@@ -153,12 +153,22 @@ class ResidentFirst(CustomLogger):
         return str(status.get("profile") or "unknown")
 
     def _failing_check(self, result: dict) -> str:
-        """The last check the tree failed, so the refusal names the step and not just a verdict."""
+        """The last CHECK the tree failed, so the refusal names a verb and not a node id.
+
+        The trace also carries `action` nodes (`refuse`, `load`); those have no verb, and the
+        first version returned the last failing node of any type, which surfaced `root.5.2` where
+        the caller needs `fits-beside`. Prefer a step with a verb; fall back to the node id only
+        when the tree failed without one.
+        """
+        fallback = ""
         for step in reversed(result.get("why") or []):
             if str(step.get("result") or "") != "failure":
                 continue
-            return str(step.get("verb") or step.get("node") or "")
-        return ""
+            if step.get("verb"):
+                return str(step["verb"])
+            if not fallback:
+                fallback = str(step.get("node") or "")
+        return fallback
 
     def _refusal(
         self, model: str, kind: str, verdicts: list[tuple[str, dict | None]]
