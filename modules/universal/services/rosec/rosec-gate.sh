@@ -27,6 +27,12 @@ case "$scope" in
   *) echo "unknown GATE_SCOPE: $scope" >&2; exit 2 ;;
 esac
 
+# User units do not inherit `DBUS_SESSION_BUS_ADDRESS` from the manager, so derive it: without it
+# the desktop notification is skipped and every cue becomes a journal line.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+fi
+
 mkdir -p "$state_dir"
 
 write_state() {
@@ -35,29 +41,41 @@ write_state() {
     "$state" "$reason" "$(date -u +%FT%TZ)" >"$state_file"
 }
 
-# Number of items the daemon currently serves; 0 when the call fails.
-served_items() {
-  local out n
-  out="$("${GATE_BUSCTL:-busctl}" "${bus_args[@]}" call org.freedesktop.secrets \
-    /org/rosec/Daemon org.rosec.Daemon Status 2>/dev/null || true)"
-  n="$(awk '{print $2}' <<<"$out" 2>/dev/null || true)"
-  echo "${n:-0}"
+# True when the provider is unlocked AND the collection holds items.
+#
+# `org.rosec.Daemon.Status` reports the stored item count even while the provider is locked, and
+# the collection `Items` property keeps its paths through a lock, so neither alone means "serving".
+# The provider state is truthful for a lock; the item count covers the window right after an unlock,
+# where the state already says `unlocked` but the cache is still being populated.
+serving() {
+  local provider="$1" out count
+  # Capture first: `grep -q` closes the pipe on the first match, the writer dies with SIGPIPE
+  # (141), and `set -o pipefail` turns that into a failure.
+  out="$(rosec status 2>/dev/null || true)"
+  grep -qE "^[[:space:]]*${provider}[[:space:]].*[[:space:]]unlocked([[:space:]]|$)" <<<"$out" \
+    || return 1
+  count="$("${GATE_BUSCTL:-busctl}" "${bus_args[@]}" --json=short call org.freedesktop.secrets \
+    /org/freedesktop/secrets/collection/default org.freedesktop.DBus.Properties Get ss \
+    org.freedesktop.Secret.Collection Items 2>/dev/null \
+    | grep -o '"/org/freedesktop/secrets/collection/[^"]*"' | wc -l)"
+  [ "${count:-0}" -gt 0 ]
 }
 
 notify() {
   local urgency="$1" summary="$2" body="$3" timeout="$4"
-  if [ -n "$notify_bin" ] && [ -x "$notify_bin" ] && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    "$notify_bin" -u "$urgency" -t "$timeout" -p -r "$replace_id" "$summary" "$body" >/dev/null 2>&1 || true
-  else
-    logger -t rosec-gate -- "$summary: $body" || true
+  if [ -n "$notify_bin" ] && [ -x "$notify_bin" ] && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] \
+    && "$notify_bin" -u "$urgency" -t "$timeout" -p -r "$replace_id" "$summary" "$body" >/dev/null 2>&1; then
+    return 0
   fi
+  # No session bus, no notification daemon, or a failed send: the journal is the headless cue.
+  logger -t rosec-gate -- "$summary: $body" || true
 }
 
 cmd_wait() {
   local provider="$1" deadline=$((SECONDS + probe_timeout))
   write_state unlocking
   while [ "$SECONDS" -lt "$deadline" ]; do
-    if [ "$(served_items)" -gt 0 ]; then
+    if serving "$provider"; then
       write_state ready
       notify normal "rosec: $provider ready" "The Secret Service serves secrets again." 3000
       exit 0
@@ -77,7 +95,7 @@ cmd_probe() {
     # The gate is not armed; nothing to stop and nothing to report.
     exit 0
   fi
-  if [ "$(served_items)" -gt 0 ]; then
+  if serving "$provider"; then
     write_state ready
     [ "$previous" = ready ] || notify normal "rosec: $provider ready" "The Secret Service serves secrets." 3000
     exit 0

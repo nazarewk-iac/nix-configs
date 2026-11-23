@@ -138,6 +138,7 @@ let
       pkgs.coreutils
       pkgs.gnused
       pkgs.gawk
+      pkgs.gnugrep
       pkgs.util-linux
     ];
     text = builtins.readFile ./rosec-gate.sh;

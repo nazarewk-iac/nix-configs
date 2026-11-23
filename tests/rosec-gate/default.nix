@@ -11,26 +11,45 @@ let
       pkgs.coreutils
       pkgs.gnused
       pkgs.gawk
+      pkgs.gnugrep
       pkgs.util-linux
     ];
     text = builtins.readFile ../../modules/universal/services/rosec/rosec-gate.sh;
   };
 
   rosecStub = pkgs.writeShellScriptBin "rosec" ''
-    if [ "''${1:-}" = unlock ]; then
-      printf 'No password needed [Press Enter — the age identity unlocks this store]: '
-      read -r _
-      sleep 1
-      echo 46 > /run/gate-test/items
-      exit 0
-    fi
-    exit 1
+    n="$(cat /run/gate-test/items 2>/dev/null || echo 0)"
+    case "''${1:-}" in
+      unlock)
+        printf 'No password needed [Press Enter — the age identity unlocks this store]: '
+        read -r _
+        sleep 1
+        echo 46 > /run/gate-test/items
+        exit 0
+        ;;
+      status)
+        if [ "$n" -gt 0 ]; then
+          echo "  sops  sops store  sops  W  unlocked"
+        else
+          echo "  sops  sops store  sops  W  locked"
+        fi
+        exit 0
+        ;;
+      *) exit 1 ;;
+    esac
   '';
 
   busctlStub = pkgs.writeShellScriptBin "busctl" ''
     case "$*" in
       *"org.rosec.Daemon Status"*)
         printf 'u %s\n' "$(cat /run/gate-test/items 2>/dev/null || echo 0)"
+        ;;
+      *"Secret.Collection Items"*)
+        if [ "$(cat /run/gate-test/items 2>/dev/null || echo 0)" -gt 0 ]; then
+          printf '{"type":"v","data":[{"type":"ao","data":["/org/freedesktop/secrets/collection/default/x"]}]}\n'
+        else
+          printf '{"type":"v","data":[{"type":"ao","data":[]}]}\n'
+        fi
         ;;
       *) exit 1 ;;
     esac

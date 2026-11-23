@@ -136,6 +136,7 @@ in
           pkgs.coreutils
           pkgs.gnused
           pkgs.gawk
+          pkgs.gnugrep
           pkgs.util-linux
         ];
         text = builtins.readFile ../../universal/services/rosec/rosec-gate.sh;
@@ -143,9 +144,9 @@ in
 
       gateUnlock = pkgs.writeShellScriptBin "rosec-unlock-gate" ''
         set -eu
-        rosec_bin="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
+        export ROSEC_GATE_BIN="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
         ${pkgs.expect}/bin/expect -c '
-          set rosec_bin [lindex $argv 0]
+          set rosec_bin $env(ROSEC_GATE_BIN)
           set timeout 90
           spawn $rosec_bin unlock
           expect {
@@ -153,7 +154,7 @@ in
             timeout { exit 1 }
             eof
           }
-        ' "$rosec_bin" || exit 1
+        ' || exit 1
         exec ${lib.getExe gateScript} wait "$1"
       '';
 
