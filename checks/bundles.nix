@@ -67,6 +67,10 @@ let
     # Darwin guest in `bundle-vm` it is an ordinary derivation and CAN be a bundle member. It does
     # not join `bundle-core`: a per-edit tripwire must not boot a machine.
     "dyn-aliases-e2e"
+    # The build-farm PoC: four VMs (client, proxy, two builders) and a real remote build through
+    # HAProxy. It proves placement follows the `ready maxconn:N` responder; it is not a per-edit
+    # check.
+    "build-farm-ready"
   ];
   # Cross-cutting: each reads a bare consumer, not one aspect.
   crossCutting = [

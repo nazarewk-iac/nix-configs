@@ -162,11 +162,15 @@ joins.
 | `dyn-aliases-config`             | the three text presets, the two modality groups, the Pi projection of all five, and no `dyn-*` in `data.models`                                          | core     | 2.0   | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-config"`                    |
 | `dyn-aliases-ladder`             | resident wins, first admit wins, the 409 names a verb per candidate and no `confirm`, the text preset names the profile, an unreachable manager is named | core     | 4.3   | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-ladder"`                    |
 | `dyn-aliases-e2e`                | the real gateway against a fake brys: both preset caps and thinking flags, the resident rung, the 409 body, the admit walk                               | slow     | 44.2  | `nix build --no-eval-cache -L ".#checks.$SYS.dyn-aliases-e2e"`                       |
+| `build-farm-ready`               | four VMs: a client builds through HAProxy to two builders, `drain` moves the next build to the other, one slot each spills two builds one per builder     | slow     | 68    | `nix build --no-eval-cache -L ".#checks.$SYS.build-farm-ready"`                      |
 
 A `—` means the check needs a Linux builder, so this machine measured no time. The three
 `dyn-aliases-*` checks are Linux-only and carry their `x86_64-linux` time instead: 2.0 s, 4.3 s and
 44.2 s on a warm store, measured 2026-11-23. The last of them is a VM test: 33.8 s of its 44.2 s
-run inside the guest, and the rest is the QEMU boot and the test driver. A `‡` means the
+run inside the guest, and the rest is the QEMU boot and the test driver. `build-farm-ready` is the
+other VM test: four guests, 51.9 s of its 68 s inside the test script. It builds a bare derivation,
+so it needs no nixpkgs in the guest, and it disables the builder sandbox because a bare
+`derivation` does not declare its builder's closure as an input. A `‡` means the
 check landed after the timing run, so it carries no measured time yet; it is an eval-only assertion
 set, so it costs a few seconds. `markdown-format` carries a `x86_64-linux` time instead: it runs on
 both systems, and the formatting pass measured it there. The four times over 40 s are plain builds

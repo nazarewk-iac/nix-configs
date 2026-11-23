@@ -98,6 +98,16 @@ let
     else
       { };
 
+  # The build-farm scheduler PoC: one client VM, two builder VMs and HAProxy, with the per-builder
+  # `ready maxconn:N` responder. A VM test, so it joins `bundle-slow`, not the per-edit tripwire.
+  buildFarmTests =
+    if pkgs.stdenv.hostPlatform.isLinux then
+      {
+        build-farm-ready = pkgs.callPackage ./build-farm-ready { };
+      }
+    else
+      { };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -116,6 +126,7 @@ denTests.checks
 // piHarnessTests
 // inferenceHelpersTests
 // dynAliasTests
+// buildFarmTests
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent
