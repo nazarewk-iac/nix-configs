@@ -83,6 +83,10 @@ in
       "standalone-aspects"
       "conditional-imports-mechanism"
       "conditional-imports-repository"
+      # The dyn-* intent names: the presets and groups `lib/llm.nix` derives, and the residency
+      # ladder that reads them. Both are cheap (jq and a stubbed pytest), so they run per edit.
+      "dyn-aliases-config"
+      "dyn-aliases-ladder"
     ]
     ++ crossCutting
     # Pi harness checks that need no model judgement: plumbing on a 1 MB model, prompt stability,

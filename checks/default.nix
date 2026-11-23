@@ -84,6 +84,18 @@ let
     else
       { };
 
+  # The `dyn-*` intent names: the values `lib/llm.nix` derives from `data/llm.nix`, and the
+  # residency ladder in `hosts/etra/litellm_resident.py` that reads them. Linux only, beside the
+  # inference runtime checks.
+  dynAliasTests =
+    if pkgs.stdenv.hostPlatform.isLinux then
+      {
+        dyn-aliases-config = pkgs.callPackage ./dyn-aliases/config.nix { };
+        dyn-aliases-ladder = pkgs.callPackage ./dyn-aliases/ladder.nix { };
+      }
+    else
+      { };
+
   # The real fork slot artifacts: the config TOML the tests read through
   # JJ_FORK_CONFIG_TOML, and the pre-push script they read through
   # KDN_JJ_PRE_PUSH_SH. inputs.self is the nix-configs flake.
@@ -101,6 +113,7 @@ denTests.checks
 // universalGuardTests.checks
 // piHarnessTests
 // inferenceHelpersTests
+// dynAliasTests
 // {
   # Minimal "hello world" check: proves the `checks.<system>` plumbing evaluates and
   # builds end-to-end (flake.nix mkSubmodule wiring + checks/default.nix), independent
