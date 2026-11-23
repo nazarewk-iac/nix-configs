@@ -73,6 +73,10 @@ cmd_wait() {
 cmd_probe() {
   local provider="$1" previous
   previous="$(sed -n 's/^state=//p' "$state_file" 2>/dev/null || true)"
+  if ! systemctl "${systemctl_args[@]}" is-active --quiet "secret-service-unlock@${provider}.service"; then
+    # The gate is not armed; nothing to stop and nothing to report.
+    exit 0
+  fi
   if [ "$(served_items)" -gt 0 ]; then
     write_state ready
     [ "$previous" = ready ] || notify normal "rosec: $provider ready" "The Secret Service serves secrets." 3000

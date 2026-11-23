@@ -519,16 +519,12 @@ in
                   config.kdn.desktop.sway.systemd.envs.target
                   config.kdn.desktop.sway.systemd.secrets-service.service
                 ];
-                # `After=` alone does not pull the unlock in, so a client that starts on its own
-                # would run against a locked store. The rosec module defines the unit.
-                Wants = lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
                 After = [
                   config.wayland.systemd.target
                   config.kdn.desktop.sway.systemd.secrets-service.service
                   config.kdn.desktop.sway.systemd.envs.target
                   "tray.target"
-                ]
-                ++ lib.optionals config.kdn.services.rosec.enable [ "rosec-unlock.service" ];
+                ];
                 PartOf = [ config.wayland.systemd.target ];
               };
               Install.WantedBy = [ config.wayland.systemd.target ];

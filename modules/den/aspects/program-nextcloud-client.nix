@@ -25,8 +25,16 @@
         # ordering it races rosec: it finds no owner (or a locked provider), gives up and shows
         # the browser login. The unlock unit requires the daemon, so this also starts rosec.
         systemd.user.services.nextcloud-client = {
-          Unit.Wants = [ "rosec-unlock.service" ];
-          Unit.After = [ "rosec-unlock.service" ];
+          Unit.Wants =
+            if config.kdn.services.rosec.unlockGate.enable then
+              [ "secret-service-unlocked@${config.kdn.services.rosec.providers.sops.id}.target" ]
+            else
+              [ "rosec-unlock.service" ];
+          Unit.After =
+            if config.kdn.services.rosec.unlockGate.enable then
+              [ "secret-service-unlocked@${config.kdn.services.rosec.providers.sops.id}.target" ]
+            else
+              [ "rosec-unlock.service" ];
           Service.ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
           Service.Restart = "on-failure";
         };

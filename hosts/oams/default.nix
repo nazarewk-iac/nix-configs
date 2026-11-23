@@ -456,6 +456,9 @@ in
       # `FDO_ENABLED=false` keep the integration off, so the GUI never claims the bus.
       kdn.services.rosec = {
         enable = true;
+        # The gate replaces the single unlock unit: a dependent pulls the target, the target pulls
+        # the unlock, and the probe stops the gate when the store locks.
+        unlockGate.enable = true;
         # The provider values (key file, identity, recipient, key generation) are user-level and
         # live in the shared Home Manager module `data/rosec.nix`, imported below. This NixOS
         # half keeps the switch and the store path the module's assertion checks.

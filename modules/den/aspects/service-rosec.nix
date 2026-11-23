@@ -129,6 +129,42 @@ in
         ))
       ];
 
+      gateScript = pkgs.writeShellApplication {
+        name = "rosec-gate";
+        runtimeInputs = [
+          pkgs.systemd
+          pkgs.coreutils
+          pkgs.gnused
+          pkgs.gawk
+          pkgs.util-linux
+        ];
+        text = builtins.readFile ../../universal/services/rosec/rosec-gate.sh;
+      };
+
+      gateUnlock = pkgs.writeShellScriptBin "rosec-unlock-gate" ''
+        set -eu
+        rosec_bin="''${GATE_ROSEC:-${lib.getExe' cfg.package "rosec"}}"
+        ${pkgs.expect}/bin/expect -c '
+          set rosec_bin [lindex $argv 0]
+          set timeout 90
+          spawn $rosec_bin unlock
+          expect {
+            -re "Press Enter|No password needed" { send "\r"; exp_continue }
+            timeout { exit 1 }
+            eof
+          }
+        ' "$rosec_bin" || exit 1
+        exec ${lib.getExe gateScript} wait "$1"
+      '';
+
+      gateEnvironment =
+        [
+          "PATH=${servicePath}"
+          "GATE_SCOPE=user"
+          "GATE_PROBE_TIMEOUT=${toString cfg.unlockGate.timeoutSeconds}"
+        ]
+        ++ lib.optional cfg.unlockGate.notify "GATE_NOTIFY_BIN=${pkgs.libnotify}/bin/notify-send";
+
       conflictsScript = pkgs.writeShellApplication {
         name = "rosec-conflicts";
         runtimeInputs = [
@@ -225,7 +261,7 @@ in
 
         rosecd.unlock.enable = lib.mkOption {
           type = lib.types.bool;
-          default = config.kdn.services.rosec.rosecd.enable;
+          default = config.kdn.services.rosec.rosecd.enable && !config.kdn.services.rosec.unlockGate.enable;
           defaultText = lib.literalExpression "config.kdn.services.rosec.rosecd.enable";
           description = ''
             Install `rosec-unlock.service`, a oneshot that unlocks the store after the daemon
@@ -239,6 +275,31 @@ in
           internal = true;
           description = "`PATH` for a unit that runs the daemon outside this aspect.";
         };
+
+        unlockGate.enable = lib.mkEnableOption ''
+          the per-provider Secret Service unlock gate. A dependent that `Wants` the gate target pulls
+          the unlock service; the target stays active only while the daemon serves items, and the
+          probe stops it when the store locks.
+        '';
+
+        unlockGate.providers = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ "sops" ];
+          description = "rosec provider ids that get a gate instance (`%i` in the unit names).";
+        };
+
+        unlockGate.notify = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Send a desktop notification on failure, with a journal fallback.";
+        };
+
+        unlockGate.timeoutSeconds = lib.mkOption {
+          type = lib.types.int;
+          default = 45;
+          description = "How long the gate waits for the daemon to serve items before it fails.";
+        };
+
 
         use = lib.mkOption {
           type = lib.types.bool;
@@ -547,6 +608,59 @@ in
                   ''}";
                 };
               };
+        })
+
+        (lib.mkIf cfg.unlockGate.enable {
+          systemd.user.services."secret-service-unlock@" = {
+            Unit = {
+              Description = "Unlock and verify the rosec provider %i";
+              Requires = [ "${cfg.rosecd.unitName}.service" ];
+              After = [ "${cfg.rosecd.unitName}.service" ];
+              PartOf = [ "${cfg.rosecd.unitName}.service" ];
+            };
+            Service = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              TimeoutStartSec = "60s";
+              Environment = gateEnvironment;
+              ExecStart = "${lib.getExe gateUnlock} %i";
+            };
+          };
+
+          systemd.user.services."secret-service-probe@" = {
+            Unit = {
+              Description = "Check that the rosec provider %i still serves secrets";
+              Requires = [ "${cfg.rosecd.unitName}.service" ];
+              After = [ "${cfg.rosecd.unitName}.service" ];
+            };
+            Service = {
+              Type = "oneshot";
+              TimeoutStartSec = "30s";
+              Environment = gateEnvironment;
+              ExecStart = "${lib.getExe gateScript} probe %i";
+            };
+          };
+
+          systemd.user.targets."secret-service-unlocked@" = {
+            Unit = {
+              Description = "rosec provider %i is unlocked and serving";
+              Wants = [ "secret-service-unlock@%i.service" ];
+              After = [ "secret-service-unlock@%i.service" ];
+              BindsTo = [ "secret-service-unlock@%i.service" ];
+              PartOf = [ "secret-service-unlock@%i.service" ];
+            };
+          };
+
+          systemd.user.timers."secret-service-probe@" = {
+            Unit.Description = "Periodically check the rosec provider %i";
+            Timer = {
+              OnBootSec = "30s";
+              OnUnitInactiveSec = "20s";
+              AccuracySec = "1s";
+              Unit = "secret-service-probe@%i.service";
+            };
+            Install.WantedBy = [ "timers.target" ];
+          };
         })
 
         # The package ships `share/systemd/user/rosecd.service`, and the profile's

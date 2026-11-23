@@ -337,7 +337,7 @@ in
 
     rosecd.unlock.enable = lib.mkOption {
       type = lib.types.bool;
-      default = config.kdn.services.rosec.rosecd.enable;
+      default = config.kdn.services.rosec.rosecd.enable && !config.kdn.services.rosec.unlockGate.enable;
       defaultText = lib.literalExpression "config.kdn.services.rosec.rosecd.enable";
       description = ''
         Install `rosec-unlock.service`, a oneshot that unlocks the store after the daemon starts.
@@ -354,7 +354,7 @@ in
 
     unlockGate.providers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ cfg.providers.sops.id ];
+      default = [ config.kdn.services.rosec.providers.sops.id ];
       description = "rosec provider ids that get a gate instance (`%i` in the unit names).";
     };
 
@@ -660,20 +660,16 @@ in
     ))
 
     (kdnConfig.util.ifTypes [ "nixos" ] (
-      lib.mkIf cfg.unlockGate.enable (
-        if cfg.unlockGate.scope == "user" then
-          {
-            systemd.user.services = gateServices;
-            systemd.user.targets = gateTargets;
-            systemd.user.timers = gateTimers;
-          }
-        else
-          {
-            systemd.services = gateServices;
-            systemd.targets = gateTargets;
-            systemd.timers = gateTimers;
-          }
-      )
+      lib.mkIf cfg.unlockGate.enable {
+        # The scope switch is per option, not a top-level `if`: a top-level `if` is forced while
+        # the module list is built, which reads `config` and recurses.
+        systemd.user.services = lib.mkIf (cfg.unlockGate.scope == "user") gateServices;
+        systemd.user.targets = lib.mkIf (cfg.unlockGate.scope == "user") gateTargets;
+        systemd.user.timers = lib.mkIf (cfg.unlockGate.scope == "user") gateTimers;
+        systemd.services = lib.mkIf (cfg.unlockGate.scope == "system") gateServices;
+        systemd.targets = lib.mkIf (cfg.unlockGate.scope == "system") gateTargets;
+        systemd.timers = lib.mkIf (cfg.unlockGate.scope == "system") gateTimers;
+      }
     ))
 
     (kdnConfig.util.ifHMParent (

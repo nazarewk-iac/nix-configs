@@ -31,8 +31,18 @@ in
             # Wait for the Secret Service unlock before the client reads its credentials;
             # otherwise it races rosec and shows the browser login.
             systemd.user.services.nextcloud-client = {
-              Unit.Wants = [ "rosec-unlock.service" ];
-              Unit.After = [ "rosec-unlock.service" ];
+              # The gate target pulls the unlock and is active only while the store serves items;
+              # without it, fall back to the single unlock unit.
+              Unit.Wants =
+                if config.kdn.services.rosec.enable && config.kdn.services.rosec.unlockGate.enable then
+                  [ "secret-service-unlocked@${config.kdn.services.rosec.providers.sops.id}.target" ]
+                else
+                  [ "rosec-unlock.service" ];
+              Unit.After =
+                if config.kdn.services.rosec.enable && config.kdn.services.rosec.unlockGate.enable then
+                  [ "secret-service-unlocked@${config.kdn.services.rosec.providers.sops.id}.target" ]
+                else
+                  [ "rosec-unlock.service" ];
               Service.Restart = "on-failure";
             };
             kdn.apps.nextcloud-client = {
