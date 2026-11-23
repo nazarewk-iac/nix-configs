@@ -61,6 +61,20 @@ let
     acc: name: lib.foldl' (a: alias: a // { ${alias} = name; }) acc (data.models.${name}.aliases or [ ])
   ) { } (builtins.attrNames servedModels);
 
+  # `auto` is not an operating point. It lands on whatever profile is current, so the only window
+  # it can promise a client is the smallest one a text profile serves — a 1M promise would be
+  # rejected the moment somebody rests on the 256k swarm.
+  smallestTextWindow = lib.foldl' lib.min 1073741824 (
+    lib.concatMap (
+      n:
+      lib.mapAttrsToList (_: h: (h.serving or { }).maxContext or 1073741824) (
+        data.models.${n}.hosts or { }
+      )
+    ) (builtins.attrNames data.models)
+  );
+
+  isAutoEntry = m: lib.any (h: ((h.serving or { }).profile or "") == "auto") (lib.attrValues m.hosts);
+
   # The client view of one SERVED MODEL, expanded to one entry PER ALIAS.
   #
   # Pi lists and selects by the entry `id`, and a caller names an intent (`chat-std-fast`), not a
@@ -72,7 +86,23 @@ let
       m = data.models.${name};
       # A model may set its OWN `pi.contextWindow` (a client budget below the served size) and
       # `pi.maxTokens`. Absent, the client-wide defaults apply, clamped to the native window.
-      ctx = lib.min (m.pi.contextWindow or data.pi.defaults.contextWindow) m.contextSize;
+      # A Strata entry serves exactly the window its operating point declares, and the engine
+      # rejects a request over it. `pi.defaults.contextWindow` (384k) is a conservative budget for
+      # a llama.cpp model, not a description of a 1M slot or a 256k one, so a frontier entry takes
+      # the window from its own `serving.maxContext`. Measured 2026-11-23: every qfn name listed
+      # 393.2K, which is the client default clamped by nothing at all.
+      servedCtx = lib.filter (w: w != null) (
+        lib.mapAttrsToList (_: h: (h.serving or { }).maxContext or null) m.hosts
+      );
+      ctx = lib.min (m.pi.contextWindow or (
+        if servedCtx != [ ] then
+          lib.foldl' lib.min (builtins.head servedCtx) servedCtx
+        else if isAutoEntry m then
+          smallestTextWindow
+        else
+          data.pi.defaults.contextWindow
+      )
+      ) m.contextSize;
       base = {
         contextWindow = ctx;
         # `maxTokens` is an explicit number (per model in data/llm.nix, else `pi.defaults`). Clamp
@@ -177,6 +207,26 @@ let
   #
   # A model with no `capabilities` still appears, with `-` for op/load, so the row count matches
   # what can actually be delegated to. Sorted by alias, so the prompt is stable across renders.
+  # The client-facing window of one model: the same rule `piEntries` uses, so the orchestrator
+  # catalog and the Pi list never quote different numbers for the same name.
+  piCtx =
+    name:
+    let
+      m = data.models.${name};
+      served = lib.filter (w: w != null) (
+        lib.mapAttrsToList (_: h: (h.serving or { }).maxContext or null) m.hosts
+      );
+    in
+    lib.min (m.pi.contextWindow or (
+      if served != [ ] then
+        lib.foldl' lib.min (builtins.head served) served
+      else if isAutoEntry m then
+        smallestTextWindow
+      else
+        data.pi.defaults.contextWindow
+    )
+    ) m.contextSize;
+
   mkCatalog =
     let
       rows = lib.concatMap (
@@ -296,6 +346,10 @@ let
       # A Strata entry serves the window its own operating point declares, so there is no second
       # `servedContext` to keep in step with it.
       serving.maxContext
+    else if ((serving.profile or "") == "auto") then
+      # `auto` lands on whatever profile is current; the only window the entry can promise is the
+      # smallest one a text profile serves, and it must match what `piCtx` tells the client.
+      smallestTextWindow
     else
       h.servedContext or m.contextSize;
 
@@ -386,5 +440,6 @@ in
     mkCatalog
     mkServerModels
     mkMemberView
+    piCtx
     ;
 }

@@ -85,14 +85,13 @@ let
       let
         baseId = nameToBase.${name};
         r = ratesOf host baseId;
-        # The curated CLIENT budget, mirroring lib/llm.nix `piEntries`:
-        # min(pi.contextWindow or default, native contextSize). Surfaced via
-        # /v1/models + /model/info as max_input_tokens/max_output_tokens so clients
-        # (and the Pi discovery extension) see the reduced window an alias advertises.
+        # The window the entry ACTUALLY serves, from the same function the Pi list uses:
+        # a Strata name carries its profile's `maxContext`, `auto` promises only the smallest
+        # text window, and a llama.cpp model keeps the curated client budget. Surfaced via
+        # /v1/models + /model/info as max_input_tokens/max_output_tokens so clients (and the
+        # Pi discovery extension) see the same number the engine enforces.
         dm = data.models.${baseId};
-        ctx = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
-          dm.contextSize or data.pi.defaults.contextWindow
-        );
+        ctx = llm.piCtx baseId;
         maxOut = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
       in
       {
@@ -176,15 +175,9 @@ let
       model_info = {
         id = "brys-chat-fast-${baseId}";
         # No per-model health probe; health is a host property (see `general_settings`).
-        # Same curated budget as the alias groups (min(pi.contextWindow, native)).
-        max_input_tokens = lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
-          dm.contextSize or data.pi.defaults.contextWindow
-        );
-        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) (
-          lib.min (dm.pi.contextWindow or data.pi.defaults.contextWindow) (
-            dm.contextSize or data.pi.defaults.contextWindow
-          )
-        );
+        # Same served window as the alias groups; see `llm.piCtx`.
+        max_input_tokens = llm.piCtx baseId;
+        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) (llm.piCtx baseId);
         supports_vision = dm.vision or false;
       }
       // lib.optionalAttrs (r != null) {
