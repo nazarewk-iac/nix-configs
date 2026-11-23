@@ -384,6 +384,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -421,6 +432,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -466,6 +488,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -510,6 +543,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -552,6 +596,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -593,6 +648,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -635,6 +701,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
@@ -678,6 +755,17 @@ in
       gpu = true;
       contextSize = 1048576;
 
+      # The engine's chat template takes `enable_thinking`; this is the same block the retired
+      # llama.cpp twin carries. Without it Pi lists the frontier as non-thinking and pins
+      # `--thinking off`, which measured as "the orchestrator ran at 0 thinking".
+      reasoning = {
+        format = "qwen";
+        levels = {
+          low = "low";
+          medium = "medium";
+          high = "xhigh";
+        };
+      };
       hosts.brys = {
         set = "main";
         serving = {
