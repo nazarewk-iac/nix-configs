@@ -139,6 +139,84 @@ let
     in
     map (id: base // { inherit id; }) ids;
 
+  # ---------------------------------------------------------------- `dyn-*` intent aliases
+  #
+  # `data.dyn` names an INTENT, not a model, and only the gateway serves the names
+  # (`hosts/etra/litellm.nix`). Two shapes are derived from that one table:
+  #
+  #   dynTextPresets     one base model + a thinking level + an output cap
+  #   dynModalityGroups  one modality kind + an ordered candidate list
+  #
+  # `piCtx` is defined further down: `let` bindings are recursive, so the client window and the
+  # gateway's advertised window stay the same function instead of two numbers that can drift.
+  dynIsText = preset: (preset.kind or "text") == "text";
+
+  # The request shape one text preset fixes at the gateway. `off` sends `enable_thinking = false`
+  # and no effort at all, because this template has no `none`; every other level is a LEVEL mapped
+  # through the base model's `reasoning.levels` (`high` becomes `xhigh`).
+  dynRequestShape =
+    preset:
+    if preset.thinking == "off" then
+      { enable_thinking = false; }
+    else
+      {
+        enable_thinking = true;
+        reasoning_effort = data.models.${preset.base}.reasoning.levels.${preset.thinking};
+      };
+
+  dynTextPresets = lib.mapAttrsToList (key: preset: {
+    name = "dyn-${key}";
+    inherit (preset) base maxTokens;
+    # The level as written in the data, kept beside the mapped shape for docs and traces.
+    level = preset.thinking;
+    kwargs = dynRequestShape preset;
+    context = piCtx preset.base;
+  }) (lib.filterAttrs (_: dynIsText) data.dyn);
+
+  dynModalityGroups = lib.mapAttrsToList (key: group: {
+    name = "dyn-${key}";
+    inherit (group) kind models;
+    # The default route: the first candidate in preference order. It is also the `baseId` the Pi
+    # entry carries, so the advertised window is the window of the model a call lands on.
+    base = lib.head group.models;
+    context = piCtx (lib.head group.models);
+    maxTokens = lib.min (data.models.${lib.head group.models}.pi.maxTokens or data.pi.defaults.maxTokens
+    ) (piCtx (lib.head group.models));
+  }) (lib.filterAttrs (_: group: !(dynIsText group)) data.dyn);
+
+  # The Pi projection of the five names, as entries of the GATEWAY provider. Without it `dyn-max`
+  # lists as non-thinking (llama-swap advertises nothing) and `dyn-image` cannot accept an image.
+  # `baseId` is what the discovery extension uses to inherit these fields into the live entry.
+  #
+  # The preset's own level is NOT written into `thinkingLevelMap`: the map stays the base model's
+  # vocabulary so Pi always sends a value this template accepts, and a client that picks a level
+  # keeps it. The preset's effort is the gateway default (advertised, not enforced — see
+  # hosts/etra/litellm.nix).
+  dynPiEntries =
+    map (preset: {
+      id = preset.name;
+      baseId = preset.base;
+      contextWindow = preset.context;
+      maxTokens = lib.min preset.maxTokens preset.context;
+      reasoning = true;
+      thinkingLevelMap = data.models.${preset.base}.reasoning.levels;
+    }) dynTextPresets
+    ++ map (
+      group:
+      {
+        id = group.name;
+        baseId = group.base;
+        contextWindow = group.context;
+        maxTokens = group.maxTokens;
+      }
+      // lib.optionalAttrs (group.kind == "image") {
+        input = [
+          "text"
+          "image"
+        ];
+      }
+    ) dynModalityGroups;
+
   # One provider entry per endpoint. `models` is every SERVED model, one entry per alias.
   #
   # The `litellm` gateway is special: it does not OWN models (none name `endpoint =
@@ -158,19 +236,23 @@ let
         baseUrl = ep.baseUrl;
         api = ep.api;
         apiKey = ep.apiKey;
-        models = builtins.concatLists (
-          map piEntries (
-            builtins.attrNames (
-              if epName == "litellm" then
-                servedModels
-              else if data.servers ? ${epName} then
-                # A direct host endpoint lists only the models THAT host serves (profile sets).
-                lib.filterAttrs (_: m: servedOn epName m) data.models
-              else
-                modelsForEndpoint epName
+        models =
+          builtins.concatLists (
+            map piEntries (
+              builtins.attrNames (
+                if epName == "litellm" then
+                  servedModels
+                else if data.servers ? ${epName} then
+                  # A direct host endpoint lists only the models THAT host serves (profile sets).
+                  lib.filterAttrs (_: m: servedOn epName m) data.models
+                else
+                  modelsForEndpoint epName
+              )
             )
           )
-        );
+          # `dyn-*` lives only on the gateway: it is a name the gateway resolves, not a model a
+          # host serves (see the `dyn-*` section above).
+          ++ lib.optionals (epName == "litellm") dynPiEntries;
       })
       (
         lib.filterAttrs (
@@ -445,5 +527,7 @@ in
     mkMemberView
     piCtx
     servedOn
+    dynTextPresets
+    dynModalityGroups
     ;
 }

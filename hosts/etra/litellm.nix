@@ -43,6 +43,12 @@ let
   oamsHost = "100.79.80.79";
   oamsPort = 39704;
   oamsEgressPort = 8444;
+  # The placement tree's advisory endpoint on brys (`POST /decide`, `GET /status`). The manager
+  # binds loopback and brys exposes it on the mesh at 8182, so the container needs its own narrow
+  # relay: the `dyn-*` ladder asks the TREE whether a candidate may be used, and keeps no second
+  # copy of the fit arithmetic.
+  decideEgressPort = 8446;
+  brysDecidePort = 8182;
   # Requesty (SaaS) egress: the container reaches it through a TLS-terminating
   # socat relay (plaintext over the private veth -> TLS to requesty), so the
   # container itself has no direct internet egress.
@@ -187,6 +193,95 @@ let
     }
   ) poolBaseIds;
 
+  # --- `dyn-*` intent aliases (docs/tasks/2026-11/dyn-aliases/design.md) -------
+  #
+  # One scheduler: this gateway. No llama-swap entry, no proxy, no new endpoint.
+  #
+  # A TEXT PRESET is one deployment of its base model with the request shape fixed in
+  # `extra_body`. Verified by the review in `litellm/utils.py:4814-4844`:
+  #   * `extra_body.max_tokens` WINS over the client's own value, so the output cap holds;
+  #   * `extra_body.chat_template_kwargs` does NOT: a client that sends its own
+  #     `chat_template_kwargs` replaces this one wholesale. Thinking is therefore ADVERTISED,
+  #     not enforced; a `pre_call` hook is the only way to make it non-negotiable (not built).
+  dynTextDeployments = map (preset: {
+    model_name = preset.name;
+    litellm_params = {
+      model = "openai/${preset.base}";
+      # The same upstream and key as the plain `qfn` deployment above.
+      api_base = "os.environ/BRYS_API_BASE";
+      api_key = "os.environ/BRYS_API_KEY";
+      extra_body = {
+        chat_template_kwargs = preset.kwargs;
+        max_tokens = preset.maxTokens;
+      };
+    };
+    model_info = {
+      id = "brys-${preset.name}";
+      # The same window the Pi entry promises (`llm.dynTextPresets`), never a second number.
+      max_input_tokens = preset.context;
+      max_output_tokens = lib.min preset.maxTokens preset.context;
+    };
+  }) llm.dynTextPresets;
+
+  # A MODALITY GROUP is one model group whose deployments are the candidates, in preference order.
+  # `resident.resident_fit` walks them: resident candidate -> the first one the placement tree
+  # admits -> a refusal built from the tree's own answer. No switch, no unload; this list is only
+  # the set of deployments the callback may choose from.
+  dynModalityDeployments = lib.concatMap (
+    group:
+    map (baseId: {
+      model_name = group.name;
+      litellm_params = {
+        model = "openai/${baseId}";
+        api_base = "os.environ/BRYS_API_BASE";
+        api_key = "os.environ/BRYS_API_KEY";
+      };
+      model_info = {
+        id = "brys-${group.name}-${baseId}";
+        # The group's advertised window is its default route's (`llm.dynModalityGroups`).
+        max_input_tokens = group.context;
+        max_output_tokens = group.maxTokens;
+      };
+    }) group.models
+  ) llm.dynModalityGroups;
+
+  # The facts `resident.resident_fit` reads. They are NAMES ONLY: the candidate order, the text
+  # profiles, and the entry that forces each profile. Every fit question goes to the placement tree
+  # (`POST /decide`), so there is no second copy of `vramMiB`/`kvReserveMiB` arithmetic here.
+  #
+  # A text preset is a group with ONE candidate (`qfn`), and it is checked too: `qfn` is the
+  # `auto` alias, which the tree refuses while an image profile is loaded. That turns a silent
+  # upstream failure into a readable 409 naming the current profile.
+  strata = llm.strata data "brys";
+  residentPolicyFile = (pkgs.formats.json { }).generate "litellm-resident-policy.json" {
+    groups =
+      lib.listToAttrs (
+        map (
+          preset:
+          lib.nameValuePair preset.name {
+            kind = "text";
+            models = [ preset.base ];
+          }
+        ) llm.dynTextPresets
+      )
+      // lib.listToAttrs (
+        map (group: lib.nameValuePair group.name { inherit (group) kind models; }) llm.dynModalityGroups
+      );
+    # The profiles that serve chat, in `rank` order: the remedy a text preset names when the engine
+    # rests on an image profile.
+    inherit (strata) textProfiles;
+    # profile -> the llama-swap entry that forces it, so a refusal names `qfn-max-colo` and not only
+    # the manager's internal `omni-max`.
+    profiles = lib.genAttrs strata.textProfiles (
+      profile:
+      lib.concatMap (name: [ name ] ++ (data.models.${name}.aliases or [ ])) (
+        lib.filter (
+          name: ((data.models.${name}.hosts or { }).brys.serving or { }).profile or "" == profile
+        ) (builtins.attrNames data.models)
+      )
+    );
+  };
+
   # Requesty deployments must be EXPLICIT: a `model_name: "requesty/*"` wildcard
   # does NOT route (404 "model group not found") and pollutes /v1/models with the
   # OpenAI price-map names, not Requesty's real catalog. These ids are a PINNED
@@ -221,6 +316,11 @@ let
   # catalogue and a caller can name either the id the engine serves or an extra name it answers
   # to. A model with an alias is listed under both; `qfn-max-long` used to vanish behind
   # `qfn-max`.
+  #
+  # `dyn-*` is deliberately NOT here: it is not a `data.models` entry (an entry would emit a brys
+  # llama-swap `cmd` and a second gateway group with the same name). The five names are built by
+  # `dynTextDeployments` and `dynModalityDeployments`, which carry the preset shape and the ladder,
+  # and `mkPiModelsJson` projects them into the client catalog.
   nameToBaseFor =
     host:
     let
@@ -246,6 +346,8 @@ let
     (deployments "brys" "BRYS_API_BASE" "BRYS_API_KEY" (nameToBaseFor "brys"))
     ++ (deployments "oams" "OAMS_API_BASE" "OAMS_API_KEY" (nameToBaseFor "oams"))
     ++ poolDeployments
+    ++ dynTextDeployments
+    ++ dynModalityDeployments
     ++ requestyDeployments;
 
   gatewayConfig = {
@@ -255,6 +357,7 @@ let
         "prometheus"
         "probe.host_probe"
         "fastest.fastest_fit"
+        "resident.resident_fit"
         "enforce.scope"
       ];
       drop_params = true;
@@ -379,6 +482,18 @@ in
       hostPath = "${./litellm_fastest.py}";
       isReadOnly = true;
     };
+    # The resident-first selector for the modality groups (module `resident`, instance
+    # `resident_fit`).
+    bindMounts."/etc/litellm/resident.py" = {
+      hostPath = "${./litellm_resident.py}";
+      isReadOnly = true;
+    };
+    # The facts that selector decides over: the candidate order (data/llm.nix) plus the placement
+    # policy's rows and budget. One file, so no name or number is written twice.
+    bindMounts."/etc/litellm/resident-policy.json" = {
+      hostPath = "${residentPolicyFile}";
+      isReadOnly = true;
+    };
     bindMounts."/var/lib/litellm" = {
       hostPath = "/var/lib/litellm";
       isReadOnly = false;
@@ -436,6 +551,7 @@ in
                 export PYTHONPATH="/etc/litellm''${PYTHONPATH:+:$PYTHONPATH}"
                 # Upstream is brys' llama-swap over NetBird, reached through the
                 # host egress relay. Plain HTTP (no TLS to verify), real API key.
+                # `resident.resident_fit` reads residency from this same relay.
                 export BRYS_API_BASE="http://${hostAddress}:${toString egressPort}/v1"
                 export BRYS_API_KEY="$(cat /etc/litellm-llama-key)"
                 export OAMS_API_BASE="http://${hostAddress}:${toString oamsEgressPort}/v1"
@@ -448,6 +564,8 @@ in
                 export NO_PROXY="${hostAddress}"
                 export no_proxy="${hostAddress}"
                 export KDN_LITELLM_KEYS_FILE=/etc/litellm-keys-clients
+                # The placement tree, for the dyn-* ladder: one POST /decide per candidate.
+                export KDN_DECIDE_URL="http://${hostAddress}:${toString decideEgressPort}"
                 export PROMETHEUS_MULTIPROC_DIR=/var/lib/litellm/prom
                 install -d -m 0750 "$PROMETHEUS_MULTIPROC_DIR"
                 ${lib.optionalString dbEnabled ''
@@ -599,6 +717,7 @@ in
     egressPort
     oamsEgressPort
     requestyProxyPort
+    decideEgressPort
     6379 # routing-state Redis relay
   ];
 
@@ -732,6 +851,29 @@ in
     wants = [ "container@litellm.service" ];
     serviceConfig = {
       ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString oamsEgressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=5 TCP:${oamsHost}:${toString oamsPort}";
+      Restart = "always";
+      RestartSec = 3;
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [
+        "AF_INET"
+        "AF_INET6"
+      ];
+    };
+  };
+
+  # Egress relay: guest -> brys' placement tree (`POST /decide`, `GET /status`). Advisory only:
+  # the ladder reads a verdict and never selects or admits, so this relay cannot switch the engine.
+  systemd.services.litellm-brys-decide = {
+    description = "Relay the LiteLLM container to brys' placement /decide";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "container@litellm.service" ];
+    wants = [ "container@litellm.service" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:${toString decideEgressPort},bind=${hostAddress},fork,reuseaddr,connect-timeout=5 TCP:${brysHost}:${toString brysDecidePort}";
       Restart = "always";
       RestartSec = 3;
       DynamicUser = true;

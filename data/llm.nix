@@ -113,6 +113,61 @@ in
     };
   };
 
+  # ---------------------------------------------------------------- `dyn-*` intent aliases
+  #
+  # An intent, not a model: a caller asks for a job shape and the GATEWAY picks the model.
+  # Only the LiteLLM gateway on etra serves these names (`hosts/etra/litellm.nix`); the direct
+  # `brys`/`oams` endpoints keep the model ids and answer `no router for requested model` to a
+  # `dyn-*` call, by design. No llama-swap entry, no proxy, no manager endpoint.
+  #
+  # Two shapes:
+  #
+  #   * a TEXT PRESET (`base`, `thinking`, `maxTokens`) is ONE deployment of `base` with the
+  #     request shape fixed at the gateway. `thinking` is a LEVEL (`off|low|medium|high`), mapped
+  #     through `models.<base>.reasoning.levels`, so `high` becomes the `xhigh` this template
+  #     accepts: the level map is the only place that knows the template's vocabulary.
+  #   * a MODALITY GROUP (`kind`, `models`) is one model group whose deployments are the
+  #     candidates, in preference order. The gateway NEVER switches the engine for one: it keeps a
+  #     resident candidate, else a candidate that fits beside what is resident, else it refuses and
+  #     names the colo point that would make room. See hosts/etra/litellm_resident.py.
+  #
+  # Both modality names are about READING: `dyn-image` is a vision CHAT model. Image GENERATION is a
+  # different protocol: `wan-vace-14b`, `longcat-image-edit` and `qwen-image-edit` are A1111
+  # diffusion servers (`/sdapi/v1/options`, `unlisted = true`), so they cannot be a chat model name
+  # and have no gateway group. Reach them through llama-swap's `/upstream/<model>/sdapi/...`
+  # passthrough; `dyn-image-gen` is that intent, not a served name.
+  #
+  # `kind`, not `class`: `policy.Request.Class` already means `human|agent|batch`.
+  dyn = {
+    fast = {
+      base = "qfn";
+      thinking = "off";
+      maxTokens = 2048;
+    };
+    avg = {
+      base = "qfn";
+      thinking = "low";
+      maxTokens = 8192;
+    };
+    max = {
+      base = "qfn";
+      thinking = "high";
+      maxTokens = 32768;
+    };
+    audio = {
+      kind = "audio";
+      models = [ "qwen3-omni" ];
+    };
+    image = {
+      kind = "image";
+      models = [
+        "qwen3-vl-30b-a3b"
+        "ornith-1.5-35b-a3b"
+        "qwen2.5-vl-7b"
+      ];
+    };
+  };
+
   # ---------------------------------------------------------------- servers
   #
   # Cross-model serving data for a host. Pure: the host adds `package` (mapped

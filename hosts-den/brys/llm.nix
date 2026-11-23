@@ -291,7 +291,10 @@ in
     # relay below); neither is reachable from the mesh. This narrow relay listens on
     # 39704 (a distinct port, so no clash with either) and the firewall only opens it on
     # `nb-priv`, so it is mesh-only. Litellm on etra points at <brys-netbird>:39704.
-    networking.firewall.interfaces."nb-priv".allowedTCPPorts = lib.mkIf withSwap [ 39704 ];
+    networking.firewall.interfaces."nb-priv".allowedTCPPorts = lib.mkIf withSwap [
+      39704
+      8182
+    ];
     systemd.services."llm-netbird-relay-swap" = lib.mkIf withSwap {
       description = "Relay llama-swap /v1 to the NetBird mesh (for the etra LiteLLM gateway)";
       wantedBy = [ "multi-user.target" ];
@@ -299,6 +302,32 @@ in
       wants = [ "llama-swap.service" ];
       serviceConfig = {
         ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:39704,bind=0.0.0.0,fork,reuseaddr TCP:127.0.0.1:39700";
+        Restart = "always";
+        RestartSec = 3;
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+        DynamicUser = true;
+      };
+    };
+
+    # The placement tree's advisory endpoint (`POST /decide`, `GET /status`) for the gateway's
+    # `dyn-*` ladder. The manager binds 127.0.0.1:8181, so a mesh peer needs this relay; the
+    # gateway then asks the TREE whether a candidate may be used instead of keeping a second copy
+    # of the fit arithmetic. Advisory only: it reads state and changes nothing, and the ladder
+    # never calls `/select` or `/admit`. Mesh-only, like the llama-swap relay above.
+    systemd.services."llm-netbird-relay-decide" = lib.mkIf withSwap {
+      description = "Relay the Strata manager's advisory /decide to the NetBird mesh";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "strata-manager.service" ];
+      wants = [ "strata-manager.service" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.socat}/bin/socat -d TCP-LISTEN:8182,bind=0.0.0.0,fork,reuseaddr TCP:127.0.0.1:8181";
         Restart = "always";
         RestartSec = 3;
         NoNewPrivileges = true;

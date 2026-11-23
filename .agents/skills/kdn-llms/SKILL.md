@@ -54,9 +54,29 @@ pi --list-models                       # context and max-out per model, as a cli
 | `qwen3-reranker-4b`                                                                                                                     | reranking (`/v1/rerank`)                                                          |      8k |      — |
 | `longcat-image-edit`, `qwen-image-edit`, `wan-vace-14b`                                                                                 | image and video editors                                                           |      4k |      — |
 | `qfn`, `qfn-max-multi`, `qfn-max-swarm`, `qfn-max`, `qfn-max-long`, `qfn-max-single`, `qfn-fast-swarm`, `qfn-max-colo`, `qfn-fast-colo` | the frontier engine, one name per operating point — see the profile section below | 256k–1M |  30–86 |
+| `dyn-fast` (gateway only)                                                                                                               | `qfn` at thinking off, 2k out — classification, extraction                        |    262k |     73 |
+| `dyn-avg` (gateway only)                                                                                                                | `qfn` at thinking `low`, 8k out — chat, tool calls                                |    262k |     73 |
+| `dyn-max` (gateway only)                                                                                                                | `qfn` at thinking `xhigh`, 32k out — long reasoning, review                       |    262k |     73 |
+| `dyn-audio` (gateway only)                                                                                                              | the resident audio companion (`qwen3-omni`), never switches the engine            |     32k |      — |
+| `dyn-image` (gateway only)                                                                                                              | the resident vision model for READING images, `qwen3-vl-30b-a3b` first            |     32k |      — |
 
 Rules of thumb:
 
+- **The five `dyn-*` names exist only on the gateway** (`https://litellm.etra.priv.nb.net.int.kdn.im/v1`),
+  not on the host endpoints: a `dyn-*` call to brys or oams answers `no router for requested model`.
+  `dyn-fast`/`dyn-avg`/`dyn-max` are the same `qfn` engine at three effort levels and three output
+  caps (the gateway enforces the cap; a client that sends its own `chat_template_kwargs` keeps its
+  own thinking). `dyn-audio`/`dyn-image` **never switch the engine**: they keep a candidate that is
+  already resident, else the first candidate the placement tree admits beside what is resident,
+  else they answer 409 naming the failing check per candidate, the current profile and the colo
+  point to rest on first. On an **image** profile the text presets answer that 409 too — `auto` is
+  refused there — so a session that switched to an editor gets a readable error, not a hang.
+- **`qfn` does not read images, and image generation is not a chat name.** `dyn-image` is image
+  _reading_ (vision chat). For image generation or editing use `wan-vace-14b`,
+  `longcat-image-edit` or `qwen-image-edit` — the intent is `dyn-image-gen`, but nothing resolves
+  it: those three are A1111 diffusion servers, `unlisted`, so reach them through llama-swap's
+  passthrough on brys, e.g. `POST /upstream/qwen-image-edit/sdapi/v1/txt2img` (or
+  `GET /upstream/qwen-image-edit/` for the web UI). Not through the gateway.
 - **Start with `lfm2.5-24b-a2b`** for chat and tools; step up to `qwen3.5-35b-a3b` only when the
   task is genuinely harder.
 - **`qwen3-embedding-4b` and `qwen3-reranker-4b` are not chat models.** They use `/v1/embeddings`
