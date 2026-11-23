@@ -17,7 +17,7 @@ The ladder, per request, for one group:
      deployment is returned, so the upstream loads it. Nothing is switched or unloaded.
   3. **Refuse** — nothing admits: a 409 built from the tree's own answer. `error` is the readable
      summary, and the body carries `current_profile` (from `/status`), one entry per candidate with
-     its verdict, reason and failing check, the tree's `alternatives` and `confirm` field, and the
+     its verdict, reason and failing check, the tree's `alternatives`, and the entry to select (the
      llama-swap entry that forces each alternative.
 
 A text preset on an image profile is the case that needs the third rung: the manager resolves
@@ -178,7 +178,6 @@ class ResidentFirst(CustomLogger):
         profiles = facts.get("profiles") or {}
         candidates = []
         alternatives: list[str] = []
-        confirm_field = ""
         for base, decision in verdicts:
             result = decision or {}
             refusal = result.get("refusal") or {}
@@ -199,7 +198,6 @@ class ResidentFirst(CustomLogger):
                 check = "profile-met"
             if not alternatives and refusal.get("alternatives"):
                 alternatives = [str(name) for name in refusal["alternatives"]]
-                confirm_field = str(refusal.get("confirmField") or "")
             if kind == "text" and not alternatives:
                 # A text preset is not gated: the caller selects a profile on llama-swap, so there
                 # is no body field to confirm with.
@@ -234,10 +232,13 @@ class ResidentFirst(CustomLogger):
         if named:
             body["alternatives"] = alternatives
             body["remedy"] = named
-        if confirm_field:
-            body["confirm"] = {
-                "field": confirm_field,
-                "value": "a profile name from alternatives",
+        # The gateway NEVER switches, so it must not advertise the tree's `kdn_switch_to` as a
+        # request field: a caller that sent it would get the same refusal back, with the field
+        # silently passed to the model. Name the llama-swap entry to call instead.
+        if named:
+            body["select"] = {
+                "entries": named,
+                "effect": "reloads the engine once on brys (~60 s), then repeat this request",
             }
         return body
 
