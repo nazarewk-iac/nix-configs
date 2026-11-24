@@ -79,6 +79,10 @@
     let
       cfg = config.kdn.llm.client;
 
+      # The frontier output budget Pi uses, read from the one data file. A second literal here
+      # would drift the moment the two harnesses are tuned apart.
+      frontierOutput = (import ../../../data/llm.nix).pi.frontierMaxTokens;
+
       enabledUpstreams = lib.filterAttrs (_: u: u.enable) cfg.upstreams;
 
       # The opencode provider ids of the enabled upstreams. The session plugin injects
@@ -203,7 +207,11 @@
 
             const UPSTREAMS: Upstream[] = ${builtins.toJSON payload}
 
-            const OUTPUT_CAP = 8192
+            // The frontier streams up to this; a chat model is still bounded by `context / 4`.
+            // One number for both harnesses, from `data/llm.nix`: Pi sends its `maxTokens` as
+            // `max_tokens`, and a 4k/8k ceiling truncated long delegated reports while the engine
+            // itself sets no `n-predict` (measured 2026-11-24 on `qfn-max-multi`).
+            const OUTPUT_CAP = ${toString frontierOutput}
             const REFRESH_MS = 60_000
 
             const modelEntry = (providerID: any, id: string, served: unknown, overlay: any) => {

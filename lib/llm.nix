@@ -105,9 +105,9 @@ let
       ) m.contextSize;
       base = {
         contextWindow = ctx;
-        # `maxTokens` is an explicit number (per model in data/llm.nix, else `pi.defaults`). Clamp
-        # it to the window so an output cap can never exceed the context it shares with the prompt.
-        maxTokens = lib.min (m.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
+        # From the same rule `piMaxOut` applies, so the catalog, the gateway's
+        # `max_output_tokens` and Pi's `max_tokens` never quote different numbers.
+        maxTokens = piMaxOut name;
         # The SERVED model id behind this alias. Pi ignores an unknown field, but
         # model-discovery reads the rendered catalog: a gateway lists a remote model
         # under a provider-scoped id (`requesty/deepinfra/<baseId>`), and this field
@@ -292,6 +292,21 @@ let
   #
   # A model with no `capabilities` still appears, with `-` for op/load, so the row count matches
   # what can actually be delegated to. Sorted by alias, so the prompt is stable across renders.
+  # The client-facing output cap of one model. Pi sends it as `max_tokens` (`clampMaxTokensToContext
+  # (model, ctx, options.maxTokens ?? model.maxTokens)`), and it also carves the thinking budget out
+  # of the same number, so a 4k cap leaves almost nothing for the answer once reasoning is on.
+  # A Strata entry (one with a `serving` block) gets the frontier budget; everything else keeps the
+  # conservative client default. Always clamped to the window the model actually serves.
+  piMaxOut =
+    name:
+    let
+      m = data.models.${name};
+      isStrata = lib.any (h: (h.serving or { }) != { }) (lib.attrValues (m.hosts or { }));
+    in
+    lib.min (m.pi.maxTokens
+      or (if isStrata then data.pi.frontierMaxTokens else data.pi.defaults.maxTokens)
+    ) (piCtx name);
+
   # The client-facing window of one model: the same rule `piEntries` uses, so the orchestrator
   # catalog and the Pi list never quote different numbers for the same name.
   piCtx =
@@ -526,6 +541,7 @@ in
     mkServerModels
     mkMemberView
     piCtx
+    piMaxOut
     servedOn
     dynTextPresets
     dynModalityGroups

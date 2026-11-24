@@ -96,9 +96,10 @@ let
         # text window, and a llama.cpp model keeps the curated client budget. Surfaced via
         # /v1/models + /model/info as max_input_tokens/max_output_tokens so clients (and the
         # Pi discovery extension) see the same number the engine enforces.
-        dm = data.models.${baseId};
         ctx = llm.piCtx baseId;
-        maxOut = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) ctx;
+        # The same rule the Pi list uses (`llm.piMaxOut`), so a client that reads
+        # `/v1/models` and one that reads the curated catalog see one number.
+        maxOut = llm.piMaxOut baseId;
       in
       {
         model_name = name;
@@ -183,7 +184,7 @@ let
         # No per-model health probe; health is a host property (see `general_settings`).
         # Same served window as the alias groups; see `llm.piCtx`.
         max_input_tokens = llm.piCtx baseId;
-        max_output_tokens = lib.min (dm.pi.maxTokens or data.pi.defaults.maxTokens) (llm.piCtx baseId);
+        max_output_tokens = llm.piMaxOut baseId;
         supports_vision = dm.vision or false;
       }
       // lib.optionalAttrs (r != null) {

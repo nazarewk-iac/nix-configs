@@ -103,6 +103,14 @@ in
       contextWindow = 384 * K;
       maxTokens = 4 * K;
     };
+    # The Strata frontier streams far more than a chat model, and `pi.MaxTokens` is what the client
+    # sends as `max_tokens`: Pi uses `clampMaxTokensToContext(model, ctx, options.maxTokens ??
+    # model.maxTokens)`, so a 4k catalog entry caps every answer at 4096 tokens. A delegated report
+    # died mid-sentence at that number while the engine had no `n-predict` of its own (measured
+    # 2026-11-24 on `qfn-max-multi`). 32k is the streaming window the profile reserves
+    # (`serving.kvResident`) and the same cap `dyn-max` promises, so the two surfaces agree.
+    # A llama.cpp chat model keeps `defaults.maxTokens`.
+    frontierMaxTokens = 32 * K;
     # Extra label-only aliases for the frontier, so a caller picks a context budget
     # without a config edit. Each is the SAME server model with a different window.
     aliases = {
