@@ -45,6 +45,12 @@ let
   # The models a client or catalog may name: only those served somewhere.
   servedModels = lib.filterAttrs (_: m: isServed m) data.models;
 
+  # What a CHAT catalogue may list: served, and not marked `unlisted`. `unlisted` exists for a
+  # diffusion server (A1111 `/sdapi/...`), which has no chat endpoint and whose token numbers are
+  # inert — listing it invites a client to send chat to it. llama-swap still serves it by name
+  # through `/upstream/<model>/...`, which is the documented route.
+  listedModels = lib.filterAttrs (_: m: isServed m && !(m.unlisted or false)) data.models;
+
   # Which endpoint a model answers through. A local model omits the field and belongs to `brys`;
   # a remote model (a cloud router) names its endpoint and has no host block.
   endpointOf = m: m.endpoint or "brys";
@@ -241,12 +247,13 @@ let
             map piEntries (
               builtins.attrNames (
                 if epName == "litellm" then
-                  servedModels
+                  listedModels
                 else if data.servers ? ${epName} then
-                  # A direct host endpoint lists only the models THAT host serves (profile sets).
-                  lib.filterAttrs (_: m: servedOn epName m) data.models
+                  # A direct host endpoint lists only the models THAT host serves (profile sets),
+                  # and never an `unlisted` one.
+                  lib.filterAttrs (_: m: servedOn epName m && !(m.unlisted or false)) data.models
                 else
-                  modelsForEndpoint epName
+                  lib.filterAttrs (_: m: !(m.unlisted or false)) (modelsForEndpoint epName)
               )
             )
           )
@@ -304,7 +311,15 @@ let
       isStrata = lib.any (h: (h.serving or { }) != { }) (lib.attrValues (m.hosts or { }));
     in
     lib.min (m.pi.maxTokens
-      or (if isStrata then data.pi.frontierMaxTokens else data.pi.defaults.maxTokens)
+      or (
+        if isStrata then
+          data.pi.frontierMaxTokens
+        else
+          # A llama.cpp model gets a quarter of its window, capped by the frontier budget: the same
+          # rule opencode applies. The old flat 4k gave a 262k model the same budget as a 16k one,
+          # and a 4k-context editor an output as large as its whole window.
+          lib.min data.pi.frontierMaxTokens (piCtx name / 4)
+      )
     ) (piCtx name);
 
   # The client-facing window of one model: the same rule `piEntries` uses, so the orchestrator
@@ -347,7 +362,7 @@ let
             if seconds != null then toString seconds else "-";
           vision = if m.vision or false then "yes" else "-";
         }) ([ name ] ++ aliases)
-      ) (builtins.attrNames servedModels);
+      ) (builtins.attrNames listedModels);
 
       table = lib.sort (a: b: a.alias < b.alias) rows;
 

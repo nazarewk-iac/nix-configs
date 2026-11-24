@@ -337,7 +337,10 @@ let
       # appliance), so the gateway mirrors whatever set the host can boot.
       servedBaseIds = builtins.attrNames (
         lib.foldl' (
-          acc: prof: acc // lib.filterAttrs (_: e: e.enable) (llm.mkServerModels data host prof)
+          # `unlisted` stays in llama-swap (it is addressable through `/upstream/...`) but never
+          # becomes a gateway deployment: a chat group over a diffusion server is a 404 for a caller.
+          acc: prof:
+          acc // lib.filterAttrs (_: e: e.enable && !(e.unlisted or false)) (llm.mkServerModels data host prof)
         ) { } (builtins.attrNames data.servers.${host}.profiles)
       );
     in
