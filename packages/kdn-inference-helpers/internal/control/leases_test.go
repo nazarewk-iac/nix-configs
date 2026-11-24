@@ -15,14 +15,14 @@ func TestAcquireReleaseCounts(t *testing.T) {
 	id1, ok1 := l.Acquire()
 	id2, ok2 := l.Acquire()
 	if !ok1 || !ok2 || id1 == id2 {
-		t.Fatalf("two acquires: ok=(%v,%v) ids=(%d,%d)", ok1, ok2, id1, id2)
+		t.Fatalf("two acquires: ok=(%v,%v) ids=(%s,%s)", ok1, ok2, id1, id2)
 	}
 	if got := l.InFlight(); got != 2 {
 		t.Fatalf("in flight = %d, want 2", got)
 	}
 	l.Release(id1)
 	l.Release(id1)  // double release must be harmless
-	l.Release(9999) // unknown id must be harmless
+	l.Release("unknown-lease") // unknown id must be harmless
 	if got := l.InFlight(); got != 1 {
 		t.Fatalf("in flight = %d, want 1 after one release", got)
 	}
@@ -147,7 +147,7 @@ func TestConcurrentAcquireAndDrainDoNotLoseTheFlag(t *testing.T) {
 	l := NewLeases(time.Minute)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	var granted []int64
+	var granted []string
 
 	for i := 0; i < 32; i++ {
 		wg.Add(1)
@@ -167,7 +167,7 @@ func TestConcurrentAcquireAndDrainDoNotLoseTheFlag(t *testing.T) {
 	wg.Wait()
 
 	mu.Lock()
-	ids := append([]int64(nil), granted...)
+	ids := append([]string(nil), granted...)
 	mu.Unlock()
 
 	// Everything granted before the drain began must still be held by the drain's bookkeeping.
@@ -231,7 +231,7 @@ func TestPrimaryJumpsTheQueue(t *testing.T) {
 	if !ok {
 		t.Fatal("seed slot refused")
 	}
-	normalDone := make(chan int64, 1)
+	normalDone := make(chan string, 1)
 	go func() {
 		if id, ok := l.AcquireSlot(ctx, PriorityNormal, 2*time.Second); ok {
 			normalDone <- id
@@ -239,7 +239,7 @@ func TestPrimaryJumpsTheQueue(t *testing.T) {
 	}()
 	time.Sleep(50 * time.Millisecond) // let the normal waiter queue first
 
-	primaryDone := make(chan int64, 1)
+	primaryDone := make(chan string, 1)
 	go func() {
 		if id, ok := l.AcquireSlot(ctx, PriorityPrimary, 2*time.Second); ok {
 			primaryDone <- id
@@ -306,7 +306,7 @@ func TestAbandonReleasesASlotGrantedInTheSameInstant(t *testing.T) {
 	held, _ := l.AcquireSlot(context.Background(), PriorityNormal, 0)
 
 	// A grant that lands in the waiter's channel after it gave up: `abandon` must release it.
-	w := &waiter{ch: make(chan int64, 1), priority: PriorityNormal}
+	w := &waiter{ch: make(chan string, 1), priority: PriorityNormal}
 	l.mu.Lock()
 	granted := l.grantLocked(true, PriorityNormal)
 	l.mu.Unlock()

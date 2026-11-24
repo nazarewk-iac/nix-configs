@@ -178,21 +178,21 @@ func newRemoteLeaser(base string) *remoteLeaser {
 	return &remoteLeaser{base: base, http: &http.Client{Timeout: 15 * time.Second}}
 }
 
-func (r *remoteLeaser) Acquire(ctx context.Context) (int64, bool) {
+func (r *remoteLeaser) Acquire(ctx context.Context) (string, bool) {
 	var reply struct {
-		Lease int64 `json:"lease"`
-		Wait  bool  `json:"wait"`
+		Lease string `json:"lease"`
+		Wait  bool   `json:"wait"`
 	}
 	if err := r.post(ctx, "/lease", nil, &reply); err != nil {
-		return 0, false
+		return "", false
 	}
-	if reply.Wait || reply.Lease == 0 {
-		return 0, false
+	if reply.Wait || reply.Lease == "" {
+		return "", false
 	}
 	return reply.Lease, true
 }
 
-func (r *remoteLeaser) Release(id int64) {
+func (r *remoteLeaser) Release(id string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = r.post(ctx, "/release", map[string]any{"lease": id}, nil)

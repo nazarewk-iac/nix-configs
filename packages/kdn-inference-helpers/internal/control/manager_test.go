@@ -361,11 +361,11 @@ func TestLeaseEndpointsRefuseDuringADrainAndGrantAfter(t *testing.T) {
 	}
 
 	got := post("/lease", nil)
-	id, ok := got["lease"].(float64)
-	if !ok {
-		t.Fatalf("lease = %#v", got)
+	id, ok := got["lease"].(string)
+	if !ok || id == "" {
+		t.Fatalf("lease = %#v, want a non-empty string id", got)
 	}
-	if released := post("/release", map[string]any{"lease": int64(id)}); released["released"] != id {
+	if released := post("/release", map[string]any{"lease": id}); released["released"] != id {
 		t.Fatalf("release = %#v", released)
 	}
 

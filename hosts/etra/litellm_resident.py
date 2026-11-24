@@ -128,7 +128,7 @@ class ResidentFirst(CustomLogger):
         self._fetched_at = 0.0
         # request key -> (lease id, deadline). Process-local, because one worker handles both the
         # pre-call and the post-call of a request.
-        self._leases: dict[str, tuple[int, float]] = {}
+        self._leases: dict[str, tuple[str, float]] = {}
 
     def _policy(self) -> dict:
         if self._facts is None:
@@ -307,7 +307,7 @@ class ResidentFirst(CustomLogger):
                 return value
         return f"local-{id(data)}"
 
-    def _remember_lease(self, key: str, lease: int) -> None:
+    def _remember_lease(self, key: str, lease: str) -> None:
         now = time.monotonic()
         self._sweep_leases(now)
         # A second pre_call for one key (a retry, a fallback) must not orphan the first lease.
@@ -363,15 +363,15 @@ class ResidentFirst(CustomLogger):
         if not reply:
             return None, None
         lease = reply.get("lease")
-        if isinstance(lease, (int, float)):
-            return int(lease), reply
+        if isinstance(lease, str) and lease:
+            return lease, reply
         return None, reply
 
     def _release_slot(self, lease) -> bool:
         base = self._decide_url()
-        if not base or not isinstance(lease, (int, float)):
+        if not base or not isinstance(lease, str) or not lease:
             return True
-        return _post_json(f"{base}/release", {"lease": int(lease)}) is not None
+        return _post_json(f"{base}/release", {"lease": lease}) is not None
 
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         if "embedding" in str(call_type) or "rerank" in str(call_type):

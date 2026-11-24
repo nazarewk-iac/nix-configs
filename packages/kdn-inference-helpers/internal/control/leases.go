@@ -4,6 +4,9 @@ package control
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -66,8 +69,21 @@ type lease struct {
 }
 
 type waiter struct {
-	ch       chan int64 // buffered(1): a grant never blocks the releaser
+	ch       chan string // buffered(1): a grant never blocks the releaser
 	priority int
+}
+
+// newLeaseID is a UUID-shaped random id, not a counter. A counter restarts at zero with the
+// process, so a `/release` that arrives after a manager restart would free a different request's
+// lease. A random id cannot collide with one from a previous process.
+func newLeaseID() string {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		// crypto/rand does not fail on Linux; keep the fallback so a broken source degrades to a
+		// unique-enough id instead of panicking a switch.
+		return fmt.Sprintf("lease-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(raw[:])
 }
 
 // Leases is the registry a switch drains. Every request in flight holds one, and a request that
@@ -85,8 +101,7 @@ type waiter struct {
 //     several sessions share one pool instead of each assuming it owns the engine.
 type Leases struct {
 	mu       sync.Mutex
-	next     int64
-	open     map[int64]lease
+	open     map[string]lease
 	capacity int
 	waiters  []*waiter
 	drained  chan struct{}
@@ -99,17 +114,17 @@ func NewLeases(ttl time.Duration) *Leases {
 	if ttl <= 0 {
 		ttl = DefaultLeaseTTL
 	}
-	return &Leases{open: map[int64]lease{}, ttl: ttl}
+	return &Leases{open: map[string]lease{}, ttl: ttl}
 }
 
 // Acquire grants a switch-participation lease, or reports that the engine is switching. It is the
 // unlimited form used by `select`: it does not consume a slot. The caller must retry after a short
 // wait when ok is false; it must never proceed without a lease.
-func (l *Leases) Acquire() (id int64, ok bool) {
+func (l *Leases) Acquire() (id string, ok bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.draining {
-		return 0, false
+		return "", false
 	}
 	return l.grantLocked(false, PriorityNormal), true
 }
@@ -117,25 +132,25 @@ func (l *Leases) Acquire() (id int64, ok bool) {
 // AcquireSlot grants a slot lease if capacity allows, otherwise queues the caller by priority and
 // waits until a slot frees, ctx expires, or the class is exhausted. A capacity of zero means
 // "unknown" and grants immediately, so a manager without a profile table behaves as before.
-func (l *Leases) AcquireSlot(ctx context.Context, priority int, wait time.Duration) (int64, bool) {
+func (l *Leases) AcquireSlot(ctx context.Context, priority int, wait time.Duration) (string, bool) {
 	l.mu.Lock()
 	l.expireLocked(time.Now())
 	if l.draining {
 		l.mu.Unlock()
-		return 0, false
+		return "", false
 	}
 	if l.canGrantLocked(priority) {
 		id := l.grantLocked(true, priority)
 		l.mu.Unlock()
 		return id, true
 	}
-	w := &waiter{ch: make(chan int64, 1), priority: priority}
+	w := &waiter{ch: make(chan string, 1), priority: priority}
 	l.waiters = append(l.waiters, w)
 	l.mu.Unlock()
 
 	if wait <= 0 {
 		l.abandon(w)
-		return 0, false
+		return "", false
 	}
 	timer := time.NewTimer(wait)
 	defer timer.Stop()
@@ -144,10 +159,10 @@ func (l *Leases) AcquireSlot(ctx context.Context, priority int, wait time.Durati
 		return id, true
 	case <-ctx.Done():
 		l.abandon(w)
-		return 0, false
+		return "", false
 	case <-timer.C:
 		l.abandon(w)
-		return 0, false
+		return "", false
 	}
 }
 
@@ -189,7 +204,7 @@ func (l *Leases) canGrantLocked(priority int) bool {
 	return true
 }
 
-func (l *Leases) grantLocked(slot bool, priority int) int64 {
+func (l *Leases) grantLocked(slot bool, priority int) string {
 	now := time.Now()
 	deadline := now.Add(l.ttl)
 	if slot {
@@ -197,9 +212,9 @@ func (l *Leases) grantLocked(slot bool, priority int) int64 {
 		// vanishes mid-lease must not block a switch for the full 30-minute drain.
 		deadline = now.Add(SlotLeaseTTL)
 	}
-	l.next++
-	l.open[l.next] = lease{started: now, deadline: deadline, slot: slot, priority: priority}
-	return l.next
+	id := newLeaseID()
+	l.open[id] = lease{started: now, deadline: deadline, slot: slot, priority: priority}
+	return id
 }
 
 func (l *Leases) slotCountLocked() int {
@@ -225,13 +240,13 @@ func (l *Leases) forget(w *waiter) {
 
 // Release ends a lease. Releasing an unknown id is a no-op, which keeps a double release from a
 // retrying proxy harmless. A freed slot goes to the highest-priority waiter.
-func (l *Leases) Release(id int64) {
+func (l *Leases) Release(id string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.releaseLocked(id)
 }
 
-func (l *Leases) releaseLocked(id int64) {
+func (l *Leases) releaseLocked(id string) {
 	if _, ok := l.open[id]; !ok {
 		return
 	}

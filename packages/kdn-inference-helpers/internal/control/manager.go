@@ -986,10 +986,10 @@ func (m *Manager) handleLease(w http.ResponseWriter, r *http.Request) {
 
 func (m *Manager) handleRelease(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Lease int64 `json:"lease"`
+		Lease string `json:"lease"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "lease must be an integer"})
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "lease must be a string"})
 		return
 	}
 	m.Leases.Release(body.Lease)

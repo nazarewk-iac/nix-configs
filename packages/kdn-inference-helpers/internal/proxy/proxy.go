@@ -18,8 +18,8 @@ import (
 
 // Leaser is the lease registry, either in-process (the manager) or over HTTP (a `select` process).
 type Leaser interface {
-	Acquire(ctx context.Context) (id int64, ok bool)
-	Release(id int64)
+	Acquire(ctx context.Context) (id string, ok bool)
+	Release(id string)
 }
 
 // Handler proxies to one engine and holds one lease per request.
@@ -141,7 +141,7 @@ func (h *Handler) InFlight() int64 { return h.inFlight.Load() }
 // acquire retries until a lease is granted, the wait times out, or the client goes away. An
 // unreachable manager is not an error: the caller's Leaser decides that, and a manager restart is
 // shorter than a failed request.
-func (h *Handler) acquire(ctx context.Context) (int64, bool) {
+func (h *Handler) acquire(ctx context.Context) (string, bool) {
 	timeout := h.WaitTimeout
 	if timeout <= 0 {
 		timeout = 900 * time.Second
@@ -156,11 +156,11 @@ func (h *Handler) acquire(ctx context.Context) (int64, bool) {
 			return id, true
 		}
 		if time.Now().After(deadline) {
-			return 0, false
+			return "", false
 		}
 		select {
 		case <-ctx.Done():
-			return 0, false
+			return "", false
 		case <-time.After(poll):
 		}
 	}

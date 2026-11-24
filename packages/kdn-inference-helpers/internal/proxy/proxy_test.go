@@ -3,6 +3,7 @@ package proxy
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,36 +19,37 @@ import (
 // alwaysLease grants every request immediately: the identity tests are about headers, not waiting.
 type alwaysLease struct{}
 
-func (alwaysLease) Acquire(context.Context) (int64, bool) { return 1, true }
-func (alwaysLease) Release(int64)                         {}
+func (alwaysLease) Acquire(context.Context) (string, bool) { return "lease-1", true }
+func (alwaysLease) Release(string)                         {}
 
 // fakeLeaser records leases and can refuse a fixed number of acquires first, which is how a switch
 // under load looks to the proxy.
 type fakeLeaser struct {
 	mu       sync.Mutex
 	next     int64
-	open     map[int64]bool
+	open     map[string]bool
 	refusals int
 	acquired int
 	released int
 }
 
-func newLeaser() *fakeLeaser { return &fakeLeaser{open: map[int64]bool{}} }
+func newLeaser() *fakeLeaser { return &fakeLeaser{open: map[string]bool{}} }
 
-func (f *fakeLeaser) Acquire(ctx context.Context) (int64, bool) {
+func (f *fakeLeaser) Acquire(ctx context.Context) (string, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.refusals > 0 {
 		f.refusals--
-		return 0, false
+		return "", false
 	}
 	f.next++
-	f.open[f.next] = true
+	id := fmt.Sprintf("lease-%d", f.next)
+	f.open[id] = true
 	f.acquired++
-	return f.next, true
+	return id, true
 }
 
-func (f *fakeLeaser) Release(id int64) {
+func (f *fakeLeaser) Release(id string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	delete(f.open, id)
