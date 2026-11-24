@@ -120,6 +120,8 @@ let
       ext.orchestrator-gate
       # The engine profile, injected into the prompt once per profile change (see the package).
       ext.engine-state
+      # The priority class stamped on every request; the gateway leases a slot with it.
+      ext.priority-headers
       # Live fleet state (loaded aliases, served context, host headroom) so the
       # orchestrator can pick a model from intent AND cost, not a fixed tier.
       ext.fleet-status

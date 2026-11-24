@@ -71,10 +71,24 @@ type Manager struct {
 // NewManager wires the control plane. It does not start anything; call Restore for that.
 func NewManager(cfg *config.Config, j *journal.Journal, leases *Leases, backend Backend, acc Accessory) *Manager {
 	expected := map[string]int{"max": 70, "omni-max": 70, "omni-fast": 55}
-	return &Manager{
+	m := &Manager{
 		Cfg: cfg, Journal: j, Leases: leases, Backend: backend, Accessories: acc,
 		ExpectedSeconds: expected, statePath: cfg.StatePath(), companions: map[string]bool{},
 	}
+	// The pool is a property of the resident profile, so a restart must adopt it before the first
+	// request can lease a slot.
+	m.Leases.SetCapacity(m.capacityFor(m.CurrentProfile()))
+	return m
+}
+
+// capacityFor is the slot count of one profile, or -1 when the profile table is silent. The
+// registry reads a negative capacity as "unknown" and admits without counting (the pre-pool
+// behaviour); zero is reserved for "the pool is closed", which is what `select none` sets.
+func (m *Manager) capacityFor(profile string) int {
+	if spec, ok := m.Cfg.Profiles[profile]; ok && spec.Parallel != nil {
+		return *spec.Parallel
+	}
+	return -1
 }
 
 // ---------------- state ----------------
@@ -195,6 +209,9 @@ func (m *Manager) selectLocked(ctx context.Context, requested string, dryRun, ke
 		_, _ = m.Backend.UnloadCompanions(ctx)
 		_, _ = m.Backend.StopEngine(ctx)
 		_ = m.saveState(map[string]any{"profile": "none"})
+		// Nothing is resident: no slots to hand out. A queued waiter fails on its own timeout
+		// rather than taking a slot that does not exist.
+		m.Leases.SetCapacity(0)
 		m.journalSwitch(current, "none", round(time.Since(start)), true, "select")
 		return map[string]any{"changed": current != "" && current != "none", "profile": "none"}
 	case profile == current:
@@ -317,6 +334,8 @@ func (m *Manager) Restore(ctx context.Context) {
 		m.journalSwitch("", profile, round(time.Since(start)), false, "restore")
 		return
 	}
+	// The restored profile is the resident one, so it owns the slot pool.
+	m.Leases.SetCapacity(m.capacityFor(profile))
 	m.journalSwitch("", profile, round(time.Since(start)), true, "restore")
 }
 
@@ -911,12 +930,50 @@ func containsString(list []string, want string) bool {
 	return false
 }
 
+// handleLease grants either a switch-participation lease (the default, unlimited, used by `select`)
+// or a slot lease from the shared pool: `{"slot":true,"priority":"primary","wait_seconds":20}`.
+// A slot lease is bounded by the current profile's `parallel` and admitted by priority, so several
+// sessions share the engine instead of each assuming it owns it. The gateway acquires one per
+// request and releases it when the stream ends; any other client may do the same.
 func (m *Manager) handleLease(w http.ResponseWriter, r *http.Request) {
-	if id, ok := m.Leases.Acquire(); ok {
-		writeJSON(w, http.StatusOK, map[string]any{"lease": id})
+	var body struct {
+		Slot        bool    `json:"slot"`
+		Priority    string  `json:"priority"`
+		WaitSeconds float64 `json:"wait_seconds"`
+	}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}
+	priority := ParsePriority(body.Priority)
+	if !body.Slot {
+		if id, ok := m.Leases.Acquire(); ok {
+			writeJSON(w, http.StatusOK, map[string]any{"lease": id})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"wait": true, "reason": "the engine is switching profiles"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"wait": true, "reason": "the engine is switching profiles"})
+
+	ctx := r.Context()
+	wait := time.Duration(body.WaitSeconds * float64(time.Second))
+	if id, ok := m.Leases.AcquireSlot(ctx, priority, wait); ok {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"lease":    id,
+			"priority": PriorityName(priority),
+			"capacity": m.Leases.Capacity(),
+		})
+		return
+	}
+	reason := "no free slot at this priority"
+	if m.Leases.Draining() {
+		reason = "the engine is switching profiles"
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"wait":     true,
+		"priority": PriorityName(priority),
+		"position": m.Leases.Position(priority),
+		"reason":   reason,
+	})
 }
 
 func (m *Manager) handleRelease(w http.ResponseWriter, r *http.Request) {

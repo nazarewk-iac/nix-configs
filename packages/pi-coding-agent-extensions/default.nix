@@ -126,6 +126,10 @@ in
   # without this the agent keeps assuming the old profile. One line per switch, none on a normal
   # turn, and no line at all when brys is unreachable.
   engine-state = ./engine-state;
+
+  # The engine priority class, stamped as `x-kdn-priority` on every model request. The gateway
+  # turns it into a slot lease; `primary` is the human's own turn, a delegate child is `normal`.
+  priority-headers = ./priority-headers;
   # Model discovery: dynamic providers (refreshModels) that list the LIVE litellm
   # gateway, local llama-swap and Requesty router catalogs, so `pi --list-models`
   # shows discovered models (e.g. Requesty ids) layered under the static

@@ -2,7 +2,6 @@ package control
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 )
@@ -184,4 +183,186 @@ func TestConcurrentAcquireAndDrainDoNotLoseTheFlag(t *testing.T) {
 	if len(ids) == 0 {
 		t.Log("no lease was granted before the drain; the race window was not exercised")
 	}
+}
+
+// ---- the shared slot pool ----
+
+func TestSlotPoolRespectsCapacity(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(1)
+	ctx := context.Background()
+
+	first, ok := l.AcquireSlot(ctx, PriorityNormal, 0)
+	if !ok {
+		t.Fatal("first slot refused")
+	}
+	if _, ok := l.AcquireSlot(ctx, PriorityNormal, 0); ok {
+		t.Fatal("second slot granted beyond capacity")
+	}
+	l.Release(first)
+	if _, ok := l.AcquireSlot(ctx, PriorityNormal, 0); !ok {
+		t.Fatal("slot not reusable after release")
+	}
+}
+
+func TestZeroCapacityClosesThePoolAndNegativeMeansUnknown(t *testing.T) {
+	ctx := context.Background()
+
+	unknown := NewLeases(time.Minute) // capacity 0 by default, but SetCapacity(-1) is "unknown"
+	unknown.SetCapacity(-1)
+	if _, ok := unknown.AcquireSlot(ctx, PriorityPrimary, 0); !ok {
+		t.Fatal("an unknown capacity must admit, as before the pool existed")
+	}
+
+	closed := NewLeases(time.Minute)
+	closed.SetCapacity(0) // `select none`: the engine is stopped
+	if _, ok := closed.AcquireSlot(ctx, PriorityPrimary, 0); ok {
+		t.Fatal("a closed pool admitted a slot")
+	}
+}
+
+func TestPrimaryJumpsTheQueue(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(1)
+	ctx := context.Background()
+
+	held, ok := l.AcquireSlot(ctx, PriorityNormal, 0)
+	if !ok {
+		t.Fatal("seed slot refused")
+	}
+	normalDone := make(chan int64, 1)
+	go func() {
+		if id, ok := l.AcquireSlot(ctx, PriorityNormal, 2*time.Second); ok {
+			normalDone <- id
+		}
+	}()
+	time.Sleep(50 * time.Millisecond) // let the normal waiter queue first
+
+	primaryDone := make(chan int64, 1)
+	go func() {
+		if id, ok := l.AcquireSlot(ctx, PriorityPrimary, 2*time.Second); ok {
+			primaryDone <- id
+		}
+	}()
+	time.Sleep(50 * time.Millisecond)
+
+	l.Release(held)
+	select {
+	case <-primaryDone:
+		// correct: the highest class takes the freed slot
+	case id := <-normalDone:
+		l.Release(id)
+		t.Fatal("normal waiter took the slot ahead of primary")
+	case <-time.After(time.Second):
+		t.Fatal("no waiter was promoted")
+	}
+}
+
+func TestFIFOWithinAClass(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(1)
+	ctx := context.Background()
+
+	held, _ := l.AcquireSlot(ctx, PriorityNormal, 0)
+	order := make(chan int, 2)
+	for i := 0; i < 2; i++ {
+		go func(i int) {
+			if id, ok := l.AcquireSlot(ctx, PriorityNormal, 2*time.Second); ok {
+				order <- i
+				l.Release(id)
+			}
+		}(i)
+		time.Sleep(30 * time.Millisecond)
+	}
+	l.Release(held)
+	first := <-order
+	if first != 0 {
+		t.Fatalf("second waiter went first: %d", first)
+	}
+}
+
+func TestDrainRefusesSlots(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(4)
+	ctx := context.Background()
+
+	done := make(chan struct{})
+	go func() {
+		l.BeginDrain(ctx)
+		close(done)
+	}()
+	time.Sleep(30 * time.Millisecond)
+	if _, ok := l.AcquireSlot(ctx, PriorityPrimary, 0); ok {
+		t.Fatal("a slot was granted while draining")
+	}
+	l.EndDrain()
+	<-done
+}
+
+func TestAbandonReleasesASlotGrantedInTheSameInstant(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(2)
+	held, _ := l.AcquireSlot(context.Background(), PriorityNormal, 0)
+
+	// A grant that lands in the waiter's channel after it gave up: `abandon` must release it.
+	w := &waiter{ch: make(chan int64, 1), priority: PriorityNormal}
+	l.mu.Lock()
+	granted := l.grantLocked(true, PriorityNormal)
+	l.mu.Unlock()
+	w.ch <- granted
+
+	l.abandon(w)
+
+	if got := l.InFlight(); got != 1 {
+		t.Fatalf("in flight = %d, want 1 (only the held lease); the grant leaked", got)
+	}
+	l.Release(held)
+}
+
+func TestZeroWaitNeverLeaksASlot(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(1)
+	ctx := context.Background()
+	held, _ := l.AcquireSlot(ctx, PriorityNormal, 0)
+
+	for i := 0; i < 100; i++ {
+		if _, ok := l.AcquireSlot(ctx, PriorityNormal, 0); ok {
+			t.Fatal("a zero-wait acquire was granted while the pool was full")
+		}
+	}
+	if got := l.InFlight(); got != 1 {
+		t.Fatalf("in flight = %d after 100 zero-wait refusals, want 1", got)
+	}
+	l.Release(held)
+}
+
+func TestShrinkingCapacityDoesNotOverGrant(t *testing.T) {
+	l := NewLeases(time.Minute)
+	l.SetCapacity(2)
+	ctx := context.Background()
+	a, _ := l.AcquireSlot(ctx, PriorityNormal, 0)
+	b, _ := l.AcquireSlot(ctx, PriorityNormal, 0)
+
+	granted := make(chan struct{}, 4)
+	for i := 0; i < 2; i++ {
+		go func() {
+			if _, ok := l.AcquireSlot(ctx, PriorityNormal, 2*time.Second); ok {
+				granted <- struct{}{}
+			}
+		}()
+	}
+	time.Sleep(50 * time.Millisecond)
+
+	// A switch to a one-slot profile: the new capacity applies before the drain ends.
+	l.SetCapacity(1)
+	l.EndDrain()
+
+	l.Release(a)
+	l.Release(b)
+	time.Sleep(100 * time.Millisecond)
+
+	if got := l.InFlight(); got > 1 {
+		t.Fatalf("in flight = %d after shrinking to 1, want at most 1", got)
+	}
+	close(granted)
 }

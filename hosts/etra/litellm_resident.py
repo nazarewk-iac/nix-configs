@@ -55,6 +55,35 @@ FACTS_PATH = "/etc/litellm/resident-policy.json"
 # requests of one turn, so this only keeps a busy group from polling.
 CACHE_SECONDS = 2.0
 TIMEOUT_SECONDS = 2.0
+# How long ONE lease attempt may wait for a shared engine slot. A generation holds a slot for
+# tens of seconds to minutes, and a cold load is ~50-70 s, so a queue that gives up after 18 s
+# would 429 a request that was about to run. Pi's provider idle timeout is 300 s
+# (`httpIdleTimeoutMs`), which bounds what is safe to hold.
+LEASE_WAIT_SECONDS = 60
+# A full pool is a retryable condition, not a failure. Pi retries a 429 by itself (settings
+# `retry.enabled` = true, `retry.maxRetries` = 3, `retry.baseDelayMs` = 2000), so the gateway's job
+# is to absorb the short burst and then say "retry" — never to hang and never to fall through to
+# an unbounded queue at the engine.
+LEASE_ATTEMPTS = 2
+LEASE_BACKOFF_SECONDS = (2.0,)
+LEASE_RETRY_AFTER_SECONDS = 30
+# A lease whose release hook never fires would block a slot until the manager's 30-minute TTL. The
+# gateway sweeps its own registry after this long and releases what it still holds. It must exceed
+# the gateway's own `request_timeout` (3600 s in `litellm.nix`), or the sweep would free a slot that
+# a live stream still owns; the streaming hook renews the deadline on every chunk, so this is the
+# ceiling for a request that has gone completely silent.
+LEASE_MAX_HOLD_SECONDS = 3600
+# A lease wait blocks a thread for up to LEASE_WAIT_SECONDS. Running it on the default executor
+# would starve every other `to_thread` in the process once enough requests queue (the ladder's
+# `/decide` and `/models` reads included), so the waits get their own small pool. When even that
+# pool is saturated the answer is a retryable 429, not an unbounded queue.
+LEASE_EXECUTOR = ThreadPoolExecutor(max_workers=16, thread_name_prefix="kdn-lease")
+LEASE_INFLIGHT = asyncio.Semaphore(16)
+# A release that cannot reach the manager is retried by the sweep, not dropped with the entry.
+LEASE_RELEASE_RETRY_SECONDS = 60
+# An untagged client is `normal`: it must not outrank the human's own turn, and it must not starve
+# behind every delegated sub-agent either.
+LEASE_DEFAULT_PRIORITY = os.environ.get("KDN_LEASE_DEFAULT_PRIORITY", "normal")
 
 
 def _upstream_model(deployment: dict) -> str:
@@ -74,7 +103,7 @@ def _get_json(url: str) -> dict | None:
         return None
 
 
-def _post_json(url: str, body: dict) -> dict | None:
+def _post_json(url: str, body: dict, timeout: float = TIMEOUT_SECONDS) -> dict | None:
     """A POST that degrades to None, for the same reason."""
     request = urllib.request.Request(
         url,
@@ -85,7 +114,7 @@ def _post_json(url: str, body: dict) -> dict | None:
     # No proxy for an internal relay: the container's HTTP_PROXY is the SaaS egress.
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
-        with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+        with opener.open(request, timeout=timeout) as response:
             return json.load(response)
     except Exception:
         return None
@@ -97,6 +126,9 @@ class ResidentFirst(CustomLogger):
         self._facts: dict | None = None
         self._loaded: set[str] = set()
         self._fetched_at = 0.0
+        # request key -> (lease id, deadline). Process-local, because one worker handles both the
+        # pre-call and the post-call of a request.
+        self._leases: dict[str, tuple[int, float]] = {}
 
     def _policy(self) -> dict:
         if self._facts is None:
@@ -241,6 +273,196 @@ class ResidentFirst(CustomLogger):
                 "effect": "reloads the engine once on brys (~60 s), then repeat this request",
             }
         return body
+
+    # -------- the shared slot pool --------
+    #
+    # The manager's `/lease` is the pool: capacity is the resident profile's `parallel`, admission
+    # is strict priority (primary > high > normal > low) and FIFO within a class. A lease lives for
+    # exactly one model call, never for a session, and it is released on success, failure and
+    # stream end. Nothing here may fail a request: a pool that cannot be reached, or a full pool
+    # that outlasts the wait, runs the request unleased exactly as before.
+
+    def _priority(self, data: dict) -> str:
+        headers = (data.get("proxy_server_request") or {}).get("headers") or {}
+        value = str(
+            headers.get("x-kdn-priority")
+            or headers.get("X-Kdn-Priority")
+            or (data.get("metadata") or {}).get("kdn_priority")
+            or ""
+        ).strip().lower()
+        return value if value in ("primary", "high", "normal", "low") else LEASE_DEFAULT_PRIORITY
+
+    def _release_cancelled(self, task) -> None:
+        try:
+            lease, _ = task.result()
+        except Exception:
+            return
+        if lease is not None:
+            self._release_slot(lease)
+
+    def _lease_key(self, data: dict) -> str:
+        for field in ("litellm_call_id", "litellm_trace_id"):
+            value = data.get(field)
+            if isinstance(value, str) and value:
+                return value
+        return f"local-{id(data)}"
+
+    def _remember_lease(self, key: str, lease: int) -> None:
+        now = time.monotonic()
+        self._sweep_leases(now)
+        # A second pre_call for one key (a retry, a fallback) must not orphan the first lease.
+        previous = self._leases.get(key)
+        if previous:
+            self._release_slot(previous[0])
+        self._leases[key] = (lease, now + LEASE_MAX_HOLD_SECONDS)
+
+    def _touch_lease(self, key: str | None) -> None:
+        """Renew the deadline of a live streamed request, so the sweep never frees a busy slot."""
+        if not key:
+            return
+        entry = self._leases.get(key)
+        if entry:
+            self._leases[key] = (entry[0], time.monotonic() + LEASE_MAX_HOLD_SECONDS)
+
+    def _release_key(self, key: str | None) -> None:
+        if not key:
+            return
+        entry = self._leases.pop(key, None)
+        if not entry:
+            return
+        if not self._release_slot(entry[0]):
+            # Keep the entry so the sweep retries: dropping it here would orphan the slot for the
+            # manager's full TTL with nothing left that remembers it.
+            self._leases[key] = (
+                entry[0],
+                time.monotonic() + LEASE_RELEASE_RETRY_SECONDS,
+            )
+
+    def _sweep_leases(self, now: float) -> None:
+        for key, (lease, deadline) in list(self._leases.items()):
+            if deadline <= now:
+                self._leases.pop(key, None)
+                self._release_slot(lease)
+
+    def _lease_once(self, priority: str):
+        """One lease attempt: (lease, reply).
+
+        `lease` is set when a slot was granted. A non-None `reply` without a lease means the pool
+        answered "no free slot", which is retryable and carries the capacity/position for the 429.
+        `(None, None)` means the manager could not be reached: a fail-open case, and the request
+        proceeds unleased exactly as before.
+        """
+        base = self._decide_url()
+        if not base:
+            return None, None
+        reply = _post_json(
+            f"{base}/lease",
+            {"slot": True, "priority": priority, "wait_seconds": LEASE_WAIT_SECONDS},
+            timeout=LEASE_WAIT_SECONDS + 2,
+        )
+        if not reply:
+            return None, None
+        lease = reply.get("lease")
+        if isinstance(lease, (int, float)):
+            return int(lease), reply
+        return None, reply
+
+    def _release_slot(self, lease) -> bool:
+        base = self._decide_url()
+        if not base or not isinstance(lease, (int, float)):
+            return True
+        return _post_json(f"{base}/release", {"lease": int(lease)}) is not None
+
+    async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+        if "embedding" in str(call_type) or "rerank" in str(call_type):
+            return data
+        priority = self._priority(data)
+        last: dict | None = None
+        for attempt in range(LEASE_ATTEMPTS):
+            if LEASE_INFLIGHT.locked():
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "error": "too many requests are already waiting for an engine slot",
+                        "priority": priority,
+                        "retry_after_seconds": LEASE_RETRY_AFTER_SECONDS,
+                    },
+                    headers={"Retry-After": str(LEASE_RETRY_AFTER_SECONDS)},
+                )
+            loop = asyncio.get_running_loop()
+            async with LEASE_INFLIGHT:
+                pending = asyncio.ensure_future(
+                    loop.run_in_executor(LEASE_EXECUTOR, self._lease_once, priority)
+                )
+                try:
+                    lease, reply = await asyncio.shield(pending)
+                except asyncio.CancelledError:
+                    # The worker thread may still obtain a slot after the client is gone. Release
+                    # it when it lands instead of leaving it to the sweep.
+                    pending.add_done_callback(self._release_cancelled)
+                    raise
+            if lease is not None:
+                key = self._lease_key(data)
+                self._remember_lease(key, lease)
+                metadata = data.get("metadata")
+                if not isinstance(metadata, dict):
+                    metadata = {}
+                    data["metadata"] = metadata
+                metadata["kdn_lease"] = lease
+                metadata["kdn_lease_key"] = key
+                return data
+            if reply is None:
+                # The pool is unreachable: fail open, never fail a request.
+                return data
+            last = reply
+            if attempt < LEASE_ATTEMPTS - 1:
+                await asyncio.sleep(LEASE_BACKOFF_SECONDS[attempt])
+        capacity = (last or {}).get("capacity")
+        position = (last or {}).get("position")
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": (
+                    f"no free engine slot for priority {priority!r} after "
+                    f"{LEASE_ATTEMPTS} attempts; retry is safe"
+                ),
+                "priority": priority,
+                "capacity": capacity,
+                "position": position,
+                "retry_after_seconds": LEASE_RETRY_AFTER_SECONDS,
+            },
+            headers={"Retry-After": str(LEASE_RETRY_AFTER_SECONDS)},
+        )
+
+    async def async_post_call_success_hook(self, data, user_api_key_dict, response):
+        self._release_lease_for(data)
+        return response
+
+    def _release_lease_for(self, data: dict) -> None:
+        """Release by the request key, falling back to the lease id carried in metadata.
+
+        The key is authoritative: it survives a hook that receives a copy of the data, and the
+        registry sweep still frees the slot if no hook runs at all.
+        """
+        key = (data.get("metadata") or {}).get("kdn_lease_key") or self._lease_key(data)
+        self._release_key(key)
+
+    async def async_post_call_streaming_iterator_hook(
+        self, user_api_key_dict, response, request_data
+    ):
+        key = (request_data.get("metadata") or {}).get("kdn_lease_key")
+        try:
+            async for item in response:
+                self._touch_lease(key)
+                yield item
+        finally:
+            self._release_lease_for(request_data)
+
+    async def async_post_call_failure_hook(
+        self, request_data, original_exception, user_api_key_dict, traceback_str=None
+    ):
+        self._release_lease_for(request_data)
+        return None
 
     async def async_filter_deployments(
         self,
