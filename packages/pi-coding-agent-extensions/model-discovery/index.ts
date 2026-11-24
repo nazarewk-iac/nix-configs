@@ -65,6 +65,7 @@ type StaticModel = {
   input?: string[];
   contextWindow?: number;
   maxTokens?: number;
+  maxParallel?: number;
   reasoning?: boolean;
   thinkingLevelMap?: Record<string, string>;
 };
@@ -236,10 +237,12 @@ function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
   const name = typeof m.name === "string" && m.name.trim() ? m.name : id;
   const curated = staticFor(ep, id);
 
-  // The curated client budget wins for the output cap: a provider's advertised
-  // `max_output_tokens` is often a hard maximum (384K for DS4.1 on runware) that
-  // is a poor default request budget. Context prefers the gateway: a host may
-  // serve an alias below the native window.
+  // DYNAMIC FIRST. The live endpoint wins for every field it publishes: a host may serve an alias
+  // below the native window, and the alias can move under the client when the engine switches
+  // profile, so a snapshot is stale by design. The bundled catalog is a FALLBACK for what a live
+  // `/v1/models` cannot express: input modalities, the thinking-level map, the engine's slot
+  // count, and a budget for an endpoint that publishes no output limit at all. The 32k cap tames
+  // the routers that advertise a hard maximum (384K for DS4.1 on runware) as a "limit".
   const advertisedIn =
     positive(m.max_input_tokens) ?? positive(m.context_length) ?? positive(m.context_window);
   const ctx = advertisedIn ?? curated?.contextWindow ?? DEFAULT_CONTEXT;
@@ -247,7 +250,7 @@ function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
   // An advertised output limit is a hard maximum, not a request budget: Requesty
   // reports 384K for DS4.1. Cap it at 32K, the same ceiling Pi applies near a
   // full window, so a normal request does not reserve the whole window.
-  const maxTokens = curated?.maxTokens ?? Math.min(advertisedOut ?? DEFAULT_MAX_TOKENS, 32768);
+  const maxTokens = Math.min(advertisedOut ?? curated?.maxTokens ?? DEFAULT_MAX_TOKENS, 32768);
 
   const input: string[] = Array.isArray(m.input)
     ? m.input.filter((value: any) => value === "text" || value === "image")
@@ -255,7 +258,11 @@ function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
       ? ["text", "image"]
       : (curated?.input ?? ["text"]);
 
-  const reasoning = curated?.reasoning ?? /thinking|reason|o1|o3|qwen3|deepseek-r/i.test(`${id} ${name}`);
+  const liveReasoning = typeof m.reasoning === "boolean" ? m.reasoning : undefined;
+  const reasoning =
+    liveReasoning ??
+    curated?.reasoning ??
+    /thinking|reason|o1|o3|qwen3|deepseek-r/i.test(`${id} ${name}`);
 
   return {
     type: "chat",
@@ -269,7 +276,10 @@ function toConfig(ep: Endpoint, m: any): ProviderModelConfig {
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: ctx,
     maxTokens: Math.min(maxTokens, ctx),
-  };
+    // The engine's slot count, from `serving.parallel`. Pi ignores an unknown field; the
+    // orchestrator extension can clamp its delegate fan-out to it.
+    ...(curated?.maxParallel ? { maxParallel: curated.maxParallel } : {}),
+  } as ProviderModelConfig;
 }
 
 function register(pi: ExtensionAPI, ep: Endpoint): void {

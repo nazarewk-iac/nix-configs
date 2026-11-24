@@ -137,6 +137,11 @@ let
       }
       // lib.optionalAttrs (m.reasoning or null != null) {
         thinkingLevelMap = m.reasoning.levels;
+      }
+      # The engine's slot count, when this name pins one. Pi ignores the field; the orchestrator
+      # extension can clamp its delegate fan-out to it instead of a constant.
+      // lib.optionalAttrs (piMaxParallel name != null) {
+        maxParallel = piMaxParallel name;
       };
       # BOTH the served id and every extra name it answers to. A model with an alias used to be
       # listed under the alias alone, which hid the id the engine actually serves (`qfn-max-long`
@@ -310,17 +315,29 @@ let
       m = data.models.${name};
       isStrata = lib.any (h: (h.serving or { }) != { }) (lib.attrValues (m.hosts or { }));
     in
-    lib.min (m.pi.maxTokens
-      or (
-        if isStrata then
-          data.pi.frontierMaxTokens
-        else
-          # A llama.cpp model gets a quarter of its window, capped by the frontier budget: the same
-          # rule opencode applies. The old flat 4k gave a 262k model the same budget as a 16k one,
-          # and a 4k-context editor an output as large as its whole window.
-          lib.min data.pi.frontierMaxTokens (piCtx name / 4)
-      )
+    lib.min (m.pi.maxTokens or (
+      if isStrata then
+        data.pi.frontierMaxTokens
+      else
+        # A llama.cpp model gets a quarter of its window, capped by the frontier budget: the same
+        # rule opencode applies. The old flat 4k gave a 262k model the same budget as a 16k one,
+        # and a 4k-context editor an output as large as its whole window.
+        lib.min data.pi.frontierMaxTokens (piCtx name / 4)
+    )
     ) (piCtx name);
+
+  # The engine's slot count for one name, when it is a Strata operating point. `auto` has none —
+  # the count belongs to whichever profile is current — so the field is omitted rather than
+  # guessed. A client reads it to size its own fan-out; Pi ignores an unknown field.
+  piMaxParallel =
+    name:
+    let
+      m = data.models.${name};
+      counts = lib.filter (n: n != null) (
+        lib.mapAttrsToList (_: h: (h.serving or { }).parallel or null) (m.hosts or { })
+      );
+    in
+    if counts == [ ] then null else lib.foldl' lib.min (builtins.head counts) counts;
 
   # The client-facing window of one model: the same rule `piEntries` uses, so the orchestrator
   # catalog and the Pi list never quote different numbers for the same name.
