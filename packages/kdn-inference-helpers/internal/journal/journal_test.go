@@ -114,3 +114,67 @@ func TestLimitReturnsTheNewest(t *testing.T) {
 		t.Fatalf("limit=2 returned %#v", events)
 	}
 }
+
+func TestSeqIsMonotonicAndSurvivesRestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "events.jsonl")
+	j := New(path)
+	write(t, j, map[string]any{"event": EventSwitch, "to": "max"})
+	write(t, j, map[string]any{"event": EventEngineLoad, "model": "qfn"})
+
+	events := j.Events(0)
+	if seqOf(events[0]) != 1 || seqOf(events[1]) != 2 {
+		t.Fatalf("seq = %d,%d, want 1,2", seqOf(events[0]), seqOf(events[1]))
+	}
+
+	// A restarted manager continues the sequence and replays the ring from the file.
+	restarted := New(path)
+	write(t, restarted, map[string]any{"event": EventEngineStop})
+	events = restarted.Events(0)
+	if seqOf(events[2]) != 3 {
+		t.Fatalf("seq after restart = %d, want 3", seqOf(events[2]))
+	}
+}
+
+func TestSubscribeReplaysThenStreamsLive(t *testing.T) {
+	j := New(filepath.Join(t.TempDir(), "events.jsonl"))
+	write(t, j, map[string]any{"event": EventSwitch, "to": "a"})
+	write(t, j, map[string]any{"event": EventSwitch, "to": "b"})
+	write(t, j, map[string]any{"event": EventSwitch, "to": "c"})
+
+	ch, cancel := j.Subscribe(1) // everything after seq 1
+	defer cancel()
+
+	got := []string{}
+	for i := 0; i < 2; i++ {
+		select {
+		case rec := <-ch:
+			got = append(got, rec["to"].(string))
+		default:
+			t.Fatalf("replay delivered %d of 2 records: %v", i, got)
+		}
+	}
+	if got[0] != "b" || got[1] != "c" {
+		t.Fatalf("replay = %v, want [b c]", got)
+	}
+
+	write(t, j, map[string]any{"event": EventSwitch, "to": "d"})
+	select {
+	case rec := <-ch:
+		if rec["to"] != "d" {
+			t.Fatalf("live record = %v, want d", rec["to"])
+		}
+	default:
+		t.Fatal("no live record after append")
+	}
+}
+
+func TestSubscribeCancelClosesTheChannel(t *testing.T) {
+	j := New(filepath.Join(t.TempDir(), "events.jsonl"))
+	ch, cancel := j.Subscribe(0)
+	cancel()
+	cancel() // a double cancel must not panic on a closed channel
+
+	if _, open := <-ch; open {
+		t.Fatal("channel is still open after cancel")
+	}
+}

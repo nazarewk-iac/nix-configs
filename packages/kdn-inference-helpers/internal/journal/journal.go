@@ -32,14 +32,87 @@ const (
 	EventCompanionDown = "companion_down"
 )
 
+// RingSize bounds the in-memory replay window, and SubBuffer the per-subscriber queue. A
+// subscriber that falls behind drops events instead of blocking a switch: the client can always
+// refetch `/status`, and a stuck append would be far worse than a missed line.
+const (
+	RingSize  = 512
+	SubBuffer = 64
+)
+
 // Journal appends to one file and reads it back. It is safe for concurrent use.
 type Journal struct {
 	path string
 	mu   sync.Mutex
+	seq  int64
+	ring []map[string]any
+	subs map[int64]chan map[string]any
+	next int64
 }
 
-// New returns a journal at path. The directory is created on the first append.
-func New(path string) *Journal { return &Journal{path: path} }
+// New returns a journal at path. The directory is created on the first append. The sequence and
+// the replay ring continue from the durable file, so a restarted manager does not renumber events
+// and a client's `since` still means something.
+func New(path string) *Journal {
+	j := &Journal{path: path, subs: map[int64]chan map[string]any{}}
+	events := j.Events(0)
+	for _, rec := range events {
+		j.seq = seqOf(rec)
+	}
+	if len(events) > RingSize {
+		events = events[len(events)-RingSize:]
+	}
+	j.ring = events
+	return j
+}
+
+// SeqOf is the monotonic sequence of one record, or 0 for a record written before the field
+// existed. A record carries an `int64` in memory and a `float64` after a JSON round trip, so both
+// forms are accepted.
+func SeqOf(rec map[string]any) int64 {
+	switch value := rec["seq"].(type) {
+	case float64:
+		return int64(value)
+	case int64:
+		return value
+	case int:
+		return int64(value)
+	}
+	return 0
+}
+
+// seqOf is the package-internal spelling.
+func seqOf(rec map[string]any) int64 { return SeqOf(rec) }
+
+// Subscribe replays every record newer than `since` and then streams live ones. The returned
+// cancel stops the subscription; it is safe to call twice.
+func (j *Journal) Subscribe(since int64) (<-chan map[string]any, func()) {
+	ch := make(chan map[string]any, SubBuffer)
+	j.mu.Lock()
+	for _, rec := range j.ring {
+		if seqOf(rec) <= since {
+			continue
+		}
+		select {
+		case ch <- rec:
+		default:
+		}
+	}
+	id := j.next
+	j.next++
+	j.subs[id] = ch
+	j.mu.Unlock()
+
+	cancel := func() {
+		j.mu.Lock()
+		if open, ok := j.subs[id]; ok {
+			delete(j.subs, id)
+			close(open)
+		}
+		j.mu.Unlock()
+	}
+	return ch, cancel
+}
 
 // Path is the file this journal writes, for logging.
 func (j *Journal) Path() string { return j.path }
@@ -50,12 +123,27 @@ func (j *Journal) Append(record map[string]any) error {
 	if _, ok := record["ts"]; !ok {
 		record["ts"] = float64(time.Now().UnixNano()) / 1e9
 	}
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.seq++
+	record["seq"] = j.seq
+	j.ring = append(j.ring, record)
+	if len(j.ring) > RingSize {
+		j.ring = j.ring[len(j.ring)-RingSize:]
+	}
+	for id, ch := range j.subs {
+		select {
+		case ch <- record:
+		default:
+			// The subscriber is behind. Dropping one event keeps a switch from blocking on a
+			// client; the client refetches `/status` when it reconnects.
+			_ = id
+		}
+	}
 	line, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
-	j.mu.Lock()
-	defer j.mu.Unlock()
 	if err := os.MkdirAll(filepath.Dir(j.path), 0o755); err != nil {
 		return err
 	}

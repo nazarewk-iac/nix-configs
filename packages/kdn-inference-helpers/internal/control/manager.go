@@ -423,6 +423,7 @@ func (m *Manager) Handler() http.Handler {
 	mux.HandleFunc("/status", m.handleStatus)
 	mux.HandleFunc("/stats", m.handleStats)
 	mux.HandleFunc("/events", m.handleEvents)
+	mux.HandleFunc("/events/stream", m.handleEventsStream)
 	mux.HandleFunc("/select", m.handleSelect)
 	mux.HandleFunc("/lease", m.handleLease)
 	mux.HandleFunc("/release", m.handleRelease)
@@ -472,6 +473,89 @@ func (m *Manager) handleEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": m.Journal.Events(limit)})
+}
+
+// handleEventsStream is the push form of `/events`: one SSE record per journal line, with the
+// journal's monotonic `seq` as the SSE id, so `Last-Event-ID` and `?since=` replay exactly what a
+// client missed. `?model=<alias>` filters the same stream; a per-alias view is a filter, not a
+// second sequence.
+//
+// A ping every 15 s keeps the NAT and the nspawn relay from dropping an idle connection. The
+// subscriber drops events it cannot take (see journal.Subscribe), so a slow client can never stall
+// a switch.
+func (m *Manager) handleEventsStream(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming is not supported by this connection", http.StatusInternalServerError)
+		return
+	}
+	var since int64
+	if raw := r.URL.Query().Get("since"); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 {
+			since = n
+		}
+	}
+	if raw := r.Header.Get("Last-Event-ID"); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > since {
+			since = n
+		}
+	}
+	model := r.URL.Query().Get("model")
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	// nginx and friends buffer by default; a relay that respects this header will not.
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	events, cancel := m.Journal.Subscribe(since)
+	defer cancel()
+
+	ping := time.NewTicker(15 * time.Second)
+	defer ping.Stop()
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case record, open := <-events:
+			if !open {
+				return
+			}
+			if model != "" && !eventMatchesModel(record, model) {
+				continue
+			}
+			line, err := json.Marshal(record)
+			if err != nil {
+				continue
+			}
+			if _, err := fmt.Fprintf(w, "id: %d\ndata: %s\n\n", journal.SeqOf(record), line); err != nil {
+				return
+			}
+			flusher.Flush()
+		case <-ping.C:
+			if _, err := fmt.Fprint(w, ": ping\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
+		}
+	}
+}
+
+// eventMatchesModel is the per-alias filter. The journal names a model in `model` or `alias`; a
+// switch names profiles, not aliases, but it changes what every alias resolves to, so it always
+// passes. A filter therefore means "this alias' own events, plus every switch".
+func eventMatchesModel(record map[string]any, want string) bool {
+	if record["event"] == journal.EventSwitch {
+		return true
+	}
+	for _, key := range []string{"model", "alias"} {
+		if value, ok := record[key].(string); ok && value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Manager) handleSelect(w http.ResponseWriter, r *http.Request) {

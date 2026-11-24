@@ -120,6 +120,12 @@ in
   # Live fleet state for the orchestrator: which aliases are loaded, their served context, and the
   # host headroom, in one tool. It degrades to the static view on a network fault.
   fleet-status = ./fleet-status;
+
+  # The engine profile, injected into the system prompt once per CHANGE. A running session caches
+  # the model entry it discovered at startup, and a profile switch happens under the same alias, so
+  # without this the agent keeps assuming the old profile. One line per switch, none on a normal
+  # turn, and no line at all when brys is unreachable.
+  engine-state = ./engine-state;
   # Model discovery: dynamic providers (refreshModels) that list the LIVE litellm
   # gateway, local llama-swap and Requesty router catalogs, so `pi --list-models`
   # shows discovered models (e.g. Requesty ids) layered under the static
