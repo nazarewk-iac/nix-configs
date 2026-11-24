@@ -27,6 +27,10 @@ Local models are cheap and fast; your own context is the expensive resource. So:
   fails. Every other local model needs a colo profile and is refused on the resting one.
 - **Bound your own recon.** If you have made five tool calls without an edit or a delegate, stop
   and delegate the rest.
+- **One response has a hard output budget.** The model's advertised `maxTokens` caps a single turn,
+  and a reasoning model's thinking comes out of that same number. When the model reaches it the
+  turn fails with a length error; it is not silently shortened. Write a long report to a file and
+  reply with the path, or split the work across delegate calls.
 
 A sub-agent's "done" is a claim, not a fact. Verify every result yourself with the cheapest
 mechanical check that proves it (`nix-instantiate --parse`, `nix eval`, a `rg` for the expected
