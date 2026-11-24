@@ -288,6 +288,14 @@ func (m *Manager) selectLocked(ctx context.Context, requested string, dryRun, ke
 	}
 	_ = m.Journal.Append(loadEvent)
 	// Phase 2 ends here: whatever was running is gone and the new engine either answers or failed.
+	// The pool belongs to the profile that is about to serve, so it must be set BEFORE the drain
+	// ends: EndDrain promotes queued waiters, and promoting them against the old capacity would
+	// over-grant a shrinking pool.
+	if err == nil {
+		m.Leases.SetCapacity(m.capacityFor(profile))
+	} else {
+		m.Leases.SetCapacity(0)
+	}
 	m.Leases.EndDrain()
 
 	total := round(time.Since(start))

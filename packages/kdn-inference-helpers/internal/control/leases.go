@@ -324,7 +324,7 @@ func (l *Leases) EndDrain() {
 	l.promoteLocked()
 }
 
-// expireLocked drops leases past their ttl and returns how many went.
+// expireLocked drops leases past their own deadline and returns how many went.
 func (l *Leases) expireLocked(now time.Time) int {
 	stale := 0
 	for id, held := range l.open {
