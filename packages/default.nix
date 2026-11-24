@@ -105,6 +105,12 @@ in
   # `systemd-find-cycles` reads the output of `systemd-analyze dot`.
   # Consumer: modules/universal/profile/machine/baseline/default.nix:248.
   systemd-find-cycles = pkgs.callPackage ./systemd-find-cycles { };
+
+  # `kdn-audio` drives the PipeWire graph through `pw-dump`, `pw-cli`, `pw-metadata` and
+  # `pw-link`, starts transient user units through `systemd-run`, and connects Bluetooth devices
+  # through `bluetoothctl`. Consumer: modules/universal/programs/kdn-audio/default.nix, enabled
+  # on hosts/oams.
+  kdn-audio = pkgs.callPackage ./kdn-audio { };
 }
 # x86_64-linux-only packages.
 #

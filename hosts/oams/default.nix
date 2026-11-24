@@ -406,6 +406,21 @@ in
         pkgs.kdn.kdn-gamingctl
       ];
       kdn.hw.gpu.supergfxd.mode = null;
+
+      # Join the two Bluetooth headsets into one output, and keep that join active whenever both
+      # are connected. `kdn-audio devices` maps the ids to names.
+      kdn.programs.kdn-audio = {
+        enable = true;
+        autoActivate = true;
+        profiles.both-ears = {
+          description = "Earmuffs and JBL Endurance Peak 4 together";
+          priority = 10;
+          outputs = [
+            "bt:60:AB:D2:77:07:56"
+            "bt:38:D5:18:B6:64:93"
+          ];
+        };
+      };
     }
     (lib.mkIf false {
       specialisation.vfio = {

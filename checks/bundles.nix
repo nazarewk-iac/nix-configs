@@ -124,6 +124,7 @@ in
     "kdn-certs-test"
     "kdn-certs-test-ca"
     "kdn-certs-expiry"
+    "kdn-audio-test"
     "kdn-journal-test"
     "kdn-journal-parse"
     "kdn-jj-meta-test"

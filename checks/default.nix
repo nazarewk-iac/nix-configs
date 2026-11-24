@@ -158,6 +158,10 @@ denTests.checks
   # runner behind a fake. The two real-jj cases skip in the sandbox.
   kdn-jj-meta-test = pkgs.kdn.kdn-jj-meta.passthru.tests.go-test;
 
+  # The `kdn-audio` Go suite: the pw-dump parser, device ids, sink resolution, profile matching,
+  # automatic activation and the transient join behind an in-memory graph.
+  kdn-audio-test = pkgs.kdn.kdn-audio.passthru.tests.go-test;
+
   # The `kdn-okf` Go suite: frontmatter, the Markdown scanner, trust/staleness, the link graph,
   # the cache and the search scopes. Every case uses a temporary bundle.
   kdn-okf-test = pkgs.kdn.kdn-okf.passthru.tests.go-test;
